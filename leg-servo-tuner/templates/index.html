@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Leg Servo Tuner</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>Leg Servo Tuner</h1>
+
+<div class="panel">
+  <label>サーボ選択</label>
+  <select id="servo">
+    {% for s in servos %}
+      <option value="{{ s }}">{{ s }}</option>
+    {% endfor %}
+  </select>
+
+  <label>角度: <span id="angleValue">135</span>°</label>
+  <input
+    type="range"
+    id="angle"
+    min="0"
+    max="270"
+    value="135"
+  />
+</div>
+
+<script>
+const slider = document.getElementById("angle");
+const angleValue = document.getElementById("angleValue");
+const servoSelect = document.getElementById("servo");
+
+slider.addEventListener("input", () => {
+  angleValue.textContent = slider.value;
+
+  fetch("/api/move", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      servo: servoSelect.value,
+      angle: slider.value
+    })
+  });
+});
+
+// slider.addEventListener("change", () => {
+//   fetch("/api/move", {
+//     method: "POST",
+//     headers: {"Content-Type": "application/json"},
+//     body: JSON.stringify({
+//       servo: servoSelect.value,
+//       angle: slider.value
+//     })
+//   });
+// });
+</script>
+
+</body>
+</html>

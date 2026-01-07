@@ -6,56 +6,144 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  <h1>Leg Servo Tuner</h1>
 
-<h1>Leg Servo Tuner</h1>
+  <div class="panel">
+    <div class="mode">
+      <label class="mode-item">
+        <input type="radio" name="mode" value="logical" id="modeLogical">
+        論理角
+      </label>
+      <label class="mode-item">
+        <input type="radio" name="mode" value="physical" id="modePhysical">
+        物理角
+      </label>
+    </div>
 
-<div class="panel">
-  <label>サーボ選択</label>
-  <select id="servo">
-    {% for s in servos %}
-      <option value="{{ s }}">{{ s }}</option>
-    {% endfor %}
-  </select>
+    <label>サーボ選択</label>
+    <select id="servo"></select>
 
-  <label>角度: <span id="angleValue">135</span>°</label>
-  <input
-    type="range"
-    id="angle"
-    min="0"
-    max="270"
-    value="135"
-  />
-</div>
+    <label>
+      角度: <span id="angleValue">0</span>°
+      <span class="hint" id="modeHint"></span>
+    </label>
 
-<script>
-const slider = document.getElementById("angle");
-const angleValue = document.getElementById("angleValue");
-const servoSelect = document.getElementById("servo");
+    <input type="range" id="angle" min="0" max="1" value="0">
+    <div id="ticks" class="slider-ticks"></div>
+  </div>
 
-slider.addEventListener("input", () => {
-  angleValue.textContent = slider.value;
+  <script>
+    const servoSelect = document.getElementById("servo");
+    const slider = document.getElementById("angle");
+    const angleValue = document.getElementById("angleValue");
+    const ticks = document.getElementById("ticks");
+    const modeHint = document.getElementById("modeHint");
 
-  fetch("/api/move", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      servo: servoSelect.value,
-      angle: slider.value
-    })
-  });
-});
+    const modeLogical = document.getElementById("modeLogical");
+    const modePhysical = document.getElementById("modePhysical");
 
-// slider.addEventListener("change", () => {
-//   fetch("/api/move", {
-//     method: "POST",
-//     headers: {"Content-Type": "application/json"},
-//     body: JSON.stringify({
-//       servo: servoSelect.value,
-//       angle: slider.value
-//     })
-//   });
-// });
-</script>
+    const SERVOS = {{ servos | tojson }};
+    const LAST_MODE = {{ last_mode | tojson }};
+    const PHYSICAL_MIN = {{ physical_min | tojson }};
+    const PHYSICAL_MAX = {{ physical_max | tojson }};
 
+    function currentMode(){
+      return modePhysical.checked ? "physical" : "logical";
+    }
+
+    function buildOptions(){
+      servoSelect.innerHTML = "";
+      for(const s of SERVOS){
+        const opt = document.createElement("option");
+        opt.value = s.name;
+        opt.textContent = s.name;
+        opt.dataset.logicalLo = s.logical_lo;
+        opt.dataset.logicalHi = s.logical_hi;
+        opt.dataset.lastLogical = s.last_logical;
+        opt.dataset.lastPhysical = s.last_physical;
+        servoSelect.appendChild(opt);
+      }
+    }
+
+    function buildTicks(lo, hi, divisions = 5){
+      ticks.innerHTML = "";
+      for(let i = 0; i <= divisions; i++){
+        const v = lo + (hi - lo) * (i / divisions);
+        const span = document.createElement("span");
+        span.textContent = Math.round(v);
+        ticks.appendChild(span);
+      }
+    }
+
+    function applyRangeAndLast(){
+      const opt = servoSelect.selectedOptions[0];
+      const mode = currentMode();
+
+      let lo, hi, last;
+
+      if(mode === "physical"){
+        lo = PHYSICAL_MIN;
+        hi = PHYSICAL_MAX;
+        last = parseFloat(opt.dataset.lastPhysical);
+        modeHint.textContent = "（物理角：サーボ直指定）";
+      }else{
+        lo = parseFloat(opt.dataset.logicalLo);
+        hi = parseFloat(opt.dataset.logicalHi);
+        last = parseFloat(opt.dataset.lastLogical);
+        modeHint.textContent = "（論理角：変換してサーボへ）";
+      }
+
+      slider.min = lo;
+      slider.max = hi;
+      slider.step = 1;
+
+      const init = Math.round(Math.max(lo, Math.min(hi, last)));
+      slider.value = init;
+      angleValue.textContent = init;
+
+      buildTicks(lo, hi, 5);
+    }
+
+    function setModeFromLast(){
+      if(LAST_MODE === "physical"){
+        modePhysical.checked = true;
+      }else{
+        modeLogical.checked = true;
+      }
+    }
+
+    setModeFromLast();
+    buildOptions();
+    applyRangeAndLast();
+
+    servoSelect.addEventListener("change", applyRangeAndLast);
+    modeLogical.addEventListener("change", applyRangeAndLast);
+    modePhysical.addEventListener("change", applyRangeAndLast);
+
+    slider.addEventListener("input", () => {
+      angleValue.textContent = slider.value;
+    });
+
+    // slider.addEventListener("change", async () => {
+    slider.addEventListener("input", async () => {
+      try{
+        const res = await fetch("/api/move", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            servo: servoSelect.value,
+            mode: currentMode(),
+            angle: slider.value
+          })
+        });
+        if(!res.ok){
+          const txt = await res.text();
+          alert("Server error:\n" + txt);
+        }
+      }catch(e){
+        alert("Network error:\n" + e);
+      }
+    });
+  </script>
 </body>
 </html>

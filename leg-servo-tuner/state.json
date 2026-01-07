@@ -1,0 +1,11 @@
+{
+  "last_mode": "physical",
+  "servos": {
+    "R_HIP1": {
+      "physical": 125.0
+    },
+    "R_KNEE": {
+      "physical": 84.0
+    }
+  }
+}

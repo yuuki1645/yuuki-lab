@@ -23,12 +23,6 @@
     <label>サーボ選択</label>
     <select id="servo"></select>
 
-    <!-- ★ ガイド画像（部位ごとに切り替え） -->
-    <div class="guide">
-      <div class="guide-title" id="guideTitle">ガイド</div>
-      <img id="guideImg" class="guide-img" src="/static/guides/knee.png" alt="guide">
-    </div>
-
     <label>
       角度: <span id="angleValue">0</span>°
       <span class="hint" id="modeHint"></span>
@@ -48,33 +42,13 @@
     const modeLogical = document.getElementById("modeLogical");
     const modePhysical = document.getElementById("modePhysical");
 
-    // ★ ガイド
-    const guideTitle = document.getElementById("guideTitle");
-    const guideImg = document.getElementById("guideImg");
-
     const SERVOS = {{ servos | tojson }};
     const LAST_MODE = {{ last_mode | tojson }};
     const PHYSICAL_MIN = {{ physical_min | tojson }};
     const PHYSICAL_MAX = {{ physical_max | tojson }};
 
-    // ★ 部位 -> 画像パス（あなたの画像に合わせてここだけ変えればOK）
-    const GUIDE_MAP = {
-      "KNEE": "/static/guides/knee.JPG",
-      "HEEL": "/static/guides/heel.JPG",
-      "HIP1": "/static/guides/hip1.JPG",
-      "HIP2": "/static/guides/hip2.JPG",
-    };
-
     function currentMode(){
       return modePhysical.checked ? "physical" : "logical";
-    }
-
-    function setModeFromLast(){
-      if(LAST_MODE === "physical"){
-        modePhysical.checked = true;
-      }else{
-        modeLogical.checked = true;
-      }
     }
 
     function buildOptions(){
@@ -99,24 +73,6 @@
         span.textContent = Math.round(v);
         ticks.appendChild(span);
       }
-    }
-
-    // ★ サーボ名から部位キーを作る（R_KNEE, L_HEEL など）
-    function partKeyFromServoName(name){
-      // "R_KNEE" -> "KNEE"
-      const parts = String(name).split("_");
-      return parts.length >= 2 ? parts.slice(1).join("_") : String(name);
-    }
-
-    // ★ ガイド画像の更新
-    function updateGuide(){
-      const servoName = servoSelect.value;
-      const key = partKeyFromServoName(servoName); // KNEE/HEEL/HIP1/HIP2
-      const src = GUIDE_MAP[key] || GUIDE_MAP["KNEE"]; // fallback
-
-      guideTitle.textContent = `ガイド: ${key}`;
-      guideImg.src = src;
-      guideImg.alt = `guide-${key}`;
     }
 
     function applyRangeAndLast(){
@@ -146,9 +102,14 @@
       angleValue.textContent = init;
 
       buildTicks(lo, hi, 5);
+    }
 
-      // ★ サーボ切替時はガイドも更新
-      updateGuide();
+    function setModeFromLast(){
+      if(LAST_MODE === "physical"){
+        modePhysical.checked = true;
+      }else{
+        modeLogical.checked = true;
+      }
     }
 
     setModeFromLast();
@@ -159,9 +120,12 @@
     modeLogical.addEventListener("change", applyRangeAndLast);
     modePhysical.addEventListener("change", applyRangeAndLast);
 
-    slider.addEventListener("input", async () => {
+    slider.addEventListener("input", () => {
       angleValue.textContent = slider.value;
+    });
 
+    // slider.addEventListener("change", async () => {
+    slider.addEventListener("input", async () => {
       try{
         const res = await fetch("/api/move", {
           method: "POST",
@@ -180,26 +144,6 @@
         alert("Network error:\n" + e);
       }
     });
-
-    // slider.addEventListener("change", async () => {
-    //   try{
-    //     const res = await fetch("/api/move", {
-    //       method: "POST",
-    //       headers: {"Content-Type": "application/json"},
-    //       body: JSON.stringify({
-    //         servo: servoSelect.value,
-    //         mode: currentMode(),
-    //         angle: slider.value
-    //       })
-    //     });
-    //     if(!res.ok){
-    //       const txt = await res.text();
-    //       alert("Server error:\n" + txt);
-    //     }
-    //   }catch(e){
-    //     alert("Network error:\n" + e);
-    //   }
-    // });
   </script>
 </body>
 </html>

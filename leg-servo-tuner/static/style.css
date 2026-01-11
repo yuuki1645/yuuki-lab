@@ -66,3 +66,70 @@ input[type="range"] {
   color: #a8b0d6;
   margin-left: 8px;
 }
+
+/* ★ ガイド画像エリア */
+.guide {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+}
+
+.guide-title {
+  text-align: left;
+  font-size: 14px;
+  color: #a8b0d6;
+  margin-bottom: 10px;
+}
+
+.guide-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.25);
+}
+
+/* ===== iPad/タッチ向け：rangeのつまみをデカくする ===== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 64px;           /* トラックの高さ（指で触りやすく） */
+  background: transparent;
+  margin: 10px 0 0;
+}
+
+/* トラック */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(200, 210, 255, 0.25);
+}
+
+/* つまみ（iOS Safari/Chrome iOS） */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;            /* ★Appleの推奨タップサイズに寄せる */
+  height: 44px;
+  border-radius: 50%;
+  background: #6ea8ff;
+  border: 2px solid rgba(255,255,255,0.65);
+  margin-top: -15px;      /* トラック中央に合わせる（(44-14)/2=15） */
+}
+
+/* Firefox系（念のため） */
+input[type="range"]::-moz-range-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(200, 210, 255, 0.25);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #6ea8ff;
+  border: 2px solid rgba(255,255,255,0.65);
+}

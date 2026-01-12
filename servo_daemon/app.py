@@ -49,12 +49,12 @@ def get_servos():
 			"ch": ch,
 			"logical_lo": kin.logical_range.lo,
 			"logical_hi": kin.logical_range.hi,
+			"physical_min": kin.physical_range.lo,
+			"physical_max": kin.physical_range.hi,
+			"default_logical": kin.default_logical,
+			"default_physical": kin.default_physical,
 		})
-	return jsonify({
-		"servos": servos,
-		"physical_min": PHYSICAL_MIN,
-		"physical_max": PHYSICAL_MAX,
-	})
+	return jsonify({"servos": servos})
 
 @app.get("/set_logical")
 def set_logical():

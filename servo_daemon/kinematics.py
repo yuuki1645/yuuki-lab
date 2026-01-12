@@ -11,6 +11,10 @@ class LogicalRange:
     lo: float
     hi: float
 
+@dataclass(frozen=True)
+class PhysicalRange:
+    lo: float
+    hi: float
 
 class ServoKinematicsBase:
     """
@@ -20,10 +24,22 @@ class ServoKinematicsBase:
     """
     name: str
     logical_range: LogicalRange
+    physical_range: PhysicalRange
+    default_logical: float
 
-    def __init__(self, name: str, logical_lo: float, logical_hi: float):
+    def __init__(
+        self,
+        name: str,
+        logical_lo: float,
+        logical_hi: float,
+        physical_lo: float,
+        physical_hi: float,
+        default_logical: float,
+    ):
         self.name = name
         self.logical_range = LogicalRange(logical_lo, logical_hi)
+        self.physical_range = PhysicalRange(physical_lo, physical_hi)
+        self.default_logical = default_logical
 
     def clamp_logical(self, logical_deg: float) -> float:
         return clamp(float(logical_deg), self.logical_range.lo, self.logical_range.hi)
@@ -34,14 +50,26 @@ class ServoKinematicsBase:
     def physical_to_logical(self, physical_deg: float) -> float:
         raise NotImplementedError
 
+    @property
+    def default_physical(self):
+        return self.logical_to_physical(self.default_logical)
+
 
 # ----------------------------
-# 論理角レンジ（あなた確定）
+# 論理角レンジ・物理角レンジ
 # ----------------------------
-RANGE_HEEL = (-30.0,  90.0)
-RANGE_KNEE = (  0.0, 120.0)
-RANGE_HIP1 = (-30.0,  90.0)
-RANGE_HIP2 = (-30.0, 120.0)
+LOGICAL_RANGE_HEEL = (-30.0,  90.0)
+LOGICAL_RANGE_KNEE = (  0.0, 120.0)
+LOGICAL_RANGE_HIP1 = (-30.0,  90.0)
+LOGICAL_RANGE_HIP2 = (-30.0, 120.0)
+PHYSICAL_RANGE_HEEL = (0.0, 270.0)
+PHYSICAL_RANGE_KNEE = (0.0, 270.0)
+PHYSICAL_RANGE_HIP1 = (0.0, 270.0)
+PHYSICAL_RANGE_HIP2 = (0.0, 270.0)
+DEFAULT_LOGICAL_HEEL = -30.0
+DEFAULT_LOGICAL_KNEE = 30.0
+DEFAULT_LOGICAL_HIP1 = 0.0
+DEFAULT_LOGICAL_HIP2 = 60.0
 
 
 # ============================================================
@@ -56,7 +84,7 @@ RANGE_HIP2 = (-30.0, 120.0)
 
 class RHeelKinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("R_HEEL", *RANGE_HEEL)
+        super().__init__("R_HEEL", *LOGICAL_RANGE_HEEL, *PHYSICAL_RANGE_HEEL, DEFAULT_LOGICAL_HEEL)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -68,7 +96,7 @@ class RHeelKinematics(ServoKinematicsBase):
 
 class RKneeKinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("R_KNEE", *RANGE_KNEE)
+        super().__init__("R_KNEE", *LOGICAL_RANGE_KNEE, *PHYSICAL_RANGE_KNEE, DEFAULT_LOGICAL_KNEE)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -80,7 +108,7 @@ class RKneeKinematics(ServoKinematicsBase):
 
 class RHip1Kinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("R_HIP1", *RANGE_HIP1)
+        super().__init__("R_HIP1", *LOGICAL_RANGE_HIP1, *PHYSICAL_RANGE_HIP1, DEFAULT_LOGICAL_HIP1)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -92,7 +120,7 @@ class RHip1Kinematics(ServoKinematicsBase):
 
 class RHip2Kinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("R_HIP2", *RANGE_HIP2)
+        super().__init__("R_HIP2", *LOGICAL_RANGE_HIP2, *PHYSICAL_RANGE_HIP2, DEFAULT_LOGICAL_HIP2)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -104,7 +132,7 @@ class RHip2Kinematics(ServoKinematicsBase):
 
 class LHeelKinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("L_HEEL", *RANGE_HEEL)
+        super().__init__("L_HEEL", *LOGICAL_RANGE_HEEL, *PHYSICAL_RANGE_HEEL, DEFAULT_LOGICAL_HEEL)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -116,7 +144,7 @@ class LHeelKinematics(ServoKinematicsBase):
 
 class LKneeKinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("L_KNEE", *RANGE_KNEE)
+        super().__init__("L_KNEE", *LOGICAL_RANGE_KNEE, *PHYSICAL_RANGE_KNEE, DEFAULT_LOGICAL_KNEE)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -128,7 +156,7 @@ class LKneeKinematics(ServoKinematicsBase):
 
 class LHip1Kinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("L_HIP1", *RANGE_HIP1)
+        super().__init__("L_HIP1", *LOGICAL_RANGE_HIP1, *PHYSICAL_RANGE_HIP1, DEFAULT_LOGICAL_HIP1)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
@@ -140,7 +168,7 @@ class LHip1Kinematics(ServoKinematicsBase):
 
 class LHip2Kinematics(ServoKinematicsBase):
     def __init__(self):
-        super().__init__("L_HIP2", *RANGE_HIP2)
+        super().__init__("L_HIP2", *LOGICAL_RANGE_HIP2, *PHYSICAL_RANGE_HIP2, DEFAULT_LOGICAL_HIP2)
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)

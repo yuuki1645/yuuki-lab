@@ -1,8 +1,6 @@
 # app.py
 from __future__ import annotations
 
-import json
-import os
 from typing import Any, Dict
 
 import requests
@@ -10,8 +8,6 @@ from flask import Flask, render_template, request, jsonify
 from utils import clamp
 
 app = Flask(__name__)
-
-STATE_PATH = os.path.join(os.path.dirname(__file__), "state.json")
 
 SERVO_DAEMON_URL = "http://localhost:5000"
 
@@ -62,11 +58,6 @@ def index():
 
     # サーボ情報から論理角レンジなどを取得
     servos_data = servo_info.get("servos", [])
-    physical_min = servo_info.get("physical_min", 0.0)
-    physical_max = servo_info.get("physical_max", 270.0)
-
-    # サーボ名をキーとした辞書を作成
-    servo_info_map = {s["name"]: s for s in servos_data}
 
     servos = []
     for servo_data in servos_data:
@@ -87,14 +78,22 @@ def index():
         logical_lo = servo_data["logical_lo"]
         logical_hi = servo_data["logical_hi"]
 
+        # servo_daemonから取得したデフォルト値を仕様
+        default_logical = servo_data.get("default_logical")
+        default_physical = servo_data.get("default_physical")
+
         if last_logical is None:
-            last_logical = default_logical(logical_lo, logical_hi)
+            last_logical = default_logical
         if last_physical is None:
-            last_physical = default_physical()
+            last_physical = default_physical
 
         # clamp
         last_logical = clamp(float(last_logical), logical_lo, logical_hi)
-        last_physical = clamp(float(last_physical), physical_min, physical_max)
+
+        # サーボごとの物理角範囲を取得
+        servo_physical_min = servo_data.get("physical_min")
+        servo_physical_max = servo_data.get("physical_max")
+        last_physical = clamp(float(last_physical), servo_physical_min, servo_physical_max)
 
         servos.append({
             "name": name,
@@ -107,9 +106,6 @@ def index():
     return render_template(
         "index.html",
         servos=servos,
-        last_mode=last_mode,
-        physical_min=PHYSICAL_MIN,
-        physical_max=PHYSICAL_MAX,
     )
 
 @app.post("/api/move")

@@ -18,7 +18,7 @@ class StateManager:
         # 起動時にファイルから読み込む
         self._load_from_file()
 
-    def _load_from_file(self) -> Dict[str, Any]:
+    def _load_from_file(self) -> None:
         """ファイルから直接読み込む（キャッシュを使わない）"""
         try:
             with open(self.state_path, "r", encoding="utf-8") as f:
@@ -49,11 +49,6 @@ class StateManager:
         self._save_timer = threading.Timer(self._idle_save_delay, self._save_to_file)
         self._save_timer.daemon = True
         self._save_timer.start()
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """状態を取得する"""
-        with self._lock:
-            return self._state.get(key, default)
 
     def set(self, key: str, value: Any) -> None:
         """状態を設定する（操作停止検知による自動保存をスケジュール）"""

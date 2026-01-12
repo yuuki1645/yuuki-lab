@@ -178,26 +178,6 @@
         alert("Network error:\n" + e);
       }
     });
-
-    // slider.addEventListener("change", async () => {
-    //   try{
-    //     const res = await fetch("/api/move", {
-    //       method: "POST",
-    //       headers: {"Content-Type": "application/json"},
-    //       body: JSON.stringify({
-    //         servo: servoSelect.value,
-    //         mode: currentMode(),
-    //         angle: slider.value
-    //       })
-    //     });
-    //     if(!res.ok){
-    //       const txt = await res.text();
-    //       alert("Server error:\n" + txt);
-    //     }
-    //   }catch(e){
-    //     alert("Network error:\n" + e);
-    //   }
-    // });
   </script>
 </body>
 </html>

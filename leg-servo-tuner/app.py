@@ -88,55 +88,26 @@ def get_servo_info() -> Dict[str, Any]:
 
 @app.get("/")
 def index():
-    # servo_daemon から最新の状態を取得
+    # 1回のAPI呼び出しで完結
     servo_info = get_servo_info()
-    daemon_state = get_servo_daemon_state()
-
-    # サーボ情報から論理角レンジなどを取得
     servos_data = servo_info.get("servos", [])
 
     servos = []
     for servo_data in servos_data:
-        name = servo_data["name"]
-        ch = servo_data["ch"]
-        ch_str = str(ch)
-
-        # servo_daemon の状態から取得（チャンネル番号をキーとする）
-        daemon_entry = daemon_state.get(ch_str, {})
-        if isinstance(daemon_entry, dict):
-            last_logical = daemon_entry.get("logical")
-            last_physical = daemon_entry.get("physical")
-        else:
-            last_logical = None
-            last_physical = None
-
-        # デフォルト値の設定
-        logical_lo = servo_data["logical_lo"]
-        logical_hi = servo_data["logical_hi"]
-
-        # servo_daemonから取得したデフォルト値を仕様
-        default_logical = servo_data.get("default_logical")
-        default_physical = servo_data.get("default_physical")
-
-        if last_logical is None:
-            last_logical = default_logical
-        if last_physical is None:
-            last_physical = default_physical
+        # 状態情報は既にservo_dataに含まれている
+        last_logical = servo_data.get("last_logical") or servo_data.get("default_logical")
+        last_physical = servo_data.get("last_physical") or servo_data.get("default_physical")
 
         # clamp
-        last_logical = clamp(float(last_logical), logical_lo, logical_hi)
-
-        # サーボごとの物理角範囲を取得
-        servo_physical_min = servo_data.get("physical_min")
-        servo_physical_max = servo_data.get("physical_max")
-        last_physical = clamp(float(last_physical), servo_physical_min, servo_physical_max)
+        last_logical = clamp(float(last_logical), servo_data["logical_lo"], servo_data["logical_hi"])
+        last_physical = clamp(float(last_physical), servo_data["physical_min"], servo_data["physical_max"])
 
         servos.append({
-            "name": name,
-            "logical_lo": logical_lo,
-            "logical_hi": logical_hi,
-            "physical_min": servo_physical_min,
-            "physical_max": servo_physical_max,
+            "name": servo_data["name"],
+            "logical_lo": servo_data["logical_lo"],
+            "logical_hi": servo_data["logical_hi"],
+            "physical_min": servo_data["physical_min"],
+            "physical_max": servo_data["physical_max"],
             "last_logical": last_logical,
             "last_physical": last_physical,
         })

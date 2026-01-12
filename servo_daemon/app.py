@@ -19,17 +19,17 @@ SERVO_CH_2_NAME = {
 	11: "L_HEEL",
 }
 
-@app.get("/state")
-def get_state():
-	"""現在の状態を返す"""
-	return jsonify(state_manager.get_all())
-
 @app.get("/servos")
 def get_servos():
-	"""全サーボの情報を返す"""
+	"""全サーボの情報と現在の状態を返す"""
+	state = state_manager.get_all()
 	servos = []
+
 	for name, ch in SERVO_MAP.items():
 		kin = KINEMATICS[name]
+		ch_str = str(ch)
+		servo_state = state.get(ch_str, {})
+
 		servos.append({
 			"name": name,
 			"ch": ch,
@@ -39,6 +39,9 @@ def get_servos():
 			"physical_max": kin.physical_range.hi,
 			"default_logical": kin.default_logical,
 			"default_physical": kin.default_physical,
+			# 状態も含める
+			"last_logical": servo_state.get("logical"),
+			"last_physical": servo_state.get("physical"),
 		})
 	return jsonify({"servos": servos})
 

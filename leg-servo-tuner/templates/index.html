@@ -26,7 +26,7 @@
     <!-- ★ ガイド画像（部位ごとに切り替え） -->
     <div class="guide">
       <div class="guide-title" id="guideTitle">ガイド</div>
-      <img id="guideImg" class="guide-img" src="/static/guides/knee.png" alt="guide">
+      <img id="guideImg" class="guide-img" src="/static/guides/knee.JPG" alt="guide">
     </div>
 
     <label>
@@ -54,8 +54,6 @@
 
     const SERVOS = {{ servos | tojson }};
     const LAST_MODE = {{ last_mode | tojson }};
-    const PHYSICAL_MIN = {{ physical_min | tojson }};
-    const PHYSICAL_MAX = {{ physical_max | tojson }};
 
     // ★ 部位 -> 画像パス（あなたの画像に合わせてここだけ変えればOK）
     const GUIDE_MAP = {

@@ -22,7 +22,7 @@ SERVO_CH_2_NAME = {
 @app.get("/state")
 def get_state():
 	"""現在の状態を返す"""
-	return state_manager.get_all()
+	return jsonify(state_manager.get_all())
 
 @app.get("/servos")
 def get_servos():
@@ -53,18 +53,31 @@ def _set_servo_angle(ch: int, angle: float, mode: str):
 		"logical": result["logical"],
 		"physical": result["physical"]
 	})
-	return jsonify({"status": "ok"})
+
+	# 結果をログに出力
+	servo_name = SERVO_CH_2_NAME[ch]
+	print(f"[SERVO] SUCCESS - {servo_name} (ch={ch}): logical={result['logical']:.1f}, physical={result['physical']:.1f}")
+	
+	# 全ての状態を返す
+	return jsonify({
+		"status": "ok",
+		"state": state_manager.get_all() # 全ての状態を返す
+	})
 
 @app.get("/set_logical")
 def set_logical():
 	ch = int(request.args.get("ch"))
 	logical_angle = float(request.args.get("l_ang"))
+	servo_name = SERVO_CH_2_NAME[ch]
+	print(f"[SERVO] set_logical - {servo_name} (ch={ch}): logical={logical_angle}")
 	return _set_servo_angle(ch, logical_angle, "logical")
 
 @app.get("/set_physical")
 def set_physical():
 	ch = int(request.args.get("ch"))
 	physical_angle = float(request.args.get("p_ang"))
+	servo_name = SERVO_CH_2_NAME[ch]
+	print(f"[SERVO] set_physical - {servo_name} (ch={ch}): physical={physical_angle}")
 	return _set_servo_angle(ch, physical_angle, "physical")
 
 if __name__ == "__main__":

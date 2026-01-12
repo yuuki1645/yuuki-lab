@@ -6,6 +6,7 @@ from typing import Any, Dict
 import requests
 from flask import Flask, render_template, request, jsonify
 from utils import clamp
+from pprint import pprint
 
 app = Flask(__name__)
 
@@ -92,6 +93,8 @@ def index():
             "name": name,
             "logical_lo": logical_lo,
             "logical_hi": logical_hi,
+            "physical_min": servo_physical_min,
+            "physical_max": servo_physical_max,
             "last_logical": last_logical,
             "last_physical": last_physical,
         })
@@ -99,6 +102,7 @@ def index():
     return render_template(
         "index.html",
         servos=servos,
+        last_mode="logical"
     )
 
 @app.post("/api/move")
@@ -113,6 +117,9 @@ def api_move():
         return jsonify({"status": "error", "message": f"Unknown servo: {servo_name}"}), 400
 
     ch = SERVO_NAME_TO_CH[servo_name]
+
+    # ログ出力（リクエストパラメータを表示）
+    print(f"[API] POST /api/move - servo={servo_name}({ch}), mode={mode}, angle={angle}")
 
     # servo_daemon のAPIを呼び出す
     try:
@@ -131,10 +138,8 @@ def api_move():
                 "message": f"servo_daemon returned {response.status_code}"
             }), 500
 
-        # servo_daemon から最新の状態を取得して返す
-        daemon_state = get_servo_daemon_state()
-        ch_str = str(ch)
-        daemon_entry = daemon_state.get(ch_str, {})
+        # レスポンスから全状態情報を取得
+        response_data = response.json()
 
         result = {
             "status": "ok",
@@ -142,11 +147,9 @@ def api_move():
             "servo": servo_name,
         }
 
-        if isinstance(daemon_entry, dict):
-            if "logical" in daemon_entry:
-                result["logical"] = daemon_entry["logical"]
-            if "physical" in daemon_entry:
-                result["physical"] = daemon_entry["physical"]
+        # 全状態情報を含める
+        if "state" in response_data:
+            result["state"] = response_data["state"]
 
         return jsonify(result)
 

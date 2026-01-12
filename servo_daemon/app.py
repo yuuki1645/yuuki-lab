@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
+import time
 
 app = Flask(__name__)
 
@@ -58,10 +59,9 @@ def _set_servo_angle(ch: int, angle: float, mode: str):
 	servo_name = SERVO_CH_2_NAME[ch]
 	print(f"[SERVO] SUCCESS - {servo_name} (ch={ch}): logical={result['logical']:.1f}, physical={result['physical']:.1f}")
 	
-	# 全ての状態を返す
+	# 軽量なレスポンスを返す
 	return jsonify({
 		"status": "ok",
-		"state": state_manager.get_all() # 全ての状態を返す
 	})
 
 @app.get("/set_logical")

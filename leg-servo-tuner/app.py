@@ -7,10 +7,12 @@ import requests
 from flask import Flask, render_template, request, jsonify
 from utils import clamp
 from pprint import pprint
+import time
+import threading
 
 app = Flask(__name__)
 
-SERVO_DAEMON_URL = "http://localhost:5000"
+SERVO_DAEMON_URL = "http://127.0.0.1:5000"
 
 # サーボ名 -> チャンネル番号のマッピング（servo_daemon/app.py と一致させる）
 SERVO_NAME_TO_CH = {
@@ -27,7 +29,9 @@ SERVO_NAME_TO_CH = {
 def get_servo_daemon_state() -> Dict[str, Any]:
     """servo_daemonから状態を取得する"""
     try:
+        print("[get_servo_daemon_state] started")
         response = requests.get(f"{SERVO_DAEMON_URL}/state", timeout=5)
+        print("[get_servo_daemon_state] response got")
         if response.status_code == 200:
             return response.json()
     except Exception as e:
@@ -121,43 +125,31 @@ def api_move():
     # ログ出力（リクエストパラメータを表示）
     print(f"[API] POST /api/move - servo={servo_name}({ch}), mode={mode}, angle={angle}")
 
-    # servo_daemon のAPIを呼び出す
-    try:
-        if mode == "physical":
-            url = f"{SERVO_DAEMON_URL}/set_physical"
-            params = {"ch": ch, "p_ang": angle}
-        else:
-            mode = "logical"
-            url = f"{SERVO_DAEMON_URL}/set_logical"
-            params = {"ch": ch, "l_ang": angle}
+    # 非同期でリクエストを送信（レスポンスを待たない）
+    def send_request():
+        try:
+            if mode == "physical":
+                url = f"{SERVO_DAEMON_URL}/set_physical"
+                params = {"ch": ch, "p_ang": angle}
+            else:
+                url = f"{SERVO_DAEMON_URL}/set_logical"
+                params = {"ch": ch, "l_ang": angle}
 
-        response = requests.get(url, params=params, timeout=5)
-        if response.status_code != 200:
-            return jsonify({
-                "status": "error",
-                "message": f"servo_daemon returned {response.status_code}"
-            }), 500
+            requests.get(url, params=params, timeout=1) # タイムアウトを短く
+        except Exception as e:
+            print("[WARN] failed to send request to servo_daemon:", e)
 
-        # レスポンスから全状態情報を取得
-        response_data = response.json()
+    # バックグラウンドで実行
+    thread = threading.Thread(target=send_request)
+    thread.daemon = True
+    thread.start()
 
-        result = {
-            "status": "ok",
-            "mode": mode,
-            "servo": servo_name,
-        }
-
-        # 全状態情報を含める
-        if "state" in response_data:
-            result["state"] = response_data["state"]
-
-        return jsonify(result)
-
-    except requests.exceptions.RequestException as e:
-        return jsonify({
-            "status": "error",
-            "message": f"Network error: {str(e)}"
-        }), 500
+    # 即座に成功を返す
+    return jsonify({
+        "status": "ok",
+        "mode": mode,
+        "servo": servo_name,
+    })
         
 
 if __name__ == "__main__":

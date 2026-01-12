@@ -1,13 +1,11 @@
 # app.py
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import requests
 from flask import Flask, render_template, request, jsonify
 from utils import clamp
-from pprint import pprint
-import time
 import threading
 
 app = Flask(__name__)
@@ -26,27 +24,67 @@ SERVO_NAME_TO_CH = {
     "L_HEEL": 11,
 }
 
-def get_servo_daemon_state() -> Dict[str, Any]:
-    """servo_daemonから状態を取得する"""
+# ===== エラーハンドリング統一のヘルパー関数 =====
+def api_get(endpoint: str, timeout: float = 5.0, **kwargs) -> Optional[Dict[str, Any]]:
+    """
+    servo_daemonへのGETリクエストを統一処理
+    
+    Args:
+        endpoint: APIエンドポイント（例: "/state", "/servos"）
+        timeout: タイムアウト時間（秒）
+        **kwargs: requests.get()に渡す追加パラメータ
+    
+    Returns:
+        成功時: JSONレスポンスの辞書、失敗時: None
+    """
     try:
-        print("[get_servo_daemon_state] started")
-        response = requests.get(f"{SERVO_DAEMON_URL}/state", timeout=5)
-        print("[get_servo_daemon_state] response got")
+        url = f"{SERVO_DAEMON_URL}{endpoint}"
+        response = requests.get(url, timeout=timeout, **kwargs)
         if response.status_code == 200:
             return response.json()
+        else:
+            print(f"[WARn] API call failed ({endpoint}): status={response.status_code}")
+    except requests.exceptions.Timeout:
+        print(f"[WARN] API call timed out ({endpoint})")
+    except requests.exceptions.ConnectionError:
+        print(f"[WARN] API connection error ({endpoint})")
     except Exception as e:
-        print("[WARN] failed to get servo daemon state:", e)
-    return {}
+        print(f"[WARN] API call failed ({endpoint}): {e}")
+    return None
+
+def api_post(endpoint: str, timeout: float = 1.0, **kwargs) -> bool:
+    """
+    servo_daemonへのPOSTリクエストを統一処理（fire-and-forget用）
+    
+    Args:
+        endpoint: APIエンドポイント（例: "/set"）
+        timeout: タイムアウト時間（秒）
+        **kwargs: requests.post()に渡す追加パラメータ（json, paramsなど）
+    
+    Returns:
+        成功時: True、失敗時: False（ログは自動出力）
+    """
+    try:
+        url = f"{SERVO_DAEMON_URL}{endpoint}"
+        response = requests.post(url, timeout=timeout, **kwargs)
+        return response.status_code == 200
+    except requests.exceptions.Timeout:
+        print(f"[WARN] API call timeout ({endpoint})")
+    except requests.exceptions.ConnectionError:
+        print(f"[WARN] API connection error ({endpoint})")
+    except Exception as e:
+        print(f"[WARN] API call error ({endpoint}): {e}")
+    return False
+
+def get_servo_daemon_state() -> Dict[str, Any]:
+    """servo_daemonから状態を取得する"""
+    result = api_get("/state")
+    return result if result is not None else {}
 
 def get_servo_info() -> Dict[str, Any]:
     """servo_daemonからサーボ情報を取得する"""
-    try:
-        response = requests.get(f"{SERVO_DAEMON_URL}/servos", timeout=5)
-        if response.status_code == 200:
-            return response.json()
-    except Exception as e:
-        print("[WARN] failed to get servo info from servo_daemon:", e)
-    return {"servos": []}
+    result = api_get("/servos")
+    return result if result is not None else {"servos": []}
 
 @app.get("/")
 def index():
@@ -127,17 +165,12 @@ def api_move():
 
     # 非同期でリクエストを送信（レスポンスを待たない）
     def send_request():
-        try:
-            if mode == "physical":
-                url = f"{SERVO_DAEMON_URL}/set_physical"
-                params = {"ch": ch, "p_ang": angle}
-            else:
-                url = f"{SERVO_DAEMON_URL}/set_logical"
-                params = {"ch": ch, "l_ang": angle}
-
-            requests.get(url, params=params, timeout=1) # タイムアウトを短く
-        except Exception as e:
-            print("[WARN] failed to send request to servo_daemon:", e)
+        # 統合されたエンドポイントを使用（シンプル！）
+        api_post("/set", timeout=1, json={
+            "ch": ch,
+            "mode": mode,
+            "angle": angle
+        })
 
     # バックグラウンドで実行
     thread = threading.Thread(target=send_request)

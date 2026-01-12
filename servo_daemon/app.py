@@ -2,7 +2,6 @@ from flask import Flask, jsonify, request
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
-import time
 
 app = Flask(__name__)
 
@@ -64,21 +63,28 @@ def _set_servo_angle(ch: int, angle: float, mode: str):
 		"status": "ok",
 	})
 
-@app.get("/set_logical")
-def set_logical():
-	ch = int(request.args.get("ch"))
-	logical_angle = float(request.args.get("l_ang"))
-	servo_name = SERVO_CH_2_NAME[ch]
-	print(f"[SERVO] set_logical - {servo_name} (ch={ch}): logical={logical_angle}")
-	return _set_servo_angle(ch, logical_angle, "logical")
+@app.post("/set")
+def set_servo():
+	"""
+	サーボ角度を設定する（論理角・物理角の両方に対応）
+	
+	リクエストボディ（JSON）:
+		{
+			"ch": 0,           # チャンネル番号
+			"mode": "logical", # "logical" または "physical"
+			"angle": 90.0     # 角度
+		}
+	"""
+	data = request.json or {}
+	ch = int(data.get("ch"))
+	mode = data.get("mode", "logical")
+	angle = float(data.get("angle"))
 
-@app.get("/set_physical")
-def set_physical():
-	ch = int(request.args.get("ch"))
-	physical_angle = float(request.args.get("p_ang"))
 	servo_name = SERVO_CH_2_NAME[ch]
-	print(f"[SERVO] set_physical - {servo_name} (ch={ch}): physical={physical_angle}")
-	return _set_servo_angle(ch, physical_angle, "physical")
+	print(f"[SERVO] set_{mode} - {servo_name} (ch={ch}): {mode}={angle}")
+
+	return _set_servo_angle(ch, angle, mode)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

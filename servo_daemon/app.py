@@ -25,12 +25,14 @@ SERVO_CH_2_NAME = {
 def get_servos():
 	"""全サーボの情報と現在の状態を返す"""
 	state = state_manager.get_all()
+	print("state: ", state)
 	servos = []
 
 	for name, ch in SERVO_MAP.items():
 		kin = KINEMATICS[name]
 		ch_str = str(ch)
 		servo_state = state.get(ch_str, {})
+		print("servo_state:", servo_state)
 
 		servos.append({
 			"name": name,

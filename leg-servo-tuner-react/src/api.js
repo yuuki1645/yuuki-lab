@@ -16,13 +16,14 @@ export async function fetchServos() {
   
   // サーボデータを整形
   const formattedServos = servosData.map(servo => {
+    console.log("servo:", servo);
     const lastLogical = clamp(
-      parseFloat(servo.last_logical || servo.default_logical || 0),
+      parseFloat(servo.last_logical ?? servo.default_logical ?? 0),
       servo.logical_lo,
       servo.logical_hi
     );
     const lastPhysical = clamp(
-      parseFloat(servo.last_physical || servo.default_physical || 0),
+      parseFloat(servo.last_physical ?? servo.default_physical ?? 0),
       servo.physical_min,
       servo.physical_max
     );

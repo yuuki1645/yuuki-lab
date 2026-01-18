@@ -9,6 +9,7 @@ import MotionList from './components/MotionList';
 import Timeline from './components/Timeline';
 import ServoAngleEditor from './components/ServoAngleEditor';
 import PlaybackControls from './components/PlaybackControls';
+import { transitionServos } from './api/servoApi';
 import './App.css';
 
 function App() {
@@ -54,6 +55,45 @@ function App() {
   
   const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
+
+  const handleMoveToInitialPosition = async (motion) => {
+    if (!motion || !motion.keyframes || motion.keyframes.length === 0) {
+      alert('モーションにキーフレームがありません');
+      return;
+    }
+    
+    // 0s時点のキーフレームを取得（最初のキーフレームが0sでない場合もあるので、time=0に最も近いものを探す）
+    const initialKeyframe = motion.keyframes.find(kf => kf.time === 0) 
+      || motion.keyframes.reduce((prev, curr) => 
+          Math.abs(curr.time) < Math.abs(prev.time) ? curr : prev
+        );
+    
+    if (!initialKeyframe || !initialKeyframe.angles) {
+      alert('初期キーフレームの角度が設定されていません');
+      return;
+    }
+    
+    try {
+      // チャンネル番号を文字列キーに変換
+      const angles = {};
+      Object.entries(initialKeyframe.angles).forEach(([ch, angle]) => {
+        if (angle !== undefined && angle !== null) {
+          angles[String(ch)] = angle;
+        }
+      });
+      
+      if (Object.keys(angles).length === 0) {
+        alert('設定可能な角度がありません');
+        return;
+      }
+      
+      await transitionServos(angles, 'logical', 3.0);
+      alert('初期位置への移動を開始しました');
+    } catch (error) {
+      console.error('Failed to move to initial position:', error);
+      alert(`エラー: ${error.message}`);
+    }
+  };
   
   // モーションが切り替わったら選択をリセット
   if (currentMotion && selectedKeyframeIndex !== null) {
@@ -131,6 +171,7 @@ function App() {
           onAddMotion={addMotion}
           onDeleteMotion={deleteMotion}
           onRenameMotion={renameMotion}
+          onMoveToInitialPosition={handleMoveToInitialPosition}  // 追加
         />
         
         <div className="app-main">

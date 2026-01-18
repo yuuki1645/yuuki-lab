@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import './MotionList.css';
 
-export default function MotionList({ motions, currentMotionId, onSelectMotion, onAddMotion, onDeleteMotion, onRenameMotion }) {
+export default function MotionList({ 
+  motions, 
+  currentMotionId, 
+  onSelectMotion, 
+  onAddMotion, 
+  onDeleteMotion, 
+  onRenameMotion,
+  onMoveToInitialPosition  // 追加
+}) {  
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   
@@ -67,6 +75,13 @@ export default function MotionList({ motions, currentMotionId, onSelectMotion, o
                   {motion.name}
                 </button>
                 <div className="motion-item-actions">
+                  <button 
+                    onClick={() => onMoveToInitialPosition(motion)}
+                    className="btn-move-initial"
+                    title="モーションの初期位置（0s）にゆっくり移動"
+                  >
+                    初期位置へ
+                  </button>
                   <button onClick={() => handleRenameStart(motion)}>編集</button>
                   <button 
                     onClick={() => {

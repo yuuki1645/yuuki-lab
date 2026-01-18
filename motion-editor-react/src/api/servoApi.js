@@ -75,3 +75,50 @@ export async function moveServos(servoAngles, mode = 'logical') {
     throw new Error(`Failed to move servos: ${error.message}`);
   }
 }
+
+/**
+ * 複数のサーボを一度に動かす（新しいAPI使用）
+ */
+export async function setServosMultiple(angles, mode = 'logical') {
+  const response = await fetch(`${SERVO_DAEMON_URL}/set_multiple`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode: mode,
+      angles: angles, // { "0": 90, "1": 45, ... } の形式
+    }),
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Server error: ${text}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * 現在の角度から指定角度にゆっくり遷移させる
+ */
+export async function transitionServos(angles, mode = 'logical', duration = 5.0) {
+  const response = await fetch(`${SERVO_DAEMON_URL}/transition`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode: mode,
+      angles: angles, // { "0": 90, "1": 45, ... } の形式
+      duration: duration,
+    }),
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Server error: ${text}`);
+  }
+  
+  return response.json();
+}

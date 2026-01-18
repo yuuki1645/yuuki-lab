@@ -43,8 +43,13 @@ function App() {
     play,
     pause,
     stop,
+    seekToTime,  // 追加
   } = useInterpolation(keyframes, currentMotion?.duration || DEFAULT_MOTION_DURATION, 'logical');
   
+  const handlePlayheadDrag = (time) => {
+    seekToTime(time);
+  };
+
   const { servos, loading: servosLoading } = useServos();
   
   const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState(null);
@@ -138,6 +143,7 @@ function App() {
             onKeyframeDrag={handleKeyframeDrag}
             selectedKeyframeIndex={selectedKeyframeIndex}
             selectedChannel={selectedChannel}
+            onPlayheadDrag={handlePlayheadDrag}  // 追加
           />
           
           <PlaybackControls

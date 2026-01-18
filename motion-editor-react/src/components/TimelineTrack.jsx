@@ -15,13 +15,16 @@ export default function TimelineTrack({
   xToTime,
   scrollableRef,
   isDragging,
+  onPlayheadDrag,  // 追加
+  isPlayheadDragging,  // 追加
 }) {
   const handleTrackClick = (e) => {
-    if (isDragging) return;
+    if (isDragging || isPlayheadDragging) return;  // プレイヘッドドラッグ中も除外
     
     if (
       e.target.closest('.timeline-keyframe') ||
-      e.target.closest('.timeline-track-label')
+      e.target.closest('.timeline-track-label') ||
+      e.target.closest('.timeline-playhead')  // プレイヘッドクリックも除外
     ) {
       return;
     }
@@ -35,6 +38,41 @@ export default function TimelineTrack({
       const time = xToTime(x);
       onTimeClick(time, channel);
     }
+  };
+  
+  // プレイヘッドのドラッグ開始
+  const handlePlayheadMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();  // タッチデバイスでのスクロールを防ぐ
+    if (!scrollableRef.current) return;
+    
+    const rect = scrollableRef.current.getBoundingClientRect();
+    
+    const handleMove = (e) => {
+      e.preventDefault();  // タッチデバイスでのスクロールを防ぐ
+      const clientX = getClientX(e);
+      const x = clientX - rect.left;
+      const newTime = xToTime(x);
+      onPlayheadDrag(newTime);
+    };
+    
+    const handleEnd = () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+    };
+    
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+    
+    // 最初の位置でも更新
+    const startX = getClientX(e);
+    const x = startX - rect.left;
+    const startTime = xToTime(x);
+    onPlayheadDrag(startTime);
   };
   
   return (
@@ -51,8 +89,10 @@ export default function TimelineTrack({
       >
         {/* 再生位置インジケーター */}
         <div 
-          className="timeline-playhead"
+          className={`timeline-playhead ${isPlayheadDragging ? 'dragging' : ''}`}
           style={{ left: `${timeToX(currentTime)}px` }}
+          onMouseDown={handlePlayheadMouseDown}
+          onTouchStart={handlePlayheadMouseDown}
         />
         
         {/* キーフレーム */}

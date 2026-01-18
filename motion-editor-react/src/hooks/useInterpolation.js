@@ -215,6 +215,38 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
     mode,           // サーボ制御モードが変更されたら再実行
     stop            // stop関数が変更されたら再実行（useCallbackでメモ化されている）
   ]);
+
+  /**
+   * 指定した時間にシーク（移動）する
+   * - 再生を停止/一時停止
+   * - 時間を設定
+   * - その時間でのサーボ角度を計算して送信
+   */
+  const seekToTime = useCallback((time) => {
+    // 時間を0からdurationの範囲にクランプ
+    const clampedTime = Math.max(0, Math.min(time, duration));
+    
+    // 再生中または一時停止中の場合は停止
+    if (isPlaying || isPaused) {
+      setIsPlaying(false);
+      setIsPaused(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+    
+    // 時間を設定
+    setCurrentTime(clampedTime);
+    pausedTimeRef.current = clampedTime;
+    
+    // その時間でのサーボ角度を計算して送信
+    const angles = getAngleAtTime(keyframes, clampedTime);
+    if (Object.keys(angles).length > 0) {
+      moveServos(angles, mode).catch(err => {
+        console.error('Failed to move servos:', err);
+      });
+    }
+  }, [duration, isPlaying, isPaused, keyframes, mode]);
   
   // ========== 戻り値 ==========
   // コンポーネントで使用する状態と関数を返す
@@ -229,5 +261,6 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
     play,             // 再生開始/再開関数
     pause,            // 一時停止関数
     stop,             // 停止関数
+    seekToTime,       // 指定時間にシークする関数（追加）
   };
 }

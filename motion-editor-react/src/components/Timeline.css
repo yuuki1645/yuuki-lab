@@ -33,6 +33,7 @@
 .timeline-track-label {
   height: 60px;
   display: flex;
+  flex-direction: column;  /* 縦並びに変更 */
   align-items: center;
   justify-content: center;
   background: #2a2a3e;
@@ -41,7 +42,22 @@
   border-bottom: 1px solid #2a2a3e;
   user-select: none;
   -webkit-user-select: none;
-  box-sizing: border-box; /* borderを含めた高さ計算 */
+  box-sizing: border-box;
+  padding: 4px 8px;  /* パディングを追加 */
+  gap: 4px;  /* サーボ名と角度の間隔 */
+}
+
+.timeline-track-label-name {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.timeline-track-label-angle {
+  font-size: 11px;
+  color: #4a9eff;  /* 角度を青色で強調 */
+  font-weight: bold;
+  line-height: 1.2;
 }
 
 /* 右側：スクロール可能なタイムラインエリア */
@@ -212,5 +228,65 @@
   
   .timeline-marker-label {
     font-size: 14px;
+  }
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #ff4a4a;
+  z-index: 10;
+  pointer-events: auto;  /* none から auto に変更 */
+  cursor: ew-resize;  /* 横方向のリサイズカーソル */
+  touch-action: none;  /* タッチイベントを有効化 */
+}
+
+.timeline-playhead::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 15px;
+  height: 15px;
+  background: #ff4a4a;
+  border-radius: 50%;
+  cursor: ew-resize;  /* カーソルを継承 */
+  touch-action: none;
+}
+
+.timeline-playhead.dragging {
+  background: #ff6a6a;  /* ドラッグ中は少し明るく */
+}
+
+.timeline-playhead.dragging::before {
+  background: #ff6a6a;
+  transform: scale(1.2);  /* ドラッグ中は少し大きく */
+}
+
+/* タッチデバイス用のスタイル */
+@media (hover: none) and (pointer: coarse) {
+  /* ... existing code ... */
+  
+  .timeline-playhead::before {
+    width: 20px;  /* タッチしやすくする */
+    height: 20px;
+    left: -8.5px;
+    top: -8.5px;
+  }
+  
+  .timeline-track-label {
+    height: 70px; /* トラックと同じ高さに変更 */
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  
+  .timeline-track-label-name {
+    font-size: 14px;
+  }
+  
+  .timeline-track-label-angle {
+    font-size: 12px;
   }
 }

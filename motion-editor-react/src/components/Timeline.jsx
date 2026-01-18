@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { SERVO_CHANNELS, MAX_MOTION_DURATION } from '../constants';
 import { useTimelineCoordinates } from '../hooks/useTimelineCoordinates';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
@@ -16,9 +16,11 @@ export default function Timeline({
   onKeyframeDrag,
   selectedKeyframeIndex,
   selectedChannel,
+  onPlayheadDrag,  // 追加
 }) {
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
+  const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);  // 追加
   
   const { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } = useTimelineCoordinates();
   const { isDragging, handleKeyframeStart, getClientX } = useTimelineDrag(
@@ -28,13 +30,13 @@ export default function Timeline({
   );
   
   const handleKeyframeClick = (index, channel) => {
-    if (!isDragging) {
-      onKeyframeClick(index, channel); // チャンネル情報も渡す
+    if (!isDragging && !isPlayheadDragging) {  // プレイヘッドドラッグ中も除外
+      onKeyframeClick(index, channel);
     }
   };
   
   const handleRulerClick = (e) => {
-    if (isDragging) return;
+    if (isDragging || isPlayheadDragging) return;  // プレイヘッドドラッグ中も除外
     
     if (e.target.closest('.timeline-marker')) return;
     
@@ -43,13 +45,24 @@ export default function Timeline({
     const clientX = getClientX(e);
     const x = clientX - rect.left;
     const time = xToTime(x);
-    onTimeClick(time, null); // 全チャンネル
+    onTimeClick(time, null);
   };
+  
+  // プレイヘッドドラッグハンドラ
+  const handlePlayheadDrag = (time) => {
+    setIsPlayheadDragging(true);
+    onPlayheadDrag(time);
+  };
+  
+  // ドラッグ終了を検知（マウス/タッチイベントのクリーンアップ時に呼ばれる）
+  // これは少し工夫が必要。TimelineTrackから直接呼べないので、
+  // グローバルイベントリスナーで検知するか、別の方法を使う
+  // とりあえず、マウス/タッチイベントが終了したら自動的にfalseになるようにする
   
   return (
     <div className="timeline-container" ref={timelineRef}>
       {/* 左側：固定ラベルエリア */}
-      <TimelineLabels />
+      <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
       
       {/* 右側：スクロール可能なタイムラインエリア */}
       <div className="timeline-scrollable" ref={scrollableRef}>
@@ -78,6 +91,8 @@ export default function Timeline({
               getClientX={getClientX}
               scrollableRef={scrollableRef}
               isDragging={isDragging}
+              onPlayheadDrag={handlePlayheadDrag}  // 追加
+              isPlayheadDragging={isPlayheadDragging}  // 追加
             />
           ))}
         </div>

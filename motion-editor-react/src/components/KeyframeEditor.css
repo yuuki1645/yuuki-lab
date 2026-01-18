@@ -1,0 +1,152 @@
+.keyframe-editor {
+  width: 320px; /* iPad用に少し広く */
+  background: #2a2a3e;
+  border-left: 1px solid #3a3a4e;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
+}
+
+.keyframe-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #3a3a4e;
+}
+
+.keyframe-editor-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 17px; /* iPad用に少し大きく */
+}
+
+.keyframe-editor-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.keyframe-editor-info span {
+  color: #aaa;
+  font-size: 13px; /* iPad用に少し大きく */
+}
+
+.btn-delete-keyframe {
+  background: #ff4a4a;
+  color: white;
+  border: none;
+  padding: 8px 16px; /* iPad用に大きく */
+  border-radius: 6px; /* iPad用に角丸を大きく */
+  cursor: pointer;
+  font-size: 14px; /* iPad用に大きく */
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation; /* ダブルタップズームを無効化 */
+}
+
+.btn-delete-keyframe:hover {
+  background: #ff3a3a;
+}
+
+.btn-delete-keyframe:active {
+  background: #ff2a2a;
+  transform: scale(0.95);
+}
+
+.keyframe-editor-empty {
+  color: #888;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px; /* iPad用に少し大きく */
+}
+
+.keyframe-editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* iPad用に間隔を広く */
+}
+
+.keyframe-editor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* iPad用に間隔を広く */
+}
+
+.keyframe-editor-label {
+  color: #fff;
+  font-size: 14px; /* iPad用に少し大きく */
+  font-weight: 500;
+}
+
+.keyframe-editor-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* iPad用に間隔を広く */
+}
+
+.keyframe-editor-slider {
+  flex: 1;
+  height: 8px; /* iPad用に太く */
+  background: #1a1a2e;
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+  touch-action: none; /* タッチ操作を制御 */
+}
+
+.keyframe-editor-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px; /* iPad用に大きく（16px → 24px） */
+  height: 24px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.keyframe-editor-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  touch-action: none;
+}
+
+.keyframe-editor-input {
+  width: 70px; /* iPad用に少し広く */
+  background: #1a1a2e;
+  border: 2px solid #3a3a4e; /* iPad用に太く */
+  color: #fff;
+  padding: 8px 10px; /* iPad用に大きく */
+  border-radius: 6px; /* iPad用に角丸を大きく */
+  text-align: center;
+  font-size: 15px; /* iPad用に大きく */
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation;
+}
+
+.keyframe-editor-unit {
+  color: #aaa;
+  font-size: 14px; /* iPad用に少し大きく */
+}
+
+/* タッチデバイス用のスタイル */
+@media (hover: none) and (pointer: coarse) {
+  .keyframe-editor-slider {
+    height: 10px; /* タッチデバイスではさらに太く */
+  }
+  
+  .keyframe-editor-slider::-webkit-slider-thumb {
+    width: 28px; /* タッチデバイスではさらに大きく */
+    height: 28px;
+  }
+  
+  .keyframe-editor-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}

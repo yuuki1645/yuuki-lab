@@ -1,0 +1,159 @@
+.motion-list {
+  width: 280px; /* iPad用に少し広く */
+  background: #2a2a3e;
+  border-right: 1px solid #3a3a4e;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
+}
+
+.motion-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.motion-list-header h2 {
+  margin: 0;
+  font-size: 19px; /* iPad用に大きく */
+  color: #fff;
+}
+
+.btn-add {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  padding: 10px 16px; /* iPad用に大きく */
+  border-radius: 6px; /* iPad用に角丸を大きく */
+  cursor: pointer;
+  font-size: 15px; /* iPad用に大きく */
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation;
+}
+
+.btn-add:hover {
+  background: #3a8eef;
+}
+
+.btn-add:active {
+  transform: scale(0.95);
+}
+
+.motion-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.motion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px; /* iPad用に大きく */
+  margin-bottom: 10px; /* iPad用に間隔を広く */
+  border-radius: 6px; /* iPad用に角丸を大きく */
+  background: #1a1a2e;
+  transition: background 0.2s;
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+}
+
+.motion-item:hover {
+  background: #252538;
+}
+
+.motion-item.active {
+  background: #3a4a6e;
+  border: 2px solid #4a9eff; /* iPad用に太く */
+}
+
+.motion-item-name {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  padding: 8px 12px; /* iPad用に大きく */
+  border-radius: 6px;
+  font-size: 15px; /* iPad用に大きく */
+  touch-action: manipulation;
+}
+
+.motion-item-name:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.motion-item-actions {
+  display: flex;
+  gap: 10px; /* iPad用に間隔を広く */
+}
+
+.motion-item-actions button {
+  background: #3a3a4e;
+  color: #fff;
+  border: none;
+  padding: 8px 12px; /* iPad用に大きく */
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px; /* iPad用に大きく */
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation;
+}
+
+.motion-item-actions button:hover {
+  background: #4a4a5e;
+}
+
+.motion-item-actions button:active {
+  transform: scale(0.95);
+}
+
+.btn-delete {
+  background: #ff4a4a !important;
+}
+
+.btn-delete:hover {
+  background: #ff3a3a !important;
+}
+
+.motion-item-edit {
+  display: flex;
+  gap: 6px; /* iPad用に間隔を広く */
+  width: 100%;
+}
+
+.motion-item-edit input {
+  flex: 1;
+  background: #2a2a3e;
+  border: 2px solid #4a9eff; /* iPad用に太く */
+  color: #fff;
+  padding: 8px 12px; /* iPad用に大きく */
+  border-radius: 6px;
+  font-size: 15px; /* iPad用に大きく */
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation;
+}
+
+.motion-item-edit button {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  padding: 8px 12px; /* iPad用に大きく */
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px; /* iOS推奨のタッチターゲットサイズ */
+  touch-action: manipulation;
+  font-size: 15px; /* iPad用に大きく */
+}
+
+.motion-item-edit button:active {
+  transform: scale(0.95);
+}
+
+.motion-list-empty {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+  font-size: 15px; /* iPad用に大きく */
+}

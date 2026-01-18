@@ -1,0 +1,153 @@
+.playback-controls {
+  background: #2a2a3e;
+  border-top: 1px solid #3a3a4e;
+  padding: 20px; /* iPad用に大きく */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* 小さい画面で折り返し */
+  gap: 15px; /* iPad用に間隔を追加 */
+}
+
+.playback-controls-main {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* iPad用に間隔を広く */
+}
+
+.btn-play-pause,
+.btn-stop {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  width: 56px; /* iPad用に大きく（40px → 56px） */
+  height: 56px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px; /* iPad用に大きく */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.1s;
+  touch-action: manipulation; /* ダブルタップズームを無効化 */
+  min-width: 56px; /* iOS推奨のタッチターゲットサイズ */
+  min-height: 56px;
+}
+
+.btn-play-pause:hover,
+.btn-stop:hover {
+  background: #3a8eef;
+}
+
+.btn-play-pause:active,
+.btn-stop:active {
+  transform: scale(0.95);
+}
+
+.btn-stop {
+  background: #ff4a4a;
+}
+
+.btn-stop:hover {
+  background: #ff3a3a;
+}
+
+.playback-time {
+  color: #fff;
+  font-size: 16px; /* iPad用に大きく */
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+.playback-time-separator {
+  margin: 0 6px; /* iPad用に間隔を広く */
+  color: #888;
+}
+
+.playback-controls-options {
+  display: flex;
+  align-items: center;
+  gap: 25px; /* iPad用に間隔を広く */
+  flex-wrap: wrap; /* 小さい画面で折り返し */
+}
+
+.playback-option {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* iPad用に間隔を広く */
+  color: #fff;
+  font-size: 15px; /* iPad用に大きく */
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.playback-checkbox {
+  width: 20px; /* iPad用に大きく */
+  height: 20px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.playback-speed-slider {
+  width: 120px; /* iPad用に広く */
+  height: 6px; /* iPad用に太く */
+  background: #1a1a2e;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  touch-action: none;
+}
+
+.playback-speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px; /* iPad用に大きく */
+  height: 20px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.playback-speed-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  touch-action: none;
+}
+
+/* タッチデバイス用のスタイル */
+@media (hover: none) and (pointer: coarse) {
+  .btn-play-pause,
+  .btn-stop {
+    width: 64px; /* タッチデバイスではさらに大きく */
+    height: 64px;
+    font-size: 28px;
+    min-width: 64px;
+    min-height: 64px;
+  }
+  
+  .playback-speed-slider {
+    width: 140px; /* タッチデバイスではさらに広く */
+    height: 8px;
+  }
+  
+  .playback-speed-slider::-webkit-slider-thumb {
+    width: 24px; /* タッチデバイスではさらに大きく */
+    height: 24px;
+  }
+  
+  .playback-speed-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .playback-checkbox {
+    width: 24px;
+    height: 24px;
+  }
+}

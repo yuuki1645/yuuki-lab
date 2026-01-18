@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { SERVO_CHANNELS, CH_TO_SERVO_NAME } from '../constants';
+import { SERVO_CHANNELS, CH_TO_SERVO_NAME, MAX_MOTION_DURATION } from '../constants';
 import './Timeline.css';
 
 export default function Timeline({ 
@@ -16,18 +16,25 @@ export default function Timeline({
   const dragStateRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   
+  // タイムラインの表示範囲は常に20秒（MAX_MOTION_DURATION）に固定
+  const displayDuration = MAX_MOTION_DURATION;
+  
   // 時間をピクセル位置に変換
   const timeToX = (time) => {
-    if (!timelineRef.current || duration === 0) return 0;
+    // console.log("time", time);
+    if (!timelineRef.current || displayDuration === 0) return 0;
+    // console.log("timelineRef.offsetWidth", timelineRef.current.offsetWidth);
     const width = timelineRef.current.offsetWidth - 100; // 左側のラベル分を引く
-    return (time / duration) * width;
+    return (time / displayDuration) * width;
   };
   
   // ピクセル位置を時間に変換
   const xToTime = (x) => {
-    if (!timelineRef.current || duration === 0) return 0;
+    if (!timelineRef.current || displayDuration === 0) return 0;
     const width = timelineRef.current.offsetWidth - 100;
-    return Math.max(0, Math.min(duration, (x / width) * duration));
+    const ret = Math.max(0, Math.min(MAX_MOTION_DURATION, (x / width) * displayDuration));
+    console.log("ret", ret);
+    return ret;
   };
   
   // 共通の座標取得関数（マウスとタッチの両方に対応）
@@ -96,11 +103,11 @@ export default function Timeline({
       
       // ピクセル移動量を時間に変換
       const width = timelineRef.current.offsetWidth - 100;
-      if (width === 0 || duration === 0) return;
+      if (width === 0 || displayDuration === 0) return;
       
       const deltaX = currentX - dragStateRef.current.startX;
-      const deltaTime = (deltaX / width) * duration;
-      const newTime = Math.max(0, Math.min(duration, dragStateRef.current.startTime + deltaTime));
+      const deltaTime = (deltaX / width) * displayDuration;
+      const newTime = Math.max(0, Math.min(MAX_MOTION_DURATION, dragStateRef.current.startTime + deltaTime));
       
       onKeyframeDrag(dragStateRef.current.keyframeIndex, newTime);
     };
@@ -132,17 +139,19 @@ export default function Timeline({
     }
   };
   
-  // 時間マーカーの生成
+  // 時間マーカーの生成（20秒まで）
   const timeMarkers = [];
-  const markerCount = 10;
+  const markerCount = 20; // 20秒を表示するため、マーカー数を増やす
   for (let i = 0; i <= markerCount; i++) {
-    const time = (duration / markerCount) * i;
+    const time = (displayDuration / markerCount) * i;
     timeMarkers.push(time);
   }
+
+  console.log("timeMarkers", timeMarkers);
   
   return (
     <div className="timeline-container" ref={timelineRef}>
-      <div className="timeline-header">
+      <div className="timeline-header-wrapper">
         <div className="timeline-label">時間</div>
         <div className="timeline-ruler">
           {timeMarkers.map((time, i) => (
@@ -151,7 +160,7 @@ export default function Timeline({
               className="timeline-marker"
               style={{ left: `${100 + timeToX(time)}px` }}
             >
-              <div className="timeline-marker-line" />
+              {/* <div className="timeline-marker-line" /> */}
               <div className="timeline-marker-label">
                 {(time / 1000).toFixed(1)}s
               </div>
@@ -160,57 +169,59 @@ export default function Timeline({
         </div>
       </div>
       
-      <div className="timeline-tracks">
-        {SERVO_CHANNELS.map(channel => (
-          <div 
-            key={channel} 
-            className="timeline-track"
-            onClick={handleTimelineClick}
-            onTouchEnd={handleTimelineClick}
-          >
-            <div className="timeline-track-label">
-              {CH_TO_SERVO_NAME[channel]}
-            </div>
+      <div className="timeline-tracks-wrapper">
+        <div className="timeline-tracks">
+          {SERVO_CHANNELS.map(channel => (
             <div 
-              className="timeline-track-content"
+              key={channel} 
+              className="timeline-track"
               onClick={handleTimelineClick}
               onTouchEnd={handleTimelineClick}
             >
-              {/* 再生位置インジケーター */}
+              <div className="timeline-track-label">
+                {CH_TO_SERVO_NAME[channel]}
+              </div>
               <div 
-                className="timeline-playhead"
-                style={{ left: `${timeToX(currentTime)}px` }}
-              />
-              
-              {/* キーフレーム */}
-              {keyframes.map((keyframe, index) => {
-                const x = timeToX(keyframe.time);
-                const isSelected = selectedKeyframeIndex === index;
-                const angle = keyframe.angles[channel] ?? 90;
+                className="timeline-track-content"
+                onClick={handleTimelineClick}
+                onTouchEnd={handleTimelineClick}
+              >
+                {/* 再生位置インジケーター */}
+                <div 
+                  className="timeline-playhead"
+                  style={{ left: `${timeToX(currentTime)}px` }}
+                />
                 
-                return (
-                  <div
-                    key={`${channel}-${index}`}
-                    ref={el => {
-                      if (el) {
-                        keyframeRefs.current[`${channel}-${index}`] = el;
-                      }
-                    }}
-                    className={`timeline-keyframe ${isSelected ? 'selected' : ''}`}
-                    style={{ left: `${x}px` }}
-                    onClick={(e) => handleKeyframeClick(e, index)}
-                    onTouchEnd={(e) => handleKeyframeClick(e, index)}
-                    onMouseDown={(e) => handleKeyframeStart(e, index, channel)}
-                    onTouchStart={(e) => handleKeyframeStart(e, index, channel)}
-                    title={`時間: ${(keyframe.time / 1000).toFixed(2)}s, 角度: ${angle.toFixed(1)}°`}
-                  >
-                    <div className="timeline-keyframe-handle" />
-                  </div>
-                );
-              })}
+                {/* キーフレーム */}
+                {keyframes.map((keyframe, index) => {
+                  const x = timeToX(keyframe.time);
+                  const isSelected = selectedKeyframeIndex === index;
+                  const angle = keyframe.angles[channel] ?? 90;
+                  
+                  return (
+                    <div
+                      key={`${channel}-${index}`}
+                      ref={el => {
+                        if (el) {
+                          keyframeRefs.current[`${channel}-${index}`] = el;
+                        }
+                      }}
+                      className={`timeline-keyframe ${isSelected ? 'selected' : ''}`}
+                      style={{ left: `${x}px` }}
+                      onClick={(e) => handleKeyframeClick(e, index)}
+                      onTouchEnd={(e) => handleKeyframeClick(e, index)}
+                      onMouseDown={(e) => handleKeyframeStart(e, index, channel)}
+                      onTouchStart={(e) => handleKeyframeStart(e, index, channel)}
+                      title={`時間: ${(keyframe.time / 1000).toFixed(2)}s, 角度: ${angle.toFixed(1)}°`}
+                    >
+                      <div className="timeline-keyframe-handle" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

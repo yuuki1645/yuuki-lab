@@ -1,3 +1,5 @@
+import { DEFAULT_MOTION_DURATION } from '../constants';
+
 const STORAGE_KEY = 'motion-editor-motions';
 
 /**
@@ -36,7 +38,7 @@ export function createMotion(name = '新規モーション') {
   return {
     id: `motion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: name,
-    duration: 5000, // デフォルト5秒
+    duration: DEFAULT_MOTION_DURATION, // デフォルト5秒
     keyframes: [
       {
         time: 0,

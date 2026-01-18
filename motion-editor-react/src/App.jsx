@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMotion } from './hooks/useMotion';
 import { useKeyframes } from './hooks/useKeyframes';
 import { useInterpolation } from './hooks/useInterpolation';
+import { MAX_MOTION_DURATION, DEFAULT_MOTION_DURATION } from './constants';
 import MotionList from './components/MotionList';
 import Timeline from './components/Timeline';
 import KeyframeEditor from './components/KeyframeEditor';
@@ -18,6 +19,7 @@ function App() {
     deleteMotion,
     updateMotion,
     renameMotion,
+    isInitialized,
   } = useMotion();
   
   const {
@@ -40,7 +42,7 @@ function App() {
     play,
     pause,
     stop,
-  } = useInterpolation(keyframes, currentMotion?.duration || 5000, 'logical');
+  } = useInterpolation(keyframes, currentMotion?.duration || DEFAULT_MOTION_DURATION, 'logical');
   
   const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState(null);
   
@@ -49,11 +51,6 @@ function App() {
     if (selectedKeyframeIndex >= keyframes.length) {
       setSelectedKeyframeIndex(null);
     }
-  }
-  
-  // モーションがない場合は新規作成
-  if (motions.length === 0) {
-    addMotion('デフォルトモーション');
   }
   
   const handleTimeClick = (time) => {
@@ -74,6 +71,25 @@ function App() {
     ? keyframes[selectedKeyframeIndex] 
     : null;
   
+  // 初期化中はローディング表示
+  if (!isInitialized) {
+    return (
+      <div className="app">
+        <div className="app-header">
+          <h1>モーションエディタ</h1>
+        </div>
+        <div style={{ padding: '20px', textAlign: 'center', color: '#fff' }}>
+          読み込み中...
+        </div>
+      </div>
+    );
+  }
+  
+  // モーションのdurationを最大時間に制限
+  const motionDuration = currentMotion 
+    ? Math.min(currentMotion.duration, MAX_MOTION_DURATION)
+    : DEFAULT_MOTION_DURATION;
+  
   return (
     <div className="app">
       <div className="app-header">
@@ -93,7 +109,7 @@ function App() {
         <div className="app-main">
           <Timeline
             keyframes={keyframes}
-            duration={currentMotion?.duration || 5000}
+            duration={motionDuration}
             currentTime={currentTime}
             onTimeClick={handleTimeClick}
             onKeyframeClick={handleKeyframeClick}
@@ -105,7 +121,7 @@ function App() {
             isPlaying={isPlaying}
             isPaused={isPaused}
             currentTime={currentTime}
-            duration={currentMotion?.duration || 5000}
+            duration={motionDuration}
             loop={loop}
             playbackSpeed={playbackSpeed}
             onPlay={play}

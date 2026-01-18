@@ -34,3 +34,12 @@ export const DEFAULT_ANGLE = 90;
 
 // 補間の更新間隔（ミリ秒）
 export const INTERPOLATION_INTERVAL = 50;
+
+// モーションの最大時間（ミリ秒）
+export const MAX_MOTION_DURATION = 20000; // 20秒
+
+// モーションのデフォルト時間（ミリ秒）
+export const DEFAULT_MOTION_DURATION = 5000; // 5秒
+
+// キーフレーム間の最小間隔（ミリ秒）- 重複を防ぐため
+export const MIN_KEYFRAME_INTERVAL = 100; // 0.1秒

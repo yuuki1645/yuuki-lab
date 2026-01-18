@@ -1,48 +1,72 @@
 .timeline-container {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* 横並びに変更 */
   background: #1a1a2e;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
+  overflow: hidden; /* コンテナ自体はスクロールしない */
   position: relative;
 }
 
-.timeline-header-wrapper {
-  height: 50px; /* iPad用に少し高く */
-  border-bottom: 1px solid #3a3a4e;
-  position: relative;
+/* 左側：固定ラベルエリア */
+.timeline-labels {
+  width: 100px;
   flex-shrink: 0;
-  width: 2000px; /* 20秒表示のため、幅を固定 */
-  background: #1a1a2e; /* 背景色を追加 */
-  display: flex; /* flexレイアウトを追加 */
-  z-index: 15; /* トラックより上に表示 */
+  background: #2a2a3e;
+  border-right: 1px solid #3a3a4e;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
 }
 
 .timeline-label {
-  position: sticky;
-  left: 0;
-  top: 0;
-  width: 100px;
-  height: 100%;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #2a2a3e;
   color: #fff;
   font-weight: bold;
-  border-right: 1px solid #3a3a4e;
-  z-index: 20;
+  border-bottom: 1px solid #3a3a4e;
+  font-size: 13px;
+}
+
+.timeline-track-label {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a3e;
+  color: #fff;
+  font-size: 13px;
+  border-bottom: 1px solid #2a2a3e;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 右側：スクロール可能なタイムラインエリア */
+.timeline-scrollable {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.timeline-header {
+  height: 50px;
+  border-bottom: 1px solid #3a3a4e;
+  position: relative;
   flex-shrink: 0;
+  width: 6000px; /* タイムラインの実際の幅（1秒=300px、20秒=6000px） */
+  background: #1a1a2e;
 }
 
 .timeline-ruler {
-  margin-left: 0; /* margin-leftを0に変更 */
   height: 100%;
   position: relative;
-  width: calc(2000px - 100px); /* ヘッダーラベル分を引く */
-  flex: 1; /* flexで残りのスペースを埋める */
+  width: 6000px; /* タイムラインの実際の幅 */
   background: repeating-linear-gradient(
     90deg,
     #1a1a2e 0px,
@@ -56,7 +80,7 @@
   position: absolute;
   top: 0;
   height: 100%;
-  z-index: 1; /* z-indexを追加 */
+  z-index: 1;
 }
 
 .timeline-marker-line {
@@ -69,60 +93,36 @@
   position: absolute;
   top: 4px;
   left: 2px;
-  font-size: 13px; /* 少し大きく */
-  color: #fff; /* より明るい色に変更 */
-  font-weight: 500; /* 太さを追加 */
-  background: rgba(26, 26, 46, 0.8); /* 背景を追加して視認性を向上 */
-  padding: 2px 4px; /* パディングを追加 */
-  border-radius: 2px; /* 角丸を追加 */
-  z-index: 2; /* z-indexを追加 */
-  white-space: nowrap; /* 改行を防ぐ */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* テキストシャドウを追加 */
-}
-
-.timeline-tracks-wrapper {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* iOSのスムーズスクロール */
-  position: relative;
-  width: 2000px; /* 20秒表示のため、幅を固定 */
-  z-index: 1; /* ヘッダーより下に表示 */
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+  background: rgba(26, 26, 46, 0.8);
+  padding: 2px 4px;
+  border-radius: 2px;
+  z-index: 2;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .timeline-tracks {
-  width: 2000px; /* 20秒表示のため、幅を固定 */
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 6000px; /* タイムラインの実際の幅 */
 }
 
 .timeline-track {
-  display: flex;
-  height: 60px; /* iPad用に高く */
+  height: 60px;
   border-bottom: 1px solid #2a2a3e;
   cursor: crosshair;
   position: relative;
-  touch-action: pan-y; /* 縦スクロールを許可 */
-}
-
-.timeline-track-label {
-  position: sticky;
-  left: 0;
-  width: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #2a2a3e;
-  color: #fff;
-  font-size: 13px; /* iPad用に少し大きく */
-  border-right: 1px solid #3a3a4e;
-  flex-shrink: 0;
-  user-select: none; /* テキスト選択を無効化 */
-  -webkit-user-select: none;
-  z-index: 10;
+  touch-action: pan-y;
 }
 
 .timeline-track-content {
-  flex: 1;
   position: relative;
-  width: calc(2000px - 100px); /* ラベル分を引く */
+  width: 6000px; /* タイムラインの実際の幅 */
+  height: 100%;
   background: repeating-linear-gradient(
     90deg,
     #1a1a2e 0px,
@@ -136,7 +136,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 3px; /* iPad用に少し太く */
+  width: 3px;
   background: #ff4a4a;
   z-index: 10;
   pointer-events: none;
@@ -145,9 +145,9 @@
 .timeline-playhead::before {
   content: '';
   position: absolute;
-  top: -6px; /* iPad用に調整 */
+  top: -6px;
   left: -6px;
-  width: 15px; /* iPad用に大きく */
+  width: 15px;
   height: 15px;
   background: #ff4a4a;
   border-radius: 50%;
@@ -159,9 +159,9 @@
   transform: translateY(-50%);
   cursor: grab;
   z-index: 5;
-  touch-action: none; /* タッチ操作を制御 */
-  padding: 8px; /* タッチ領域を広げる */
-  margin: -8px; /* padding分を相殺 */
+  touch-action: none;
+  padding: 8px;
+  margin: -8px;
 }
 
 .timeline-keyframe:active {
@@ -169,10 +169,10 @@
 }
 
 .timeline-keyframe-handle {
-  width: 24px; /* iPad用に大きく（12px → 24px） */
+  width: 24px;
   height: 24px;
   background: #4a9eff;
-  border: 3px solid #fff; /* iPad用に太く */
+  border: 3px solid #fff;
   border-radius: 50%;
   transition: transform 0.2s;
   touch-action: none;
@@ -185,26 +185,26 @@
 .timeline-keyframe.selected .timeline-keyframe-handle {
   background: #ffaa4a;
   transform: scale(1.2);
-  box-shadow: 0 0 8px rgba(255, 170, 74, 0.6); /* 選択状態を強調 */
+  box-shadow: 0 0 8px rgba(255, 170, 74, 0.6);
 }
 
 /* タッチデバイス用のスタイル */
 @media (hover: none) and (pointer: coarse) {
   .timeline-keyframe-handle {
-    width: 28px; /* タッチデバイスではさらに大きく */
+    width: 28px;
     height: 28px;
   }
   
   .timeline-track {
-    height: 70px; /* タッチデバイスではさらに高く */
+    height: 70px;
   }
   
   .timeline-keyframe {
-    padding: 12px; /* タッチ領域をさらに広げる */
+    padding: 12px;
     margin: -12px;
   }
   
   .timeline-marker-label {
-    font-size: 14px; /* タッチデバイスではさらに大きく */
+    font-size: 14px;
   }
 }

@@ -12,29 +12,28 @@ export default function Timeline({
   selectedKeyframeIndex 
 }) {
   const timelineRef = useRef(null);
+  const scrollableRef = useRef(null);
   const keyframeRefs = useRef({});
   const dragStateRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   
   // タイムラインの表示範囲は常に20秒（MAX_MOTION_DURATION）に固定
   const displayDuration = MAX_MOTION_DURATION;
+  const TIMELINE_WIDTH = 6000; // タイムラインの実際の幅（1秒=300px、20秒=6000px）
+  const LABEL_WIDTH = 100; // ラベルの幅
   
-  // 時間をピクセル位置に変換
+  // 時間をピクセル位置に変換（ラベルを除いたトラック部分での位置）
   const timeToX = (time) => {
-    // console.log("time", time);
-    if (!timelineRef.current || displayDuration === 0) return 0;
-    // console.log("timelineRef.offsetWidth", timelineRef.current.offsetWidth);
-    const width = timelineRef.current.offsetWidth - 100; // 左側のラベル分を引く
+    if (displayDuration === 0) return 0;
+    const width = TIMELINE_WIDTH; // ラベルを除いた幅
     return (time / displayDuration) * width;
   };
   
-  // ピクセル位置を時間に変換
+  // ピクセル位置を時間に変換（トラック部分の相対位置）
   const xToTime = (x) => {
-    if (!timelineRef.current || displayDuration === 0) return 0;
-    const width = timelineRef.current.offsetWidth - 100;
-    const ret = Math.max(0, Math.min(MAX_MOTION_DURATION, (x / width) * displayDuration));
-    console.log("ret", ret);
-    return ret;
+    if (displayDuration === 0) return 0;
+    const width = TIMELINE_WIDTH;
+    return Math.max(0, Math.min(MAX_MOTION_DURATION, (x / width) * displayDuration));
   };
   
   // 共通の座標取得関数（マウスとタッチの両方に対応）
@@ -57,17 +56,20 @@ export default function Timeline({
     // キーフレームやラベルをクリックした場合は無視
     if (
       e.target.closest('.timeline-keyframe') ||
+      e.target.closest('.timeline-label') ||
       e.target.closest('.timeline-track-label')
     ) {
       return;
     }
     
-    // timeline-track-content または timeline-track をクリックした場合
+    // スクロール可能なトラック部分をクリックした場合
     const trackContent = e.target.closest('.timeline-track-content');
-    if (trackContent || e.target.classList.contains('timeline-track')) {
-      const rect = timelineRef.current.getBoundingClientRect();
+    const ruler = e.target.closest('.timeline-ruler');
+    if (trackContent || ruler) {
+      if (!scrollableRef.current) return;
+      const rect = scrollableRef.current.getBoundingClientRect();
       const clientX = getClientX(e);
-      const x = clientX - rect.left - 100; // 左側のラベル分を引く
+      const x = clientX - rect.left; // スクロール可能エリア内の相対位置
       const time = xToTime(x);
       onTimeClick(time);
     }
@@ -78,35 +80,33 @@ export default function Timeline({
     e.stopPropagation();
     e.preventDefault();
     
-    const rect = timelineRef.current.getBoundingClientRect();
+    if (!scrollableRef.current) return;
+    const rect = scrollableRef.current.getBoundingClientRect();
     const clientX = getClientX(e);
-    const startX = clientX - rect.left - 100; // タイムライン内の相対位置
+    const startX = clientX - rect.left; // スクロール可能エリア内の相対位置
     const startTime = keyframes[keyframeIndex].time;
     
     dragStateRef.current = {
       keyframeIndex,
       channel,
-      startX: startX, // タイムライン内の相対位置を保存
+      startX: startX,
       startTime,
-      rectLeft: rect.left, // タイムラインの左端位置を保存
+      rectLeft: rect.left,
     };
     
     setIsDragging(true);
     
     const handleMove = (e) => {
-      if (!dragStateRef.current) return;
+      if (!dragStateRef.current || !scrollableRef.current) return;
       
-      e.preventDefault(); // スクロールを防ぐ
+      e.preventDefault();
       
       const currentClientX = getClientX(e);
-      const currentX = currentClientX - dragStateRef.current.rectLeft - 100; // タイムライン内の相対位置
-      
-      // ピクセル移動量を時間に変換
-      const width = timelineRef.current.offsetWidth - 100;
-      if (width === 0 || displayDuration === 0) return;
+      const rect = scrollableRef.current.getBoundingClientRect();
+      const currentX = currentClientX - rect.left;
       
       const deltaX = currentX - dragStateRef.current.startX;
-      const deltaTime = (deltaX / width) * displayDuration;
+      const deltaTime = (deltaX / TIMELINE_WIDTH) * displayDuration;
       const newTime = Math.max(0, Math.min(MAX_MOTION_DURATION, dragStateRef.current.startTime + deltaTime));
       
       onKeyframeDrag(dragStateRef.current.keyframeIndex, newTime);
@@ -121,18 +121,14 @@ export default function Timeline({
       document.removeEventListener('touchend', handleEnd);
     };
     
-    // マウスイベント
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleEnd);
-    
-    // タッチイベント
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
   };
   
   // キーフレームのクリック/タップ（ドラッグでない場合）
   const handleKeyframeClick = (e, index) => {
-    // ドラッグが発生していない場合のみ選択
     if (!isDragging && dragStateRef.current === null) {
       e.stopPropagation();
       onKeyframeClick(index);
@@ -141,35 +137,45 @@ export default function Timeline({
   
   // 時間マーカーの生成（20秒まで）
   const timeMarkers = [];
-  const markerCount = 20; // 20秒を表示するため、マーカー数を増やす
+  const markerCount = 20;
   for (let i = 0; i <= markerCount; i++) {
     const time = (displayDuration / markerCount) * i;
     timeMarkers.push(time);
   }
-
-  console.log("timeMarkers", timeMarkers);
   
   return (
     <div className="timeline-container" ref={timelineRef}>
-      <div className="timeline-header-wrapper">
+      {/* 左側：固定ラベルエリア */}
+      <div className="timeline-labels">
         <div className="timeline-label">時間</div>
-        <div className="timeline-ruler">
-          {timeMarkers.map((time, i) => (
-            <div 
-              key={i} 
-              className="timeline-marker"
-              style={{ left: `${100 + timeToX(time)}px` }}
-            >
-              {/* <div className="timeline-marker-line" /> */}
-              <div className="timeline-marker-label">
-                {(time / 1000).toFixed(1)}s
-              </div>
-            </div>
-          ))}
-        </div>
+        {SERVO_CHANNELS.map(channel => (
+          <div key={channel} className="timeline-track-label">
+            {CH_TO_SERVO_NAME[channel]}
+          </div>
+        ))}
       </div>
       
-      <div className="timeline-tracks-wrapper">
+      {/* 右側：スクロール可能なタイムラインエリア */}
+      <div className="timeline-scrollable" ref={scrollableRef}>
+        {/* ヘッダー：時間ルーラー */}
+        <div className="timeline-header">
+          <div className="timeline-ruler">
+            {timeMarkers.map((time, i) => (
+              <div 
+                key={i} 
+                className="timeline-marker"
+                style={{ left: `${timeToX(time)}px` }}
+              >
+                <div className="timeline-marker-line" />
+                <div className="timeline-marker-label">
+                  {(time / 1000).toFixed(1)}s
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* トラック：キーフレーム */}
         <div className="timeline-tracks">
           {SERVO_CHANNELS.map(channel => (
             <div 
@@ -178,9 +184,6 @@ export default function Timeline({
               onClick={handleTimelineClick}
               onTouchEnd={handleTimelineClick}
             >
-              <div className="timeline-track-label">
-                {CH_TO_SERVO_NAME[channel]}
-              </div>
               <div 
                 className="timeline-track-content"
                 onClick={handleTimelineClick}

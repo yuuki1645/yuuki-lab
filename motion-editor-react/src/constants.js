@@ -34,8 +34,8 @@ export const CH_TO_SERVO_NAME = {
 export const SERVO_CHANNELS = [0, 1, 2, 3, 8, 9, 10, 11];
 
 // servo_daemonのURL
-// export const SERVO_DAEMON_URL = "http://192.168.100.24:5000";
-export const SERVO_DAEMON_URL = "http://127.0.0.1:5000";
+export const SERVO_DAEMON_URL = "http://192.168.100.24:5000";
+// export const SERVO_DAEMON_URL = "http://127.0.0.1:5000";
 
 // デフォルトの角度（全サーボ共通）
 export const DEFAULT_ANGLE = 90;

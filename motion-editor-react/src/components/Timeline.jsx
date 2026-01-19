@@ -66,9 +66,17 @@ export default function Timeline({
   
   return (
     <div className="timeline-container" ref={timelineRef}>
-      {/* ... existing code ... */}
+      {/* 左側：固定ラベルエリア */}
+      <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
+      
+      {/* 右側：スクロール可能なタイムラインエリア */}
       <div className="timeline-scrollable" ref={scrollableRef}>
-        {/* ... existing code ... */}
+        {/* ヘッダー：時間ルーラー */}
+        <div onClick={handleRulerClick} onTouchEnd={handleRulerClick}>
+          <TimelineRuler timeToX={timeToX} />
+        </div>
+        
+        {/* トラック：キーフレーム */}
         <div className="timeline-tracks">
           {SERVO_CHANNELS.map(channel => (
             <TimelineTrack
@@ -89,7 +97,7 @@ export default function Timeline({
               scrollableRef={scrollableRef}
               isDragging={isDragging}
               onPlayheadDrag={handlePlayheadDrag}
-              onPlayheadDragEnd={handlePlayheadDragEnd}  // 追加
+              onPlayheadDragEnd={handlePlayheadDragEnd}
               isPlayheadDragging={isPlayheadDragging}
             />
           ))}

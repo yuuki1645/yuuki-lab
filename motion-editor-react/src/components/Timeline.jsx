@@ -54,6 +54,11 @@ export default function Timeline({
     onPlayheadDrag(time);
   };
   
+  // ドラッグ終了を検知するためのコールバック
+  const handlePlayheadDragEnd = () => {
+    setIsPlayheadDragging(false);
+  };
+  
   // ドラッグ終了を検知（マウス/タッチイベントのクリーンアップ時に呼ばれる）
   // これは少し工夫が必要。TimelineTrackから直接呼べないので、
   // グローバルイベントリスナーで検知するか、別の方法を使う
@@ -61,17 +66,9 @@ export default function Timeline({
   
   return (
     <div className="timeline-container" ref={timelineRef}>
-      {/* 左側：固定ラベルエリア */}
-      <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
-      
-      {/* 右側：スクロール可能なタイムラインエリア */}
+      {/* ... existing code ... */}
       <div className="timeline-scrollable" ref={scrollableRef}>
-        {/* ヘッダー：時間ルーラー */}
-        <div onClick={handleRulerClick} onTouchEnd={handleRulerClick}>
-          <TimelineRuler timeToX={timeToX} />
-        </div>
-        
-        {/* トラック：キーフレーム */}
+        {/* ... existing code ... */}
         <div className="timeline-tracks">
           {SERVO_CHANNELS.map(channel => (
             <TimelineTrack
@@ -91,8 +88,9 @@ export default function Timeline({
               getClientX={getClientX}
               scrollableRef={scrollableRef}
               isDragging={isDragging}
-              onPlayheadDrag={handlePlayheadDrag}  // 追加
-              isPlayheadDragging={isPlayheadDragging}  // 追加
+              onPlayheadDrag={handlePlayheadDrag}
+              onPlayheadDragEnd={handlePlayheadDragEnd}  // 追加
+              isPlayheadDragging={isPlayheadDragging}
             />
           ))}
         </div>

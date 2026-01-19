@@ -16,6 +16,7 @@ export default function TimelineTrack({
   scrollableRef,
   isDragging,
   onPlayheadDrag,  // 追加
+  onPlayheadDragEnd,  // 追加
   isPlayheadDragging,  // 追加
 }) {
   const handleTrackClick = (e) => {
@@ -43,13 +44,13 @@ export default function TimelineTrack({
   // プレイヘッドのドラッグ開始
   const handlePlayheadMouseDown = (e) => {
     e.stopPropagation();
-    e.preventDefault();  // タッチデバイスでのスクロールを防ぐ
+    e.preventDefault();
     if (!scrollableRef.current) return;
     
     const rect = scrollableRef.current.getBoundingClientRect();
     
     const handleMove = (e) => {
-      e.preventDefault();  // タッチデバイスでのスクロールを防ぐ
+      e.preventDefault();
       const clientX = getClientX(e);
       const x = clientX - rect.left;
       const newTime = xToTime(x);
@@ -61,6 +62,7 @@ export default function TimelineTrack({
       document.removeEventListener('mouseup', handleEnd);
       document.removeEventListener('touchmove', handleMove);
       document.removeEventListener('touchend', handleEnd);
+      onPlayheadDragEnd();  // 追加: ドラッグ終了時に状態をリセット
     };
     
     document.addEventListener('mousemove', handleMove);

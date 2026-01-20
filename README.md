@@ -45,3 +45,9 @@ Reactで作ったモーションエディタです。
 leg-servo-tuner、leg-servo-tuner-reactから、このサーバーのAPIを呼び出します。
 
 詳細はservo-daemonの [README](servo-daemon/README.md) を参照してください。
+
+## programs
+
+雑多なプログラム置き場。
+
+最近はほぼ使っていない。

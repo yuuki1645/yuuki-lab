@@ -38,6 +38,8 @@ Reactで作ったモーションエディタです。
 
 現在はこのディレクトリが主に更新されています。
 
+詳細はmotion-editor-reactの [README](motion-editor-react/README.md) を参照してください。
+
 ## servo-daemon
 
 ラズパイ上でサーボドライバに直接指令を出すFlaskサーバーです。

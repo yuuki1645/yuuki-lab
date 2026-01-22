@@ -14,7 +14,7 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 # ディレクトリ解説
 
-## ■ leg-servo-tuner
+## ■ （更新停止中）leg-servo-tuner
 
 **【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-reactが更新されています。**
 
@@ -22,7 +22,7 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 詳細はleg-servo-tunerの [README](leg-servo-tuner/README.md) を参照してください。
 
-## ■ leg-servo-tuner-react
+## ■ （更新停止中）leg-servo-tuner-react
 
 **【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-reactが更新されています。**
 
@@ -48,7 +48,7 @@ leg-servo-tuner、leg-servo-tuner-reactから、このサーバーのAPIを呼�
 
 詳細はservo-daemonの [README](servo-daemon/README.md) を参照してください。
 
-## ■ programs
+## ■ （更新停止中）programs
 
 雑多なプログラム置き場。
 

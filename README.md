@@ -1,4 +1,4 @@
-# robotics-notes-public
+# yuuki-lab
 
 等身大ロボット製作の動画を公開しているYouTubeチャンネル「ゆうきラボ | Yuuki Lab」の公式リポジトリです。
 

@@ -17,6 +17,10 @@ export default function TimelineTrack({
   isDragging,
   isPlayheadDragging,
 }) {
+  // console.log("keyframes", keyframes);
+  console.log("TimelineTrack rendered");
+  console.log(`selectedKeyframeIndex=${selectedKeyframeIndex}, selectedChannel=${selectedChannel}`);
+
   const handleTrackClick = (e) => {
     if (isDragging || isPlayheadDragging) return;
     if (

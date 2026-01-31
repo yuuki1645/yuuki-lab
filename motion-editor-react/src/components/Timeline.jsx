@@ -17,6 +17,8 @@ export default function Timeline({
   selectedChannel,
   onPlayheadDrag,
 }) {
+  console.log("Timeline rendered");
+
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);

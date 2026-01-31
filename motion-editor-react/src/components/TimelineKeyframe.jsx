@@ -29,6 +29,8 @@ export default function TimelineKeyframe({
   }, [onStartDrag, keyframeIndex, channel]);
 
   const handleClick = (e) => {
+    console.log(`handleClick: keyframeIndex=${keyframeIndex}, channel=${channel}`);
+    
     e.stopPropagation();
     onClick(keyframeIndex, channel);
   };

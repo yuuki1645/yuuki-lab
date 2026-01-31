@@ -12,15 +12,15 @@ export default function ServoAngleEditor({
   onDelete
 }) {
   const [angle, setAngle] = useState(90);
-  
+
   useEffect(() => {
-    if (keyframe && channel !== null && keyframe.angles[channel] !== undefined) {
-      setAngle(keyframe.angles[channel]);
+    if (keyframe && channel !== null && keyframe.angle !== undefined) {
+      setAngle(keyframe.angle);
     } else {
       setAngle(90);
     }
   }, [keyframe, channel]);
-  
+
   if (!keyframe || channel === null) {
     return (
       <div className="servo-angle-editor">
@@ -28,21 +28,9 @@ export default function ServoAngleEditor({
       </div>
     );
   }
-  
-  // このチャンネルにキーフレームが存在するかチェック
-  if (keyframe.angles[channel] === undefined) {
-    return (
-      <div className="servo-angle-editor">
-        <p className="servo-angle-editor-empty">
-          {CH_TO_SERVO_NAME[channel]}のキーフレームがありません
-        </p>
-      </div>
-    );
-  }
-  
+
   const servoName = CH_TO_SERVO_NAME[channel];
-  
-  // サーボの論理角範囲を取得
+
   const getLogicalRange = () => {
     if (servo) {
       return {
@@ -50,16 +38,14 @@ export default function ServoAngleEditor({
         max: servo.logical_hi,
       };
     }
-    // フォールバック（サーボ情報が取得できない場合）
     return {
       min: -90,
       max: 90,
     };
   };
-  
+
   const range = getLogicalRange();
-  
-  // スライダーの目盛りを生成
+
   const generateTicks = (min, max, divisions = 5) => {
     const ticks = [];
     for (let i = 0; i <= divisions; i++) {
@@ -68,17 +54,16 @@ export default function ServoAngleEditor({
     }
     return ticks;
   };
-  
+
   const ticks = generateTicks(range.min, range.max, 5);
-  
+
   const handleAngleChange = (value) => {
     const newAngle = parseFloat(value);
-    // 範囲内にクランプ
     const clampedAngle = Math.max(range.min, Math.min(range.max, newAngle));
     setAngle(clampedAngle);
-    onUpdateAngle(keyframeIndex, channel, clampedAngle);
+    onUpdateAngle(keyframeIndex, clampedAngle);
   };
-  
+
   return (
     <div className="servo-angle-editor">
       <div className="servo-angle-editor-header">
@@ -91,7 +76,7 @@ export default function ServoAngleEditor({
               範囲: {range.min}° ～ {range.max}°
             </span>
           )}
-          <button 
+          <button
             onClick={() => {
               if (confirm('このキーフレームを削除しますか？')) {
                 onDelete(keyframeIndex);
@@ -103,14 +88,14 @@ export default function ServoAngleEditor({
           </button>
         </div>
       </div>
-      
+
       <GuideImage servoName={servoName} />
-      
+
       <div className="servo-angle-editor-content">
         <label className="servo-angle-label">
           論理角: <span className="servo-angle-value">{Math.round(angle)}</span>°
         </label>
-        
+
         <input
           type="range"
           min={range.min}
@@ -123,13 +108,13 @@ export default function ServoAngleEditor({
           }}
           className="servo-angle-slider"
         />
-        
+
         <div className="slider-ticks">
           {ticks.map((tick, index) => (
             <span key={index}>{tick}</span>
           ))}
         </div>
-        
+
         <input
           type="number"
           min={range.min}

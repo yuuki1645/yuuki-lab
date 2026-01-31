@@ -12,9 +12,9 @@ export default function TimelineKeyframe({
 }) {
   const handleClick = (e) => {
     e.stopPropagation();
-    onClick(keyframeIndex, channel); // チャンネル情報も渡す
+    onClick(keyframeIndex, channel);
   };
-  
+
   return (
     <div
       className={`timeline-keyframe ${isSelected ? 'selected' : ''}`}

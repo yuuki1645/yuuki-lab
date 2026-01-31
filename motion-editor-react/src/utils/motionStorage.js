@@ -1,10 +1,32 @@
-import { DEFAULT_MOTION_DURATION } from '../constants';
+import { DEFAULT_MOTION_DURATION, SERVO_CHANNELS } from '../constants';
 
 const STORAGE_KEY = 'motion-editor-motions';
 const CURRENT_MOTION_ID_KEY = 'motion-editor-current-motion-id';
 
 /**
- * ローカルストレージからモーション一覧を読み込む
+ * 旧形式キーフレーム { time, angles } を新形式 { time, channel, angle } に変換
+ */
+function migrateKeyframes(keyframes) {
+  if (!keyframes || keyframes.length === 0) return [];
+  const first = keyframes[0];
+  if (first.angles !== undefined) {
+    const result = [];
+    keyframes.forEach(kf => {
+      if (kf.angles && typeof kf.angles === 'object') {
+        Object.entries(kf.angles).forEach(([ch, angle]) => {
+          if (angle !== undefined && angle !== null) {
+            result.push({ time: kf.time, channel: parseInt(ch, 10), angle });
+          }
+        });
+      }
+    });
+    return result.sort((a, b) => a.time - b.time || a.channel - b.channel);
+  }
+  return keyframes;
+}
+
+/**
+ * ローカルストレージからモーション一覧を読み込む（旧形式は新形式に変換）
  */
 export function loadMotions() {
   try {
@@ -12,7 +34,11 @@ export function loadMotions() {
     if (!stored) {
       return [];
     }
-    return JSON.parse(stored);
+    const loaded = JSON.parse(stored);
+    return loaded.map(m => ({
+      ...m,
+      keyframes: migrateKeyframes(m.keyframes || []),
+    }));
   } catch (error) {
     console.error('Failed to load motions:', error);
     return [];
@@ -60,22 +86,24 @@ export function saveCurrentMotionId(id) {
   }
 }
 
+/** 初期ポーズ（1ch 1キーフレーム） */
+const INITIAL_ANGLES = {
+  0: 0, 1: 70, 2: 30, 3: -30,
+  8: 0, 9: 70, 10: 30, 11: -30,
+};
+
 /**
- * 新しいモーションを作成
+ * 新しいモーションを作成（キーフレームは ch ごとに 1 個ずつ）
  */
 export function createMotion(name = '新規モーション') {
   return {
     id: `motion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: name,
-    duration: DEFAULT_MOTION_DURATION, // デフォルト5秒
-    keyframes: [
-      {
-        time: 0,
-        angles: {
-          0: 0, 1: 70, 2: 30, 3: -30,
-          8: 0, 9: 70, 10: 30, 11: -30
-        }
-      }
-    ]
+    duration: DEFAULT_MOTION_DURATION,
+    keyframes: SERVO_CHANNELS.map(ch => ({
+      time: 0,
+      channel: ch,
+      angle: INITIAL_ANGLES[ch] ?? 90,
+    })),
   };
 }

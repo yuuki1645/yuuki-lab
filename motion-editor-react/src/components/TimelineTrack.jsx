@@ -36,40 +36,36 @@ export default function TimelineTrack({
       onTimeClick(time, channel);
     }
   };
-  
+
   return (
-    <div 
+    <div
       className="timeline-track"
       data-channel={channel}
       onClick={handleTrackClick}
       onTouchEnd={handleTrackClick}
     >
-      <div 
+      <div
         className="timeline-track-content"
         onClick={handleTrackClick}
         onTouchEnd={handleTrackClick}
       >
-        {/* 再生位置インジケーター（表示専用・ドラッグはルーラーで行う） */}
-        <div 
+        <div
           className={`timeline-playhead ${isPlayheadDragging ? 'dragging' : ''}`}
           style={{ left: `${timeToX(currentTime)}px` }}
         />
-        {keyframes.map((keyframe, index) => {
-          if (keyframe.angles[channel] === undefined) {
-            return null;
-          }
-          const x = timeToX(keyframe.time);
+        {keyframes.map((kf, index) => {
+          if (kf.channel !== channel) return null;
+          const x = timeToX(kf.time);
           const isSelected = selectedKeyframeIndex === index && selectedChannel === channel;
-          const angle = keyframe.angles[channel] ?? 90;
           return (
             <TimelineKeyframe
               key={`${channel}-${index}`}
-              keyframe={keyframe}
+              keyframe={kf}
               keyframeIndex={index}
               channel={channel}
               x={x}
               isSelected={isSelected}
-              angle={angle}
+              angle={kf.angle ?? 90}
               onClick={onKeyframeClick}
               onStartDrag={onKeyframeStartDrag}
             />

@@ -226,12 +226,17 @@
 .timeline-keyframe {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  margin-top: -20px;  /* トラック中央に配置（高さ40pxの半分） */
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: grab;
   z-index: 5;
   touch-action: none;
-  padding: 8px;
-  margin: -8px;
+  padding: 0 8px;
+  margin: 0 -8px;
 }
 
 .timeline-keyframe:active {
@@ -274,8 +279,11 @@
   }
   
   .timeline-keyframe {
-    padding: 12px;
-    margin: -12px;
+    height: 52px;
+    margin-top: -26px;  /* 高さ52pxの半分 */
+    padding: 0 12px;
+    margin-left: -12px;
+    margin-right: -12px;
   }
   
   .timeline-marker-label {

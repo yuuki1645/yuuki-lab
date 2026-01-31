@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { SERVO_CHANNELS, MAX_MOTION_DURATION } from '../constants';
+import { SERVO_CHANNELS } from '../constants';
 import { useTimelineCoordinates } from '../hooks/useTimelineCoordinates';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
 import TimelineLabels from './TimelineLabels';
@@ -9,7 +9,6 @@ import './Timeline.css';
 
 export default function Timeline({ 
   keyframes, 
-  duration, 
   currentTime, 
   onTimeClick, 
   onKeyframeClick,
@@ -35,18 +34,6 @@ export default function Timeline({
     }
   };
   
-  const handleRulerClick = (e) => {
-    if (isDragging || isPlayheadDragging) return;
-    if (e.target.closest('.timeline-marker')) return;
-    if (e.target.closest('.timeline-ruler-playhead')) return;  // ルーラー用プレイヘッド上ではシークしない
-    if (!scrollableRef.current) return;
-    const rect = scrollableRef.current.getBoundingClientRect();
-    const clientX = getClientX(e);
-    const x = clientX - rect.left;
-    const time = xToTime(x);
-    onTimeClick(time, null);
-  };
-  
   const handlePlayheadDrag = (time) => {
     setIsPlayheadDragging(true);
     onPlayheadDrag(time);
@@ -60,7 +47,7 @@ export default function Timeline({
     <div className="timeline-container" ref={timelineRef}>
       <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
       <div className="timeline-scrollable" ref={scrollableRef}>
-        <div onClick={handleRulerClick} onTouchEnd={handleRulerClick}>
+        <div>
           <TimelineRuler
             timeToX={timeToX}
             currentTime={currentTime}
@@ -110,8 +97,7 @@ export default function Timeline({
                 e.preventDefault();
                 const clientX = getClientX(e);
                 const x = clientX - rect.left;
-                // 指の真下にハンドル中央が来るようにする
-                const HANDLE_CENTER_OFFSET_PX = 20; // ハンドル幅の半分（40px / 2）
+                const HANDLE_CENTER_OFFSET_PX = 20;
                 const playheadLeft = x - HANDLE_CENTER_OFFSET_PX;
                 const newTime = xToTime(Math.max(0, playheadLeft));
                 handlePlayheadDrag(newTime);
@@ -140,7 +126,7 @@ export default function Timeline({
                 e.preventDefault();
                 const clientX = getClientX(e);
                 const x = clientX - rect.left;
-                const HANDLE_CENTER_OFFSET_PX = 20; // ハンドル幅の半分
+                const HANDLE_CENTER_OFFSET_PX = 20;
                 const playheadLeft = x - HANDLE_CENTER_OFFSET_PX;
                 const newTime = xToTime(Math.max(0, playheadLeft));
                 handlePlayheadDrag(newTime);

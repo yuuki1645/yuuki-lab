@@ -180,7 +180,6 @@ function App() {
         <div className="app-main">
           <Timeline
             keyframes={keyframes}
-            duration={motionDuration}
             currentTime={currentTime}
             onTimeClick={handleTimeClick}
             onKeyframeClick={handleKeyframeClick}

@@ -72,9 +72,10 @@ export default function Timeline({
               xToTime={xToTime}
               onTimeClick={onTimeClick}
               onKeyframeClick={handleKeyframeClick}
-              onKeyframeStartDrag={(e, index, ch) => 
+              onKeyframeStartDrag={(e, index, ch) => {
+                console.log(`onKeyframeStartDrag: index=${index}, channel=${ch}`);
                 handleKeyframeStart(e, index, ch, timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION)
-              }
+              }}
               getClientX={getClientX}
               scrollableRef={scrollableRef}
               isDragging={isDragging}

@@ -104,6 +104,7 @@ function App() {
   };
 
   const handleKeyframeDrag = (index, newTime) => {
+    console.log(`handleKeyframeDrag: index=${index}, newTime=${newTime}`);
     updateKeyframeTime(index, newTime);
   };
 

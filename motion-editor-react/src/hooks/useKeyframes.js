@@ -15,6 +15,10 @@ export function useKeyframes(motion, updateMotion) {
   const findNonOverlappingTime = useCallback((desiredTime, sameChannelKeyframes, excludeIndex) => {
     let adjustedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, desiredTime));
 
+    if (excludeIndex < 0) {
+      return adjustedTime;
+    }
+
     for (let i = 0; i < sameChannelKeyframes.length; i++) {
       if (i === excludeIndex) continue;
       const existingTime = sameChannelKeyframes[i].time;
@@ -53,13 +57,9 @@ export function useKeyframes(motion, updateMotion) {
     if (!motion) return;
 
     const clampedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, newTime));
-    const kf = sortedKeyframes[index];
-    const sameChannel = sortedKeyframes.filter(item => item.channel === kf.channel);
-    const excludeIndex = sameChannel.findIndex(item => item === kf);
-    const adjustedTime = findNonOverlappingTime(clampedTime, sameChannel, excludeIndex);
 
     const newKeyframes = [...sortedKeyframes];
-    newKeyframes[index] = { ...newKeyframes[index], time: adjustedTime };
+    newKeyframes[index] = { ...newKeyframes[index], time: clampedTime };
     newKeyframes.sort((a, b) => a.time - b.time || a.channel - b.channel);
     updateMotion(motion.id, { keyframes: newKeyframes });
   }, [motion, sortedKeyframes, updateMotion, findNonOverlappingTime]);

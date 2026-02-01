@@ -1,0 +1,157 @@
+.servo-angle-editor {
+  width: 320px;
+  background: #2a2a3e;
+  border-left: 1px solid #3a3a4e;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.servo-angle-editor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #3a3a4e;
+}
+
+.servo-angle-editor-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.servo-angle-editor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.servo-angle-editor-info span {
+  color: #aaa;
+  font-size: 13px;
+}
+
+.servo-range-info {
+  color: #4a9eff !important;
+  font-weight: 500;
+}
+
+.btn-delete-keyframe {
+  background: #ff4a4a;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  min-height: 44px;
+  touch-action: manipulation;
+  margin-top: 10px;
+}
+
+.btn-delete-keyframe:hover {
+  background: #ff3a3a;
+}
+
+.servo-angle-editor-empty {
+  color: #888;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px;
+}
+
+.servo-angle-editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.servo-angle-label {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.servo-angle-value {
+  color: #4a9eff;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.servo-angle-slider {
+  width: 100%;
+  height: 8px;
+  background: #1a1a2e;
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+  touch-action: none;
+}
+
+.servo-angle-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.servo-angle-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  touch-action: none;
+}
+
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #888;
+  padding: 0 4px;
+}
+
+.servo-angle-input {
+  width: 100%;
+  background: #1a1a2e;
+  border: 2px solid #3a3a4e;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.servo-angle-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .servo-angle-slider {
+    height: 10px;
+  }
+  .servo-angle-slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+  .servo-angle-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}

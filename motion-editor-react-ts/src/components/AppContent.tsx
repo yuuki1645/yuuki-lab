@@ -1,8 +1,8 @@
 import { useMotionContext } from "../contexts/MotionContext";
 import PlaybackContextProvider from "./PlaybackContextProvider";
 import MotionList from "./MotionList";
-import Timeline from "./Timeline";
-import ServoAngleEditor from "./ServoAngleEditor";
+import Timeline from "./Timeline.tsx";
+import ServoAngleEditor from "./ServoAngleEditor.tsx";
 import PlaybackControls from "./PlaybackControls";
 
 export default function AppContent() {

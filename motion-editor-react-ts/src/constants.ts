@@ -30,6 +30,14 @@ export const CH_TO_SERVO_NAME: Record<number, string> = {
   11: "L_HEEL",
 };
 
+/** サーボ種別ごとの角度スライダー目盛り（必ず表示する切れの良い値） */
+export const SERVO_TICK_VALUES: Record<string, number[]> = {
+  HIP1: [90, 0, -30],
+  HIP2: [0, 90, 120],
+  KNEE: [0, 90, 120],
+  HEEL: [-30, 0, 90],
+};
+
 // 全サーボチャンネル番号の配列
 export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 8, 9, 10, 11];
 

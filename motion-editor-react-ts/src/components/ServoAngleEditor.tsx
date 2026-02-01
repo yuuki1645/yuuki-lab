@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CH_TO_SERVO_NAME } from "../constants";
+import { CH_TO_SERVO_NAME, SERVO_TICK_VALUES } from "../constants";
 import { useMotionContext } from "../contexts/MotionContext";
 import GuideImage from "./GuideImage";
 import "./ServoAngleEditor.css";
@@ -54,16 +54,18 @@ export default function ServoAngleEditor() {
 
   const range = getLogicalRange();
 
-  const generateTicks = (min: number, max: number, divisions = 5) => {
-    const ticks: number[] = [];
-    for (let i = 0; i <= divisions; i++) {
-      const value = min + (max - min) * (i / divisions);
-      ticks.push(Math.round(value));
-    }
-    return ticks;
+  const getTicksForServo = (): number[] => {
+    const servoType = servoName.replace(/^[RL]_/, "");
+    const preferred = SERVO_TICK_VALUES[servoType];
+    const min = range.min;
+    const max = range.max;
+    const inRange = (v: number) => v >= min && v <= max;
+    const base = preferred ? preferred.filter(inRange) : [];
+    const withBounds = new Set<number>([min, ...base, max]);
+    return [...withBounds].sort((a, b) => a - b);
   };
 
-  const ticks = generateTicks(range.min, range.max, 5);
+  const ticks = getTicksForServo();
 
   const handleAngleChange = (value: string | number) => {
     const newAngle = parseFloat(String(value));
@@ -127,9 +129,21 @@ export default function ServoAngleEditor() {
         />
 
         <div className="slider-ticks">
-          {ticks.map((tick, index) => (
-            <span key={index}>{tick}</span>
-          ))}
+          {ticks.map((tick, index) => {
+            const pct =
+              range.min === range.max
+                ? 0
+                : ((tick - range.min) / (range.max - range.min)) * 100;
+            return (
+              <span
+                key={index}
+                className="slider-tick"
+                style={{ left: `${pct}%` }}
+              >
+                {tick}
+              </span>
+            );
+          })}
         </div>
 
         <input

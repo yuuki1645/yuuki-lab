@@ -133,12 +133,15 @@ export default function ServoAngleEditor() {
             const pct =
               range.min === range.max
                 ? 0
-                : ((tick - range.min) / (range.max - range.min)) * 100;
+                : (tick - range.min) / (range.max - range.min);
+            /* スライダーつまみ半径(12px)分のインセットを明示し、有効幅内の比率で配置 */
             return (
               <span
                 key={index}
                 className="slider-tick"
-                style={{ left: `${pct}%` }}
+                style={{
+                  left: `calc(12px + (100% - 24px) * ${pct})`,
+                }}
               >
                 {tick}
               </span>

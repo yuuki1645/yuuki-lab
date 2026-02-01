@@ -24,12 +24,13 @@ export default function TimelinePlayheadHandle() {
       endKeyframeDrag?.();
       onPlayheadDrag(currentTime);
       if (!scrollableRef?.current) return;
-      const rect = scrollableRef.current.getBoundingClientRect();
 
       const handleMove = (ev: MouseEvent | TouchEvent) => {
         ev.preventDefault();
+        if (!scrollableRef?.current) return;
         const clientX = getClientX(ev as unknown as React.MouseEvent);
-        const x = clientX - rect.left;
+        const r = scrollableRef.current.getBoundingClientRect();
+        const x = clientX - r.left + scrollableRef.current.scrollLeft;
         const playheadLeft = x - HANDLE_CENTER_OFFSET_PX;
         const newTime = xToTime(Math.max(0, playheadLeft));
         onPlayheadDrag(newTime);

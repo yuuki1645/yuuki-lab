@@ -158,7 +158,8 @@ def _set_servos_angles_internal(angles_dict: dict, mode: str):
 		
 		# 全てのサーボ情報を1行にまとめて出力
 		if success_logs:
-			print(f"[SERVO] SUCCESS - {', '.join(success_logs)}")
+			# print(f"[SERVO] SUCCESS - {', '.join(success_logs)}")
+			pass
 		
 		# 状態を一括更新
 		for ch_str, state_data in state_updates.items():
@@ -205,7 +206,7 @@ def set_servos_multiple():
 	# チャンネル番号を文字列からintに変換
 	angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
 	
-	print(f"[SERVO] set_multiple_{mode} - {len(angles_dict)} servos")
+	# print(f"[SERVO] set_multiple_{mode} - {len(angles_dict)} servos")
 	
 	# 一括処理
 	results = _set_servos_angles_internal(angles_dict, mode)

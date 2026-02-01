@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMotion } from './hooks/useMotion';
 import { useKeyframes } from './hooks/useKeyframes';
 import { useInterpolation } from './hooks/useInterpolation';
@@ -53,15 +53,21 @@ function App() {
     seekToTime,
   } = useInterpolation(keyframes, motionDuration, 'logical');
 
-  const handlePlayheadDrag = (time) => {
-    seekToTime(time);
-  };
-
   const { servos, loading: servosLoading } = useServos();
 
   const [selectedKeyframeId, setSelectedKeyframeId] = useState(null);
 
   const endKeyframeDragRef = useRef(null);
+
+  // 選択中キーフレームが keyframes から消えたら選択を外す
+  useEffect(() => {
+    if (currentMotion && selectedKeyframeId !== null) {
+      const exists = keyframes.some((kf) => kf.id === selectedKeyframeId);
+      if (!exists) {
+        setSelectedKeyframeId(null);
+      }
+    }
+  }, [currentMotion, selectedKeyframeId, keyframes]);
 
   const handleMoveToInitialPosition = async (motion) => {
     if (!motion || !motion.keyframes || motion.keyframes.length === 0) {
@@ -87,13 +93,6 @@ function App() {
       alert(`エラー: ${error.message}`);
     }
   };
-
-  if (currentMotion && selectedKeyframeId !== null) {
-    const exists = keyframes.some((kf) => kf.id === selectedKeyframeId);
-    if (!exists) {
-      setSelectedKeyframeId(null);
-    }
-  }
 
   const handleTimeClick = (time, channel) => {
     if (currentMotion && channel !== null) {
@@ -165,7 +164,7 @@ function App() {
             onKeyframeClick={handleKeyframeClick}
             onKeyframeDrag={handleKeyframeDrag}
             selectedKeyframeId={selectedKeyframeId}
-            onPlayheadDrag={handlePlayheadDrag}
+            onPlayheadDrag={seekToTime}
             endKeyframeDragRef={endKeyframeDragRef}
           />
 

@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { SERVO_CHANNELS } from '../constants';
-import { useTimelineCoordinates } from '../hooks/useTimelineCoordinates';
+import { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } from '../utils/timelineCoordinates';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
 import TimelineContext from '../contexts/TimelineContext';
 import TimelineLabels from './TimelineLabels';
@@ -23,7 +23,6 @@ export default function Timeline({
   const scrollableRef = useRef(null);
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
 
-  const { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } = useTimelineCoordinates();
   const { isDragging, handleKeyframeStart, getClientX, endKeyframeDrag, dragEndedRef } = useTimelineDrag(
     scrollableRef,
     keyframes,
@@ -115,7 +114,7 @@ export default function Timeline({
   return (
     <TimelineContext.Provider value={contextValue}>
       <div className="timeline-container" ref={timelineRef}>
-        <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
+        <TimelineLabels />
         <div className="timeline-scrollable" ref={scrollableRef}>
           <TimelineRuler />
           <div className="timeline-tracks">

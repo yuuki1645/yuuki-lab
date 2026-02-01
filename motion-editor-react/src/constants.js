@@ -49,7 +49,7 @@ export const INTERPOLATION_INTERVAL = 50;
 export const MAX_MOTION_DURATION = 20000; // 20秒
 
 // モーションのデフォルト時間（ミリ秒）
-export const DEFAULT_MOTION_DURATION = 20000; // 5秒
+export const DEFAULT_MOTION_DURATION = 20000; // 20秒
 
 // キーフレーム間の最小間隔（ミリ秒）- 重複を防ぐため
 export const MIN_KEYFRAME_INTERVAL = 100; // 0.1秒

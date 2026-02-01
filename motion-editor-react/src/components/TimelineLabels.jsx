@@ -1,8 +1,11 @@
 import { SERVO_CHANNELS, CH_TO_SERVO_NAME } from '../constants';
 import { getAngleAtTime } from '../utils/interpolation';
+import { useTimelineContext } from '../contexts/TimelineContext';
 import './Timeline.css';
 
-export default function TimelineLabels({ keyframes, currentTime }) {
+export default function TimelineLabels() {
+  const { keyframes, currentTime } = useTimelineContext();
+
   // 現在時刻での各サーボの角度を計算（すべてのチャンネルを考慮）
   const currentAngles = getAngleAtTime(keyframes || [], currentTime || 0, SERVO_CHANNELS);
   

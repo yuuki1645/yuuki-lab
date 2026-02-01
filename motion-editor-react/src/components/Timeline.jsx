@@ -2,6 +2,8 @@ import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { SERVO_CHANNELS } from '../constants';
 import { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } from '../utils/timelineCoordinates';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
+import { useMotionContext } from '../contexts/MotionContext';
+import { usePlaybackContext } from '../contexts/PlaybackContext';
 import TimelineContext from '../contexts/TimelineContext';
 import TimelineLabels from './TimelineLabels';
 import TimelineRuler from './TimelineRuler';
@@ -9,26 +11,24 @@ import TimelineTrack from './TimelineTrack';
 import TimelinePlayheadHandle from './TimelinePlayheadHandle';
 import './Timeline.css';
 
-export default function Timeline({
-  keyframes,
-  currentTime,
-  onTimeClick,
-  onKeyframeClick,
-  onKeyframeDrag,
-  selectedKeyframeId,
-  onPlayheadDrag,
-  endKeyframeDragRef,
-}) {
+export default function Timeline() {
+  const {
+    keyframes,
+    handleTimeClick,
+    handleKeyframeClick,
+    handleKeyframeDrag,
+    selectedKeyframeId,
+    endKeyframeDragRef,
+  } = useMotionContext();
+
+  const { currentTime, seekToTime } = usePlaybackContext();
+
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
 
-  const { isDragging, handleKeyframeStart, getClientX, endKeyframeDrag, dragEndedRef } = useTimelineDrag(
-    scrollableRef,
-    keyframes,
-    onKeyframeDrag,
-    onKeyframeClick
-  );
+  const { isDragging, handleKeyframeStart, getClientX, endKeyframeDrag, dragEndedRef } =
+    useTimelineDrag(scrollableRef, keyframes, handleKeyframeDrag, handleKeyframeClick);
 
   useEffect(() => {
     if (endKeyframeDragRef) {
@@ -39,25 +39,25 @@ export default function Timeline({
     }
   }, [endKeyframeDragRef, endKeyframeDrag]);
 
-  const handleKeyframeClick = useCallback(
+  const onKeyframeClick = useCallback(
     (id) => {
       const allowByDragEnded = dragEndedRef.current;
       if (allowByDragEnded) {
         dragEndedRef.current = false;
       }
       if ((!isDragging && !isPlayheadDragging) || allowByDragEnded) {
-        onKeyframeClick(id);
+        handleKeyframeClick(id);
       }
     },
-    [isDragging, isPlayheadDragging, onKeyframeClick]
+    [isDragging, isPlayheadDragging, handleKeyframeClick]
   );
 
   const handlePlayheadDrag = useCallback(
     (time) => {
       setIsPlayheadDragging(true);
-      onPlayheadDrag(time);
+      seekToTime(time);
     },
-    [onPlayheadDrag]
+    [seekToTime]
   );
 
   const handlePlayheadDragEnd = useCallback(() => {
@@ -84,9 +84,9 @@ export default function Timeline({
       isDragging,
       isPlayheadDragging,
       selectedKeyframeId,
-      onTimeClick,
+      onTimeClick: handleTimeClick,
       endKeyframeDrag,
-      onKeyframeClick: handleKeyframeClick,
+      onKeyframeClick,
       onKeyframeStartDrag,
       onPlayheadDrag: handlePlayheadDrag,
       onPlayheadDragEnd: handlePlayheadDragEnd,
@@ -103,8 +103,9 @@ export default function Timeline({
       isDragging,
       isPlayheadDragging,
       selectedKeyframeId,
-      onTimeClick,
-      handleKeyframeClick,
+      handleTimeClick,
+      endKeyframeDrag,
+      onKeyframeClick,
       onKeyframeStartDrag,
       handlePlayheadDrag,
       handlePlayheadDragEnd,

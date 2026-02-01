@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { CH_TO_SERVO_NAME } from '../constants';
+import { useMotionContext } from '../contexts/MotionContext';
 import GuideImage from './GuideImage';
 import './ServoAngleEditor.css';
 
-export default function ServoAngleEditor({
-  keyframe,
-  keyframeId,
-  channel,
-  servo,
-  onUpdateAngle,
-  onDelete,
-  endKeyframeDragRef,
-}) {
+export default function ServoAngleEditor() {
+  const {
+    selectedKeyframe: keyframe,
+    selectedKeyframeId: keyframeId,
+    selectedChannel: channel,
+    selectedServo: servo,
+    handleAngleUpdate: onUpdateAngle,
+    handleKeyframeDelete: onDelete,
+    endKeyframeDragRef,
+  } = useMotionContext();
+
   const [angle, setAngle] = useState(90);
 
   useEffect(() => {

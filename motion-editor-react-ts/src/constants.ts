@@ -60,6 +60,9 @@ export const DEFAULT_MOTION_DURATION = 20000; // 20秒
 // キーフレーム間の最小間隔（ミリ秒）- 重複を防ぐため
 export const MIN_KEYFRAME_INTERVAL = 100; // 0.1秒
 
+/** トラックタップ時にキーフレーム中心をタップ位置に合わせるためのオフセット（px）。キーフレームは left で配置するため、見た目の中心はこの値だけ右にある */
+export const TIMELINE_KEYFRAME_CENTER_OFFSET_PX = 20;
+
 // 論理角の範囲（全サーボ共通、必要に応じてservo_daemonから取得）
 export const LOGICAL_ANGLE_MIN = -90;
 export const LOGICAL_ANGLE_MAX = 90;

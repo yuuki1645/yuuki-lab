@@ -84,6 +84,9 @@ export default function ServoAngleEditor() {
       <div className="servo-angle-editor-header">
         <h3>{servoName}</h3>
         <div className="servo-angle-editor-info">
+          <span className="servo-angle-editor-keyframe-id" title={keyframeId}>
+            ID: {keyframeId}
+          </span>
           <span>時間: {(keyframe.time / 1000).toFixed(2)}s</span>
           {servo && (
             <span className="servo-range-info">

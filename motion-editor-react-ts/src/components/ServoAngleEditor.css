@@ -34,6 +34,13 @@
   font-size: 13px;
 }
 
+.servo-angle-editor-keyframe-id {
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  font-size: 12px;
+  color: #888;
+  word-break: break-all;
+}
+
 .servo-range-info {
   color: #4a9eff !important;
   font-weight: 500;

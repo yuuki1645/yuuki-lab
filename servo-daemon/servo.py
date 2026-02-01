@@ -74,25 +74,36 @@ def _apply_physical_multiple(servo_angles: dict[str, float]):
     results = {}
     
     if not HARDWARE_ENABLED:
-        # シミュレーションモード
-        servo_logs = []
+        # シミュレーションモード：論理角を計算して results に格納
         for servo_name, physical_angle in servo_angles.items():
             if servo_name not in SERVO_MAP:
                 continue
-            # シミュレーションモードでも論理角を計算
             if servo_name in KINEMATICS:
                 kin = KINEMATICS[servo_name]
                 logical_angle = kin.physical_to_logical(physical_angle)
-                servo_logs.append(f"{servo_name}: l={logical_angle:.1f}")
                 results[servo_name] = {
                     "ch": SERVO_MAP[servo_name],
                     "logical": logical_angle,
                     "physical": physical_angle
                 }
         
-        # 全てのサーボ情報を1行にまとめて出力
-        if servo_logs:
-            print(f"[SIM] {', '.join(servo_logs)}")
+        # 表形式で論理角を出力（HIP1/HIP2/KNEE/HEEL × R/L）
+        if results:
+            JOINTS = ["HIP1", "HIP2", "KNEE", "HEEL"]
+            SIDES = ["R", "L"]
+            COL_WIDTH = 10
+            header = " " * 2 + "".join(j.rjust(COL_WIDTH) for j in JOINTS)
+            print(f"[SIM]\n{header}")
+            for side in SIDES:
+                row_parts = [f"{side:>2}"]
+                for joint in JOINTS:
+                    name = f"{side}_{joint}"
+                    logical = results.get(name, {}).get("logical")
+                    if logical is not None:
+                        row_parts.append(f"{round(logical):>{COL_WIDTH}}")
+                    else:
+                        row_parts.append(f"{'--':>{COL_WIDTH}}")
+                print("".join(row_parts))
         
         return results
     

@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "servo-daemon",
+      "type": "shell",
+      "command": "python app.py",
+      "options": {
+        "cwd": "${workspaceFolder}/servo-daemon",
+        "env": {}
+      },
+      "problemMatcher": {
+        "owner": "servo",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Running on|WARNING: This is a development",
+          "endsPattern": "."
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "motion-editor-react",
+      "type": "shell",
+      "command": "npx vite --host 0.0.0.0 --port 5173",
+      "options": {
+        "cwd": "${workspaceFolder}/motion-editor-react"
+      },
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Local:|ready in",
+          "endsPattern": "."
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "dev (servo + motion-editor)",
+      "dependsOn": ["servo-daemon", "motion-editor-react"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

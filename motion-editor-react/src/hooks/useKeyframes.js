@@ -13,29 +13,6 @@ export function useKeyframes(motion, updateMotion) {
     return result[channel] ?? 90;
   }, []);
 
-  const findNonOverlappingTime = useCallback((desiredTime, sameChannelKeyframes, excludeIndex) => {
-    let adjustedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, desiredTime));
-
-    if (excludeIndex < 0) {
-      return adjustedTime;
-    }
-
-    for (let i = 0; i < sameChannelKeyframes.length; i++) {
-      if (i === excludeIndex) continue;
-      const existingTime = sameChannelKeyframes[i].time;
-      const timeDiff = Math.abs(adjustedTime - existingTime);
-
-      if (timeDiff < MIN_KEYFRAME_INTERVAL) {
-        adjustedTime = existingTime + MIN_KEYFRAME_INTERVAL;
-        if (adjustedTime > MAX_MOTION_DURATION) {
-          adjustedTime = Math.max(0, existingTime - MIN_KEYFRAME_INTERVAL);
-        }
-      }
-    }
-
-    return Math.max(0, Math.min(MAX_MOTION_DURATION, adjustedTime));
-  }, []);
-
   const addKeyframe = useCallback((time, channel) => {
     if (!motion || channel == null) return;
 

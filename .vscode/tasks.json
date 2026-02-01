@@ -25,11 +25,11 @@
       }
     },
     {
-      "label": "motion-editor-react",
+      "label": "motion-editor-react-ts",
       "type": "shell",
       "command": "npx vite --host 0.0.0.0 --port 5173",
       "options": {
-        "cwd": "${workspaceFolder}/motion-editor-react"
+        "cwd": "${workspaceFolder}/motion-editor-react-ts"
       },
       "problemMatcher": {
         "owner": "vite",
@@ -48,7 +48,7 @@
     },
     {
       "label": "dev (servo + motion-editor)",
-      "dependsOn": ["servo-daemon", "motion-editor-react"],
+      "dependsOn": ["servo-daemon", "motion-editor-react-ts"],
       "dependsOrder": "parallel",
       "problemMatcher": []
     }

@@ -1,6 +1,5 @@
 // App.jsx
 import MotionContextProvider from './components/MotionContextProvider';
-import PlaybackContextProvider from './components/PlaybackContextProvider';
 import AppContent from './components/AppContent';
 import './App.css';
 

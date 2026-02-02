@@ -15,7 +15,7 @@ if hardware_enabled:
 
         i2c: Any = busio.I2C(SCL, SDA) # type: ignore
         pca: Any = PCA9685(i2c) # type: ignore
-        pca.frequency = 333
+        pca.frequency = 333 # type: ignore
     except Exception as e:
         print("[WARN] PCA9685 init failed:", e)
         hardware_enabled = False
@@ -59,7 +59,7 @@ def _apply_physical(servo_name: str, physical_angle: float):
 
     ch = SERVO_MAP[servo_name]
     duty = physical_angle_to_duty(physical_angle)
-    pca.channels[ch].duty_cycle = duty
+    pca.channels[ch].duty_cycle = duty # type: ignore
 
 def _apply_physical_multiple(servo_angles: dict[str, float]):
     """
@@ -129,7 +129,7 @@ def _apply_physical_multiple(servo_angles: dict[str, float]):
     
     # 一括でduty_cycleを設定
     for ch, duty in duty_updates.items():
-        pca.channels[ch].duty_cycle = duty
+        pca.channels[ch].duty_cycle = duty # type: ignore
     
     return results
 

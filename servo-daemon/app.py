@@ -1,6 +1,6 @@
 from typing import Any, TypedDict
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
 from kinematics import KINEMATICS
@@ -33,7 +33,7 @@ SERVO_CH_2_NAME = {
 }
 
 @app.get("/servos")
-def get_servos():
+def get_servos() -> Response:
 	"""全サーボの情報と現在の状態を返す"""
 	state = state_manager.get_all()
 	print("state: ", state)
@@ -70,7 +70,7 @@ def _set_servo_angle(ch: int, angle: float, mode: str):
 	})
 
 @app.post("/set")
-def set_servo():
+def set_servo() -> Response | tuple[Response, int]:
 	"""
 	サーボ角度を設定する（論理角・物理角の両方に対応）
 	
@@ -198,7 +198,7 @@ def _set_servos_angles_internal(angles_dict: dict[int, float], mode: str):
 	return results
 
 @app.post("/set_multiple")
-def set_servos_multiple():
+def set_servos_multiple() -> Response:
 	"""
 	複数のサーボ角度を一度に設定する
 	
@@ -232,7 +232,7 @@ def set_servos_multiple():
 	})
 
 @app.post("/transition")
-def transition_servos():
+def transition_servos() -> Response:
 	"""
 	現在の角度から指定角度にゆっくり遷移させる
 	
@@ -273,7 +273,7 @@ def transition_servos():
 		}
 	
 	# バックグラウンドで遷移を実行
-	def execute_transition():
+	def execute_transition() -> None:
 		steps = max(30, int(duration * 10))  # 10Hz更新、最低30ステップ
 		step_delay = duration / steps
 		

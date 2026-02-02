@@ -30,7 +30,7 @@ class StateManager:
 
     def _save_to_file(self) -> None:
         """ファイルに状態を保存する"""
-        with self._lock:
+        with self._lock: # type: ignore[union-attr]
             state_to_save = self._state.copy()
 
         try:

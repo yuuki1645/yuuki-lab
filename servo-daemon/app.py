@@ -1,3 +1,5 @@
+from typing import Any
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
@@ -28,7 +30,7 @@ def get_servos():
 	"""全サーボの情報と現在の状態を返す"""
 	state = state_manager.get_all()
 	print("state: ", state)
-	servos = []
+	servos: list[dict[str, Any]] = []
 
 	for name, ch in SERVO_MAP.items():
 		kin = KINEMATICS[name]

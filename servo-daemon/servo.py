@@ -1,24 +1,24 @@
-
+from typing import Any
 from kinematics import KINEMATICS
 
-HARDWARE_ENABLED = True
+hardware_enabled = True
 
 PHYSICAL_MIN = 0.0
 PHYSICAL_MAX = 270.0
 
 pca = None
-if HARDWARE_ENABLED:
+if hardware_enabled:
     try:
-        import busio
-        from board import SCL, SDA
-        from adafruit_pca9685 import PCA9685
+        import busio # type: ignore
+        from board import SCL, SDA # type: ignore
+        from adafruit_pca9685 import PCA9685 # type: ignore
 
-        i2c = busio.I2C(SCL, SDA)
-        pca = PCA9685(i2c)
+        i2c: Any = busio.I2C(SCL, SDA) # type: ignore
+        pca: Any = PCA9685(i2c) # type: ignore
         pca.frequency = 333
     except Exception as e:
         print("[WARN] PCA9685 init failed:", e)
-        HARDWARE_ENABLED = False
+        hardware_enabled = False
         pca = None
 
 SERVO_MAP = {
@@ -53,7 +53,7 @@ def _apply_physical(servo_name: str, physical_angle: float):
     if servo_name not in SERVO_MAP:
         raise ValueError(f"Unknown servo: {servo_name}")
 
-    if not HARDWARE_ENABLED:
+    if not hardware_enabled:
         print(f"[SIM] {servo_name}: physical={physical_angle:.1f}")
         return
 
@@ -71,9 +71,9 @@ def _apply_physical_multiple(servo_angles: dict[str, float]):
     Returns:
         {servo_name: {"ch": ch, "logical": logical, "physical": physical}} の形式
     """
-    results = {}
+    results: dict[str, dict[str, float]] = {}
     
-    if not HARDWARE_ENABLED:
+    if not hardware_enabled:
         # シミュレーションモード：論理角を計算して results に格納
         for servo_name, physical_angle in servo_angles.items():
             if servo_name not in SERVO_MAP:
@@ -108,7 +108,7 @@ def _apply_physical_multiple(servo_angles: dict[str, float]):
         return results
     
     # 実機モード：全サーボのduty_cycleを計算してから一括設定
-    duty_updates = {}
+    duty_updates: dict[int, int] = {}
     for servo_name, physical_angle in servo_angles.items():
         if servo_name not in SERVO_MAP:
             continue

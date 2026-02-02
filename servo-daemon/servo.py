@@ -193,7 +193,7 @@ def move_servos_logical(servo_angles: dict[str, float]):
         {servo_name: {"ch": ch, "logical": logical, "physical": physical}} の形式
     """
     # 論理角→物理角に変換
-    physical_angles = {}
+    physical_angles: dict[str, float] = {}
     for servo_name, logical_angle in servo_angles.items():
         if servo_name not in KINEMATICS:
             raise ValueError(f"No kinematics for servo: {servo_name}")

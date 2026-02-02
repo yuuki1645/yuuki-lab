@@ -20,7 +20,7 @@ class ServoKinematicsBase:
     """
     1サーボ個体の「論理角 -> 物理角」変換。
     - 論理角レンジを持つ
-    - logical_to_physical() を各サーボで自由に実装
+    - clampedogical_to_physical() を各サーボで自由に実装
     """
     name: str
     logical_range: LogicalRange
@@ -87,8 +87,8 @@ class RHeelKinematics(ServoKinematicsBase):
         super().__init__("R_HEEL", *LOGICAL_RANGE_HEEL, *PHYSICAL_RANGE_HEEL, DEFAULT_LOGICAL_HEEL)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 100.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 100.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 100.0
@@ -99,8 +99,8 @@ class RKneeKinematics(ServoKinematicsBase):
         super().__init__("R_KNEE", *LOGICAL_RANGE_KNEE, *PHYSICAL_RANGE_KNEE, DEFAULT_LOGICAL_KNEE)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 93.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 93.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 93.0
@@ -111,8 +111,8 @@ class RHip1Kinematics(ServoKinematicsBase):
         super().__init__("R_HIP1", *LOGICAL_RANGE_HIP1, *PHYSICAL_RANGE_HIP1, DEFAULT_LOGICAL_HIP1)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 70.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 70.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 70.0
@@ -123,8 +123,8 @@ class RHip2Kinematics(ServoKinematicsBase):
         super().__init__("R_HIP2", *LOGICAL_RANGE_HIP2, *PHYSICAL_RANGE_HIP2, DEFAULT_LOGICAL_HIP2)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return 200.0 - l
+        clamped = self.clamp_logical(logical_deg)
+        return 200.0 - clamped
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return 200.0 - physical_deg
@@ -135,8 +135,8 @@ class LHeelKinematics(ServoKinematicsBase):
         super().__init__("L_HEEL", *LOGICAL_RANGE_HEEL, *PHYSICAL_RANGE_HEEL, DEFAULT_LOGICAL_HEEL)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 65.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 65.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 65.0
@@ -147,8 +147,8 @@ class LKneeKinematics(ServoKinematicsBase):
         super().__init__("L_KNEE", *LOGICAL_RANGE_KNEE, *PHYSICAL_RANGE_KNEE, DEFAULT_LOGICAL_KNEE)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 90.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 90.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 90.0
@@ -159,8 +159,8 @@ class LHip1Kinematics(ServoKinematicsBase):
         super().__init__("L_HIP1", *LOGICAL_RANGE_HIP1, *PHYSICAL_RANGE_HIP1, DEFAULT_LOGICAL_HIP1)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return l + 95.0
+        clamped = self.clamp_logical(logical_deg)
+        return clamped + 95.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 95.0
@@ -171,8 +171,8 @@ class LHip2Kinematics(ServoKinematicsBase):
         super().__init__("L_HIP2", *LOGICAL_RANGE_HIP2, *PHYSICAL_RANGE_HIP2, DEFAULT_LOGICAL_HIP2)
 
     def logical_to_physical(self, logical_deg: float) -> float:
-        l = self.clamp_logical(logical_deg)
-        return 164.0 - l
+        clamped = self.clamp_logical(logical_deg)
+        return 164.0 - clamped
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return 164.0 - physical_deg

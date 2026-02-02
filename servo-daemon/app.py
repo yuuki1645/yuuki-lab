@@ -7,7 +7,6 @@ from kinematics import KINEMATICS
 from state_manager import StateManager
 import time
 import threading
-from pprint import pprint
 
 app = Flask(__name__)
 CORS(app)  # すべてのオリジンからのアクセスを許可
@@ -282,7 +281,7 @@ def transition_servos():
 			progress = step / steps
 			
 			# 各ステップで全サーボの補間角度を計算
-			interpolated_angles = {}
+			interpolated_angles: dict[int, float] = {}
 			for ch, trans in transitions.items():
 				current = trans["current"]
 				target = trans["target"]

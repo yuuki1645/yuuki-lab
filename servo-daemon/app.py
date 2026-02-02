@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypedDict
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -14,6 +14,13 @@ CORS(app)  # すべてのオリジンからのアクセスを許可
 
 # 状態管理インスタンスを作成
 state_manager = StateManager(state_path="./state.json")
+
+class TransitionEntry(TypedDict):
+	"""1サーボ分の遷移情報（現在角・目標角・名前）"""
+	current: float
+	target: float
+	servo_name: str
+
 
 SERVO_CH_2_NAME = {
 	0: "R_HIP1",
@@ -121,7 +128,7 @@ def _set_servos_angles_internal(angles_dict: dict[int, float], mode: str):
 	results: dict[str, list[dict[str, Any]]] = {"success": [], "errors": []}
 	
 	# チャンネル番号からサーボ名への変換
-	servo_angles = {}
+	servo_angles: dict[str, float] = {}
 	for ch, angle in angles_dict.items():
 		if ch not in SERVO_CH_2_NAME:
 			results["errors"].append({
@@ -143,8 +150,8 @@ def _set_servos_angles_internal(angles_dict: dict[int, float], mode: str):
 			servo_results = move_servos_physical(servo_angles)
 		
 		# 状態を一括更新
-		state_updates = {}
-		success_logs = []  # ログを集めるリスト
+		state_updates: dict[str, dict[str, float]] = {}
+		success_logs: list[str] = []  # ログを集めるリスト
 		
 		for servo_name, result in servo_results.items():
 			ch = result["ch"]
@@ -241,7 +248,7 @@ def transition_servos():
 			"duration": 3.0     # 遷移時間（秒）、デフォルト3.0
 		}
 	"""
-	data = request.json or {}
+	data: dict[str, Any] = request.json or {}
 	mode = data.get("mode", "logical")
 	angles = data.get("angles", {})
 	duration = float(data.get("duration", 3.0))
@@ -250,7 +257,7 @@ def transition_servos():
 	state = state_manager.get_all()
 	
 	# 各サーボの現在角度と目標角度を計算
-	transitions = {}
+	transitions: dict[int, TransitionEntry] = {}
 	for ch_str, target_angle in angles.items():
 		ch = int(ch_str)
 		if ch not in SERVO_CH_2_NAME:

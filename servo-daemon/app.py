@@ -7,6 +7,7 @@ from kinematics import KINEMATICS
 from state_manager import StateManager
 import time
 import threading
+from pprint import pprint
 
 app = Flask(__name__)
 CORS(app)  # すべてのオリジンからのアクセスを許可
@@ -55,7 +56,7 @@ def get_servos():
 
 def _set_servo_angle(ch: int, angle: float, mode: str):
 	"""サーボ角度を設定する共通処理（レスポンス付き）"""
-	result = _set_servo_angle_internal(ch, angle, mode)
+	_set_servo_angle_internal(ch, angle, mode)
 	
 	# 軽量なレスポンスを返す
 	return jsonify({
@@ -74,10 +75,14 @@ def set_servo():
 			"angle": 90.0     # 角度
 		}
 	"""
-	data = request.json or {}
-	ch = int(data.get("ch"))
-	mode = data.get("mode", "logical")
-	angle = float(data.get("angle"))
+	data: dict[str, Any] = request.json or {}
+	ch_val = data.get("ch")
+	angle_val = data.get("angle")
+	if ch_val is None or angle_val is None:
+		return jsonify({"error": "ch and angle are required"}), 400
+	ch = int(ch_val)
+	mode: str = data.get("mode", "logical")
+	angle = float(angle_val)
 
 	servo_name = SERVO_CH_2_NAME[ch]
 	print(f"[SERVO] set_{mode} - {servo_name} (ch={ch}): {mode}={angle}")
@@ -102,7 +107,7 @@ def _set_servo_angle_internal(ch: int, angle: float, mode: str):
 	
 	return result
 
-def _set_servos_angles_internal(angles_dict: dict, mode: str):
+def _set_servos_angles_internal(angles_dict: dict[int, float], mode: str):
 	"""
 	複数のサーボ角度を一括で設定する内部処理
 	
@@ -113,7 +118,7 @@ def _set_servos_angles_internal(angles_dict: dict, mode: str):
 	Returns:
 		{"success": [...], "errors": [...]} の形式
 	"""
-	results = {"success": [], "errors": []}
+	results: dict[str, list[dict[str, Any]]] = {"success": [], "errors": []}
 	
 	# チャンネル番号からサーボ名への変換
 	servo_angles = {}
@@ -201,12 +206,12 @@ def set_servos_multiple():
 			}
 		}
 	"""
-	data = request.json or {}
+	data: dict[str, Any] = request.json or {}
 	mode = data.get("mode", "logical")
-	angles = data.get("angles", {})
-	
+	angles: dict[str, float] = data.get("angles", {})
+
 	# チャンネル番号を文字列からintに変換
-	angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
+	angles_dict: dict[int, float] = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
 	
 	# print(f"[SERVO] set_multiple_{mode} - {len(angles_dict)} servos")
 	

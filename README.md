@@ -16,7 +16,7 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 ## ■ （更新停止中）leg-servo-tuner
 
-**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-reactが更新されています。**
+**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
 
 サーボの角度を1つずつ調整するFlaskアプリです。
 
@@ -24,13 +24,15 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 ## ■ （更新停止中）leg-servo-tuner-react
 
-**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-reactが更新されています。**
+**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
 
 1つ上のleg-servo-tunerをReactで実装し直したものです。
 
 詳細はleg-servo-tuner-reactの [README](leg-servo-tuner-react/README.md) を参照してください。
 
-## ■ motion-editor-react
+## ■ （更新停止中）motion-editor-react
+
+**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
 
 Reactで作ったモーションエディタです。
 
@@ -39,6 +41,12 @@ Reactで作ったモーションエディタです。
 現在はこのディレクトリが主に更新されています。
 
 詳細はmotion-editor-reactの [README](motion-editor-react/README.md) を参照してください。
+
+## ■ motion-editor-react-ts
+
+motion-editor-reactをTypeScriptで作り直したもの。
+
+React + TypeScriptで作ったモーションエディタ。
 
 ## ■ servo-daemon
 

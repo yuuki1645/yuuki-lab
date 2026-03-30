@@ -1,0 +1,159 @@
+.leg-tuner {
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+  text-align: center;
+  overflow: auto;
+}
+
+.leg-tuner--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.leg-tuner-title {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-size: 1.35rem;
+}
+
+.leg-tuner-error {
+  color: #ff6b6b;
+}
+
+.leg-tuner-help {
+  font-size: 14px;
+  color: #a8b0d6;
+  max-width: 420px;
+}
+
+.leg-tuner-panel {
+  margin: 24px auto;
+  width: 92%;
+  max-width: 720px;
+  text-align: left;
+}
+
+.leg-tuner-panel label {
+  display: block;
+  margin: 18px 0 10px;
+  font-size: 18px;
+}
+
+.leg-tuner-panel select {
+  font-size: 18px;
+  padding: 12px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e8ecff;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  border-radius: 8px;
+}
+
+.leg-tuner-panel select:focus {
+  outline: none;
+  border-color: #6ea8ff;
+}
+
+.leg-tuner-mode {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 10px;
+}
+
+.leg-tuner-mode-item {
+  font-size: 16px;
+  color: #cfd6ff;
+  user-select: none;
+  cursor: pointer;
+}
+
+.leg-tuner-mode-item input {
+  transform: scale(1.2);
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.leg-tuner-hint {
+  font-size: 13px;
+  color: #a8b0d6;
+  margin-left: 8px;
+}
+
+.leg-tuner-panel input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 64px;
+  background: transparent;
+  margin: 10px 0 0;
+}
+
+.leg-tuner-panel input[type="range"]::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(200, 210, 255, 0.25);
+}
+
+.leg-tuner-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #6ea8ff;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  margin-top: -15px;
+  cursor: pointer;
+}
+
+.leg-tuner-panel input[type="range"]::-moz-range-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(200, 210, 255, 0.25);
+}
+
+.leg-tuner-panel input[type="range"]::-moz-range-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #6ea8ff;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.leg-tuner-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 6px;
+  font-size: 14px;
+  color: #a8b0d6;
+  user-select: none;
+}
+
+.leg-tuner-guide {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.leg-tuner-guide-title {
+  text-align: left;
+  font-size: 14px;
+  color: #a8b0d6;
+  margin-bottom: 10px;
+}
+
+.leg-tuner-guide-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}

@@ -1,0 +1,175 @@
+.motion-list {
+  width: 280px;
+  background: #2a2a3e;
+  border-right: 1px solid #3a3a4e;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.motion-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.motion-list-header h2 {
+  margin: 0;
+  font-size: 19px;
+  color: #fff;
+}
+
+.btn-add {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.btn-add:hover {
+  background: #3a8eef;
+}
+
+.btn-add:active {
+  transform: scale(0.95);
+}
+
+.motion-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.motion-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: #1a1a2e;
+  transition: background 0.2s;
+  min-height: 44px;
+}
+
+.motion-item:hover {
+  background: #252538;
+}
+
+.motion-item.active {
+  background: #3a4a6e;
+  border: 2px solid #4a9eff;
+}
+
+.motion-item-name {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  touch-action: manipulation;
+  margin-bottom: 8px;
+}
+
+.motion-item-name:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.motion-item-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.motion-item-actions button {
+  background: #3a3a4e;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 44px;
+  touch-action: manipulation;
+  flex: 1;
+}
+
+.motion-item-actions button:hover {
+  background: #4a4a5e;
+}
+
+.motion-item-actions button:active {
+  transform: scale(0.95);
+}
+
+.btn-delete {
+  background: #ff4a4a !important;
+}
+
+.btn-delete:hover {
+  background: #ff3a3a !important;
+}
+
+.motion-item-edit {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.motion-item-edit input {
+  flex: 1;
+  background: #2a2a3e;
+  border: 2px solid #4a9eff;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.motion-item-edit button {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px;
+  touch-action: manipulation;
+  font-size: 15px;
+}
+
+.motion-item-edit button:active {
+  transform: scale(0.95);
+}
+
+.motion-list-empty {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+  font-size: 15px;
+}
+
+.btn-move-initial {
+  background-color: #4CAF50 !important;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-move-initial:hover {
+  background-color: #45a049 !important;
+}

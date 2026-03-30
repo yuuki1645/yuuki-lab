@@ -57,6 +57,13 @@
   border-color: #6ea8ff;
 }
 
+/* ネイティブの一覧がシステムの白背景になる環境で、select の薄い文字色が継承されて消えるのを防ぐ */
+.leg-tuner-panel select option,
+.leg-tuner-panel select optgroup {
+  background-color: #f2f3f8;
+  color: #141824;
+}
+
 .leg-tuner-mode {
   display: flex;
   justify-content: center;

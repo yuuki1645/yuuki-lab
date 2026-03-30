@@ -14,47 +14,45 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 # ディレクトリ解説
 
-## ■ （更新停止中）leg-servo-tuner
+## ■ robotics-hub（メイン）
 
-**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
+**フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-サーボの角度を1つずつ調整するFlaskアプリです。
+実機とつなぐときは、同じリポジトリの **`servo-daemon`** を起動し、ブラウザから API（既定ポート 5000）にアクセスします。
 
-詳細はleg-servo-tunerの [README](leg-servo-tuner/README.md) を参照してください。
-
-## ■ （更新停止中）leg-servo-tuner-react
-
-**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
-
-1つ上のleg-servo-tunerをReactで実装し直したものです。
-
-詳細はleg-servo-tuner-reactの [README](leg-servo-tuner-react/README.md) を参照してください。
-
-## ■ （更新停止中）motion-editor-react
-
-**【注意】 このディレクトリは更新が止まっています。上位互換のmotion-editor-react-tsが更新されています。**
-
-Reactで作ったモーションエディタです。
-
-全てのサーボを同時に操作できるので、leg-servo-tuner及びleg-servo-tuner-reactの上位互換です。
-
-現在はこのディレクトリが主に更新されています。
-
-詳細はmotion-editor-reactの [README](motion-editor-react/README.md) を参照してください。
-
-## ■ motion-editor-react-ts
-
-motion-editor-reactをTypeScriptで作り直したもの。
-
-React + TypeScriptで作ったモーションエディタ。
+詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
 ## ■ servo-daemon
 
-ラズパイ上でサーボドライバに直接指令を出すFlaskサーバーです。
+ラズパイ上でサーボドライバに直接指令を出す Flask サーバーです。
 
-leg-servo-tuner、leg-servo-tuner-reactから、このサーバーのAPIを呼び出します。
+**[robotics-hub](robotics-hub/)** からこのサーバーの API を呼び出します（開発・運用の主経路）。
 
-詳細はservo-daemonの [README](servo-daemon/README.md) を参照してください。
+詳細は [servo-daemon/README.md](servo-daemon/README.md) を参照してください。
+
+## ■ （更新停止・レガシー）leg-servo-tuner
+
+サーボの角度を 1 つずつ調整する Flask アプリです。相当機能は **robotics-hub** のレッグサーボ調整にあります。
+
+詳細は [leg-servo-tuner/README.md](leg-servo-tuner/README.md) を参照してください。
+
+## ■ （更新停止・レガシー）leg-servo-tuner-react
+
+`leg-servo-tuner` を React で実装したものです。相当機能は **robotics-hub** にあります。
+
+詳細は [leg-servo-tuner-react/README.md](leg-servo-tuner-react/README.md) を参照してください。
+
+## ■ （更新停止・レガシー）motion-editor-react
+
+React で作ったモーションエディタです。後継の TypeScript 版や **robotics-hub** に流れを寄せています。
+
+詳細は [motion-editor-react/README.md](motion-editor-react/README.md) を参照してください。
+
+## ■ （更新停止・レガシー）motion-editor-react-ts
+
+`motion-editor-react` を TypeScript で作り直したものでした。**機能は [robotics-hub](robotics-hub/) のモーションエディタへ移行済み**であり、日常的な開発の中心ではありません（参照・履歴用）。
+
+詳細は [motion-editor-react-ts/README.md](motion-editor-react-ts/README.md) を参照してください。
 
 ## ■ （更新停止中）programs
 

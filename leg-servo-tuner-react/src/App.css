@@ -33,6 +33,13 @@
     outline: none;
     border-color: #6ea8ff;
   }
+
+  /* 開いたリストが白背景のブラウザ/OSで option 文字が薄くなる対策 */
+  select option,
+  select optgroup {
+    background-color: #f2f3f8;
+    color: #141824;
+  }
   
   /* モード切替 */
   .mode {

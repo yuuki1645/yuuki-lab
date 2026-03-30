@@ -60,10 +60,11 @@ def get_servos():
 def _set_servo_angle(ch: int, angle: float, mode: str):
 	"""サーボ角度を設定する共通処理（レスポンス付き）"""
 	result = _set_servo_angle_internal(ch, angle, mode)
-	
-	# 軽量なレスポンスを返す
+
 	return jsonify({
 		"status": "ok",
+		"logical": result["logical"],
+		"physical": result["physical"],
 	})
 
 @app.post("/set")

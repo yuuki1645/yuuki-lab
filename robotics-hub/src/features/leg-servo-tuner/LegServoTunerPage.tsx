@@ -18,6 +18,7 @@ export default function LegServoTunerPage() {
   const angleOverridesRef = useRef<
     Partial<Record<string, Partial<Record<ServoMode, number>>>>
   >({});
+  const moveRequestSeqRef = useRef(0);
 
   useEffect(() => {
     if (servos.length > 0 && !selectedServo) {
@@ -59,8 +60,19 @@ export default function LegServoTunerPage() {
       return;
     }
 
+    const seq = ++moveRequestSeqRef.current;
     try {
-      await moveServo(ch, mode, newAngle);
+      const { logical, physical } = await moveServo(ch, mode, newAngle);
+      if (seq !== moveRequestSeqRef.current) return;
+
+      angleOverridesRef.current = {
+        ...angleOverridesRef.current,
+        [selectedServo]: {
+          ...angleOverridesRef.current[selectedServo],
+          logical,
+          physical,
+        },
+      };
     } catch (err) {
       window.alert(
         `Network error:\n${err instanceof Error ? err.message : String(err)}`

@@ -63,6 +63,12 @@ export async function fetchServos(): Promise<Servo[]> {
   return formattedServos;
 }
 
+/** `/set` 応答（運動学適用後の論理・物理角） */
+export interface MoveServoResult {
+  logical: number;
+  physical: number;
+}
+
 /**
  * サーボを動かす
  */
@@ -70,7 +76,7 @@ export async function moveServo(
   ch: number,
   mode: ServoMode,
   angle: number
-): Promise<unknown> {
+): Promise<MoveServoResult> {
   const response = await fetch(`${SERVO_DAEMON_URL}/set`, {
     method: "POST",
     headers: {
@@ -88,7 +94,16 @@ export async function moveServo(
     throw new Error(`Server error: ${text}`);
   }
 
-  return response.json();
+  const data = (await response.json()) as {
+    logical?: unknown;
+    physical?: unknown;
+  };
+  const logical = Number(data.logical);
+  const physical = Number(data.physical);
+  if (!Number.isFinite(logical) || !Number.isFinite(physical)) {
+    throw new Error("Invalid /set response: missing logical/physical");
+  }
+  return { logical, physical };
 }
 
 /**

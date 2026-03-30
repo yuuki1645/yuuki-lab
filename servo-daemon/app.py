@@ -1,8 +1,12 @@
+# type: ignore
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
+import argparse
+import logging
 import time
 import threading
 
@@ -294,4 +298,13 @@ def transition_servos():
 	})
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Servo daemon HTTP API")
+    parser.add_argument(
+        "--access-log",
+        action="store_true",
+        help="Werkzeug の HTTP アクセスログを出す（192.168... POST /set など）。デフォルトはオフ。",
+    )
+    args = parser.parse_args()
+    if not args.access_log:
+        logging.getLogger("werkzeug").setLevel(logging.ERROR)
     app.run(host="0.0.0.0", port=5000, debug=True)

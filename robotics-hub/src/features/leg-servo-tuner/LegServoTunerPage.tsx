@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useServos } from "@/shared/hooks/useServos";
 import { moveServo } from "@/shared/api/servoApi";
 import { SERVO_NAME_TO_CH } from "@/shared/constants";
@@ -14,6 +14,10 @@ export default function LegServoTunerPage() {
   const [selectedServo, setSelectedServo] = useState("");
   const [mode, setMode] = useState<ServoMode>("logical");
   const [angle, setAngle] = useState(0);
+  /** スライダーで変更した角度（API の初回値が古いままでも再選択時に復元する） */
+  const angleOverridesRef = useRef<
+    Partial<Record<string, Partial<Record<ServoMode, number>>>>
+  >({});
 
   useEffect(() => {
     if (servos.length > 0 && !selectedServo) {
@@ -28,6 +32,11 @@ export default function LegServoTunerPage() {
     const servo = servos.find((s) => s.name === selectedServo);
     if (!servo) return;
 
+    const cached = angleOverridesRef.current[selectedServo]?.[mode];
+    if (cached !== undefined) {
+      setAngle(Math.round(cached));
+      return;
+    }
     const newAngle =
       mode === "physical" ? servo.last_physical : servo.last_logical;
     setAngle(Math.round(newAngle));
@@ -37,6 +46,12 @@ export default function LegServoTunerPage() {
     setAngle(newAngle);
 
     if (!selectedServo) return;
+
+    const prev = angleOverridesRef.current[selectedServo] ?? {};
+    angleOverridesRef.current = {
+      ...angleOverridesRef.current,
+      [selectedServo]: { ...prev, [mode]: newAngle },
+    };
 
     const ch = SERVO_NAME_TO_CH[selectedServo];
     if (ch === undefined) {

@@ -2,6 +2,7 @@
 export const GUIDE_MAP = {
   "KNEE": "/guides/knee.JPG",
   "HEEL": "/guides/heel.JPG",
+  "HEEL_ROLL": "/guides/heel.JPG",
   "HIP1": "/guides/hip1.JPG",
   "HIP2": "/guides/hip2.JPG",
 };
@@ -12,10 +13,12 @@ export const SERVO_NAME_TO_CH = {
   "R_HIP2": 1,
   "R_KNEE": 2,
   "R_HEEL": 3,
+  "R_HEEL_ROLL": 4,
   "L_HIP1": 8,
   "L_HIP2": 9,
   "L_KNEE": 10,
   "L_HEEL": 11,
+  "L_HEEL_ROLL": 12,
 };
 
 // 物理角の範囲（全サーボ共通）

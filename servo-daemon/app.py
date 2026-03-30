@@ -21,10 +21,12 @@ SERVO_CH_2_NAME = {
 	1: "R_HIP2",
 	2: "R_KNEE",
 	3: "R_HEEL",
+	4: "R_HEEL_ROLL",
 	8: "L_HIP1",
 	9: "L_HIP2",
 	10: "L_KNEE",
 	11: "L_HEEL",
+	12: "L_HEEL_ROLL",
 }
 
 @app.get("/servos")

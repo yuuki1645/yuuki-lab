@@ -2,6 +2,7 @@
 export const GUIDE_MAP: Record<string, string> = {
   KNEE: "/guides/knee.JPG",
   HEEL: "/guides/heel.JPG",
+  HEEL_ROLL: "/guides/heel.JPG",
   HIP1: "/guides/hip1.JPG",
   HIP2: "/guides/hip2.JPG",
 };
@@ -12,10 +13,12 @@ export const SERVO_NAME_TO_CH: Record<string, number> = {
   R_HIP2: 1,
   R_KNEE: 2,
   R_HEEL: 3,
+  R_HEEL_ROLL: 4,
   L_HIP1: 8,
   L_HIP2: 9,
   L_KNEE: 10,
   L_HEEL: 11,
+  L_HEEL_ROLL: 12,
 };
 
 // チャンネル番号 -> サーボ名のマッピング
@@ -24,10 +27,12 @@ export const CH_TO_SERVO_NAME: Record<number, string> = {
   1: "R_HIP2",
   2: "R_KNEE",
   3: "R_HEEL",
+  4: "R_HEEL_ROLL",
   8: "L_HIP1",
   9: "L_HIP2",
   10: "L_KNEE",
   11: "L_HEEL",
+  12: "L_HEEL_ROLL",
 };
 
 /** サーボ種別ごとの角度スライダー目盛り（必ず表示する切れの良い値） */
@@ -36,10 +41,11 @@ export const SERVO_TICK_VALUES: Record<string, number[]> = {
   HIP2: [0, 90, 120],
   KNEE: [0, 90, 120],
   HEEL: [-30, 0, 90],
+  HEEL_ROLL: [-20, 0, 20],
 };
 
 // 全サーボチャンネル番号の配列
-export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 8, 9, 10, 11];
+export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
 
 // servo_daemonのURL（ブラウザのホストと同一マシン上のデーモンを想定）
 export const SERVO_DAEMON_URL =

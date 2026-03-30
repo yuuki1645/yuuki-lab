@@ -67,10 +67,12 @@ const INITIAL_ANGLES: Record<number, number> = {
   1: 70,
   2: 30,
   3: -30,
+  4: 0,
   8: 0,
   9: 70,
   10: 30,
   11: -30,
+  12: 0,
 };
 
 /**

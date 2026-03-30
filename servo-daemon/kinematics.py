@@ -59,21 +59,24 @@ class ServoKinematicsBase:
 # 論理角レンジ・物理角レンジ
 # ----------------------------
 LOGICAL_RANGE_HEEL = (-50.0,  90.0)
+LOGICAL_RANGE_HEEL_ROLL = (-20.0, 20.0)
 LOGICAL_RANGE_KNEE = (  0.0, 120.0)
 LOGICAL_RANGE_HIP1 = (-30.0,  90.0)
 LOGICAL_RANGE_HIP2 = (-30.0, 120.0)
 PHYSICAL_RANGE_HEEL = (0.0, 270.0)
+PHYSICAL_RANGE_HEEL_ROLL = (0.0, 270.0)
 PHYSICAL_RANGE_KNEE = (0.0, 270.0)
 PHYSICAL_RANGE_HIP1 = (0.0, 270.0)
 PHYSICAL_RANGE_HIP2 = (0.0, 270.0)
 DEFAULT_LOGICAL_HEEL = -30.0
+DEFAULT_LOGICAL_HEEL_ROLL = 0.0
 DEFAULT_LOGICAL_KNEE = 30.0
 DEFAULT_LOGICAL_HIP1 = 0.0
 DEFAULT_LOGICAL_HIP2 = 60.0
 
 
 # ============================================================
-# ★ 8つの「個別クラス」を生成（冗長OK版）
+# ★ 10 関節分の「個別クラス」を生成（冗長OK版）
 #   ここから先は、各サーボごとに
 #   - クランプ
 #   - オフセット
@@ -92,6 +95,25 @@ class RHeelKinematics(ServoKinematicsBase):
 
     def physical_to_logical(self, physical_deg: float) -> float:
         return physical_deg - 100.0
+
+
+class RHeelRollKinematics(ServoKinematicsBase):
+    """踵ロール: 論理 0° = 物理 135°（左右共通リニア）"""
+
+    def __init__(self):
+        super().__init__(
+            "R_HEEL_ROLL",
+            *LOGICAL_RANGE_HEEL_ROLL,
+            *PHYSICAL_RANGE_HEEL_ROLL,
+            DEFAULT_LOGICAL_HEEL_ROLL,
+        )
+
+    def logical_to_physical(self, logical_deg: float) -> float:
+        l = self.clamp_logical(logical_deg)
+        return l + 135.0
+
+    def physical_to_logical(self, physical_deg: float) -> float:
+        return physical_deg - 135.0
 
 
 class RKneeKinematics(ServoKinematicsBase):
@@ -142,6 +164,25 @@ class LHeelKinematics(ServoKinematicsBase):
         return physical_deg - 65.0
 
 
+class LHeelRollKinematics(ServoKinematicsBase):
+    """踵ロール: 論理 0° = 物理 135°（左右共通リニア）"""
+
+    def __init__(self):
+        super().__init__(
+            "L_HEEL_ROLL",
+            *LOGICAL_RANGE_HEEL_ROLL,
+            *PHYSICAL_RANGE_HEEL_ROLL,
+            DEFAULT_LOGICAL_HEEL_ROLL,
+        )
+
+    def logical_to_physical(self, logical_deg: float) -> float:
+        l = self.clamp_logical(logical_deg)
+        return l + 135.0
+
+    def physical_to_logical(self, physical_deg: float) -> float:
+        return physical_deg - 135.0
+
+
 class LKneeKinematics(ServoKinematicsBase):
     def __init__(self):
         super().__init__("L_KNEE", *LOGICAL_RANGE_KNEE, *PHYSICAL_RANGE_KNEE, DEFAULT_LOGICAL_KNEE)
@@ -177,13 +218,15 @@ class LHip2Kinematics(ServoKinematicsBase):
     def physical_to_logical(self, physical_deg: float) -> float:
         return 164.0 - physical_deg
 
-# ★ 8インスタンスを生成して辞書へ
+# ★ インスタンスを生成して辞書へ
 KINEMATICS = {
     "R_HEEL": RHeelKinematics(),
+    "R_HEEL_ROLL": RHeelRollKinematics(),
     "R_KNEE": RKneeKinematics(),
     "R_HIP1": RHip1Kinematics(),
     "R_HIP2": RHip2Kinematics(),
     "L_HEEL": LHeelKinematics(),
+    "L_HEEL_ROLL": LHeelRollKinematics(),
     "L_KNEE": LKneeKinematics(),
     "L_HIP1": LHip1Kinematics(),
     "L_HIP2": LHip2Kinematics(),

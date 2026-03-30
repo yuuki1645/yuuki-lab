@@ -18,10 +18,12 @@ SERVO_NAME_TO_CH = {
     "R_HIP2": 1,
     "R_KNEE": 2,
     "R_HEEL": 3,
+    "R_HEEL_ROLL": 4,
     "L_HIP1": 8,
     "L_HIP2": 9,
     "L_KNEE": 10,
     "L_HEEL": 11,
+    "L_HEEL_ROLL": 12,
 }
 
 # ===== エラーハンドリング統一のヘルパー関数 =====

@@ -26,10 +26,12 @@ SERVO_MAP = {
     "R_HIP2": 1,
     "R_KNEE": 2,
     "R_HEEL": 3,
+    "R_HEEL_ROLL": 4,
     "L_HIP1": 8,
     "L_HIP2": 9,
     "L_KNEE": 10,
     "L_HEEL": 11,
+    "L_HEEL_ROLL": 12,
 }
 
 def clamp(x: float, lo: float, hi: float) -> float:
@@ -89,7 +91,7 @@ def _apply_physical_multiple(servo_angles: dict[str, float]):
         
         # 表形式で論理角を出力（HIP1/HIP2/KNEE/HEEL × R/L）
         if results:
-            JOINTS = ["HIP1", "HIP2", "KNEE", "HEEL"]
+            JOINTS = ["HIP1", "HIP2", "KNEE", "HEEL", "HEEL_ROLL"]
             SIDES = ["R", "L"]
             COL_WIDTH = 10
             header = " " * 2 + "".join(j.rjust(COL_WIDTH) for j in JOINTS)

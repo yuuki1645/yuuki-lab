@@ -1,5 +1,4 @@
 import type { JointKey } from "./poseEditorTypes";
-import { hip1SpreadPx } from "./poseKinematics";
 import {
   ARROW_IMAGE_BLUE,
   ARROW_IMAGE_RED,
@@ -14,12 +13,12 @@ export function OverviewLeftLeg({
   hipPos,
   pose,
   legLen,
-  dir,
+  dir: _dir,
   activeDrag,
   onArrowDown,
 }: OverviewLegBaseProps) {
+  void _dir;
   const stroke = "#1d4ed8";
-  const spread = hip1SpreadPx(pose.hip1);
   const hipX = hipPos.x;
   const hipY = hipPos.y;
 
@@ -34,7 +33,7 @@ export function OverviewLeftLeg({
   const footY = hipY + legLen * Math.cos(logicalHip1 * Math.PI / 180);
 
   const logicalHeelRoll = pose.heelRoll;
-  console.log("logicalHeelRoll", logicalHeelRoll);
+  // console.log("logicalHeelRoll", logicalHeelRoll);
   
   const soleWidth = 50;
   const soleX1 = footX - (soleWidth / 2) * Math.cos((logicalHip1 + logicalHeelRoll) * Math.PI / 180);

@@ -1,7 +1,7 @@
 import { useServos } from "@/shared/hooks/useServos";
-import { PoseEditorOverviewSection } from "./PoseEditorOverviewSection";
-import { PoseEditorSideDetailSection } from "./PoseEditorSideDetailSection";
-import { usePoseEditorControl } from "./usePoseEditorControl";
+import { PoseEditorOverviewSection } from "./components/overview/PoseEditorOverviewSection";
+import { PoseEditorSideDetailSection } from "./components/side/PoseEditorSideDetailSection";
+import { usePoseEditorControl } from "./hooks/usePoseEditorControl";
 import "./PoseEditorPage.css";
 
 export default function PoseEditorPage() {

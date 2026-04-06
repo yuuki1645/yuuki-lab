@@ -1,4 +1,4 @@
-import type { JointKey } from "./poseEditorTypes";
+import type { JointKey } from "../../types";
 import {
   ARROW_IMAGE_BLUE,
   ARROW_IMAGE_RED,
@@ -37,7 +37,6 @@ export function OverviewRightLeg({
   const logicalHeelRoll = pose.heelRoll;
 
   const soleWidth = 50;
-  console.log("AAAAA", logicalHeelRoll);
   const α = ((logicalHip1 + logicalHeelRoll) * Math.PI) / 180;
   /** 足裏線分：左足の ± を左右反転 */
   const soleX1 = footX - (soleWidth / 2) * Math.cos(α);

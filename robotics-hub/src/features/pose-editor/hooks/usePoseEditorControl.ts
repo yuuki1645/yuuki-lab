@@ -8,8 +8,8 @@ import {
   limitsFor,
   readLegFromServos,
   servoName,
-} from "./poseEditorServoUtils";
-import type { ActiveDrag, JointKey, LegId, LegPose } from "./poseEditorTypes";
+} from "../lib/servoUtils";
+import type { ActiveDrag, JointKey, LegId, LegPose } from "../types";
 
 const DRAG_SENSITIVITY = 0.32;
 

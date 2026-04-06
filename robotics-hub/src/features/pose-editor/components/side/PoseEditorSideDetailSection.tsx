@@ -1,6 +1,6 @@
 import { useState, type PointerEvent } from "react";
 import type { Servo } from "@/shared/types";
-import type { ActiveDrag, LegId, LegPose } from "./poseEditorTypes";
+import type { ActiveDrag, LegId, LegPose } from "../../types";
 import { SideLegPanel } from "./SideLegPanel";
 
 export interface PoseEditorSideDetailSectionProps {

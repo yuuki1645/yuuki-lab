@@ -1,6 +1,6 @@
 import type { PointerEvent } from "react";
-import type { ActiveDrag, LegPose } from "./poseEditorTypes";
-import type { Vec2 } from "./poseKinematics";
+import type { ActiveDrag, LegPose } from "../../types";
+import type { Vec2 } from "../../lib/kinematics";
 
 /** Vite の `public/` からそのまま配信 */
 export const ARROW_IMAGE_BLUE = "/arrows/top_left.png";

@@ -1,5 +1,5 @@
 import { useState, type PointerEvent } from "react";
-import type { ActiveDrag, LegPose, OverviewFace } from "./poseEditorTypes";
+import type { ActiveDrag, LegPose, OverviewFace } from "../../types";
 import { OverviewPanel } from "./OverviewPanel";
 
 export interface PoseEditorOverviewSectionProps {

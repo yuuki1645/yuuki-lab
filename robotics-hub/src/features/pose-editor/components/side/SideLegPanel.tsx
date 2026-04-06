@@ -1,9 +1,9 @@
 import type { PointerEvent } from "react";
 import type { Servo } from "@/shared/types";
-import { computeSideViewLeg, type Vec2 } from "./poseKinematics";
-import { limitsFor } from "./poseEditorServoUtils";
-import type { ActiveDrag, JointKey, LegId, LegPose } from "./poseEditorTypes";
-import { PoseSketchFilters } from "./PoseSketchFilters";
+import { computeSideViewLeg, type Vec2 } from "../../lib/kinematics";
+import { limitsFor } from "../../lib/servoUtils";
+import type { ActiveDrag, JointKey, LegId, LegPose } from "../../types";
+import { PoseSketchFilters } from "../PoseSketchFilters";
 
 function SideLegArrowHandle(props: {
   cx: number;

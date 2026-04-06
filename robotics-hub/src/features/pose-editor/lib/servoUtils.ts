@@ -1,5 +1,5 @@
 import type { Servo } from "@/shared/types";
-import type { JointKey, LegId, LegPose } from "./poseEditorTypes";
+import type { JointKey, LegId, LegPose } from "../types";
 
 const SERVO_SUFFIX: Record<JointKey, string> = {
   hip1: "HIP1",

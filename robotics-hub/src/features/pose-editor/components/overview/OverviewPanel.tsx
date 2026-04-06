@@ -1,9 +1,9 @@
 import type { PointerEvent } from "react";
-import type { Vec2 } from "./poseKinematics";
+import type { Vec2 } from "../../lib/kinematics";
 import { OverviewLeftLeg } from "./OverviewLeftLeg";
 import { OverviewRightLeg } from "./OverviewRightLeg";
-import type { ActiveDrag, LegPose, OverviewFace } from "./poseEditorTypes";
-import { PoseSketchFilters } from "./PoseSketchFilters";
+import type { ActiveDrag, LegPose, OverviewFace } from "../../types";
+import { PoseSketchFilters } from "../PoseSketchFilters";
 
 export interface OverviewPanelProps {
   left: LegPose;

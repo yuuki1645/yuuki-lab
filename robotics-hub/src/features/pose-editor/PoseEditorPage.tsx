@@ -4,20 +4,10 @@ import { SERVO_NAME_TO_CH } from "@/shared/constants";
 import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
 import { useServos } from "@/shared/hooks/useServos";
-import { computeSideViewLeg, hip1SpreadPx, type Vec2 } from "./poseKinematics";
+import { computeSideViewLeg, type Vec2 } from "./poseKinematics";
+import { MiniLeg } from "./OverviewMiniLeg";
+import type { ActiveDrag, JointKey, LegId, LegPose } from "./poseEditorTypes";
 import "./PoseEditorPage.css";
-
-type LegId = "L" | "R";
-
-interface LegPose {
-  hip1: number;
-  hip2: number;
-  knee: number;
-  heel: number;
-  heelRoll: number;
-}
-
-type JointKey = keyof LegPose;
 
 const SERVO_SUFFIX: Record<JointKey, string> = {
   hip1: "HIP1",
@@ -56,15 +46,6 @@ function limitsFor(servos: Servo[], leg: LegId, key: JointKey) {
 }
 
 const SENS = 0.32;
-
-type ActiveDrag = {
-  leg: LegId;
-  key: JointKey;
-  axis: "x" | "y";
-  sign: 1 | -1;
-  startClient: number;
-  startAngle: number;
-};
 
 function SketchFilters() {
   return (
@@ -105,39 +86,6 @@ function ArrowHandle(props: {
         stroke="#1a1a1a"
         strokeWidth="0.6"
         opacity="0.92"
-        style={{ filter: "url(#pose-wobble)" }}
-      />
-    </g>
-  );
-}
-
-/** オーバービュー用：太い軸＋台形矢印のブロック矢印（右向きが 0°） */
-function BlockArrowHandle(props: {
-  cx: number;
-  cy: number;
-  r: number;
-  rotDeg: number;
-  color: string;
-  active: boolean;
-  onPointerDown: (e: React.PointerEvent) => void;
-}) {
-  const { cx, cy, r, rotDeg, color, active, onPointerDown } = props;
-  const d =
-    "M -26 -7 L 10 -7 L 10 -13 L 30 0 L 10 13 L 10 7 L -26 7 Z";
-  return (
-    <g
-      className={`pose-arrow-handle pose-arrow-handle--block${active ? " pose-arrow-handle--active" : ""}`}
-      transform={`translate(${cx} ${cy}) rotate(${rotDeg})`}
-      onPointerDown={onPointerDown}
-    >
-      <circle r={r} className="pose-arrow-hit" />
-      <path
-        d={d}
-        fill={color}
-        stroke="#1a1a1a"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-        opacity="0.95"
         style={{ filter: "url(#pose-wobble)" }}
       />
     </g>
@@ -324,101 +272,19 @@ function OverviewPanel({
   const cxL = centerX - 56;
   const cxR = centerX + 56;
   const hy = 118;
-  const topY = 56;
-
-  const spreadL = hip1SpreadPx(left.hip1);
-  const spreadR = hip1SpreadPx(right.hip1);
-  const dir = mirror ? -1 : 1;
-  const hxL = cxL + dir * -spreadL;
-  const hxR = cxR + dir * spreadR;
-
-  function MiniLeg(props: {
-    cx: number;
-    leg: LegId;
-    pose: LegPose;
-  }) {
-    const { cx, leg, pose } = props;
-    const stroke = leg === "L" ? "#1d4ed8" : "#b91c1c";
-    const spread = hip1SpreadPx(pose.hip1);
-    const hx = cx + dir * (leg === "L" ? -spread : spread);
-    const fx = hx;
-    const fy = hy + legLen;
-
-    const isActive = (key: JointKey, axis: "x" | "y") =>
-      activeDrag != null &&
-      activeDrag.leg === leg &&
-      activeDrag.key === key &&
-      activeDrag.axis === axis;
-
-    return (
-      <g>
-        <line
-          x1={hx}
-          y1={hy}
-          x2={fx}
-          y2={fy}
-          stroke="orange"
-          strokeWidth="3"
-          strokeLinecap="round"
-          
-        />
-        <circle cx={hx} cy={hy} r={6} fill="green" stroke={stroke} strokeWidth="2" />
-        <circle cx={fx} cy={fy} r={6} fill="yellow" stroke={stroke} strokeWidth="2" />
-        <text x={hx} y={hy - 10} textAnchor="middle" className="pose-joint-label">
-          HIPaa① {Math.round(pose.hip1)}°
-        </text>
-        <text x={fx} y={fy + 22} textAnchor="middle" className="pose-joint-label">
-          かかと {Math.round(pose.heel)}°
-        </text>
-        <BlockArrowHandle
-          cx={hx - 34}
-          cy={hy + 10}
-          r={30}
-          rotDeg={90}
-          color="#1d4ed8"
-          active={isActive("hip1", "x")}
-          onPointerDown={(e) =>
-            onArrowDown(e, {
-              leg,
-              key: "hip1",
-              axis: "x",
-              sign: leg === "L" ? -1 : 1,
-            })
-          }
-        />
-        <BlockArrowHandle
-          cx={hx + 36}
-          cy={hy + 10}
-          rotDeg={90}
-          r={30}
-          color="#b91c1c"
-          active={isActive("hip2", "y")}
-          onPointerDown={(e) =>
-            onArrowDown(e, { leg, key: "hip2", axis: "y", sign: -1 })
-          }
-        />
-        <BlockArrowHandle
-          cx={fx - 28}
-          cy={fy - 4}
-          rotDeg={90}
-          r={30}
-          color="#b91c1c"
-          active={isActive("heel", "y")}
-          onPointerDown={(e) =>
-            onArrowDown(e, { leg, key: "heel", axis: "y", sign: -1 })
-          }
-        />
-      </g>
-    );
-  }
+  const dir: 1 | -1 = mirror ? -1 : 1;
 
   const faceLabel = face === "front" ? "正面" : "背面";
 
+  const basketCenterX = 220;
   const basketHeight = 50;
+  const basketWidth = 150;
   const basketTopY = 15;
   const basketBottomY = basketTopY + basketHeight;
-  const basketLeftX = centerX + 56;
-  const basketRightX = centerX - 150;
+  const basketLeftX = basketCenterX - basketWidth / 2;
+  const basketRightX = basketCenterX + basketWidth / 2;
+  const hipPosL: Vec2 = { x: basketLeftX + 20, y: basketBottomY };
+  const hipPosR: Vec2 = { x: basketRightX - 20, y: basketBottomY };
 
   return (
     <svg
@@ -441,8 +307,24 @@ function OverviewPanel({
         />
       </g>
 
-      <MiniLeg cx={cxL} leg="L" pose={left} />
-      <MiniLeg cx={cxR} leg="R" pose={right} />
+      <MiniLeg
+        hipPos={hipPosL}
+        leg="L"
+        pose={left}
+        legLen={legLen}
+        dir={dir}
+        activeDrag={activeDrag}
+        onArrowDown={onArrowDown}
+      />
+      <MiniLeg
+        hipPos={hipPosR}
+        leg="R"
+        pose={right}
+        legLen={legLen}
+        dir={dir}
+        activeDrag={activeDrag}
+        onArrowDown={onArrowDown}
+      />
 
       <text x="220" y="266" textAnchor="middle" className="pose-legend">
         青は左足／赤は右足

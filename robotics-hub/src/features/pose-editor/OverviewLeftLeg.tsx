@@ -33,6 +33,15 @@ export function OverviewLeftLeg({
   const footX = hipX - legLen * Math.sin(logicalHip1 * Math.PI / 180);
   const footY = hipY + legLen * Math.cos(logicalHip1 * Math.PI / 180);
 
+  const logicalHeelRoll = pose.heelRoll;
+  console.log("logicalHeelRoll", logicalHeelRoll);
+  
+  const soleWidth = 50;
+  const soleX1 = footX - (soleWidth / 2) * Math.cos((logicalHip1 + logicalHeelRoll) * Math.PI / 180);
+  const soleY1 = footY - (soleWidth / 2) * Math.sin((logicalHip1 + logicalHeelRoll) * Math.PI / 180);
+  const soleX2 = footX + (soleWidth / 2) * Math.cos((logicalHip1 + logicalHeelRoll) * Math.PI / 180);
+  const soleY2 = footY + (soleWidth / 2) * Math.sin((logicalHip1 + logicalHeelRoll) * Math.PI / 180);
+
   return (
     <g>
       <line
@@ -40,6 +49,15 @@ export function OverviewLeftLeg({
         y1={hipY}
         x2={footX}
         y2={footY}
+        stroke={stroke}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1={soleX1}
+        y1={soleY1}
+        x2={soleX2}
+        y2={soleY2}
         stroke={stroke}
         strokeWidth="3"
         strokeLinecap="round"
@@ -75,22 +93,17 @@ export function OverviewLeftLeg({
         textAnchor="middle"
         className="pose-joint-label"
       >
-        かかと {Math.round(pose.heel)}°
+        かかと {Math.round(pose.heelRoll)}°
       </text>
 
       {overviewPointerArrow({
         cx: hipX - 100,
-        cy: hipY + 10,
-        rotDeg: 90,
+        cy: hipY + 150,
+        rotDeg: 41,
         href: ARROW_IMAGE_BLUE,
         active: isActive("hip1", "x"),
         onPointerDown: (e) =>
-          onArrowDown(e, {
-            leg: "L",
-            key: "hip1",
-            axis: "x",
-            sign: -1,
-          }),
+          onArrowDown(e, { leg: "L", key: "heelRoll", axis: "y" }),
       })}
       {/* {overviewPointerArrow({
         cx: footX - 33,
@@ -108,7 +121,7 @@ export function OverviewLeftLeg({
         href: ARROW_IMAGE_RED,
         active: isActive("heel", "y"),
         onPointerDown: (e) =>
-          onArrowDown(e, { leg: "L", key: "hip1", axis: "x", sign: -1 }),
+          onArrowDown(e, { leg: "L", key: "hip1", axis: "x" }),
       })}
     </g>
   );

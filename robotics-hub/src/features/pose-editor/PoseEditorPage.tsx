@@ -146,7 +146,7 @@ function SideLegPanel({
       rotDeg={rot}
       color={color}
       active={isActive(key, axis)}
-      onPointerDown={(e) => onArrowDown(e, { leg, key, axis, sign })}
+      onPointerDown={(e) => onArrowDown(e, { leg, key, axis })}
     />
   );
 
@@ -439,7 +439,7 @@ export default function PoseEditorPage() {
       console.log("onMove");
       const cur = d.axis === "x" ? e.clientX : e.clientY;
       const delta = cur - d.startClient;
-      const next = d.startAngle + delta * SENS * d.sign;
+      const next = d.startAngle + delta * SENS;
       const v = setLegAngle(d.leg, d.key, next);
       pushServo(d.leg, d.key, v, false);
     };

@@ -268,10 +268,6 @@ function OverviewPanel({
 }: OverviewProps) {
   const legLen = 102;
   const mirror = face === "back";
-  const centerX = 220;
-  const cxL = centerX - 56;
-  const cxR = centerX + 56;
-  const hy = 118;
   const dir: 1 | -1 = mirror ? -1 : 1;
 
   const faceLabel = face === "front" ? "正面" : "背面";

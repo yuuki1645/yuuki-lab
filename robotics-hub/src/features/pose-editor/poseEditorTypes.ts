@@ -1,5 +1,8 @@
 export type LegId = "L" | "R";
 
+/** オーバービューSVGの正面／背面 */
+export type OverviewFace = "front" | "back";
+
 export interface LegPose {
   hip1: number;
   hip2: number;

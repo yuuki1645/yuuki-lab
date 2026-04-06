@@ -123,6 +123,7 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
       const cur = d.axis === "x" ? e.clientX : e.clientY;
       const delta = cur - d.startClient;
       const next = d.startAngle + delta * DRAG_SENSITIVITY * d.sign;
+      console.log("next", next);
       const v = setLegAngle(d.leg, d.key, next);
       pushServo(d.leg, d.key, v, false);
     };

@@ -130,15 +130,15 @@ export function LeftSideLegPanel({
   const lengthHeel = 20;
   const lengthSole = 50;
 
-  // const logicalHip2 = pose.hip2;
-  const logicalHip2 = 40;
-  console.log("logicalHip2", logicalHip2);
+  const logicalHip2 = pose.hip2;
+  // const logicalHip2 = 40;
+  // console.log("logicalHip2", logicalHip2);
   // const logicalKnee = pose.knee;
   const logicalKnee = 30;
-  console.log("logicalKnee", logicalKnee);
+  // console.log("logicalKnee", logicalKnee);
   // const logicalHeelRoll = pose.heelRoll;
   const logicalHeelRoll = 90;
-  console.log("logicalHeelRoll", logicalHeelRoll);
+  // console.log("logicalHeelRoll", logicalHeelRoll);
   
   const Hip1 = { cx: hipX, cy: hipY };
   const Hip2 = { cx: hipX, cy: hipY + length1 };
@@ -248,10 +248,19 @@ export function LeftSideLegPanel({
         {jointDot(Heel)}
         {boneLine(HeelRollToSole)}
 
-        {/* <text x={geo.hip.x + 18} y={geo.hip.y - 8} className="pose-joint-label">
+        <g transform="translate(50 130) rotate(-49)">
+          <image
+            href="/arrows/top_left.png"
+            width={40}
+            height={40}
+            onPointerDown={(e) => onArrowDown(e, { leg: "L", key: "hip2", axis: "x", sign: 1 })}
+          />
+        </g>
+
+        <text x={30} y={100} className="pose-joint-label">
           HIP② {Math.round(pose.hip2)}°
         </text>
-        <text x={geo.knee.x + 14} y={geo.knee.y + 22} className="pose-joint-label">
+        {/* <text x={geo.knee.x + 14} y={geo.knee.y + 22} className="pose-joint-label">
           ひざ {Math.round(pose.knee)}°
         </text>
         <text x={geo.ankle.x - 52} y={geo.ankle.y + 6} className="pose-joint-label">

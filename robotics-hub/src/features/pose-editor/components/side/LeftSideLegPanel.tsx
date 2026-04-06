@@ -127,12 +127,41 @@ export function LeftSideLegPanel({
   const length1 = 20;
   const lengthHipToKnee = 80;
   const lengthShank = 70;
+  const lengthHeel = 20;
+  const lengthSole = 50;
 
+  // const logicalHip2 = pose.hip2;
+  const logicalHip2 = 40;
+  console.log("logicalHip2", logicalHip2);
+  // const logicalKnee = pose.knee;
+  const logicalKnee = 30;
+  console.log("logicalKnee", logicalKnee);
+  // const logicalHeelRoll = pose.heelRoll;
+  const logicalHeelRoll = 90;
+  console.log("logicalHeelRoll", logicalHeelRoll);
+  
   const Hip1 = { cx: hipX, cy: hipY };
   const Hip2 = { cx: hipX, cy: hipY + length1 };
-  const Knee = { cx: hipX, cy: hipY + lengthHipToKnee };
-  const Ankle = { cx: hipX, cy: hipY + lengthHipToKnee + lengthShank };
-
+  const angle1 = logicalHip2;
+  const Knee = {
+    cx: Hip2.cx - lengthHipToKnee * Math.cos(angle1 * Math.PI / 180),
+    cy: Hip2.cy + lengthHipToKnee * Math.sin(angle1 * Math.PI / 180),
+  };
+  const angle2 = logicalHip2 + logicalKnee;
+  const HeelRoll = {
+    cx: Knee.cx - lengthShank * Math.cos(angle2 * Math.PI / 180), 
+    cy: Knee.cy + lengthShank * Math.sin(angle2 * Math.PI / 180),
+  };
+  const angle3 = logicalHip2 + logicalKnee + (logicalHeelRoll - 90);
+  const Heel = { 
+    cx: HeelRoll.cx - lengthHeel * Math.cos(angle3 * Math.PI / 180), 
+    cy: HeelRoll.cy + lengthHeel * Math.sin(angle3 * Math.PI / 180),
+  };
+  const angle4 = logicalHip2 + logicalKnee + (logicalHeelRoll - 90) - 90;
+  const Sole = {
+    cx: Heel.cx - lengthSole * Math.cos(angle4 * Math.PI / 180),
+    cy: Heel.cy + lengthSole * Math.sin(angle4 * Math.PI / 180),
+  };
   type BoneSegment = { x1: number; y1: number; x2: number; y2: number };
 
   const Hip1ToHip2: BoneSegment = {
@@ -150,8 +179,20 @@ export function LeftSideLegPanel({
   const Shank: BoneSegment = {
     x1: Knee.cx,
     y1: Knee.cy,
-    x2: Ankle.cx,
-    y2: Ankle.cy,
+    x2: HeelRoll.cx,
+    y2: HeelRoll.cy,
+  };
+  const HeelRollToHeel: BoneSegment = {
+    x1: HeelRoll.cx,
+    y1: HeelRoll.cy,
+    x2: Heel.cx,
+    y2: Heel.cy,
+  };
+  const HeelRollToSole: BoneSegment = {
+    x1: Heel.cx,
+    y1: Heel.cy,
+    x2: Sole.cx,
+    y2: Sole.cy,
   };
 
   const jointDot = (j: { cx: number; cy: number }) => (
@@ -202,28 +243,10 @@ export function LeftSideLegPanel({
         {boneLine(Thigh)}
         {jointDot(Knee)}
         {boneLine(Shank)}
-        {jointDot(Ankle)}
-        {/* <line
-          x1={geo.ankle.x}
-          y1={geo.ankle.y}
-          x2={geo.foot.x}
-          y2={geo.foot.y}
-          stroke={stroke}
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        /> */}
-
-        {/* {[geo.hip, geo.knee, geo.ankle].map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r={7}
-            fill="#fefcf6"
-            stroke={stroke}
-            strokeWidth="2.4"
-          />
-        ))} */}
+        {jointDot(HeelRoll)}
+        {boneLine(HeelRollToHeel)}
+        {jointDot(Heel)}
+        {boneLine(HeelRollToSole)}
 
         {/* <text x={geo.hip.x + 18} y={geo.hip.y - 8} className="pose-joint-label">
           HIP② {Math.round(pose.hip2)}°

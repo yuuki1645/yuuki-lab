@@ -103,17 +103,8 @@ export function OverviewLeftLeg({
         href: ARROW_IMAGE_BLUE,
         active: isActive("hip1", "x"),
         onPointerDown: (e) =>
-          onArrowDown(e, { leg: "L", key: "heelRoll", axis: "y" }),
+          onArrowDown(e, { leg: "L", key: "heelRoll", axis: "y", sign: -1 }),
       })}
-      {/* {overviewPointerArrow({
-        cx: footX - 33,
-        cy: footY - 3,
-        rotDeg: 0,
-        href: ARROW_IMAGE_BLUE,
-        active: isActive("hip2", "y"),
-        onPointerDown: (e) =>
-          onArrowDown(e, { leg: "L", key: "hip2", axis: "y", sign: -1 }),
-      })} */}
       {overviewPointerArrow({
         cx: footX - 10,
         cy: footY + 30,
@@ -121,7 +112,7 @@ export function OverviewLeftLeg({
         href: ARROW_IMAGE_RED,
         active: isActive("heel", "y"),
         onPointerDown: (e) =>
-          onArrowDown(e, { leg: "L", key: "hip1", axis: "x" }),
+          onArrowDown(e, { leg: "L", key: "hip1", axis: "x", sign: -1 }),
       })}
     </g>
   );

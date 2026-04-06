@@ -14,7 +14,7 @@ export type ActiveDrag = {
   leg: LegId;
   key: JointKey;
   axis: "x" | "y";
-  // sign: 1 | -1;
+  sign: 1 | -1;
   startClient: number;
   startAngle: number;
 };

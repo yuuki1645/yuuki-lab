@@ -18,6 +18,7 @@ export interface HubTool {
  */
 const MotionEditorPage = lazy(() => import("@/features/motion-editor/MotionEditorPage"));
 const LegServoTunerPage = lazy(() => import("@/features/leg-servo-tuner/LegServoTunerPage"));
+const PoseEditorPage = lazy(() => import("@/features/pose-editor/PoseEditorPage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -33,5 +34,12 @@ export const hubTools: HubTool[] = [
     label: "レッグサーボ調整",
     description: "脚サーボを1本ずつ、論理角／物理角で動かして調整します。",
     LazyPage: LegServoTunerPage,
+  },
+  {
+    id: "pose-editor",
+    path: "/pose",
+    label: "ポーズエディタ",
+    description: "メモ風スケッチで脚の関節をドラッグし、論理角を編集します。",
+    LazyPage: PoseEditorPage,
   },
 ];

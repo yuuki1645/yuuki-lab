@@ -1,0 +1,240 @@
+@import url("https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap");
+
+.pose-editor {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 18px 28px;
+  background: linear-gradient(160deg, #f7f2e4 0%, #efe8d8 45%, #e8e2d4 100%);
+  color: #1a1a1a;
+}
+
+.pose-editor--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.pose-editor-header {
+  max-width: 1100px;
+  margin: 0 auto 16px;
+}
+
+.pose-editor-title {
+  margin: 0 0 6px;
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pose-editor-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.pose-editor-warn {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(180, 80, 40, 0.12);
+  border: 1px solid rgba(140, 60, 20, 0.25);
+  color: #4a2a12;
+  font-size: 0.88rem;
+}
+
+.pose-editor-error {
+  color: #7f1d1d;
+}
+
+.pose-editor-help {
+  color: #444;
+  font-size: 0.88rem;
+}
+
+.pose-editor-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .pose-editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pose-card {
+  background: rgba(255, 252, 246, 0.88);
+  border: 1px solid rgba(40, 30, 20, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(30, 24, 16, 0.08);
+  padding: 12px 14px 16px;
+}
+
+.pose-card-title {
+  margin: 0 0 10px;
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 1.15rem;
+}
+
+.pose-overview-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.pose-overview-card-head .pose-card-title {
+  margin: 0;
+}
+
+.pose-overview-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.pose-face-btn {
+  min-height: 44px;
+  min-width: 88px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(40, 30, 20, 0.22);
+  background: rgba(255, 255, 255, 0.55);
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #222;
+}
+
+.pose-face-btn--on {
+  background: rgba(29, 78, 216, 0.16);
+  border-color: rgba(29, 78, 216, 0.42);
+  font-weight: 700;
+}
+
+.pose-side-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pose-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.pose-tab {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(40, 30, 20, 0.2);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #222;
+}
+
+.pose-tab--on {
+  background: rgba(29, 78, 216, 0.14);
+  border-color: rgba(29, 78, 216, 0.45);
+  font-weight: 650;
+}
+
+.pose-overview-svg,
+.pose-side-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+
+.pose-sketch-title {
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 15px;
+  fill: #111;
+}
+
+.pose-front-marker {
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  fill: #111;
+}
+
+.pose-joint-label {
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 13px;
+  fill: #1f2937;
+}
+
+.pose-legend {
+  font-family: Kalam, system-ui, sans-serif;
+  font-size: 12px;
+  fill: #4b5563;
+}
+
+.pose-hint {
+  font-size: 9px;
+  fill: #6b7280;
+}
+
+.pose-arrow-handle {
+  cursor: grab;
+}
+
+.pose-arrow-handle--active {
+  cursor: grabbing;
+}
+
+.pose-arrow-hit {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+}
+
+.pose-readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px 14px;
+  margin: 12px 0 0;
+  padding: 12px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px dashed rgba(40, 30, 20, 0.18);
+}
+
+.pose-readout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+.pose-readout-row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #444;
+}
+
+.pose-readout-row dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 1rem;
+  font-weight: 650;
+  color: #111;
+}

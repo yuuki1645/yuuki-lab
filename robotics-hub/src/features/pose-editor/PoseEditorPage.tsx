@@ -464,6 +464,7 @@ export default function PoseEditorPage() {
     (e: React.PointerEvent, partial: Omit<ActiveDrag, "startClient" | "startAngle">) => {
       e.preventDefault();
       e.stopPropagation();
+      console.log("onArrowDown", partial);
       const pose = poseRef.current[partial.leg];
       const startAngle = pose[partial.key];
       const startClient = partial.axis === "x" ? e.clientX : e.clientY;

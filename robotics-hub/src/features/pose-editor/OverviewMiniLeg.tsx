@@ -1,7 +1,52 @@
 import type { PointerEvent } from "react";
-import { BlockArrowHandle } from "./BlockArrowHandle";
 import { hip1SpreadPx, type Vec2 } from "./poseKinematics";
 import type { ActiveDrag, JointKey, LegId, LegPose } from "./poseEditorTypes";
+
+/** Vite の `public/` からそのまま配信 */
+const ARROW_IMAGE_BLUE = "/arrows/top_left.png";
+const ARROW_IMAGE_RED = "/arrows/bottom_right.png";
+
+const OVERVIEW_ARROW_SIZE = 30;
+const OVERVIEW_ARROW_HIT_R = 22;
+
+type OverviewPointerArrowProps = {
+  cx: number;
+  cy: number;
+  rotDeg: number;
+  href: string;
+  active: boolean;
+  onPointerDown: (e: PointerEvent<SVGGElement>) => void;
+};
+
+/** オーバービュー用：透明ヒット円＋回転した矢印 PNG（このファイル専用） */
+function overviewPointerArrow({
+  cx,
+  cy,
+  rotDeg,
+  href,
+  active,
+  onPointerDown,
+}: OverviewPointerArrowProps) {
+  const half = OVERVIEW_ARROW_SIZE / 2;
+  return (
+    <g
+      className={`pose-arrow-handle pose-arrow-handle--block${active ? " pose-arrow-handle--active" : ""}`}
+      transform={`translate(${cx} ${cy}) rotate(${rotDeg})`}
+      onPointerDown={onPointerDown}
+    >
+      <circle r={OVERVIEW_ARROW_HIT_R} className="pose-arrow-hit" />
+      <g transform={`translate(${-half} ${-half})`}>
+        <image
+          href={href}
+          width={OVERVIEW_ARROW_SIZE}
+          height={OVERVIEW_ARROW_SIZE}
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden
+        />
+      </g>
+    </g>
+  );
+}
 
 export interface MiniLegProps {
   hipPos: Vec2;
@@ -79,52 +124,46 @@ export function MiniLeg({
         HIP① {Math.round(pose.hip1)}°
       </text>
       <text
-        x={footX}
-        y={footY + 22}
+        x={footX - 50}
+        y={footY - 25}
         textAnchor="middle"
         className="pose-joint-label"
       >
         かかと {Math.round(pose.heel)}°
       </text>
 
-      <BlockArrowHandle
-        cx={hipX - 34}
-        cy={hipY + 10}
-        r={22}
-        rotDeg={90}
-        color="#1d4ed8"
-        active={isActive("hip1", "x")}
-        onPointerDown={(e) =>
+      {overviewPointerArrow({
+        cx: hipX - 100,
+        cy: hipY + 10,
+        rotDeg: 90,
+        href: ARROW_IMAGE_BLUE,
+        active: isActive("hip1", "x"),
+        onPointerDown: (e) =>
           onArrowDown(e, {
             leg,
             key: "hip1",
             axis: "x",
             sign: leg === "L" ? -1 : 1,
-          })
-        }
-      />
-      <BlockArrowHandle
-        cx={hipX + 36}
-        cy={hipY + 10}
-        r={22}
-        rotDeg={90}
-        color="#b91c1c"
-        active={isActive("hip2", "y")}
-        onPointerDown={(e) =>
-          onArrowDown(e, { leg, key: "hip2", axis: "y", sign: -1 })
-        }
-      />
-      <BlockArrowHandle
-        cx={footX - 28}
-        cy={footY - 4}
-        r={22}
-        rotDeg={90}
-        color="#b91c1c"
-        active={isActive("heel", "y")}
-        onPointerDown={(e) =>
-          onArrowDown(e, { leg, key: "heel", axis: "y", sign: -1 })
-        }
-      />
+          }),
+      })}
+      {overviewPointerArrow({
+        cx: footX - 33,
+        cy: footY - 3,
+        rotDeg: 0,
+        href: ARROW_IMAGE_BLUE,
+        active: isActive("hip2", "y"),
+        onPointerDown: (e) =>
+          onArrowDown(e, { leg, key: "hip2", axis: "y", sign: -1 }),
+      })}
+      {overviewPointerArrow({
+        cx: footX - 10,
+        cy: footY + 30,
+        rotDeg: 0,
+        href: ARROW_IMAGE_RED,
+        active: isActive("heel", "y"),
+        onPointerDown: (e) =>
+          onArrowDown(e, { leg, key: "heel", axis: "y", sign: -1 }),
+      })}
     </g>
   );
 }

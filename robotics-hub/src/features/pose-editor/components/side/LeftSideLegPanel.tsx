@@ -100,6 +100,31 @@ export function LeftSideLegPanel({
   const heelL = limitsFor(servos, "L", "heel");
   const hrL = limitsFor(servos, "L", "heelRoll");
 
+  const basketTopY = 70;
+  const basketCenterX = 200;
+  const basketWidth = 100;
+  const basketLeftX = basketCenterX - basketWidth / 2;
+  const basketRightX = basketCenterX + basketWidth / 2;
+  const basketHeight = 50;
+  const basketBottomY = basketTopY + basketHeight;
+
+  function BasketFrame() {
+    return (
+      <g transform="translate(0 0)">
+        <path
+          d={`M ${basketLeftX} ${basketTopY} L ${basketLeftX} ${basketBottomY} L ${basketRightX} ${basketBottomY} L ${basketRightX} ${basketTopY}`}
+          fill="none"
+          stroke="#111"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      </g>
+    )
+  }
+
+  const hipX = basketCenterX;
+  const hipY = basketBottomY;
+
   return (
     <svg
       className="pose-side-svg"
@@ -113,24 +138,18 @@ export function LeftSideLegPanel({
         <text x="200" y="28" textAnchor="middle" className="pose-sketch-title">
           横（側面）
         </text>
-        <g transform="translate(0 8)">
-          <path
-            d="M 118 52 L 62 52 L 62 120"
-            fill="none"
-            stroke="#111"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-          <text x="90" y="48" textAnchor="middle" className="pose-front-marker">
-            前
-          </text>
-        </g>
+
+        <BasketFrame />
+
+        <text x="90" y="48" textAnchor="middle" className="pose-front-marker">
+          aaa前
+        </text>
 
         <line
-          x1={geo.hip.x}
-          y1={geo.hip.y}
-          x2={geo.knee.x}
-          y2={geo.knee.y}
+          x1={hipX}
+          y1={hipY}
+          x2={hipX}
+          y2={hipY + 50}
           stroke={stroke}
           strokeWidth="3.5"
           strokeLinecap="round"

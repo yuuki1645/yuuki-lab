@@ -357,14 +357,15 @@ function OverviewPanel({
           y1={hy}
           x2={fx}
           y2={fy}
-          stroke={stroke}
+          stroke="orange"
           strokeWidth="3"
           strokeLinecap="round"
+          
         />
-        <circle cx={hx} cy={hy} r={6} fill="#fefcf6" stroke={stroke} strokeWidth="2" />
-        <circle cx={fx} cy={fy} r={6} fill="#fefcf6" stroke={stroke} strokeWidth="2" />
+        <circle cx={hx} cy={hy} r={6} fill="green" stroke={stroke} strokeWidth="2" />
+        <circle cx={fx} cy={fy} r={6} fill="yellow" stroke={stroke} strokeWidth="2" />
         <text x={hx} y={hy - 10} textAnchor="middle" className="pose-joint-label">
-          HIP① {Math.round(pose.hip1)}°
+          HIPaa① {Math.round(pose.hip1)}°
         </text>
         <text x={fx} y={fy + 22} textAnchor="middle" className="pose-joint-label">
           かかと {Math.round(pose.heel)}°
@@ -413,6 +414,12 @@ function OverviewPanel({
 
   const faceLabel = face === "front" ? "正面" : "背面";
 
+  const basketHeight = 50;
+  const basketTopY = 15;
+  const basketBottomY = basketTopY + basketHeight;
+  const basketLeftX = centerX + 56;
+  const basketRightX = centerX - 150;
+
   return (
     <svg
       className="pose-overview-svg"
@@ -425,9 +432,9 @@ function OverviewPanel({
       {/* カゴ（上辺＋左右脚位置へ下ろす U 字フレーム） */}
       <g style={{ filter: "url(#pose-wobble)" }} aria-hidden>
         <path
-          d={`M ${hxL} ${hy} L ${hxL} ${topY} L ${hxR} ${topY} L ${hxR} ${hy}`}
+          d={`M ${basketLeftX} ${basketTopY} L ${basketLeftX} ${basketBottomY} L ${basketRightX} ${basketBottomY} L ${basketRightX} ${basketTopY}`}
           fill="none"
-          stroke="#2a2218"
+          stroke="black"
           strokeWidth="3.4"
           strokeLinejoin="round"
           strokeLinecap="round"

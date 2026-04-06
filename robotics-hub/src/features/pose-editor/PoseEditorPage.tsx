@@ -266,7 +266,7 @@ function OverviewPanel({
   activeDrag,
   onArrowDown,
 }: OverviewProps) {
-  const legLen = 102;
+  const legLen = 150;
   const mirror = face === "back";
   const dir: 1 | -1 = mirror ? -1 : 1;
 

@@ -90,7 +90,7 @@ export function MiniLeg({
       <BlockArrowHandle
         cx={hipX - 34}
         cy={hipY + 10}
-        r={30}
+        r={22}
         rotDeg={90}
         color="#1d4ed8"
         active={isActive("hip1", "x")}
@@ -106,7 +106,7 @@ export function MiniLeg({
       <BlockArrowHandle
         cx={hipX + 36}
         cy={hipY + 10}
-        r={30}
+        r={22}
         rotDeg={90}
         color="#b91c1c"
         active={isActive("hip2", "y")}
@@ -117,7 +117,7 @@ export function MiniLeg({
       <BlockArrowHandle
         cx={footX - 28}
         cy={footY - 4}
-        r={30}
+        r={22}
         rotDeg={90}
         color="#b91c1c"
         active={isActive("heel", "y")}

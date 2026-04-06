@@ -1,3 +1,4 @@
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import type { PointerEvent } from "react";
 
 export interface BlockArrowHandleProps {
@@ -10,7 +11,18 @@ export interface BlockArrowHandleProps {
   onPointerDown: (e: PointerEvent<SVGGElement>) => void;
 }
 
-/** オーバービュー用：太い軸＋台形矢印のブロック矢印（右向きが 0°） */
+/** 親 SVG の viewBox 単位での矢印の表示幅・高さ（脚の線幅と釣り合うよう控えめに） */
+const ICON_SIZE = 18;
+
+function faIconPathD(icon: typeof faArrowRight): string {
+  const raw = icon.icon[4];
+  return Array.isArray(raw) ? raw.join(" ") : raw;
+}
+
+/**
+ * オーバービュー用の矢印ハンドル（Font Awesome Solid の右矢印パス）。
+ * ネスト SVG に width/height/viewBox を明示し、親座標系で巨大化しないようにする。
+ */
 export function BlockArrowHandle({
   cx,
   cy,
@@ -20,8 +32,13 @@ export function BlockArrowHandle({
   active,
   onPointerDown,
 }: BlockArrowHandleProps) {
-  const d =
-    "M -26 -7 L 10 -7 L 10 -13 L 30 0 L 10 13 L 10 7 L -26 7 Z";
+  const half = ICON_SIZE / 2;
+  const [vbW, vbH] = [faArrowRight.icon[0], faArrowRight.icon[1]] as [
+    number,
+    number,
+  ];
+  const d = faIconPathD(faArrowRight);
+
   return (
     <g
       className={`pose-arrow-handle pose-arrow-handle--block${active ? " pose-arrow-handle--active" : ""}`}
@@ -29,15 +46,16 @@ export function BlockArrowHandle({
       onPointerDown={onPointerDown}
     >
       <circle r={r} className="pose-arrow-hit" />
-      <path
-        d={d}
-        fill={color}
-        stroke="#1a1a1a"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-        opacity="0.95"
-        style={{ filter: "url(#pose-wobble)" }}
-      />
+      <g transform={`translate(${-half} ${-half})`}>
+        <svg
+          width={ICON_SIZE}
+          height={ICON_SIZE}
+          viewBox={`0 0 ${vbW} ${vbH}`}
+          aria-hidden
+        >
+          <path d={d} fill={color} />
+        </svg>
+      </g>
     </g>
   );
 }

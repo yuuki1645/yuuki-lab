@@ -5,7 +5,8 @@ import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
 import { useServos } from "@/shared/hooks/useServos";
 import { computeSideViewLeg, type Vec2 } from "./poseKinematics";
-import { MiniLeg } from "./OverviewMiniLeg";
+import { OverviewLeftLeg } from "./OverviewLeftLeg";
+import { OverviewRightLeg } from "./OverviewRightLeg";
 import type { ActiveDrag, JointKey, LegId, LegPose } from "./poseEditorTypes";
 import "./PoseEditorPage.css";
 
@@ -303,18 +304,16 @@ function OverviewPanel({
         />
       </g>
 
-      <MiniLeg
+      <OverviewLeftLeg
         hipPos={hipPosL}
-        leg="L"
         pose={left}
         legLen={legLen}
         dir={dir}
         activeDrag={activeDrag}
         onArrowDown={onArrowDown}
       />
-      <MiniLeg
+      <OverviewRightLeg
         hipPos={hipPosR}
-        leg="R"
         pose={right}
         legLen={legLen}
         dir={dir}

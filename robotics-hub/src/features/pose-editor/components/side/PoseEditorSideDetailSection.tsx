@@ -1,7 +1,8 @@
 import { useState, type PointerEvent } from "react";
 import type { Servo } from "@/shared/types";
 import type { ActiveDrag, LegId, LegPose } from "../../types";
-import { SideLegPanel } from "./SideLegPanel";
+import { LeftSideLegPanel } from "./LeftSideLegPanel";
+import { RightSideLegPanel } from "./RightSideLegPanel";
 import { SideLegPoseReadout } from "./SideLegPoseReadout";
 
 export interface PoseEditorSideDetailSectionProps {
@@ -52,13 +53,21 @@ export function PoseEditorSideDetailSection({
         </div>
       </div>
 
-      <SideLegPanel
-        leg={sideTab}
-        pose={pose}
-        servos={servos}
-        activeDrag={activeDrag}
-        onArrowDown={onArrowDown}
-      />
+      {sideTab === "L" ? (
+        <LeftSideLegPanel
+          pose={readout.L}
+          servos={servos}
+          activeDrag={activeDrag}
+          onArrowDown={onArrowDown}
+        />
+      ) : (
+        <RightSideLegPanel
+          pose={readout.R}
+          servos={servos}
+          activeDrag={activeDrag}
+          onArrowDown={onArrowDown}
+        />
+      )}
 
       <SideLegPoseReadout pose={pose} />
     </section>

@@ -34,8 +34,7 @@ function SideLegArrowHandle(props: {
   );
 }
 
-export interface SideLegPanelProps {
-  leg: LegId;
+export interface SideLegPanelBaseProps {
   pose: LegPose;
   servos: Servo[];
   activeDrag: ActiveDrag | null;
@@ -45,16 +44,20 @@ export interface SideLegPanelProps {
   ) => void;
 }
 
+export interface SideLegPanelCoreProps extends SideLegPanelBaseProps {
+  leg: LegId;
+}
+
 /**
- * 単脚の側面スケッチとドラッグ用矢印ハンドル
+ * 単脚の側面スケッチとドラッグ用矢印ハンドル（左右共通実装）
  */
-export function SideLegPanel({
+export function SideLegPanelCore({
   leg,
   pose,
   servos,
   activeDrag,
   onArrowDown,
-}: SideLegPanelProps) {
+}: SideLegPanelCoreProps) {
   const stroke = leg === "L" ? "#1d4ed8" : "#b91c1c";
   const upperLen = 88;
   const lowerLen = 76;

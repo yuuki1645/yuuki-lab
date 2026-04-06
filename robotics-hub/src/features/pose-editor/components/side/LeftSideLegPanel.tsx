@@ -100,7 +100,7 @@ export function LeftSideLegPanel({
   const heelL = limitsFor(servos, "L", "heel");
   const hrL = limitsFor(servos, "L", "heelRoll");
 
-  const basketTopY = 70;
+  const basketTopY = 10;
   const basketCenterX = 200;
   const basketWidth = 100;
   const basketLeftX = basketCenterX - basketWidth / 2;
@@ -124,6 +124,58 @@ export function LeftSideLegPanel({
 
   const hipX = basketCenterX;
   const hipY = basketBottomY;
+  const length1 = 20;
+  const lengthHipToKnee = 80;
+  const lengthShank = 70;
+
+  const Hip1 = { cx: hipX, cy: hipY };
+  const Hip2 = { cx: hipX, cy: hipY + length1 };
+  const Knee = { cx: hipX, cy: hipY + lengthHipToKnee };
+  const Ankle = { cx: hipX, cy: hipY + lengthHipToKnee + lengthShank };
+
+  type BoneSegment = { x1: number; y1: number; x2: number; y2: number };
+
+  const Hip1ToHip2: BoneSegment = {
+    x1: Hip1.cx,
+    y1: Hip1.cy,
+    x2: Hip2.cx,
+    y2: Hip2.cy,
+  };
+  const Thigh: BoneSegment = {
+    x1: Hip2.cx,
+    y1: Hip2.cy,
+    x2: Knee.cx,
+    y2: Knee.cy,
+  };
+  const Shank: BoneSegment = {
+    x1: Knee.cx,
+    y1: Knee.cy,
+    x2: Ankle.cx,
+    y2: Ankle.cy,
+  };
+
+  const jointDot = (j: { cx: number; cy: number }) => (
+    <circle
+      cx={j.cx}
+      cy={j.cy}
+      r={6}
+      fill="#fefcf6"
+      stroke={stroke}
+      strokeWidth={2}
+    />
+  );
+
+  const boneLine = (s: BoneSegment) => (
+    <line
+      x1={s.x1}
+      y1={s.y1}
+      x2={s.x2}
+      y2={s.y2}
+      stroke={stroke}
+      strokeWidth={3.5}
+      strokeLinecap="round"
+    />
+  );
 
   return (
     <svg
@@ -135,35 +187,23 @@ export function LeftSideLegPanel({
       <PoseSketchFilters />
       <rect x="0" y="0" width="400" height="320" fill="transparent" />
       <g style={{ filter: "url(#pose-wobble)" }}>
-        <text x="200" y="28" textAnchor="middle" className="pose-sketch-title">
+        {/* <text x="200" y="28" textAnchor="middle" className="pose-sketch-title">
           横（側面）
-        </text>
+        </text> */}
 
         <BasketFrame />
 
-        <text x="90" y="48" textAnchor="middle" className="pose-front-marker">
+        {/* <text x="90" y="48" textAnchor="middle" className="pose-front-marker">
           aaa前
-        </text>
-
-        <line
-          x1={hipX}
-          y1={hipY}
-          x2={hipX}
-          y2={hipY + 50}
-          stroke={stroke}
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-        <line
-          x1={geo.knee.x}
-          y1={geo.knee.y}
-          x2={geo.ankle.x}
-          y2={geo.ankle.y}
-          stroke={stroke}
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-        <line
+        </text> */}
+        {jointDot(Hip1)}
+        {boneLine(Hip1ToHip2)}
+        {jointDot(Hip2)}
+        {boneLine(Thigh)}
+        {jointDot(Knee)}
+        {boneLine(Shank)}
+        {jointDot(Ankle)}
+        {/* <line
           x1={geo.ankle.x}
           y1={geo.ankle.y}
           x2={geo.foot.x}
@@ -171,9 +211,9 @@ export function LeftSideLegPanel({
           stroke={stroke}
           strokeWidth="3.2"
           strokeLinecap="round"
-        />
+        /> */}
 
-        {[geo.hip, geo.knee, geo.ankle].map((p, i) => (
+        {/* {[geo.hip, geo.knee, geo.ankle].map((p, i) => (
           <circle
             key={i}
             cx={p.x}
@@ -183,9 +223,9 @@ export function LeftSideLegPanel({
             stroke={stroke}
             strokeWidth="2.4"
           />
-        ))}
+        ))} */}
 
-        <text x={geo.hip.x + 18} y={geo.hip.y - 8} className="pose-joint-label">
+        {/* <text x={geo.hip.x + 18} y={geo.hip.y - 8} className="pose-joint-label">
           HIP② {Math.round(pose.hip2)}°
         </text>
         <text x={geo.knee.x + 14} y={geo.knee.y + 22} className="pose-joint-label">
@@ -196,15 +236,15 @@ export function LeftSideLegPanel({
         </text>
         <text x={geo.ankle.x + 18} y={geo.ankle.y + 26} className="pose-joint-label">
           ロール {Math.round(pose.heelRoll)}°
-        </text>
+        </text> */}
       </g>
 
-      {mk("hip2", "y", -1, geo.hip.x - 36, geo.hip.y, 90, "#1d4ed8")}
+      {/* {mk("hip2", "y", -1, geo.hip.x - 36, geo.hip.y, 90, "#1d4ed8")}
       {mk("hip2", "x", 1, geo.hip.x + 40, geo.hip.y, 0, "#b91c1c")}
       {mk("knee", "y", -1, geo.knee.x - 34, geo.knee.y, 90, "#b91c1c")}
       {mk("knee", "x", -1, geo.knee.x + 36, geo.knee.y, 180, "#1d4ed8")}
       {mk("heel", "y", -1, geo.ankle.x - 30, geo.ankle.y + 8, 90, "#b91c1c")}
-      {mk("heelRoll", "x", 1, geo.ankle.x + 34, geo.ankle.y, 0, "#1d4ed8")}
+      {mk("heelRoll", "x", 1, geo.ankle.x + 34, geo.ankle.y, 0, "#1d4ed8")} */}
 
       <text x="8" y="312" className="pose-hint">
         矢印をドラッグ／HIP② {hip2Limits.lo}°〜{hip2Limits.hi}° 膝 {kneeL.lo}°〜

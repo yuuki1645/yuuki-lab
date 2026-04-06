@@ -436,6 +436,7 @@ export default function PoseEditorPage() {
     const onMove = (e: PointerEvent) => {
       const d = dragRef.current;
       if (!d) return;
+      console.log("onMove");
       const cur = d.axis === "x" ? e.clientX : e.clientY;
       const delta = cur - d.startClient;
       const next = d.startAngle + delta * SENS * d.sign;

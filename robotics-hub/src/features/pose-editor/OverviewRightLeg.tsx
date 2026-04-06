@@ -106,7 +106,7 @@ export function OverviewRightLeg({
         href: ARROW_IMAGE_RED,
         active: isActive("heel", "y"),
         onPointerDown: (e) =>
-          onArrowDown(e, { leg: "R", key: "heel", axis: "y", sign: -1 }),
+          onArrowDown(e, { leg: "R", key: "hip1", axis: "x", sign: -1 }),
       })}
     </g>
   );

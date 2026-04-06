@@ -20,16 +20,18 @@ export function OverviewLeftLeg({
 }: OverviewLegBaseProps) {
   const stroke = "#1d4ed8";
   const spread = hip1SpreadPx(pose.hip1);
-  const hipX = hipPos.x + dir * -spread;
+  const hipX = hipPos.x;
   const hipY = hipPos.y;
-  const footX = hipX;
-  const footY = hipY + legLen;
 
   const isActive = (key: JointKey, axis: "x" | "y") =>
     activeDrag != null &&
     activeDrag.leg === "L" &&
     activeDrag.key === key &&
     activeDrag.axis === axis;
+
+  const logicalHip1 = pose.hip1;
+  const footX = hipX - legLen * Math.sin(logicalHip1 * Math.PI / 180);
+  const footY = hipY + legLen * Math.cos(logicalHip1 * Math.PI / 180);
 
   return (
     <g>
@@ -90,7 +92,7 @@ export function OverviewLeftLeg({
             sign: -1,
           }),
       })}
-      {overviewPointerArrow({
+      {/* {overviewPointerArrow({
         cx: footX - 33,
         cy: footY - 3,
         rotDeg: 0,
@@ -98,7 +100,7 @@ export function OverviewLeftLeg({
         active: isActive("hip2", "y"),
         onPointerDown: (e) =>
           onArrowDown(e, { leg: "L", key: "hip2", axis: "y", sign: -1 }),
-      })}
+      })} */}
       {overviewPointerArrow({
         cx: footX - 10,
         cy: footY + 30,
@@ -106,7 +108,7 @@ export function OverviewLeftLeg({
         href: ARROW_IMAGE_RED,
         active: isActive("heel", "y"),
         onPointerDown: (e) =>
-          onArrowDown(e, { leg: "L", key: "heel", axis: "y", sign: -1 }),
+          onArrowDown(e, { leg: "L", key: "hip1", axis: "x", sign: -1 }),
       })}
     </g>
   );

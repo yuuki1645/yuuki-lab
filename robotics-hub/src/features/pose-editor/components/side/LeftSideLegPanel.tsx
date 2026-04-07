@@ -242,7 +242,18 @@ export function LeftSideLegPanel({
         {jointDot(HeelRoll)}
         {boneLine(HeelRollToHeel)}
         {jointDot(Heel)}
-        {boneLine(HeelRollToSole)}
+
+        {/* {boneLine(HeelRollToSole)} */}
+        {/* ソール */}
+        <line
+          x1={HeelRollToSole.x1}
+          y1={HeelRollToSole.y1}
+          x2={HeelRollToSole.x2}
+          y2={HeelRollToSole.y2}
+          stroke={stroke}
+          strokeWidth={3.5}
+          strokeLinecap="round"
+        />
 
         <text x={30} y={100} className="pose-joint-label">
           HIP② {Math.round(pose.hip2)}°

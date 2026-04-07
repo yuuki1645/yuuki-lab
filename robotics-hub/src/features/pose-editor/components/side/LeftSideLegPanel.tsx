@@ -66,6 +66,8 @@ export function LeftSideLegPanel({
     pose.heel
   );
 
+  console.log("servos", servos);
+
   const isActive = (key: JointKey, axis: "x" | "y") =>
     activeDrag != null &&
     activeDrag.leg === "L" &&
@@ -146,12 +148,12 @@ export function LeftSideLegPanel({
     cx: Knee.cx - lengthShank * Math.cos(angle2 * Math.PI / 180), 
     cy: Knee.cy + lengthShank * Math.sin(angle2 * Math.PI / 180),
   };
-  const angle3 = logicalHip2 + logicalKnee + (logicalHeel - 90);
+  const angle3 = logicalHip2 + logicalKnee + (logicalHeel);
   const Heel = { 
     cx: HeelRoll.cx - lengthHeel * Math.cos(angle3 * Math.PI / 180), 
     cy: HeelRoll.cy + lengthHeel * Math.sin(angle3 * Math.PI / 180),
   };
-  const angle4 = logicalHip2 + logicalKnee + (logicalHeel - 90) - 90;
+  const angle4 = logicalHip2 + logicalKnee + (logicalHeel) - 90;
   const Sole = {
     cx: Heel.cx - lengthSole * Math.cos(angle4 * Math.PI / 180),
     cy: Heel.cy + lengthSole * Math.sin(angle4 * Math.PI / 180),

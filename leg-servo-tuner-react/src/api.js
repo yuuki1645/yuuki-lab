@@ -16,7 +16,7 @@ export async function fetchServos() {
   
   // サーボデータを整形
   const formattedServos = servosData.map(servo => {
-    console.log("servo:", servo);
+    // console.log("servo:", servo);
     const lastLogical = clamp(
       parseFloat(servo.last_logical ?? servo.default_logical ?? 0),
       servo.logical_lo,

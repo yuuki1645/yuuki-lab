@@ -131,14 +131,8 @@ export function LeftSideLegPanel({
   const lengthSole = 50;
 
   const logicalHip2 = pose.hip2;
-  // const logicalHip2 = 40;
-  // console.log("logicalHip2", logicalHip2);
-  // const logicalKnee = pose.knee;
-  const logicalKnee = 30;
-  // console.log("logicalKnee", logicalKnee);
-  // const logicalHeelRoll = pose.heelRoll;
-  const logicalHeelRoll = 90;
-  // console.log("logicalHeelRoll", logicalHeelRoll);
+  const logicalKnee = pose.knee;
+  const logicalHeel = pose.heel;
   
   const Hip1 = { cx: hipX, cy: hipY };
   const Hip2 = { cx: hipX, cy: hipY + length1 };
@@ -152,12 +146,12 @@ export function LeftSideLegPanel({
     cx: Knee.cx - lengthShank * Math.cos(angle2 * Math.PI / 180), 
     cy: Knee.cy + lengthShank * Math.sin(angle2 * Math.PI / 180),
   };
-  const angle3 = logicalHip2 + logicalKnee + (logicalHeelRoll - 90);
+  const angle3 = logicalHip2 + logicalKnee + (logicalHeel - 90);
   const Heel = { 
     cx: HeelRoll.cx - lengthHeel * Math.cos(angle3 * Math.PI / 180), 
     cy: HeelRoll.cy + lengthHeel * Math.sin(angle3 * Math.PI / 180),
   };
-  const angle4 = logicalHip2 + logicalKnee + (logicalHeelRoll - 90) - 90;
+  const angle4 = logicalHip2 + logicalKnee + (logicalHeel - 90) - 90;
   const Sole = {
     cx: Heel.cx - lengthSole * Math.cos(angle4 * Math.PI / 180),
     cy: Heel.cy + lengthSole * Math.sin(angle4 * Math.PI / 180),
@@ -248,6 +242,10 @@ export function LeftSideLegPanel({
         {jointDot(Heel)}
         {boneLine(HeelRollToSole)}
 
+        <text x={30} y={100} className="pose-joint-label">
+          HIP② {Math.round(pose.hip2)}°
+        </text>
+
         <g transform="translate(50 130) rotate(-49)">
           <image
             href="/arrows/top_left.png"
@@ -257,16 +255,33 @@ export function LeftSideLegPanel({
           />
         </g>
 
-        <text x={30} y={100} className="pose-joint-label">
-          HIP② {Math.round(pose.hip2)}°
-        </text>
-        {/* <text x={geo.knee.x + 14} y={geo.knee.y + 22} className="pose-joint-label">
+        <text x={30} y={170} className="pose-joint-label">
           ひざ {Math.round(pose.knee)}°
         </text>
-        <text x={geo.ankle.x - 52} y={geo.ankle.y + 6} className="pose-joint-label">
+
+        <g transform="translate(50 205) rotate(-49)">
+          <image
+            href="/arrows/top_left.png"
+            width={40}
+            height={40}
+            onPointerDown={(e) => onArrowDown(e, { leg: "L", key: "knee", axis: "x", sign: 1 })}
+          />
+        </g>
+
+        <text x={250} y={200} className="pose-joint-label">
           かかと {Math.round(pose.heel)}°
         </text>
-        <text x={geo.ankle.x + 18} y={geo.ankle.y + 26} className="pose-joint-label">
+
+        <g transform="translate(250 250) rotate(-49)">
+          <image
+            href="/arrows/top_left.png"
+            width={40}
+            height={40}
+            onPointerDown={(e) => onArrowDown(e, { leg: "L", key: "heel", axis: "x", sign: 1 })}
+          />
+        </g>
+
+        {/* <text x={geo.ankle.x + 18} y={geo.ankle.y + 26} className="pose-joint-label">
           ロール {Math.round(pose.heelRoll)}°
         </text> */}
       </g>

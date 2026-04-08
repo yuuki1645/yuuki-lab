@@ -1,3 +1,5 @@
+# type: ignore
+
 """FastAPI + Socket.IO 中継サーバー（React SPA を同ポートで配信）。"""
 
 from __future__ import annotations

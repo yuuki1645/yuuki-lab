@@ -69,22 +69,107 @@ iPhone の Safari / Chrome（iOS 上は WebKit ベース）は、**LAN の `http
 - `cert.pem` … 証明書（公開側）
 - `key.pem` … 秘密鍵（**第三者に渡さない・Git に含めない**）
 
-どちらも **PEM 形式**のテキストファイルです。ファイルが無い場合は **HTTP** で起動します（PC のモニター確認程度は可能ですが、**iPhone カメラは原則不可**）。
+どちらも **PEM 形式**のテキストです。ファイルが無い場合は **HTTP** で起動します（PC のモニター確認程度は可能ですが、**iPhone カメラは原則不可**）。
 
-### 自己署名証明書の例（OpenSSL）
+Windows では **[mkcert](https://github.com/FiloSottile/mkcert)** でローカル用証明書を作るのが手軽です。以下は Windows 向けの手順です。
 
-開発・LAN 限定用途の例です。コマンドは環境により `openssl` のパスが異なります。
+### 1. mkcert をインストール
 
-```bash
-openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+#### Chocolatey がある場合
+
+PowerShell またはコマンドプロンプトで:
+
+```powershell
+choco install mkcert
 ```
 
-- ブラウザには「信頼できない証明書」と表示されることがあります。**開発用として続行**し、必要に応じて端末側で信頼設定を行ってください。
-- **本番・不特定多数向け**には Let's Encrypt など適切な CA で取得した証明書の利用を検討してください。
+#### Scoop がある場合
 
-### mkcert を使う場合（開発向け）
+```powershell
+scoop bucket add extras
+scoop install mkcert
+```
 
-[mkcert](https://github.com/FiloSottile/mkcert) でローカル用の信頼済み証明書を作る方法もあります。生成されたファイルを `cert.pem` / `key.pem` としてコピーしても構いません（ツールの出力ファイル名に合わせてリネーム）。
+その他の導入方法は [mkcert の README](https://github.com/FiloSottile/mkcert/blob/master/README.md) を参照してください。
+
+### 2. ローカル CA をインストール
+
+**PowerShell を管理者として起動**して実行します。
+
+```powershell
+mkcert -install
+```
+
+ローカル用の認証局が Windows の信頼ストアに入ります。権限不足で失敗する場合は、管理者で開き直してください。
+
+### 3. PC の LAN 上 IP を確認する
+
+PowerShell またはコマンドプロンプトで:
+
+```powershell
+ipconfig
+```
+
+**IPv4 アドレス**（例: `192.168.1.10`）を控えます。
+
+### 4. 証明書を作る
+
+控えた IP を **`192.168.1.10` の部分だけ**実際の値に置き換えて実行します。
+
+```powershell
+mkcert 192.168.1.10 localhost 127.0.0.1 ::1
+```
+
+`localhost` / `127.0.0.1` / `::1` を一緒に含めておくと、同じ PC 上のブラウザからも使いやすくなります。
+
+### 5. ファイル名をそろえて配置する
+
+生成例（名前は環境により多少異なります）:
+
+```text
+192.168.1.10+3.pem
+192.168.1.10+3-key.pem
+```
+
+これらを **`iphone-camera-relay` フォルダ直下**に置き、次の名前にリネームします。
+
+| 元のファイル（例） | リネーム後 |
+|----------------|------------|
+| `*.pem`（鍵でないほう） | `cert.pem` |
+| `*-key.pem` | `key.pem` |
+
+### 6. 起動する
+
+`iphone-camera-relay` をカレントにして:
+
+```powershell
+npm run dev
+```
+
+ビルド済み運用の場合は `npm run build` のあと `npm start` です。
+
+### 7. アクセス例
+
+- **iPhone**: `https://192.168.1.10:5000/camera`（IP とポートは環境に合わせる）
+- **Windows PC**: `https://127.0.0.1:5000/monitor` または `https://192.168.1.10:5000/monitor`
+
+### ハマりやすい点
+
+- **管理者権限**: `mkcert -install` が失敗したら、管理者 PowerShell で再実行する。
+- **Windows Defender ファイアウォール**: `npm run dev` / `node` 起動時に許可ダイアログが出たら、**同一 LAN で使うならプライベートネットワークを許可**する。拒否すると iPhone から届かないことがあります。
+- **iPhone 側の証明書警告**: 接続先や信頼の仕組みによっては、初回に警告や信頼操作が必要なことがあります。LAN 開発用の構成であることに注意してください。
+- **本番・インターネット公開**: Let's Encrypt など、用途に応じた正式な CA の利用を検討してください。
+
+### 最短の流れ（参考）
+
+```powershell
+choco install mkcert
+mkcert -install
+ipconfig
+mkcert 192.168.1.10 localhost 127.0.0.1 ::1
+```
+
+生成された `*.pem` を `cert.pem` と `key.pem` にリネームして **`iphone-camera-relay` と同じフォルダ**へ置き、`npm run dev` で起動します。
 
 ## 動作の流れ
 
@@ -103,7 +188,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -node
 ## ライセンス・セキュリティ
 
 - このリポジトリ用途は **同一 LAN 内の検証**を想定しています。インターネットにそのまま公開しないでください。
-- **`key.pem` をバージョン管理に含めないでください。**（`.gitignore` で `dist` 等のみの場合、証明書は手元で管理すること）
+- **`cert.pem` / `key.pem` をバージョン管理に含めないでください。**（本リポジトリでは `.gitignore` に記載済みです）
 
 ## npm スクリプト一覧
 

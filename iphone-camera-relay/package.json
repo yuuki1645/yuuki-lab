@@ -4,27 +4,23 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx watch server/index.ts",
-    "build": "vite build && tsc -p tsconfig.server.json",
-    "start": "cross-env NODE_ENV=production node dist/server/index.js",
+    "build": "vite build",
+    "dev:client": "vite build --watch",
+    "dev": "npm run build && cross-env DEV_RELOAD=1 python -m backend",
+    "start": "npm run build && python -m backend",
     "preview": "vite preview"
   },
   "dependencies": {
-    "express": "^5.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.6.0",
-    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/node": "^22.15.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "cross-env": "^7.0.3",
-    "tsx": "^4.19.3",
     "typescript": "~5.7.2",
     "vite": "^7.2.4"
   }

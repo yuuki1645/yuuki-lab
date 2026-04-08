@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# TLS（README どおりリポジトリに含めない）
+cert.pem
+key.pem

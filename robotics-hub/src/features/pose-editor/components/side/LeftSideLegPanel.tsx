@@ -1,38 +1,9 @@
 import type { PointerEvent } from "react";
 import type { Servo } from "@/shared/types";
-import { computeSideViewLeg, type Vec2 } from "../../lib/kinematics";
 import { limitsFor } from "../../lib/servoUtils";
-import type { ActiveDrag, JointKey, LegPose } from "../../types";
+import type { ActiveDrag, LegPose } from "../../types";
 import { PoseSketchFilters } from "../PoseSketchFilters";
 
-function SideLegArrowHandle(props: {
-  cx: number;
-  cy: number;
-  r: number;
-  rotDeg: number;
-  color: string;
-  active: boolean;
-  onPointerDown: (e: PointerEvent) => void;
-}) {
-  const { cx, cy, r, rotDeg, color, active, onPointerDown } = props;
-  return (
-    <g
-      className={`pose-arrow-handle${active ? " pose-arrow-handle--active" : ""}`}
-      transform={`translate(${cx} ${cy}) rotate(${rotDeg})`}
-      onPointerDown={onPointerDown}
-    >
-      <circle r={r} className="pose-arrow-hit" />
-      <path
-        d="M0 -6 L14 0 L0 6 L4 0 Z"
-        fill={color}
-        stroke="#1a1a1a"
-        strokeWidth="0.6"
-        opacity="0.92"
-        style={{ filter: "url(#pose-wobble)" }}
-      />
-    </g>
-  );
-}
 
 export interface LeftSideLegPanelProps {
   pose: LegPose;
@@ -48,54 +19,9 @@ export interface LeftSideLegPanelProps {
 export function LeftSideLegPanel({
   pose,
   servos,
-  activeDrag,
   onArrowDown,
 }: LeftSideLegPanelProps) {
   const stroke = "#1d4ed8";
-  const upperLen = 88;
-  const lowerLen = 76;
-  const footLen = 28;
-  const hipBase: Vec2 = { x: 200, y: 36 };
-  const geo = computeSideViewLeg(
-    hipBase,
-    upperLen,
-    lowerLen,
-    footLen,
-    pose.hip2,
-    pose.knee,
-    pose.heel
-  );
-
-  console.log("servos", servos);
-
-  const isActive = (key: JointKey, axis: "x" | "y") =>
-    activeDrag != null &&
-    activeDrag.leg === "L" &&
-    activeDrag.key === key &&
-    activeDrag.axis === axis;
-
-  const mk = (
-    key: JointKey,
-    axis: "x" | "y",
-    sign: 1 | -1,
-    cx: number,
-    cy: number,
-    rot: number,
-    color: string
-  ) => (
-    <SideLegArrowHandle
-      key={`${key}-${axis}-${rot}-${cx}`}
-      cx={cx}
-      cy={cy}
-      r={26}
-      rotDeg={rot}
-      color={color}
-      active={isActive(key, axis)}
-      onPointerDown={(e) =>
-        onArrowDown(e, { leg: "L", key, axis, sign })
-      }
-    />
-  );
 
   const hip2Limits = limitsFor(servos, "L", "hip2");
   const kneeL = limitsFor(servos, "L", "knee");
@@ -224,15 +150,7 @@ export function LeftSideLegPanel({
       <PoseSketchFilters />
       <rect x="0" y="0" width="400" height="320" fill="transparent" />
       <g style={{ filter: "url(#pose-wobble)" }}>
-        {/* <text x="200" y="28" textAnchor="middle" className="pose-sketch-title">
-          横（側面）
-        </text> */}
-
         <BasketFrame />
-
-        {/* <text x="90" y="48" textAnchor="middle" className="pose-front-marker">
-          aaa前
-        </text> */}
         {jointDot(Hip1)}
         {boneLine(Hip1ToHip2)}
         {jointDot(Hip2)}
@@ -243,7 +161,6 @@ export function LeftSideLegPanel({
         {boneLine(HeelRollToHeel)}
         {jointDot(Heel)}
 
-        {/* {boneLine(HeelRollToSole)} */}
         {/* ソール */}
         <line
           x1={HeelRollToSole.x1}
@@ -293,18 +210,7 @@ export function LeftSideLegPanel({
             onPointerDown={(e) => onArrowDown(e, { leg: "L", key: "heel", axis: "x", sign: 1 })}
           />
         </g>
-
-        {/* <text x={geo.ankle.x + 18} y={geo.ankle.y + 26} className="pose-joint-label">
-          ロール {Math.round(pose.heelRoll)}°
-        </text> */}
       </g>
-
-      {/* {mk("hip2", "y", -1, geo.hip.x - 36, geo.hip.y, 90, "#1d4ed8")}
-      {mk("hip2", "x", 1, geo.hip.x + 40, geo.hip.y, 0, "#b91c1c")}
-      {mk("knee", "y", -1, geo.knee.x - 34, geo.knee.y, 90, "#b91c1c")}
-      {mk("knee", "x", -1, geo.knee.x + 36, geo.knee.y, 180, "#1d4ed8")}
-      {mk("heel", "y", -1, geo.ankle.x - 30, geo.ankle.y + 8, 90, "#b91c1c")}
-      {mk("heelRoll", "x", 1, geo.ankle.x + 34, geo.ankle.y, 0, "#1d4ed8")} */}
 
       <text x="8" y="312" className="pose-hint">
         矢印をドラッグ／HIP② {hip2Limits.lo}°〜{hip2Limits.hi}° 膝 {kneeL.lo}°〜

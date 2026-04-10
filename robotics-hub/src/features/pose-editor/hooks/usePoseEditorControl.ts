@@ -33,9 +33,6 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   const initRef = useRef(false);
   const dragRef = useRef<ActiveDrag | null>(null);
   const poseRef = useRef<{ L: LegPose; R: LegPose }>({ L: left, R: right });
-  const apiTimers = useRef<
-    Partial<Record<number, ReturnType<typeof setTimeout>>>
-  >({});
   const moveSeqRef = useRef(0);
   const servosRef = useRef<Servo[]>(servos);
 
@@ -77,7 +74,7 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   }, []);
 
   const pushServo = useCallback(
-    (leg: LegId, key: JointKey, angle: number, immediate = false) => {
+    (leg: LegId, key: JointKey, angle: number) => {
       if (apiError) return;
 
       const name = servoName(leg, key);
@@ -93,18 +90,10 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
           window.alert(
             `サーボ指令エラー (${name}):\n${err instanceof Error ? err.message : String(err)}`
           );
-        } finally {
-          delete apiTimers.current[ch];
         }
       };
 
-      if (immediate) {
-        clearTimeout(apiTimers.current[ch]);
-        void run();
-        return;
-      }
-      clearTimeout(apiTimers.current[ch]);
-      apiTimers.current[ch] = setTimeout(run, 95);
+      void run();
     },
     [apiError]
   );
@@ -113,7 +102,7 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
     const d = dragRef.current;
     if (!d) return;
     const snap = poseRef.current[d.leg][d.key];
-    pushServo(d.leg, d.key, snap, true);
+    pushServo(d.leg, d.key, snap);
   }, [pushServo]);
 
   useEffect(() => {
@@ -125,7 +114,7 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
       const next = d.startAngle + delta * DRAG_SENSITIVITY * d.sign;
       // console.log("next", next);
       const v = setLegAngle(d.leg, d.key, next);
-      pushServo(d.leg, d.key, v, false);
+      pushServo(d.leg, d.key, v);
     };
 
     const onUp = () => {

@@ -19,6 +19,9 @@ export interface HubTool {
 const MotionEditorPage = lazy(() => import("@/features/motion-editor/MotionEditorPage"));
 const LegServoTunerPage = lazy(() => import("@/features/leg-servo-tuner/LegServoTunerPage"));
 const PoseEditorPage = lazy(() => import("@/features/pose-editor/PoseEditorPage"));
+const DaemonSocketTestPage = lazy(
+  () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
+);
 
 export const hubTools: HubTool[] = [
   {
@@ -41,5 +44,12 @@ export const hubTools: HubTool[] = [
     label: "ポーズエディタ",
     description: "メモ風スケッチで脚の関節をドラッグし、論理角を編集します。",
     LazyPage: PoseEditorPage,
+  },
+  {
+    id: "daemon-socket-test",
+    path: "/daemon-socket-test",
+    label: "Daemon Socket Test",
+    description: "robot-daemon との Socket.IO 通信を確認します。",
+    LazyPage: DaemonSocketTestPage,
   },
 ];

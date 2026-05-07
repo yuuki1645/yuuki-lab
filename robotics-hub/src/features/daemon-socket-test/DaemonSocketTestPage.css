@@ -1,0 +1,98 @@
+.ws-test {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.ws-test-title {
+  margin: 0;
+  font-size: 28px;
+}
+
+.ws-test-lead {
+  margin: 0;
+  color: #a8b0d6;
+}
+
+.ws-test-card {
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  border-radius: 10px;
+  padding: 14px;
+  background: #12182e;
+  color: #e8ecff;
+}
+
+.ws-test-card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #dbe4ff;
+}
+
+.ws-test-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ws-test-form {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 10px;
+}
+
+.ws-test-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #c6d2ff;
+}
+
+.ws-test-form input,
+.ws-test-form select {
+  border: 1px solid rgba(200, 210, 255, 0.25);
+  border-radius: 8px;
+  padding: 8px;
+  background: #0f1528;
+  color: #f2f5ff;
+}
+
+.ws-test button {
+  border: 1px solid rgba(200, 210, 255, 0.25);
+  border-radius: 8px;
+  background: #1b2544;
+  color: #e8ecff;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.ws-test button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ws-test code {
+  color: #a9c5ff;
+}
+
+.ws-test-log {
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 280px;
+  overflow: auto;
+  background: #0f1528;
+}
+
+.ws-test-log p {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #c9d7ff;
+}
+
+.ws-test-empty {
+  color: #95a3d2;
+}

@@ -1,3 +1,4 @@
+# type: ignore
 
 from kinematics import KINEMATICS
 

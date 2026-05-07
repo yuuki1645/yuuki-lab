@@ -1,6 +1,6 @@
 # type: ignore
 
-from flask import Flask, jsonify, request
+from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
@@ -165,19 +165,15 @@ def _start_transition_internal(angles_dict: dict[int, float], mode: str, duratio
 	thread.start()
 	return len(transitions)
 
-@app.get("/servos")
-def get_servos():
-	"""全サーボの情報と現在の状態を返す"""
-	state = state_manager.get_all()
-	print("state: ", state)
-	servos = []
 
+def _servos_list_payload() -> dict:
+	"""全サーボのメタ情報と現在状態（旧 GET /servos と同形）。"""
+	state = state_manager.get_all()
+	servos = []
 	for name, ch in SERVO_MAP.items():
 		kin = KINEMATICS[name]
 		ch_str = str(ch)
 		servo_state = state.get(ch_str, {})
-		print("servo_state:", servo_state)
-
 		servos.append({
 			"name": name,
 			"ch": ch,
@@ -187,43 +183,11 @@ def get_servos():
 			"physical_max": kin.physical_range.hi,
 			"default_logical": kin.default_logical,
 			"default_physical": kin.default_physical,
-			# 状態も含める
 			"last_logical": servo_state.get("logical"),
 			"last_physical": servo_state.get("physical"),
 		})
-	return jsonify({"servos": servos})
+	return {"servos": servos}
 
-def _set_servo_angle(ch: int, angle: float, mode: str):
-	"""サーボ角度を設定する共通処理（レスポンス付き）"""
-	result = _set_servo_angle_internal(ch, angle, mode)
-
-	return jsonify({
-		"status": "ok",
-		"logical": result["logical"],
-		"physical": result["physical"],
-	})
-
-@app.post("/set")
-def set_servo():
-	"""
-	サーボ角度を設定する（論理角・物理角の両方に対応）
-	
-	リクエストボディ（JSON）:
-		{
-			"ch": 0,           # チャンネル番号
-			"mode": "logical", # "logical" または "physical"
-			"angle": 90.0     # 角度
-		}
-	"""
-	data = request.json or {}
-	ch = int(data.get("ch"))
-	mode = data.get("mode", "logical")
-	angle = float(data.get("angle"))
-
-	servo_name = SERVO_CH_2_NAME[ch]
-	print(f"[SERVO] set_{mode} - {servo_name} (ch={ch}): {mode}={angle}")
-
-	return _set_servo_angle(ch, angle, mode)
 
 def _set_servo_angle_internal(ch: int, angle: float, mode: str):
 	"""サーボ角度を設定する内部処理（レスポンスを返さない）"""
@@ -327,75 +291,26 @@ def _set_servos_angles_internal(angles_dict: dict, mode: str):
 	
 	return results
 
-@app.post("/set_multiple")
-def set_servos_multiple():
-	"""
-	複数のサーボ角度を一度に設定する
-	
-	リクエストボディ（JSON）:
-		{
-			"mode": "logical",  # "logical" または "physical"
-			"angles": {          # チャンネル番号 -> 角度のマップ
-				"0": 90.0,
-				"1": 45.0,
-				...
-			}
-		}
-	"""
-	data = request.json or {}
-	mode = data.get("mode", "logical")
-	angles = data.get("angles", {})
-	
-	# チャンネル番号を文字列からintに変換
-	angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
-	
-	# print(f"[SERVO] set_multiple_{mode} - {len(angles_dict)} servos")
-	
-	# 一括処理
-	results = _set_servos_angles_internal(angles_dict, mode)
-	
-	return jsonify({
-		"status": "ok",
-		"success_count": len(results["success"]),
-		"error_count": len(results["errors"]),
-		"results": results
-	})
-
-@app.post("/transition")
-def transition_servos():
-	"""
-	現在の角度から指定角度にゆっくり遷移させる
-	
-	リクエストボディ（JSON）:
-		{
-			"mode": "logical",  # "logical" または "physical"
-			"angles": {          # チャンネル番号 -> 角度のマップ
-				"0": 90.0,
-				"1": 45.0,
-				...
-			},
-			"duration": 3.0     # 遷移時間（秒）、デフォルト3.0
-		}
-	"""
-	data = request.json or {}
-	mode, angles_dict, duration = _parse_transition_payload(data)
-	transition_count = _start_transition_internal(angles_dict, mode, duration)
-	
-	return jsonify({
-		"status": "ok",
-		"message": f"Transition started for {transition_count} servos over {duration}s"
-	})
-
 
 @socketio.on("connect")
 def ws_connect():
 	emit("connection/status", {"status": "connected"})
+	emit("servo/list", _servos_list_payload())
 	_emit_imu_status()
 
 
 @socketio.on("disconnect")
 def ws_disconnect():
 	print("[WS] client disconnected")
+
+
+@socketio.on("servo/list")
+def ws_servo_list(_data=None):
+	"""旧 GET /servos と同等の一覧を返す。"""
+	try:
+		emit("servo/list", _servos_list_payload())
+	except Exception as e:
+		emit("error", {"status": "error", "message": str(e)})
 
 
 @socketio.on("servo/set")
@@ -498,11 +413,11 @@ def ws_imu_status():
 	_emit_imu_status()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Servo daemon HTTP API")
+    parser = argparse.ArgumentParser(description="Servo daemon (Socket.IO / WebSocket のみ)")
     parser.add_argument(
         "--access-log",
         action="store_true",
-        help="Werkzeug の HTTP アクセスログを出す（192.168... POST /set など）。デフォルトはオフ。",
+        help="Werkzeug の HTTP アクセスログを出す（Socket.IO ハンドシェイク等）。デフォルトはオフ。",
     )
     args = parser.parse_args()
     if not args.access_log:

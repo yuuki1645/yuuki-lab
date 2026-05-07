@@ -1,5 +1,3 @@
-# type: ignore
-
 import math
 import os
 import random
@@ -24,7 +22,7 @@ class Mpu6050Reader:
         self._pitch = 0.0
         self._roll = 0.0
         self._yaw = 0.0
-        self._last_ts = 0.0
+        self._last_perf = 0.0
         self._alpha = 0.98
         self._mock_ax = 0.0
         self._mock_ay = 0.0
@@ -35,7 +33,7 @@ class Mpu6050Reader:
         self._mock_t = 0.0
 
         try:
-            import smbus2  # type: ignore
+            import smbus2
 
             self.bus = smbus2.SMBus(self.bus_id)
             # PWR_MGMT_1=0 -> スリープ解除
@@ -82,11 +80,11 @@ class Mpu6050Reader:
         if not self.enabled:
             raise RuntimeError(self.last_error or "MPU6050 is not enabled")
 
-        now = time.time()
+        perf_now = time.perf_counter()
         with self._lock:
-            prev_ts = self._last_ts
-            self._last_ts = now
-        dt = max(0.0, now - prev_ts) if prev_ts > 0 else 0.0
+            prev_perf = self._last_perf
+            self._last_perf = perf_now
+        dt = max(0.0, perf_now - prev_perf) if prev_perf > 0 else 0.0
 
         if self.mock_mode:
             ax, ay, az, gx, gy, gz = self._mock_sample(dt)
@@ -116,7 +114,7 @@ class Mpu6050Reader:
             yaw = self._yaw
 
         return {
-            "timestamp": now,
+            "timestamp": perf_now,
             "mock": self.mock_mode,
             "accel": {"x": ax, "y": ay, "z": az},
             "gyro": {"x": gx, "y": gy, "z": gz},

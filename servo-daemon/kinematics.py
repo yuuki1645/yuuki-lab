@@ -134,10 +134,10 @@ class RHip1Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l + 70.0
+        return 125.0 - l 
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return physical_deg - 70.0
+        return 125.0 - physical_deg
 
 
 class RHip2Kinematics(ServoKinematicsBase):
@@ -146,10 +146,10 @@ class RHip2Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return 200.0 - l
+        return 213.0 - l
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return 200.0 - physical_deg
+        return 213.0 - physical_deg
 
 
 class LHeelKinematics(ServoKinematicsBase):
@@ -177,10 +177,10 @@ class LHeelRollKinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return 127 - l
+        return 127 + l
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return 127 - physical_deg
+        return 127 + physical_deg
 
 
 class LKneeKinematics(ServoKinematicsBase):
@@ -201,10 +201,10 @@ class LHip1Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l + 95.0
+        return 125.0 - l
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return physical_deg - 95.0
+        return 125.0 - physical_deg
 
 
 class LHip2Kinematics(ServoKinematicsBase):
@@ -213,10 +213,10 @@ class LHip2Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return 164.0 - l
+        return 213.0 - l
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return 164.0 - physical_deg
+        return 213.0 - physical_deg
 
 # ★ インスタンスを生成して辞書へ
 KINEMATICS = {

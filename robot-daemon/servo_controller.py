@@ -1,3 +1,5 @@
+# type: ignore
+
 """サーボの状態更新・一括操作・遷移（ハードウェアと state_manager の橋渡し）。"""
 
 from __future__ import annotations

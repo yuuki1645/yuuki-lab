@@ -27,6 +27,7 @@ interface ImuSamplePayload {
   accel?: { x?: number; y?: number; z?: number };
   gyro?: { x?: number; y?: number; z?: number };
   angle?: { pitch?: number; roll?: number; yaw?: number };
+  mock?: boolean;
 }
 
 const MAX_LOGS = 200;
@@ -52,6 +53,17 @@ export default function DaemonSocketTestPage() {
       message,
     };
     setLogs((prev) => [newEntry, ...prev].slice(0, MAX_LOGS));
+  };
+
+  const fmt2 = (value?: number) => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+    return value.toFixed(2);
+  };
+
+  const fmtAligned = (value?: number, width = 8) => {
+    console.log(value, width);
+    if (typeof value !== "number" || !Number.isFinite(value)) return "-".padStart(width, " ");
+    return value.toFixed(2).padStart(width, " ");
   };
 
   const connect = () => {
@@ -283,10 +295,27 @@ export default function DaemonSocketTestPage() {
           </p>
         </div>
         <div className="ws-test-log">
-          <p>
-            latest_sample:{" "}
-            {imuSample ? JSON.stringify(imuSample) : "まだ受信していません。imu/start を送信してください。"}
-          </p>
+          {!imuSample ? (
+            <p>まだ受信していません。imu/start を送信してください。</p>
+          ) : (
+            <pre>
+              <p>
+                timestamp: {fmt2(imuSample.timestamp)} / mock: {String(Boolean(imuSample.mock))}
+              </p>
+              <p>
+                accel(x,y,z): {fmtAligned(imuSample.accel?.x)}, {fmtAligned(imuSample.accel?.y)},{" "}
+                {fmtAligned(imuSample.accel?.z)}
+              </p>
+              <p>
+                gyro(x,y,z) : {fmtAligned(imuSample.gyro?.x)}, {fmtAligned(imuSample.gyro?.y)},{" "}
+                {fmtAligned(imuSample.gyro?.z)}
+              </p>
+              <p>
+                angle(p,r,y): {fmtAligned(imuSample.angle?.pitch)}, {fmtAligned(imuSample.angle?.roll)},{" "}
+                {fmtAligned(imuSample.angle?.yaw)}
+              </p>
+            </pre>
+          )}
         </div>
       </section>
 

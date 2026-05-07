@@ -6,6 +6,7 @@ from flask_socketio import SocketIO, emit
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
+from imu import Mpu6050Reader
 import argparse
 import logging
 import time
@@ -17,6 +18,12 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 状態管理インスタンスを作成
 state_manager = StateManager(state_path="./state.json")
+imu_reader = Mpu6050Reader()
+
+imu_stream_rate_hz = 30.0
+imu_stream_enabled = False
+imu_stream_task_started = False
+imu_stream_lock = threading.Lock()
 
 SERVO_CH_2_NAME = {
 	0: "R_HIP1",
@@ -39,6 +46,73 @@ def _parse_transition_payload(data: dict):
 	duration = float(data.get("duration", 3.0))
 	angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
 	return mode, angles_dict, duration
+
+
+def _emit_imu_status():
+	emit(
+		"imu/status",
+		{
+			"streaming": imu_stream_enabled,
+			"rate_hz": imu_stream_rate_hz,
+			"sensor": imu_reader.status(),
+		},
+	)
+
+
+def _emit_imu_error(code: str, message: str, detail: str | None = None):
+	payload = {
+		"ok": False,
+		"error_code": code,
+		"message": message,
+	}
+	if detail:
+		payload["detail"] = detail
+	socketio.emit("imu/error", payload)
+
+
+def _imu_stream_loop():
+	"""IMU値を定期取得して全クライアントへ配信する。"""
+	global imu_stream_enabled
+	while True:
+		with imu_stream_lock:
+			streaming = imu_stream_enabled
+			rate_hz = imu_stream_rate_hz
+
+		interval = 1.0 / max(1.0, float(rate_hz))
+		if not streaming:
+			socketio.sleep(0.2)
+			continue
+
+		try:
+			sample = imu_reader.sample()
+			socketio.emit("imu/sample", sample)
+		except Exception as e:
+			err = imu_reader.get_error_info()
+			_emit_imu_error(
+				err["code"],
+				"MPU6050 の読み取りに失敗しました。配信を停止します。",
+				str(e),
+			)
+			with imu_stream_lock:
+				imu_stream_enabled = False
+			socketio.emit(
+				"imu/status",
+				{
+					"streaming": False,
+					"rate_hz": rate_hz,
+					"sensor": imu_reader.status(),
+				},
+			)
+
+		socketio.sleep(interval)
+
+
+def _ensure_imu_task_started():
+	global imu_stream_task_started
+	if imu_stream_task_started:
+		return
+	imu_stream_task_started = True
+	socketio.start_background_task(_imu_stream_loop)
 
 
 def _start_transition_internal(angles_dict: dict[int, float], mode: str, duration: float):
@@ -316,6 +390,7 @@ def transition_servos():
 @socketio.on("connect")
 def ws_connect():
 	emit("connection/status", {"status": "connected"})
+	_emit_imu_status()
 
 
 @socketio.on("disconnect")
@@ -361,6 +436,66 @@ def ws_transition(data):
 		)
 	except Exception as e:
 		emit("error", {"status": "error", "message": str(e)})
+
+
+@socketio.on("imu/start")
+def ws_imu_start(data):
+	global imu_stream_enabled, imu_stream_rate_hz
+	try:
+		payload = data or {}
+		requested_rate = float(payload.get("rate_hz", imu_stream_rate_hz))
+		with imu_stream_lock:
+			imu_stream_rate_hz = max(1.0, min(200.0, requested_rate))
+			imu_stream_enabled = True
+		if not imu_reader.enabled:
+			err = imu_reader.get_error_info()
+			with imu_stream_lock:
+				imu_stream_enabled = False
+			_emit_imu_error(
+				err["code"] or "IMU_NOT_AVAILABLE",
+				"MPU6050 が利用できないため、ストリーミングを開始できません。",
+				err["message"],
+			)
+			_emit_imu_status()
+			return
+		_ensure_imu_task_started()
+		_emit_imu_status()
+	except Exception as e:
+		_emit_imu_error(
+			"IMU_START_FAILED",
+			"IMU ストリーミング開始リクエストの処理に失敗しました。",
+			str(e),
+		)
+
+
+@socketio.on("imu/stop")
+def ws_imu_stop():
+	global imu_stream_enabled
+	with imu_stream_lock:
+		imu_stream_enabled = False
+	_emit_imu_status()
+
+
+@socketio.on("imu/set_rate")
+def ws_imu_set_rate(data):
+	global imu_stream_rate_hz
+	try:
+		payload = data or {}
+		requested_rate = float(payload.get("rate_hz"))
+		with imu_stream_lock:
+			imu_stream_rate_hz = max(1.0, min(200.0, requested_rate))
+		_emit_imu_status()
+	except Exception as e:
+		_emit_imu_error(
+			"IMU_INVALID_RATE",
+			"rate_hz は数値で指定してください（1〜200）。",
+			str(e),
+		)
+
+
+@socketio.on("imu/status")
+def ws_imu_status():
+	_emit_imu_status()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Servo daemon HTTP API")

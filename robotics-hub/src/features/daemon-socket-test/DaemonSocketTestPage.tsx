@@ -11,6 +11,24 @@ interface LogEntry {
   message: string;
 }
 
+interface ImuStatusPayload {
+  streaming?: boolean;
+  rate_hz?: number;
+  sensor?: {
+    enabled?: boolean;
+    error?: string;
+    bus_id?: number;
+    address?: number;
+  };
+}
+
+interface ImuSamplePayload {
+  timestamp?: number;
+  accel?: { x?: number; y?: number; z?: number };
+  gyro?: { x?: number; y?: number; z?: number };
+  angle?: { pitch?: number; roll?: number; yaw?: number };
+}
+
 const MAX_LOGS = 200;
 
 export default function DaemonSocketTestPage() {
@@ -19,6 +37,9 @@ export default function DaemonSocketTestPage() {
   const [mode, setMode] = useState<"logical" | "physical">("logical");
   const [angle, setAngle] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [imuRate, setImuRate] = useState(30);
+  const [imuStatus, setImuStatus] = useState<ImuStatusPayload | null>(null);
+  const [imuSample, setImuSample] = useState<ImuSamplePayload | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const logIdRef = useRef(0);
 
@@ -58,6 +79,19 @@ export default function DaemonSocketTestPage() {
     socket.on("connection/status", (payload) => {
       pushLog(`[recv] connection/status ${JSON.stringify(payload)}`);
     });
+    socket.on("imu/status", (payload: ImuStatusPayload) => {
+      setImuStatus(payload);
+      if (typeof payload.rate_hz === "number") {
+        setImuRate(Math.round(payload.rate_hz));
+      }
+      pushLog(`[recv] imu/status ${JSON.stringify(payload)}`);
+    });
+    socket.on("imu/sample", (payload: ImuSamplePayload) => {
+      setImuSample(payload);
+    });
+    socket.on("imu/error", (payload) => {
+      pushLog(`[recv] imu/error ${JSON.stringify(payload)}`);
+    });
     socket.on("servo/result", (payload) => {
       pushLog(`[recv] servo/result ${JSON.stringify(payload)}`);
     });
@@ -91,6 +125,48 @@ export default function DaemonSocketTestPage() {
     const payload = { ch: channel, mode, angle };
     socket.emit("servo/set", payload);
     pushLog(`[send] servo/set ${JSON.stringify(payload)}`);
+  };
+
+  const emitImuStart = () => {
+    const socket = socketRef.current;
+    if (!socket) {
+      pushLog("[warn] socket not connected");
+      return;
+    }
+    const payload = { rate_hz: imuRate };
+    socket.emit("imu/start", payload);
+    pushLog(`[send] imu/start ${JSON.stringify(payload)}`);
+  };
+
+  const emitImuStop = () => {
+    const socket = socketRef.current;
+    if (!socket) {
+      pushLog("[warn] socket not connected");
+      return;
+    }
+    socket.emit("imu/stop");
+    pushLog("[send] imu/stop");
+  };
+
+  const emitImuSetRate = () => {
+    const socket = socketRef.current;
+    if (!socket) {
+      pushLog("[warn] socket not connected");
+      return;
+    }
+    const payload = { rate_hz: imuRate };
+    socket.emit("imu/set_rate", payload);
+    pushLog(`[send] imu/set_rate ${JSON.stringify(payload)}`);
+  };
+
+  const requestImuStatus = () => {
+    const socket = socketRef.current;
+    if (!socket) {
+      pushLog("[warn] socket not connected");
+      return;
+    }
+    socket.emit("imu/status");
+    pushLog("[send] imu/status");
   };
 
   useEffect(() => {
@@ -164,6 +240,53 @@ export default function DaemonSocketTestPage() {
           <button type="button" onClick={emitSetServo} disabled={status !== "connected"}>
             servo/set を送信
           </button>
+        </div>
+      </section>
+
+      <section className="ws-test-card">
+        <h2>IMU ストリーム</h2>
+        <div className="ws-test-form">
+          <label>
+            rate_hz
+            <input
+              type="number"
+              min={1}
+              max={200}
+              value={imuRate}
+              onChange={(e) => setImuRate(Number(e.target.value))}
+            />
+          </label>
+        </div>
+        <div className="ws-test-row">
+          <button type="button" onClick={emitImuStart} disabled={status !== "connected"}>
+            imu/start
+          </button>
+          <button type="button" onClick={emitImuStop} disabled={status !== "connected"}>
+            imu/stop
+          </button>
+          <button type="button" onClick={emitImuSetRate} disabled={status !== "connected"}>
+            imu/set_rate
+          </button>
+          <button type="button" onClick={requestImuStatus} disabled={status !== "connected"}>
+            imu/status
+          </button>
+        </div>
+        <div className="ws-test-row">
+          <p>
+            streaming: <strong>{String(Boolean(imuStatus?.streaming))}</strong>
+          </p>
+          <p>
+            sensor_enabled: <strong>{String(Boolean(imuStatus?.sensor?.enabled))}</strong>
+          </p>
+          <p>
+            sensor_error: <code>{imuStatus?.sensor?.error || "-"}</code>
+          </p>
+        </div>
+        <div className="ws-test-log">
+          <p>
+            latest_sample:{" "}
+            {imuSample ? JSON.stringify(imuSample) : "まだ受信していません。imu/start を送信してください。"}
+          </p>
         </div>
       </section>
 

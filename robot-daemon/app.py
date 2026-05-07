@@ -2,6 +2,7 @@
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical, move_servos_logical, move_servos_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
@@ -12,6 +13,7 @@ import threading
 
 app = Flask(__name__)
 CORS(app)  # すべてのオリジンからのアクセスを許可
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 状態管理インスタンスを作成
 state_manager = StateManager(state_path="./state.json")
@@ -28,6 +30,66 @@ SERVO_CH_2_NAME = {
 	11: "L_HEEL",
 	12: "L_HEEL_ROLL",
 }
+
+
+def _parse_transition_payload(data: dict):
+	"""遷移API/WSで共通利用する入力パース"""
+	mode = data.get("mode", "logical")
+	angles = data.get("angles", {})
+	duration = float(data.get("duration", 3.0))
+	angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
+	return mode, angles_dict, duration
+
+
+def _start_transition_internal(angles_dict: dict[int, float], mode: str, duration: float):
+	"""現在角度から目標角度への遷移をバックグラウンド開始する"""
+	# 現在の角度を取得
+	state = state_manager.get_all()
+
+	# 各サーボの現在角度と目標角度を計算
+	transitions = {}
+	for ch, target_angle in angles_dict.items():
+		if ch not in SERVO_CH_2_NAME:
+			continue
+
+		servo_state = state.get(str(ch), {})
+		current_angle = float(servo_state.get(mode, 0))
+		target_angle_float = float(target_angle)
+
+		transitions[ch] = {
+			"current": current_angle,
+			"target": target_angle_float,
+			"servo_name": SERVO_CH_2_NAME[ch]
+		}
+
+	def execute_transition():
+		steps = max(30, int(duration * 10))  # 10Hz更新、最低30ステップ
+		step_delay = duration / steps
+
+		for step in range(steps + 1):
+			progress = step / steps
+
+			# 各ステップで全サーボの補間角度を計算
+			interpolated_angles = {}
+			for ch, trans in transitions.items():
+				current = trans["current"]
+				target = trans["target"]
+				# 線形補間
+				interpolated_angles[ch] = current + (target - current) * progress
+
+			# 一括でサーボを動かす
+			try:
+				_set_servos_angles_internal(interpolated_angles, mode)
+			except Exception as e:
+				print(f"[SERVO] ERROR during transition: {e}")
+
+			if step < steps:
+				time.sleep(step_delay)
+
+	thread = threading.Thread(target=execute_transition)
+	thread.daemon = True
+	thread.start()
+	return len(transitions)
 
 @app.get("/servos")
 def get_servos():
@@ -242,63 +304,63 @@ def transition_servos():
 		}
 	"""
 	data = request.json or {}
-	mode = data.get("mode", "logical")
-	angles = data.get("angles", {})
-	duration = float(data.get("duration", 3.0))
-	
-	# 現在の角度を取得
-	state = state_manager.get_all()
-	
-	# 各サーボの現在角度と目標角度を計算
-	transitions = {}
-	for ch_str, target_angle in angles.items():
-		ch = int(ch_str)
-		if ch not in SERVO_CH_2_NAME:
-			continue
-		
-		servo_state = state.get(str(ch), {})
-		current_angle = float(servo_state.get(mode, 0))
-		target_angle_float = float(target_angle)
-		
-		transitions[ch] = {
-			"current": current_angle,
-			"target": target_angle_float,
-			"servo_name": SERVO_CH_2_NAME[ch]
-		}
-	
-	# バックグラウンドで遷移を実行
-	def execute_transition():
-		steps = max(30, int(duration * 10))  # 10Hz更新、最低30ステップ
-		step_delay = duration / steps
-		
-		for step in range(steps + 1):
-			progress = step / steps
-			
-			# 各ステップで全サーボの補間角度を計算
-			interpolated_angles = {}
-			for ch, trans in transitions.items():
-				current = trans["current"]
-				target = trans["target"]
-				# 線形補間
-				interpolated_angles[ch] = current + (target - current) * progress
-			
-			# 一括でサーボを動かす
-			try:
-				_set_servos_angles_internal(interpolated_angles, mode)
-			except Exception as e:
-				print(f"[SERVO] ERROR during transition: {e}")
-			
-			if step < steps:
-				time.sleep(step_delay)
-	
-	thread = threading.Thread(target=execute_transition)
-	thread.daemon = True
-	thread.start()
+	mode, angles_dict, duration = _parse_transition_payload(data)
+	transition_count = _start_transition_internal(angles_dict, mode, duration)
 	
 	return jsonify({
 		"status": "ok",
-		"message": f"Transition started for {len(transitions)} servos over {duration}s"
+		"message": f"Transition started for {transition_count} servos over {duration}s"
 	})
+
+
+@socketio.on("connect")
+def ws_connect():
+	emit("connection/status", {"status": "connected"})
+
+
+@socketio.on("disconnect")
+def ws_disconnect():
+	print("[WS] client disconnected")
+
+
+@socketio.on("servo/set")
+def ws_set_servo(data):
+	try:
+		ch = int(data.get("ch"))
+		mode = data.get("mode", "logical")
+		angle = float(data.get("angle"))
+		result = _set_servo_angle_internal(ch, angle, mode)
+		emit("servo/result", {"status": "ok", "result": result})
+	except Exception as e:
+		emit("error", {"status": "error", "message": str(e)})
+
+
+@socketio.on("servo/set_multiple")
+def ws_set_multiple(data):
+	try:
+		mode = data.get("mode", "logical")
+		angles = data.get("angles", {})
+		angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
+		results = _set_servos_angles_internal(angles_dict, mode)
+		emit("servo/result_multiple", {"status": "ok", "results": results})
+	except Exception as e:
+		emit("error", {"status": "error", "message": str(e)})
+
+
+@socketio.on("servo/transition")
+def ws_transition(data):
+	try:
+		mode, angles_dict, duration = _parse_transition_payload(data or {})
+		transition_count = _start_transition_internal(angles_dict, mode, duration)
+		emit(
+			"servo/transition_started",
+			{
+				"status": "ok",
+				"message": f"Transition started for {transition_count} servos over {duration}s"
+			}
+		)
+	except Exception as e:
+		emit("error", {"status": "error", "message": str(e)})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Servo daemon HTTP API")
@@ -310,4 +372,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.access_log:
         logging.getLogger("werkzeug").setLevel(logging.ERROR)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

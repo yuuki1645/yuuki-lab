@@ -1,3 +1,5 @@
+# type: ignore
+
 import smbus2
 import time
 import math

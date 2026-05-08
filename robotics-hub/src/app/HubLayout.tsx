@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import HubWindowMenu from "@/app/components/HubWindowMenu";
+import ImuAttitudeFloatingWindow from "@/app/components/ImuAttitudeFloatingWindow";
 import ImuFloatingWindow from "@/app/components/ImuFloatingWindow";
 import { hubTools } from "@/app/hubTools";
+import { useImuDaemonStream } from "@/shared/hooks/useImuDaemonStream";
 
 export default function HubLayout() {
   const [imuWindowOpen, setImuWindowOpen] = useState(false);
+  const [imuAttitudeOpen, setImuAttitudeOpen] = useState(false);
+
+  const imuStreamActive = imuWindowOpen || imuAttitudeOpen;
+  const imuStream = useImuDaemonStream(imuStreamActive);
 
   return (
     <div className="hub-root">
@@ -27,13 +33,25 @@ export default function HubLayout() {
               {t.label}
             </NavLink>
           ))}
-          <HubWindowMenu onOpenImu={() => setImuWindowOpen(true)} />
+          <HubWindowMenu
+            onOpenImu={() => setImuWindowOpen(true)}
+            onOpenImuAttitude={() => setImuAttitudeOpen(true)}
+          />
         </nav>
       </header>
       <main className="hub-main">
         <Outlet />
       </main>
-      <ImuFloatingWindow open={imuWindowOpen} onClose={() => setImuWindowOpen(false)} />
+      <ImuFloatingWindow
+        open={imuWindowOpen}
+        onClose={() => setImuWindowOpen(false)}
+        stream={imuStream}
+      />
+      <ImuAttitudeFloatingWindow
+        open={imuAttitudeOpen}
+        onClose={() => setImuAttitudeOpen(false)}
+        stream={imuStream}
+      />
     </div>
   );
 }

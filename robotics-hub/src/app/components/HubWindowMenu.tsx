@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from "react";
 
 type HubWindowMenuProps = {
   onOpenImu: () => void;
+  onOpenImuAttitude: () => void;
 };
 
-export default function HubWindowMenu({ onOpenImu }: HubWindowMenuProps) {
+export default function HubWindowMenu({
+  onOpenImu,
+  onOpenImuAttitude,
+}: HubWindowMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +44,18 @@ export default function HubWindowMenu({ onOpenImu }: HubWindowMenuProps) {
               setOpen(false);
             }}
           >
-            IMU
+            IMU（数値）
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="hub-window-menu-item"
+            onClick={() => {
+              onOpenImuAttitude();
+              setOpen(false);
+            }}
+          >
+            IMU（姿勢）
           </button>
         </div>
       ) : null}

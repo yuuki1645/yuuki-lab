@@ -286,3 +286,65 @@ body {
   font-variant-numeric: tabular-nums;
   color: #e8ecff;
 }
+
+/* IMU 姿勢（人工水平）フローティング */
+.imu-attitude-float {
+  position: fixed;
+  z-index: 1001;
+  border-radius: 12px;
+  background: #151c34;
+  border: 1px solid rgba(110, 168, 255, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  touch-action: none;
+  max-width: calc(100vw - 16px);
+}
+
+.imu-attitude-body {
+  padding: 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  touch-action: none;
+}
+
+.imu-attitude-svg {
+  display: block;
+  border-radius: 50%;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
+}
+
+.imu-attitude-svg--idle {
+  opacity: 0.45;
+}
+
+.imu-attitude-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 20px;
+  width: 100%;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.imu-attitude-readout {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.imu-attitude-readout--pitch {
+  color: #9ec8ff;
+}
+
+.imu-attitude-readout--roll {
+  color: #c4e8a8;
+}
+
+.imu-attitude-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8b93c4;
+  text-align: center;
+}

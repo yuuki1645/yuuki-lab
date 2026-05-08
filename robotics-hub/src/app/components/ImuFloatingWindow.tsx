@@ -1,11 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { io, type Socket } from "socket.io-client";
-import { SERVO_DAEMON_URL } from "@/shared/constants";
-import type { ImuSamplePayload, ImuStatusPayload } from "@/shared/types/imu";
-
-type WsStatus = "disconnected" | "connecting" | "connected";
-
-const DEFAULT_RATE_HZ = 30;
+import type { ImuDaemonStream } from "@/shared/hooks/useImuDaemonStream";
+import { useFloatingPanelDrag } from "@/shared/hooks/useFloatingPanelDrag";
 
 function fmt2(value?: number) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
@@ -15,161 +9,40 @@ function fmt2(value?: number) {
 type ImuFloatingWindowProps = {
   open: boolean;
   onClose: () => void;
+  stream: ImuDaemonStream;
 };
 
-export default function ImuFloatingWindow({ open, onClose }: ImuFloatingWindowProps) {
-  const [pos, setPos] = useState({ x: 24, y: 96 });
-  const dragRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+const PANEL_W = 320;
+const PANEL_H = 420;
 
-  const [wsStatus, setWsStatus] = useState<WsStatus>("disconnected");
-  const [rateHz, setRateHz] = useState(DEFAULT_RATE_HZ);
-  const rateRef = useRef(rateHz);
-  rateRef.current = rateHz;
+export default function ImuFloatingWindow({ open, onClose, stream }: ImuFloatingWindowProps) {
+  const {
+    wsStatus,
+    rateHz,
+    setRateHz,
+    applyRate,
+    imuStatus,
+    imuSample,
+    lastError,
+  } = stream;
 
-  const [imuStatus, setImuStatus] = useState<ImuStatusPayload | null>(null);
-  const [imuSample, setImuSample] = useState<ImuSamplePayload | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
-
-  const onHeaderPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if ((e.target as HTMLElement).closest(".imu-float-close")) return;
-      dragRef.current = {
-        offsetX: e.clientX - pos.x,
-        offsetY: e.clientY - pos.y,
-      };
-      setDragging(true);
-      if (e.pointerType === "touch" || e.pointerType === "pen") {
-        e.preventDefault();
-      }
-      e.currentTarget.setPointerCapture(e.pointerId);
-    },
-    [pos.x, pos.y]
-  );
-
-  const onHeaderPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    if (e.pointerType === "touch" || e.pointerType === "pen") {
-      e.preventDefault();
-    }
-    const nx = e.clientX - dragRef.current.offsetX;
-    const ny = e.clientY - dragRef.current.offsetY;
-    const margin = 8;
-    const maxX = Math.max(margin, window.innerWidth - 320 - margin);
-    const maxY = Math.max(margin, window.innerHeight - 120 - margin);
-    setPos({
-      x: Math.min(Math.max(margin, nx), maxX),
-      y: Math.min(Math.max(margin, ny), maxY),
-    });
-  }, []);
-
-  const onHeaderPointerUp = useCallback((e: React.PointerEvent) => {
-    dragRef.current = null;
-    setDragging(false);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* already released */
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    setWsStatus("connecting");
-    setLastError(null);
-    setImuSample(null);
-    setImuStatus(null);
-
-    const socket = io(SERVO_DAEMON_URL, {
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 500,
-    });
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      setWsStatus("connected");
-      socket.emit("imu/start", { rate_hz: rateRef.current });
-    });
-
-    socket.on("disconnect", () => {
-      setWsStatus("disconnected");
-    });
-
-    socket.on("imu/status", (payload: ImuStatusPayload) => {
-      setImuStatus(payload);
-      if (typeof payload.rate_hz === "number") {
-        setRateHz(Math.round(payload.rate_hz));
-      }
-    });
-
-    socket.on("imu/sample", (payload: ImuSamplePayload) => {
-      setImuSample(payload);
-    });
-
-    socket.on("imu/error", (payload: unknown) => {
-      setLastError(
-        typeof payload === "object" && payload !== null && "message" in payload
-          ? String((payload as { message?: string }).message)
-          : JSON.stringify(payload)
-      );
-    });
-
-    return () => {
-      if (socket.connected) {
-        socket.emit("imu/stop");
-      }
-      socket.removeAllListeners();
-      socket.disconnect();
-      socketRef.current = null;
-      setWsStatus("disconnected");
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      dragRef.current = null;
-      setDragging(false);
-    }
-  }, [open]);
-
-  /** iPad / iOS WebKit: ドラッグ中に背後ページへ touchmove が伝わってスクロールするのを防ぐ */
-  useEffect(() => {
-    if (!dragging) return;
-    const blockScroll = (ev: TouchEvent) => {
-      ev.preventDefault();
-    };
-    document.body.addEventListener("touchmove", blockScroll, { passive: false });
-    return () => {
-      document.body.removeEventListener("touchmove", blockScroll);
-    };
-  }, [dragging]);
-
-  const applyRate = useCallback(() => {
-    const socket = socketRef.current;
-    if (!socket?.connected) return;
-    socket.emit("imu/set_rate", { rate_hz: rateRef.current });
-  }, []);
+  const { pos, headerPointerHandlers } = useFloatingPanelDrag({
+    panelOpen: open,
+    initial: { x: 24, y: 96 },
+    panelWidth: PANEL_W,
+    panelHeight: PANEL_H,
+  });
 
   if (!open) return null;
 
   return (
     <div
       className="imu-float"
-      style={{ left: pos.x, top: pos.y }}
+      style={{ left: pos.x, top: pos.y, width: PANEL_W }}
       role="dialog"
       aria-labelledby="imu-float-title"
     >
-      <div
-        className="imu-float-header"
-        onPointerDown={onHeaderPointerDown}
-        onPointerMove={onHeaderPointerMove}
-        onPointerUp={onHeaderPointerUp}
-        onPointerCancel={onHeaderPointerUp}
-      >
+      <div className="imu-float-header" {...headerPointerHandlers}>
         <span id="imu-float-title" className="imu-float-title">
           IMU センサー
         </span>

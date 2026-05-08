@@ -104,18 +104,6 @@ export default function DaemonSocketTestPage() {
     socket.on("imu/error", (payload) => {
       pushLog(`[recv] imu/error ${JSON.stringify(payload)}`);
     });
-    socket.on("servo/result", (payload) => {
-      pushLog(`[recv] servo/result ${JSON.stringify(payload)}`);
-    });
-    socket.on("servo/result_multiple", (payload) => {
-      pushLog(`[recv] servo/result_multiple ${JSON.stringify(payload)}`);
-    });
-    socket.on("servo/transition_started", (payload) => {
-      pushLog(`[recv] servo/transition_started ${JSON.stringify(payload)}`);
-    });
-    socket.on("error", (payload) => {
-      pushLog(`[recv] error ${JSON.stringify(payload)}`);
-    });
   };
 
   const disconnect = () => {
@@ -128,15 +116,18 @@ export default function DaemonSocketTestPage() {
     pushLog("[action] disconnected manually");
   };
 
-  const emitSetServo = () => {
-    const socket = socketRef.current;
-    if (!socket) {
-      pushLog("[warn] socket not connected");
-      return;
+  const postSetServo = async () => {
+    try {
+      const res = await fetch(`${SERVO_DAEMON_URL}/set`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ch: channel, mode, angle }),
+      });
+      const text = await res.text();
+      pushLog(`[REST] POST /set status=${res.status} body=${text}`);
+    } catch (e) {
+      pushLog(`[REST] POST /set error: ${e instanceof Error ? e.message : String(e)}`);
     }
-    const payload = { ch: channel, mode, angle };
-    socket.emit("servo/set", payload);
-    pushLog(`[send] servo/set ${JSON.stringify(payload)}`);
   };
 
   const emitImuStart = () => {
@@ -196,7 +187,7 @@ export default function DaemonSocketTestPage() {
     <div className="ws-test">
       <h1 className="ws-test-title">Daemon Socket Test</h1>
       <p className="ws-test-lead">
-        `robot-daemon` との Socket.IO 接続とイベント送受信を確認するためのテスト画面です。
+        `robot-daemon` との Socket.IO（主に IMU）と、サーボの REST（POST /set）の確認用です。
       </p>
 
       <section className="ws-test-card">
@@ -221,7 +212,10 @@ export default function DaemonSocketTestPage() {
       </section>
 
       <section className="ws-test-card">
-        <h2>送信テスト（servo/set）</h2>
+        <h2>REST テスト（POST /set）</h2>
+        <p>
+          サーボ指令は HTTP。Socket 接続は不要です（未接続でも送信できます）。
+        </p>
         <div className="ws-test-form">
           <label>
             channel
@@ -249,8 +243,8 @@ export default function DaemonSocketTestPage() {
           </label>
         </div>
         <div className="ws-test-row">
-          <button type="button" onClick={emitSetServo} disabled={status !== "connected"}>
-            servo/set を送信
+          <button type="button" onClick={() => void postSetServo()}>
+            POST /set を送信
           </button>
         </div>
       </section>

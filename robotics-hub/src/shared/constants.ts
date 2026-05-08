@@ -47,7 +47,7 @@ export const SERVO_TICK_VALUES: Record<string, number[]> = {
 // 全サーボチャンネル番号の配列
 export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
 
-/** robot-daemon（Socket.IO のハンドシェイク用ベース URL。`io(SERVO_DAEMON_URL)` と同一） */
+/** robot-daemon のベース URL（サーボは REST、IMU は同じオリジンで Socket.IO） */
 export const SERVO_DAEMON_URL =
   "http://" +
   (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +

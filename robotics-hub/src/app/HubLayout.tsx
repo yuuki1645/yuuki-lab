@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import HubWindowMenu from "@/app/components/HubWindowMenu";
+import ImuFloatingWindow from "@/app/components/ImuFloatingWindow";
 import { hubTools } from "@/app/hubTools";
 
 export default function HubLayout() {
+  const [imuWindowOpen, setImuWindowOpen] = useState(false);
+
   return (
     <div className="hub-root">
       <header className="hub-header">
@@ -22,11 +27,13 @@ export default function HubLayout() {
               {t.label}
             </NavLink>
           ))}
+          <HubWindowMenu onOpenImu={() => setImuWindowOpen(true)} />
         </nav>
       </header>
       <main className="hub-main">
         <Outlet />
       </main>
+      <ImuFloatingWindow open={imuWindowOpen} onClose={() => setImuWindowOpen(false)} />
     </div>
   );
 }

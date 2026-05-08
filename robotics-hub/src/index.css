@@ -97,3 +97,184 @@ body {
   text-align: center;
   color: #a8b0d6;
 }
+
+/* ヘッダー「ウィンドウ」ドロップダウン */
+.hub-window-menu {
+  position: relative;
+}
+
+.hub-window-menu-trigger {
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  background: transparent;
+}
+
+.hub-window-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 10px;
+  background: #1a223c;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  z-index: 50;
+}
+
+.hub-window-menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  color: #e8ecff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.hub-window-menu-item:hover {
+  background: rgba(110, 168, 255, 0.18);
+}
+
+/* IMU フローティングウィンドウ */
+.imu-float {
+  position: fixed;
+  z-index: 1000;
+  width: min(320px, calc(100vw - 16px));
+  border-radius: 12px;
+  background: #151c34;
+  border: 1px solid rgba(110, 168, 255, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.imu-float-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(110, 168, 255, 0.12);
+  cursor: grab;
+  user-select: none;
+}
+
+.imu-float-header:active {
+  cursor: grabbing;
+}
+
+.imu-float-title {
+  flex: 1;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.imu-float-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #cfd6ff;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.imu-float-close:hover {
+  background: rgba(255, 80, 80, 0.25);
+  color: #fff;
+}
+
+.imu-float-body {
+  padding: 12px 14px 14px;
+  font-size: 0.85rem;
+}
+
+.imu-float-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 8px;
+  color: #a8b0d6;
+  font-size: 0.8rem;
+}
+
+.imu-float-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.imu-float-rate input {
+  width: 4.5rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  background: #0b1020;
+  color: #e8ecff;
+}
+
+.imu-float-error {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 80, 80, 0.12);
+  border: 1px solid rgba(255, 120, 120, 0.35);
+  color: #ffb4b4;
+  font-size: 0.8rem;
+}
+
+.imu-float-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: #8b93c4;
+}
+
+.imu-float-status-err {
+  color: #ff9e9e;
+}
+
+.imu-float-placeholder {
+  margin: 0;
+  color: #8b93c4;
+  font-size: 0.84rem;
+}
+
+.imu-float-readings {
+  margin: 0;
+}
+
+.imu-float-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.08);
+}
+
+.imu-float-row:last-child {
+  border-bottom: none;
+}
+
+.imu-float-row dt {
+  margin: 0;
+  color: #a8b0d6;
+  font-size: 0.78rem;
+}
+
+.imu-float-row dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #e8ecff;
+}

@@ -37,7 +37,7 @@ function TiltGauge({
 }: TiltGaugeProps) {
   const r = 58;
   const halfLine = r - 4;
-  const rot = -angleDeg;
+  const rot = angleDeg;
 
   const labelClass =
     variant === "pitch" ? "imu-tilt-gauge-label imu-tilt-gauge-label--pitch" : "imu-tilt-gauge-label imu-tilt-gauge-label--roll";

@@ -131,6 +131,7 @@ export async function moveServo(
         cleanup();
         reject(new Error("Timeout waiting for servo/result"));
       }, 12_000);
+      
       const onResult = (payload: unknown) => {
         cleanup();
         const p = payload as {
@@ -149,6 +150,7 @@ export async function moveServo(
         }
         resolve({ logical, physical });
       };
+
       const onErr = (payload: unknown) => {
         cleanup();
         const msg =
@@ -160,11 +162,13 @@ export async function moveServo(
             : "servo error";
         reject(new Error(msg));
       };
+
       const cleanup = () => {
         clearTimeout(timer);
         socket.off("servo/result", onResult);
         socket.off("error", onErr);
       };
+
       socket.once("servo/result", onResult);
       socket.once("error", onErr);
       socket.emit("servo/set", {

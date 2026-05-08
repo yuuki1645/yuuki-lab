@@ -61,7 +61,6 @@ export default function DaemonSocketTestPage() {
   };
 
   const fmtAligned = (value?: number, width = 8) => {
-    console.log(value, width);
     if (typeof value !== "number" || !Number.isFinite(value)) return "-".padStart(width, " ");
     return value.toFixed(2).padStart(width, " ");
   };

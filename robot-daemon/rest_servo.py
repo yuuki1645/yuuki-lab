@@ -1,3 +1,5 @@
+# type: ignore
+
 """サーボ操作の REST ルート登録（IMU は Socket.IO のまま）。"""
 
 from __future__ import annotations

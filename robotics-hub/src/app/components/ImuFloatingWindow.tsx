@@ -20,6 +20,7 @@ type ImuFloatingWindowProps = {
 export default function ImuFloatingWindow({ open, onClose }: ImuFloatingWindowProps) {
   const [pos, setPos] = useState({ x: 24, y: 96 });
   const dragRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   const [wsStatus, setWsStatus] = useState<WsStatus>("disconnected");
@@ -31,33 +32,41 @@ export default function ImuFloatingWindow({ open, onClose }: ImuFloatingWindowPr
   const [imuSample, setImuSample] = useState<ImuSamplePayload | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  const onHeaderPointerDown = useCallback((e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest(".imu-float-close")) return;
-    dragRef.current = {
-      offsetX: e.clientX - pos.x,
-      offsetY: e.clientY - pos.y,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, [pos.x, pos.y]);
-
-  const onHeaderPointerMove = useCallback(
+  const onHeaderPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragRef.current) return;
-      const nx = e.clientX - dragRef.current.offsetX;
-      const ny = e.clientY - dragRef.current.offsetY;
-      const margin = 8;
-      const maxX = Math.max(margin, window.innerWidth - 320 - margin);
-      const maxY = Math.max(margin, window.innerHeight - 120 - margin);
-      setPos({
-        x: Math.min(Math.max(margin, nx), maxX),
-        y: Math.min(Math.max(margin, ny), maxY),
-      });
+      if ((e.target as HTMLElement).closest(".imu-float-close")) return;
+      dragRef.current = {
+        offsetX: e.clientX - pos.x,
+        offsetY: e.clientY - pos.y,
+      };
+      setDragging(true);
+      if (e.pointerType === "touch" || e.pointerType === "pen") {
+        e.preventDefault();
+      }
+      e.currentTarget.setPointerCapture(e.pointerId);
     },
-    []
+    [pos.x, pos.y]
   );
+
+  const onHeaderPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      e.preventDefault();
+    }
+    const nx = e.clientX - dragRef.current.offsetX;
+    const ny = e.clientY - dragRef.current.offsetY;
+    const margin = 8;
+    const maxX = Math.max(margin, window.innerWidth - 320 - margin);
+    const maxY = Math.max(margin, window.innerHeight - 120 - margin);
+    setPos({
+      x: Math.min(Math.max(margin, nx), maxX),
+      y: Math.min(Math.max(margin, ny), maxY),
+    });
+  }, []);
 
   const onHeaderPointerUp = useCallback((e: React.PointerEvent) => {
     dragRef.current = null;
+    setDragging(false);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
@@ -119,6 +128,25 @@ export default function ImuFloatingWindow({ open, onClose }: ImuFloatingWindowPr
       setWsStatus("disconnected");
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      dragRef.current = null;
+      setDragging(false);
+    }
+  }, [open]);
+
+  /** iPad / iOS WebKit: ドラッグ中に背後ページへ touchmove が伝わってスクロールするのを防ぐ */
+  useEffect(() => {
+    if (!dragging) return;
+    const blockScroll = (ev: TouchEvent) => {
+      ev.preventDefault();
+    };
+    document.body.addEventListener("touchmove", blockScroll, { passive: false });
+    return () => {
+      document.body.removeEventListener("touchmove", blockScroll);
+    };
+  }, [dragging]);
 
   const applyRate = useCallback(() => {
     const socket = socketRef.current;

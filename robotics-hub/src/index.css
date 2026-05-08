@@ -150,6 +150,8 @@ body {
   border: 1px solid rgba(110, 168, 255, 0.35);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
   overflow: hidden;
+  /* タッチのデフォルト（背後ページの縦スクロール等）を抑止。子の input は個別に上書き */
+  touch-action: none;
 }
 
 .imu-float-header {
@@ -160,6 +162,10 @@ body {
   background: rgba(110, 168, 255, 0.12);
   cursor: grab;
   user-select: none;
+  /* iPad / iOS: タイトルバー上のスワイプをページスクロールに奪わせない */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
 }
 
 .imu-float-header:active {
@@ -193,6 +199,7 @@ body {
 .imu-float-body {
   padding: 12px 14px 14px;
   font-size: 0.85rem;
+  touch-action: none;
 }
 
 .imu-float-meta {
@@ -219,6 +226,7 @@ body {
   border: 1px solid rgba(200, 210, 255, 0.2);
   background: #0b1020;
   color: #e8ecff;
+  touch-action: manipulation;
 }
 
 .imu-float-error {

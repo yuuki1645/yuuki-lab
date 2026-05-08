@@ -1,4 +1,3 @@
-import { useId } from "react";
 import type { ImuDaemonStream } from "@/shared/hooks/useImuDaemonStream";
 import { useFloatingPanelDrag } from "@/shared/hooks/useFloatingPanelDrag";
 
@@ -8,53 +7,149 @@ type ImuAttitudeFloatingWindowProps = {
   stream: ImuDaemonStream;
 };
 
-const SIZE = 240;
-const CX = SIZE / 2;
-const CY = SIZE / 2;
-const R = (SIZE / 2) * 0.92;
-/** 1° あたりの地平線の移動量（px） */
-const PITCH_PX_PER_DEG = 2.8;
-/** 表示するピッチのクランプ（過大な値で凡例が空白になるのを防ぐ） */
-const MAX_PITCH_DEG = 45;
-const MAX_ROLL_DEG = 90;
+/** 1 ゲージの SVG 一辺（px） */
+const GAUGE = 132;
+const CX = GAUGE / 2;
+const CY = GAUGE / 2;
 
-function clamp(n: number, lo: number, hi: number) {
-  return Math.min(Math.max(n, lo), hi);
+function safeAngle(deg: number | undefined): number {
+  if (typeof deg !== "number" || !Number.isFinite(deg)) return 0;
+  return deg;
 }
 
-function fmtDeg(label: string, value?: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return `${label} —°`;
-  return `${label} ${value.toFixed(1)}°`;
+type TiltGaugeProps = {
+  /** 赤線の回転角（°）。センサー値をそのまま使用。SVG は Y 下向きなので表示と整合させるため符号を反転 */
+  angleDeg: number;
+  leftLabel: string;
+  rightLabel: string;
+  title: string;
+  variant: "pitch" | "roll";
+  dimmed: boolean;
+};
+
+function TiltGauge({
+  angleDeg,
+  leftLabel,
+  rightLabel,
+  title,
+  variant,
+  dimmed,
+}: TiltGaugeProps) {
+  const r = 58;
+  const halfLine = r - 4;
+  const rot = -angleDeg;
+
+  const labelClass =
+    variant === "pitch" ? "imu-tilt-gauge-label imu-tilt-gauge-label--pitch" : "imu-tilt-gauge-label imu-tilt-gauge-label--roll";
+
+  return (
+    <div className={`imu-tilt-gauge ${dimmed ? "imu-tilt-gauge--idle" : ""}`}>
+      <div className="imu-tilt-gauge-title">{title}</div>
+      <svg
+        className="imu-tilt-gauge-svg"
+        width={GAUGE}
+        height={GAUGE}
+        viewBox={`0 0 ${GAUGE} ${GAUGE}`}
+        aria-hidden
+      >
+        <circle
+          cx={CX}
+          cy={CY}
+          r={r}
+          fill="#0a0f1e"
+          stroke="rgba(200, 210, 255, 0.38)"
+          strokeWidth="2"
+        />
+
+        {/* 十字線（固定） */}
+        <line
+          x1={CX - r}
+          y1={CY}
+          x2={CX + r}
+          y2={CY}
+          stroke="#5a6378"
+          strokeWidth="1.5"
+        />
+        <line
+          x1={CX}
+          y1={CY - r}
+          x2={CX}
+          y2={CY + r}
+          stroke="#5a6378"
+          strokeWidth="1.5"
+        />
+
+        {/* 軸ラベル：横軸の左右 */}
+        <text
+          x={8}
+          y={CY + 4}
+          className={labelClass}
+          textAnchor="start"
+          fontSize="13"
+          fontWeight={600}
+        >
+          {leftLabel}
+        </text>
+        <text
+          x={GAUGE - 8}
+          y={CY + 4}
+          className={labelClass}
+          textAnchor="end"
+          fontSize="13"
+          fontWeight={600}
+        >
+          {rightLabel}
+        </text>
+
+        <circle cx={CX} cy={CY} r={3} fill="#e8ecff" opacity={0.85} />
+
+        {/* 姿勢を示す赤線（中心まわりに回転） */}
+        <g transform={`rotate(${rot} ${CX} ${CY})`}>
+          <line
+            x1={CX - halfLine}
+            y1={CY}
+            x2={CX + halfLine}
+            y2={CY}
+            stroke="#d62828"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function fmtNum(deg: number | undefined) {
+  if (typeof deg !== "number" || !Number.isFinite(deg)) return "—";
+  return `${deg.toFixed(1)}°`;
 }
 
 /**
- * 簡易人工水平儀：ロールで地平線を傾け、ピッチで上下にずらす。
- * （機体記号は画面中央に固定）
+ * Pitch / Roll を、十字線＋赤い傾斜線の二連ゲージで表示（前後・左右軸ラベル付き）
  */
 export default function ImuAttitudeFloatingWindow({
   open,
   onClose,
   stream,
 }: ImuAttitudeFloatingWindowProps) {
-  const uid = useId().replace(/:/g, "");
-  const clipId = `imu-attitude-clip-${uid}`;
-  const skyGradId = `imu-attitude-sky-${uid}`;
-  const groundGradId = `imu-attitude-ground-${uid}`;
-
   const { wsStatus, imuSample } = stream;
+
+  const panelW = GAUGE * 2 + 56;
+  const panelH = 300;
 
   const { pos, headerPointerHandlers } = useFloatingPanelDrag({
     panelOpen: open,
     initial: { x: 360, y: 96 },
-    panelWidth: SIZE + 32,
-    panelHeight: SIZE + 120,
+    panelWidth: panelW,
+    panelHeight: panelH,
   });
 
-  const pitchRaw = imuSample?.angle?.pitch ?? 0;
-  const rollRaw = imuSample?.angle?.roll ?? 0;
-  const pitch = clamp(pitchRaw, -MAX_PITCH_DEG, MAX_PITCH_DEG);
-  const roll = clamp(rollRaw, -MAX_ROLL_DEG, MAX_ROLL_DEG);
-  const pitchPx = clamp(pitch * PITCH_PX_PER_DEG, -R * 1.25, R * 1.25);
+  const pitchRaw = imuSample?.angle?.pitch;
+  const rollRaw = imuSample?.angle?.roll;
+  const pitchAngle = safeAngle(pitchRaw);
+  const rollAngle = safeAngle(rollRaw);
+  const dimmed = !imuSample;
 
   if (!open) return null;
 
@@ -79,109 +174,34 @@ export default function ImuAttitudeFloatingWindow({
         </button>
       </div>
 
-      <div className="imu-attitude-body">
-        <svg
-          className={
-            imuSample
-              ? "imu-attitude-svg"
-              : "imu-attitude-svg imu-attitude-svg--idle"
-          }
-          width={SIZE}
-          height={SIZE}
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          aria-hidden
-        >
-          <defs>
-            <clipPath id={clipId}>
-              <circle cx={CX} cy={CY} r={R} />
-            </clipPath>
-            <linearGradient id={skyGradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3d6fb8" />
-              <stop offset="100%" stopColor="#6ba3e8" />
-            </linearGradient>
-            <linearGradient id={groundGradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6b4c2e" />
-              <stop offset="100%" stopColor="#3d2a18" />
-            </linearGradient>
-          </defs>
-
-          {/* 外枠 */}
-          <circle
-            cx={CX}
-            cy={CY}
-            r={R + 4}
-            fill="none"
-            stroke="rgba(200,210,255,0.35)"
-            strokeWidth="3"
-          />
-
-          <g clipPath={`url(#${clipId})`}>
-            {/* 地平線より奥：ロール → ピッチ の順で変換 */}
-            <g transform={`translate(${CX} ${CY}) rotate(${roll}) translate(0 ${pitchPx})`}>
-              <rect
-                x={-SIZE * 2}
-                y={-SIZE * 4}
-                width={SIZE * 4}
-                height={SIZE * 2}
-                fill={`url(#${skyGradId})`}
-              />
-              <rect
-                x={-SIZE * 2}
-                y={0}
-                width={SIZE * 4}
-                height={SIZE * 4}
-                fill={`url(#${groundGradId})`}
-              />
-              <line
-                x1={-SIZE * 2}
-                y1={0}
-                x2={SIZE * 2}
-                y2={0}
-                stroke="#ffffff"
-                strokeWidth="2.5"
-                strokeOpacity={0.95}
-              />
-            </g>
-          </g>
-
-          {/* 機体記号（画面に対して固定） */}
-          <g pointerEvents="none" className="imu-attitude-reticle">
-            <circle
-              cx={CX}
-              cy={CY}
-              r={R}
-              fill="none"
-              stroke="rgba(255,255,255,0.25)"
-              strokeWidth="1"
+      <div className="imu-attitude-body imu-attitude-body--tilt">
+        <div className="imu-tilt-gauges" aria-live="polite">
+          <div className="imu-tilt-col">
+            <TiltGauge
+              angleDeg={pitchAngle}
+              leftLabel="前"
+              rightLabel="後"
+              title="Pitch（ピッチ）"
+              variant="pitch"
+              dimmed={dimmed}
             />
-            {/* 翼 */}
-            <line
-              x1={CX - R * 0.55}
-              y1={CY}
-              x2={CX + R * 0.55}
-              y2={CY}
-              stroke="#ffeedd"
-              strokeWidth="3"
-              strokeLinecap="round"
+            <div className="imu-tilt-value imu-tilt-value--pitch">
+              Pitch <span className="imu-tilt-value-num">{fmtNum(pitchRaw)}</span>
+            </div>
+          </div>
+          <div className="imu-tilt-col">
+            <TiltGauge
+              angleDeg={rollAngle}
+              leftLabel="左"
+              rightLabel="右"
+              title="Roll（ロール）"
+              variant="roll"
+              dimmed={dimmed}
             />
-            {/* 機首 */}
-            <polygon
-              points={`${CX},${CY - 10} ${CX - 8},${CY + 6} ${CX + 8},${CY + 6}`}
-              fill="#ffeedd"
-              stroke="#1a1520"
-              strokeWidth="1"
-            />
-            <circle cx={CX} cy={CY} r={4} fill="#1a1520" stroke="#ffeedd" strokeWidth="1.5" />
-          </g>
-        </svg>
-
-        <div className="imu-attitude-readouts" aria-live="polite">
-          <span className="imu-attitude-readout imu-attitude-readout--pitch">
-            {fmtDeg("Pitch", imuSample?.angle?.pitch)}
-          </span>
-          <span className="imu-attitude-readout imu-attitude-readout--roll">
-            {fmtDeg("Roll", imuSample?.angle?.roll)}
-          </span>
+            <div className="imu-tilt-value imu-tilt-value--roll">
+              Roll <span className="imu-tilt-value-num">{fmtNum(rollRaw)}</span>
+            </div>
+          </div>
         </div>
 
         {wsStatus !== "connected" || !imuSample ? (

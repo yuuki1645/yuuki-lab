@@ -287,7 +287,7 @@ body {
   color: #e8ecff;
 }
 
-/* IMU 姿勢（人工水平）フローティング */
+/* IMU 姿勢（Pitch/Roll 双ゲージ）フローティング */
 .imu-attitude-float {
   position: fixed;
   z-index: 1001;
@@ -309,36 +309,77 @@ body {
   touch-action: none;
 }
 
-.imu-attitude-svg {
-  display: block;
-  border-radius: 50%;
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
+.imu-attitude-body--tilt {
+  padding-top: 6px;
 }
 
-.imu-attitude-svg--idle {
+.imu-tilt-gauges {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px 20px;
+  width: 100%;
+}
+
+.imu-tilt-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.imu-tilt-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.imu-tilt-gauge--idle {
   opacity: 0.45;
 }
 
-.imu-attitude-readouts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px 20px;
-  width: 100%;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
+.imu-tilt-gauge-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #a8b0d6;
+  letter-spacing: 0.04em;
 }
 
-.imu-attitude-readout {
+.imu-tilt-gauge-svg {
+  display: block;
+  border-radius: 50%;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.imu-tilt-gauge-label--pitch {
+  fill: #8ec5ff;
+}
+
+.imu-tilt-gauge-label--roll {
+  fill: #a8e07a;
+}
+
+.imu-tilt-value {
+  font-size: 0.9rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
 
-.imu-attitude-readout--pitch {
+.imu-tilt-value-num {
+  font-size: 1.05rem;
+  margin-left: 4px;
+}
+
+.imu-tilt-value--pitch {
   color: #9ec8ff;
 }
 
-.imu-attitude-readout--roll {
+.imu-tilt-value--roll {
   color: #c4e8a8;
 }
 

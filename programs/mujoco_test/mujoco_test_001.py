@@ -12,10 +12,13 @@ XML = r"""
   </asset>
 
   <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
     <geom type="plane" size="5 5 0.1" material="floor_mat"/>
   
-    <body>
-      <geom type="box" size="0.1 0.1 0.1" rgba="1 0 0 1"/>
+    <body pos="0 0 0.5">
+      <freejoint name="root"/>
+      
+      <geom type="box" pos="0 0 0" size="0.1 0.1 0.1" rgba="1 0 0 1"/>
     </body>
   </worldbody>
 </mujoco>

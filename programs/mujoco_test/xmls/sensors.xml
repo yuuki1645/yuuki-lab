@@ -1,4 +1,4 @@
 <sensor>
-  <gyro site="imu_site"/>
-  <accelerometer site="imu_site"/>
+  <gyro name="imu_gyro" site="imu_site"/>
+  <accelerometer name="imu_acc" site="imu_site"/>
 </sensor>

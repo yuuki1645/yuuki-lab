@@ -1,0 +1,103 @@
+# type: ignore
+
+import numpy as np
+import gymnasium as gym
+from gymnasium import spaces
+import mujoco
+
+
+class KneeTrackEnv(gym.Env):
+    """
+    Minimal MuJoCo RL task:
+    - Control only left_knee_pitch target angle (position actuator control).
+    - Reward is high when the joint angle tracks a fixed target.
+    """
+
+    metadata = {"render_modes": ["human"], "render_fps": 60}
+
+    def __init__(self, xml_path: str = "xmls/main.xml", max_steps: int = 500):
+        super().__init__()
+        self.model = mujoco.MjModel.from_xml_path(xml_path)
+        self.data = mujoco.MjData(self.model)
+        self.max_steps = max_steps
+        self.step_count = 0
+
+        self.knee_joint_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_JOINT, "left_knee_pitch"
+        )
+        self.knee_act_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, "left_knee_pitch_motor"
+        )
+        self.root_joint_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_JOINT, "root"
+        )
+
+        # action: desired position command for left knee actuator
+        self.action_space = spaces.Box(
+            low=np.array([-0.7], dtype=np.float32),
+            high=np.array([0.2], dtype=np.float32),
+            dtype=np.float32,
+        )
+        # observation: [knee_angle, knee_vel, torso_height, torso_pitch]
+        self.observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=(4,), dtype=np.float32
+        )
+
+        self.target_angle = -0.25
+
+    def _get_obs(self) -> np.ndarray:
+        qpos_adr = self.model.jnt_qposadr[self.knee_joint_id]
+        qvel_adr = self.model.jnt_dofadr[self.knee_joint_id]
+        knee_angle = self.data.qpos[qpos_adr]
+        knee_vel = self.data.qvel[qvel_adr]
+
+        # freejoint(root): qpos = [x, y, z, qw, qx, qy, qz]
+        root_qpos_adr = self.model.jnt_qposadr[self.root_joint_id]
+        torso_height = self.data.qpos[root_qpos_adr + 2]
+        torso_pitch_proxy = self.data.qpos[root_qpos_adr + 5]  # qy as simple proxy
+
+        return np.array(
+            [knee_angle, knee_vel, torso_height, torso_pitch_proxy], dtype=np.float32
+        )
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        mujoco.mj_resetData(self.model, self.data)
+        self.step_count = 0
+
+        # Small randomization helps policy robustness.
+        qpos_adr = self.model.jnt_qposadr[self.knee_joint_id]
+        self.data.qpos[qpos_adr] = self.np_random.uniform(-0.2, 0.0)
+        mujoco.mj_forward(self.model, self.data)
+        return self._get_obs(), {}
+
+    def step(self, action):
+        self.step_count += 1
+        action = np.clip(action, self.action_space.low, self.action_space.high)
+
+        self.data.ctrl[:] = 0.0
+        self.data.ctrl[self.knee_act_id] = float(action[0])
+        mujoco.mj_step(self.model, self.data)
+
+        obs = self._get_obs()
+        knee_angle = float(obs[0])
+        knee_vel = float(obs[1])
+        torso_height = float(obs[2])
+
+        err = knee_angle - self.target_angle
+        reward = 1.0 - 2.0 * (err * err) - 0.02 * abs(knee_vel)
+
+        terminated = False
+        if torso_height < 0.45:
+            terminated = True
+            reward -= 3.0
+
+        truncated = self.step_count >= self.max_steps
+        return obs, reward, terminated, truncated, {}
+
+    def render(self):
+        # Training script uses no realtime render. Add viewer later if needed.
+        return None
+
+    def close(self):
+        pass

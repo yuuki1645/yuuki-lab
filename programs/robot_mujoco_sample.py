@@ -66,7 +66,7 @@ XML = r"""
             <body name="left_ankle" pos="0 0 -0.30">
               <joint name="left_ankle_pitch" type="hinge" axis="0 1 0" range="-45 45" damping="2"/>
               <geom name="left_ankle_servo" type="box" size="0.045 0.035 0.035" material="servo" mass="0.25"/>
-
+    
               <body name="left_foot" pos="0.05 0 -0.06">
                 <joint name="left_ankle_roll" type="hinge" axis="1 0 0" range="-25 25" damping="2"/>
                 <!-- Large aluminum foot plate approximation -->

@@ -1,0 +1,8 @@
+<mujoco model="yuuki_robot">
+  <asset>
+    <include file="assets.xml"/>
+  </asset>
+  <worldbody>
+    <include file="world.xml"/>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,36 @@
+<worldbody>
+  <camera pos="0 -1 1" xyaxes="0 1 0 0 0 1"/>
+  <light pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+  <geom type="plane" size="5 5 0.1" material="floor_mat"/>
+
+  <!-- 基準はカゴの底中央としている -->
+  <body pos="0 0 0.9">
+    <freejoint name="root"/>
+
+    <geom name="basket" type="box" pos="0 0 0.07" size="0.14 0.085 0.07" material="basket" mass="0.3"/>
+
+    <!-- Left leg -->
+    <body name="left_hip" pos="-0.11 0 0">
+      <joint name="left_hip_roll" type="hinge" axis="1 0 0" range="-35 35" damping="2"/>
+      <geom name="left_hip_servo" type="box" pos="0 0 -0.0325" size="0.015 0.025 0.0325" material="servo" mass="0.162" />
+
+      <body name="left_thigh" pos="0 0 -0.1">
+        <joint name="left_hip_pitch" type="hinge" axis="0 1 0" range="-60 60" damping="2"/>
+        <geom name="left_thigh_link" type="box" pos="0 0 -0.1" size="0.04 0.025 0.1" material="metal" mass="0.5" />
+      
+        <body name="left_shin" pos="0 0 -0.2">
+          <joint name="left_knee_pitch" type="hinge" axis="0 1 0" range="-90 10" damping="2"/>
+
+        </body>
+      </body> 
+    </body>
+
+    <!-- Right leg -->
+    <body name="right_hip" pos="0.11 0 0">
+
+    </body>
+
+
+
+  </body>
+</worldbody>

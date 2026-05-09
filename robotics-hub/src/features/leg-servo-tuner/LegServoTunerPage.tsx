@@ -97,7 +97,7 @@ export default function LegServoTunerPage() {
         <h1 className="leg-tuner-title">レッグサーボ調整</h1>
         <p className="leg-tuner-error">エラー: {error}</p>
         <p className="leg-tuner-help">
-          servo-daemon（同一ホストのポート 5000・REST API）が起動しているか確認してください。
+          robot-daemon（同一ホストのポート 5000・REST API）が起動しているか確認してください。
         </p>
       </div>
     );

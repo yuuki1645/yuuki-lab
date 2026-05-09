@@ -6,11 +6,13 @@
 
 - **モーションエディタ** — タイムライン・キーフレーム編集（旧 `motion-editor-react-ts`）
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner-react` の TypeScript 版）
+- **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
+- **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
 
 ## 前提
 
 - Node.js（推奨: 現在の LTS）
-- 実機連携時は **`servo-daemon`** を起動（既定ポート **5000**。API のホストはブラウザと同じ `hostname` + `:5000` を使用）
+- 実機連携時は **`robot-daemon`** を起動（既定ポート **5000**。REST のホストはブラウザと同じ `hostname` + `:5000`。IMU は同一オリジンへの Socket.IO）
 
 ## セットアップ
 
@@ -37,7 +39,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 別端末のブラウザでは、起動ログに出る **Network** の URL（例: `http://192.168.x.x:5173`）を開くか、開発 PC の LAN IP を確認して `http://<そのIP>:5173` でアクセスします。
 
-**`servo-daemon` について:** API のベース URL は **`window.location.hostname` + `:5000`**（`src/shared/constants.ts` の `SERVO_DAEMON_URL`）です。タブレットなどから `http://192.168.x.x:5173` で開いた場合、フロントからは `http://192.168.x.x:5000` にリクエストが飛びます。デーモンを動かしているマシンとポート 5000 が、他端末から届くようにファイアウォールで許可されているか確認してください（デーモンとハブを同一 PC で動かしているのが最も単純です）。
+**`robot-daemon` について:** REST・Socket.IO のベース URL は **`window.location.hostname` + `:5000`**（`src/shared/constants.ts` の `SERVO_DAEMON_URL`。名前は歴史的経緯のためそのまま）です。タブレットなどから `http://192.168.x.x:5173` で開いた場合、フロントからは `http://192.168.x.x:5000` にリクエスト・WebSocket 相当の接続が飛びます。デーモンを動かしているマシンとポート 5000 が、他端末から届くようにファイアウォールで許可されているか確認してください（デーモンとハブを同一 PC で動かしているのが最も単純です）。
 
 本番ビルドを LAN 向けにプレビューする場合の例:
 

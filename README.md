@@ -18,17 +18,17 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 **フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-実機とつなぐときは、同じリポジトリの **`servo-daemon`** を起動し、ブラウザから API（既定ポート 5000）にアクセスします。
+実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
-## ■ servo-daemon
+## ■ robot-daemon
 
-ラズパイ上でサーボドライバに直接指令を出す Flask サーバーです。
+ラズパイ上でサーボドライバに指令を出すとともに、IMU データを Socket.IO で配信する **Flask + Flask-SocketIO** のサーバーです（REST はサーボ用）。
 
-**[robotics-hub](robotics-hub/)** からこのサーバーの API を呼び出します（開発・運用の主経路）。
+**[robotics-hub](robotics-hub/)** からこのデーモンの REST API と Socket.IO を利用します（開発・運用の主経路）。
 
-詳細は [servo-daemon/README.md](servo-daemon/README.md) を参照してください。
+詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
 
 ## ■ （更新停止・レガシー）leg-servo-tuner
 

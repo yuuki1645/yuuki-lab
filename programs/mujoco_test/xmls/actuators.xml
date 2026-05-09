@@ -1,0 +1,3 @@
+<actuator>
+  <position joint="left_knee_pitch" kp="50"/>
+</actuator>

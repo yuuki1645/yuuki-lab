@@ -5,4 +5,10 @@
   <worldbody>
     <include file="world.xml"/>
   </worldbody>
+  <actuator>
+    <include file="actuators.xml"/>
+  </actuator>
+  <sensor>
+    <include file="sensors.xml"/>
+  </sensor>
 </mujoco>

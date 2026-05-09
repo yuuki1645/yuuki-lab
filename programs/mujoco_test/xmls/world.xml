@@ -1,25 +1,27 @@
 <worldbody>
   <camera pos="0 -1 1" xyaxes="0 1 0 0 0 1"/>
-  <light pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+  <light pos="0 0 10" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
   <geom type="plane" size="5 5 0.1" material="floor_mat"/>
 
   <!-- 基準はカゴの底中央としている -->
   <body pos="0 0 0.9">
     <freejoint name="root"/>
 
-    <geom name="basket" type="box" pos="0 0 0.07" size="0.14 0.085 0.07" material="basket" mass="0.3"/>
+    <site name="imu_site" pos="0 0 0" size="0.01" rgba="1 0 0 1"/>
+
+    <geom name="basket" type="box" pos="0 0 0.07" size="0.085 0.14 0.07" material="basket" mass="0.3"/>
 
     <!-- Left leg -->
     <body name="left_hip" pos="0 0.11 0">
-      <joint name="left_hip_roll" type="hinge" axis="0 -1 0" range="-35 35" damping="2"/>
+      <joint name="left_hip_roll" type="hinge" axis="1 0 0" range="-35 35" damping="2"/>
       <geom name="left_hip_servo" type="box" pos="0 0 -0.0325" size="0.015 0.025 0.0325" material="servo" mass="0.162" />
 
       <body name="left_thigh" pos="0 0 -0.1">
-        <joint name="left_hip_pitch" type="hinge" axis="1 0 0" range="-60 60" damping="2"/>
+        <joint name="left_hip_pitch" type="hinge" axis="0 1 0" range="-60 60" damping="2"/>
         <geom name="left_thigh_link" type="box" pos="0 0 -0.1" size="0.04 0.025 0.1" material="metal" mass="0.5" />
       
         <body name="left_shin" pos="0 0 -0.2">
-          <joint name="left_knee_pitch" type="hinge" axis="1 0 0" range="-90 10" damping="2"/>
+          <joint name="left_knee_pitch" type="hinge" axis="0 1 0" range="-90 10" damping="2"/>
           <geom name="left_shin_link" type="box" pos="0 0 -0.2" size="0.04 0.025 0.1" material="metal" mass="0.5" />
         
           <body name="left_ankle" pos="0 0 -0.30">
@@ -37,11 +39,30 @@
     </body>
 
     <!-- Right leg -->
-    <body name="right_hip" pos="0.11 0 0">
+    <body name="right_hip" pos="0 -0.11 0">
+      <joint name="right_hip_roll" type="hinge" axis="1 0 0" range="-35 35" damping="2"/>
+      <geom name="right_hip_servo" type="box" pos="0 0 -0.0325" size="0.015 0.025 0.0325" material="servo" mass="0.162" />
 
+      <body name="right_thigh" pos="0 0 -0.1">
+        <joint name="right_hip_pitch" type="hinge" axis="0 1 0" range="-60 60" damping="2"/>
+        <geom name="right_thigh_link" type="box" pos="0 0 -0.1" size="0.04 0.025 0.1" material="metal" mass="0.5" />
+      
+        <body name="right_shin" pos="0 0 -0.2">
+          <joint name="right_knee_pitch" type="hinge" axis="0 1 0" range="-90 10" damping="2"/>
+          <geom name="right_shin_link" type="box" pos="0 0 -0.2" size="0.04 0.025 0.1" material="metal" mass="0.5" />
+        
+          <body name="right_ankle" pos="0 0 -0.30">
+            <joint name="right_ankle_pitch" type="hinge" axis="0 1 0" range="-45 45" damping="2"/>
+            <geom name="right_ankle_servo" type="box" size="0.045 0.035 0.035" material="servo" mass="0.25"/>
+  
+            <body name="right_foot" pos="0.05 0 -0.06">
+              <joint name="right_ankle_roll" type="hinge" axis="1 0 0" range="-25 25" damping="2"/>
+              <!-- Large aluminum foot plate approximation -->
+              <geom name="right_foot_plate" type="box" size="0.16 0.09 0.01" pos="0.06 0 -0.015" material="metal" mass="0.8" friction="1.5 0.02 0.001"/>
+            </body>
+          </body>
+        </body>
+      </body> 
     </body>
-
-
-
   </body>
 </worldbody>

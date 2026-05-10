@@ -53,6 +53,22 @@ export const SERVO_DAEMON_URL =
   (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
   ":5000";
 
+/**
+ * mujoco-sim（Flask）のベース URL。
+ * `VITE_MUJOCO_SIM_URL` があればそれを優先（ビルド時に埋め込み）。
+ */
+export function getMujocoSimUrl(): string {
+  const fromEnv = import.meta.env.VITE_MUJOCO_SIM_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8787"
+  );
+}
+
 /** 物理角スライダー範囲（レッグチューナーなど） */
 export const PHYSICAL_MIN = 0;
 export const PHYSICAL_MAX = 180;

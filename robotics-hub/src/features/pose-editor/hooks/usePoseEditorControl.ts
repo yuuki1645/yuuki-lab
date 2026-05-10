@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { mujocoPostStep } from "@/shared/api/mujocoSimApi";
 import { moveServo } from "@/shared/api/servoApi";
 import { SERVO_NAME_TO_CH } from "@/shared/constants";
 import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
 import {
+  logicalDegreesToRadians,
+  SERVO_NAME_TO_MUJOCO_ACTUATOR,
+} from "../lib/mujocoMapping";
+import {
   limitsFor,
   readLegFromServos,
   servoName,
 } from "../lib/servoUtils";
-import type { ActiveDrag, JointKey, LegId, LegPose } from "../types";
+import type { ActiveDrag, JointKey, LegId, LegPose, PoseBackendMode } from "../types";
 
 const DRAG_SENSITIVITY = 0.32;
 
-export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
+export function usePoseEditorControl(
+  servos: Servo[],
+  apiError: string | null,
+  backendMode: PoseBackendMode
+) {
   const [left, setLeft] = useState<LegPose>({
     hip1: 0,
     hip2: 90,
@@ -43,6 +52,10 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   useEffect(() => {
     servosRef.current = servos;
   }, [servos]);
+
+  useEffect(() => {
+    initRef.current = false;
+  }, [backendMode]);
 
   useEffect(() => {
     if (!servos.length || initRef.current) return;
@@ -78,24 +91,36 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
       if (apiError) return;
 
       const name = servoName(leg, key);
-      const ch = SERVO_NAME_TO_CH[name];
-      if (ch === undefined) return;
 
       const run = async () => {
         const seq = ++moveSeqRef.current;
         try {
-          await moveServo(ch, "logical", angle);
+          if (backendMode === "daemon") {
+            const ch = SERVO_NAME_TO_CH[name];
+            if (ch === undefined) return;
+            await moveServo(ch, "logical", angle);
+          } else {
+            const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
+            if (actuator === undefined) return;
+            const rad = logicalDegreesToRadians(angle);
+            await mujocoPostStep({
+              n: 1,
+              ctrl: { [actuator]: rad },
+            });
+          }
         } catch (err) {
           if (seq !== moveSeqRef.current) return;
+          const label =
+            backendMode === "mujoco" ? "MuJoCo 指令" : "サーボ指令";
           window.alert(
-            `サーボ指令エラー (${name}):\n${err instanceof Error ? err.message : String(err)}`
+            `${label}エラー (${name}):\n${err instanceof Error ? err.message : String(err)}`
           );
         }
       };
 
       void run();
     },
-    [apiError]
+    [apiError, backendMode]
   );
 
   const flushDragPointerUp = useCallback(() => {
@@ -106,10 +131,11 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   }, [pushServo]);
 
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
+    const onMove = (e: Event) => {
+      const ev = e as PointerEvent;
       const d = dragRef.current;
       if (!d) return;
-      const cur = d.axis === "x" ? e.clientX : e.clientY;
+      const cur = d.axis === "x" ? ev.clientX : ev.clientY;
       const delta = cur - d.startClient;
       const next = d.startAngle + delta * DRAG_SENSITIVITY * d.sign;
       // console.log("next", next);
@@ -134,7 +160,10 @@ export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   }, [setLegAngle, pushServo, flushDragPointerUp]);
 
   const onArrowDown = useCallback(
-    (e: PointerEvent, partial: Omit<ActiveDrag, "startClient" | "startAngle">) => {
+    (
+      e: ReactPointerEvent<Element>,
+      partial: Omit<ActiveDrag, "startClient" | "startAngle">
+    ) => {
       e.preventDefault();
       e.stopPropagation();
       const pose = poseRef.current[partial.leg];

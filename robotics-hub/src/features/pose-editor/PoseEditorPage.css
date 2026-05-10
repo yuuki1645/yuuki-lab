@@ -22,6 +22,42 @@
   margin: 0 auto 16px;
 }
 
+.pose-editor-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.pose-editor-backend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #333;
+}
+
+.pose-editor-backend-label {
+  white-space: nowrap;
+}
+
+.pose-editor-backend-select {
+  min-width: 220px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(40, 30, 20, 0.2);
+  background: rgba(255, 252, 246, 0.95);
+  font: inherit;
+  color: #1a1a1a;
+}
+
+.pose-editor-backend-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #555;
+}
+
 .pose-editor-title {
   margin: 0 0 6px;
   font-family: Kalam, system-ui, sans-serif;

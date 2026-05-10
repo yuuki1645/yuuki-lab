@@ -1,3 +1,6 @@
+/** ポーズエディタの指令先（実機 REST / MuJoCo HTTP） */
+export type PoseBackendMode = "daemon" | "mujoco";
+
 export type LegId = "L" | "R";
 
 /** オーバービューSVGの正面／背面 */

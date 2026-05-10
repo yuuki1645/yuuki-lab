@@ -26,22 +26,22 @@ pip install -r requirements.txt
 python -m mujoco_sim
 ```
 
-既定では **`127.0.0.1:8787`** で待ち受けます。インストール後は `mujoco-sim-serve` でも同じ処理を起動できます。
+既定では **`0.0.0.0:8787`**（すべてのネットワークインターフェース）で待ち受けます。同一 PC のみに限定したいときは `--host 127.0.0.1` を付けてください。インストール後は `mujoco-sim-serve` でも同じ処理を起動できます。
 
 ### オプション
 
 | オプション | 説明 |
 |------------|------|
-| `--host` | バインドアドレス（既定: `127.0.0.1`） |
+| `--host` | バインドアドレス（既定: `0.0.0.0`。localhost のみなら `127.0.0.1`） |
 | `--port` | ポート（既定: `8787`） |
 | `--xml PATH` | 使用する MJCF（メイン XML）。環境変数 `MUJOCO_SIM_XML` と同じ効果 |
 | `--access-log` | Werkzeug の HTTP アクセスログを表示する（既定はエラーのみ） |
 
-LAN からアクセスさせる例:
+### トラブルシュート（ブラウザで「Failed to fetch」）
 
-```bash
-python -m mujoco_sim --host 0.0.0.0 --port 8787
-```
+1. **mujoco-sim が起動しているか**（この PC またはシミュを動かしているマシンで `python -m mujoco_sim`）。
+2. **ファイアウォール**で TCP **8787** がブロックされていないか（Windows なら「Python」のプライベートネットワーク許可など）。
+3. **別 PC／タブレットから robotics-hub を開いている場合**、ハブは `http://192.168.x.x:5173` のように **シミュ PC と同じ LAN の IP** で開き、mujoco-sim もそのマシンで動かすか、`VITE_MUJOCO_SIM_URL` で正しい `http://IP:8787` を指定する。
 
 ### 環境変数
 

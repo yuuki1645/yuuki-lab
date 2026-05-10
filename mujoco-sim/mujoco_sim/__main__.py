@@ -9,7 +9,8 @@ import os
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="MuJoCo simulation HTTP server (Flask)")
-    parser.add_argument("--host", default="127.0.0.1")
+    # 0.0.0.0: LAN の他端末から robotics-hub 経由で叩けるようにする（127.0.0.1 のみだと同一 PC 以外から届かない）
+    parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument(
         "--xml",

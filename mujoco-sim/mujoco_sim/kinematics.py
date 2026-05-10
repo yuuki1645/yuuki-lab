@@ -128,10 +128,10 @@ class LHip2Kinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l - 60.0
+        return l - 90.0
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg + 60.0
+        return mujoco_deg + 90.0
 
 
 class LKneeKinematics(JointKinematicsBase):
@@ -145,10 +145,10 @@ class LKneeKinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l - 30.0
+        return l
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg + 30.0
+        return mujoco_deg
 
 
 class LHeelKinematics(JointKinematicsBase):
@@ -162,10 +162,10 @@ class LHeelKinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l + 30.0
+        return l
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg - 30.0
+        return mujoco_deg
 
 
 class LHeelRollKinematics(JointKinematicsBase):
@@ -217,10 +217,10 @@ class RHip2Kinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l - 60.0
+        return l - 90.0
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg + 60.0
+        return mujoco_deg + 90.0
 
 
 class RKneeKinematics(JointKinematicsBase):
@@ -234,10 +234,10 @@ class RKneeKinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l - 30.0
+        return l
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg + 30.0
+        return mujoco_deg
 
 
 class RHeelKinematics(JointKinematicsBase):
@@ -251,10 +251,10 @@ class RHeelKinematics(JointKinematicsBase):
 
     def logical_to_mujoco_deg(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l + 30.0
+        return l
 
     def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
-        return mujoco_deg - 30.0
+        return mujoco_deg
 
 
 class RHeelRollKinematics(JointKinematicsBase):

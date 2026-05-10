@@ -48,7 +48,11 @@
     <!-- Right leg -->
     <body name="right_hip" pos="0 -0.11 0">
       <joint name="right_hip_roll" type="hinge" axis="1 0 0" damping="2"/>
-      <geom name="right_hip_servo" type="box" pos="0 0 -0.0325" size="0.015 0.025 0.0325" material="servo" mass="0.162" />
+      <geom
+        name="right_hip_servo" type="box" pos="0 0 -0.0325" size="0.015 0.025 0.0325"
+        material="servo" mass="0.162"
+        contype="0" conaffinity="0" 
+      />
 
       <body name="right_thigh" pos="0 0 -0.1">
         <joint name="right_hip_pitch" type="hinge" axis="0 1 0" damping="2"/>

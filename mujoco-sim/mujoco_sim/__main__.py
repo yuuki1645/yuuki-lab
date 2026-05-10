@@ -18,15 +18,20 @@ def main() -> None:
         help="Path to main MJCF file (sets MUJOCO_SIM_XML for this process)",
     )
     parser.add_argument(
-        "--access-log",
+        "--quiet-http",
         action="store_true",
-        help="Show Werkzeug HTTP access logs (default: errors only).",
+        help="Werkzeug の HTTP アクセス行を抑える（mujoco_sim.api の行は出る）",
     )
     args = parser.parse_args()
     if args.xml:
         os.environ["MUJOCO_SIM_XML"] = args.xml
 
-    if not args.access_log:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    if args.quiet_http:
         logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
     from mujoco_sim.app import create_app

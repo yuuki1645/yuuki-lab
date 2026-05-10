@@ -35,7 +35,14 @@ python -m mujoco_sim
 | `--host` | バインドアドレス（既定: `0.0.0.0`。localhost のみなら `127.0.0.1`） |
 | `--port` | ポート（既定: `8787`） |
 | `--xml PATH` | 使用する MJCF（メイン XML）。環境変数 `MUJOCO_SIM_XML` と同じ効果 |
-| `--access-log` | Werkzeug の HTTP アクセスログを表示する（既定はエラーのみ） |
+| `--quiet-http` | Werkzeug のアクセス行だけ抑える（`mujoco_sim.api` の受信ログはそのまま） |
+
+### ログ（フロントから届いているかの確認）
+
+起動時に **`logging.basicConfig`** により、コンソールに INFO が出ます。
+
+- **`werkzeug`**: 標準の HTTP アクセス行（`POST /api/step ... 200` など）。既定で有効。冗長なら `--quiet-http`。
+- **`mujoco_sim.api`**: `/health`・`/api/*` ごとに **`GET/POST`・パス・`client=`（接続元 IP）** を出力。`POST /api/step` と `PUT /api/ctrl` では **JSON 本文**も 1 行に載せます（ポーズエディタからの指令確認用）。
 
 ### トラブルシュート（ブラウザで「Failed to fetch」）
 

@@ -18,8 +18,16 @@ export async function mujocoFetchState(): Promise<MujocoSimStateResponse> {
   return (await response.json()) as MujocoSimStateResponse;
 }
 
+/**
+ * mujoco-sim の `/api/step` を叩く。
+ *
+ * `mode` を `"deg"` にすると、`ctrl` の値はサーバー側で度→ラジアンに換算される。
+ * 省略時 (`"rad"`) は MuJoCo ネイティブの単位そのまま。
+ * ログを度のままで残したいときに `"deg"` を使う。
+ */
 export async function mujocoPostStep(body: {
   n: number;
+  mode?: "rad" | "deg";
   ctrl?: Record<string, number>;
 }): Promise<MujocoSimStateResponse> {
   const base = getMujocoSimUrl();

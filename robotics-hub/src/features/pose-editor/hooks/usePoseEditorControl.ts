@@ -5,10 +5,7 @@ import { moveServo } from "@/shared/api/servoApi";
 import { SERVO_NAME_TO_CH } from "@/shared/constants";
 import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
-import {
-  logicalDegreesToRadians,
-  SERVO_NAME_TO_MUJOCO_ACTUATOR,
-} from "../lib/mujocoMapping";
+import { SERVO_NAME_TO_MUJOCO_ACTUATOR } from "../lib/mujocoMapping";
 import {
   limitsFor,
   readLegFromServos,
@@ -102,10 +99,10 @@ export function usePoseEditorControl(
           } else {
             const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
             if (actuator === undefined) return;
-            const rad = logicalDegreesToRadians(angle);
             await mujocoPostStep({
               n: 1,
-              ctrl: { [actuator]: rad },
+              mode: "deg",
+              ctrl: { [actuator]: angle },
             });
           }
         } catch (err) {

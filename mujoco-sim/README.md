@@ -91,6 +91,24 @@ python -m mujoco_sim.viewer_cmd
 
 アクチュエータ名は `GET /api/meta` の `actuator_names` を参照してください。
 
+#### `ctrl` の単位（`mode`）
+
+`POST /api/step` と `PUT /api/ctrl` のボディには `"mode"` を付けられます。
+
+| 値 | 意味 |
+|------|------|
+| `"rad"`（既定） | `ctrl` は MuJoCo ネイティブの単位（ラジアン）。後方互換。 |
+| `"deg"` | `ctrl` は度。サーバー側で `math.radians` 換算してから適用する。 |
+
+度で送ると `mujoco_sim.api` の JSON ログがそのまま読みやすい数字（例: `12`）になります。
+ポーズエディタは `"deg"` で送信する設定です。例:
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/step \
+  -H "Content-Type: application/json" \
+  -d "{\"n\": 1, \"mode\": \"deg\", \"ctrl\": {\"left_knee_pitch_motor\": 12}}"
+```
+
 ### 動作確認の例
 
 ```bash

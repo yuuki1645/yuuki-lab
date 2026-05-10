@@ -4,6 +4,15 @@
 
 <img src="images/robot_front.jpg" alt="ロボット正面" width="300">
 
+### 白いカゴのサイズ
+
+| 項目 | スペック |
+|-----|-----|
+| 幅 | 28 cm |
+| 高さ | 14.5 cm |
+| 奥行き | 18 cm |
+| 重量 | ？ |
+
 ## 背面
 
 <img src="images/robot_back.jpg" alt="ロボット背面" width="300">

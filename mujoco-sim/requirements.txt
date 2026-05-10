@@ -1,0 +1,4 @@
+mujoco>=3.0
+numpy>=1.23
+fastapi>=0.110
+uvicorn[standard]>=0.27

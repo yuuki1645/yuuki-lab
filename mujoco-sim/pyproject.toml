@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mujoco-sim"
+version = "0.1.0"
+description = "MuJoCo simulation + HTTP API for yuuki-lab"
+requires-python = ">=3.10"
+dependencies = [
+  "mujoco>=3.0",
+  "numpy>=1.23",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+]
+
+[project.scripts]
+mujoco-sim-serve = "mujoco_sim.__main__:main"
+mujoco-sim-view = "mujoco_sim.viewer_cmd:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mujoco_sim*"]
+
+[tool.setuptools.package-data]
+mujoco_sim = ["xmls/*.xml"]

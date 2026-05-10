@@ -1,3 +1,5 @@
 __pycache__/
 state.json
 *.zip
+*.egg-info/
+*.egg-info

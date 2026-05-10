@@ -8,14 +8,14 @@ from typing import Any
 
 import mujoco
 
-from mujoco_sim.paths import DEFAULT_MODEL_XML
+from mujoco_sim.paths import resolved_model_xml
 
 
 class Simulation:
     """Thread-safe wrapper around MjModel / MjData."""
 
     def __init__(self, xml_path: Path | None = None) -> None:
-        path = xml_path if xml_path is not None else DEFAULT_MODEL_XML
+        path = xml_path if xml_path is not None else resolved_model_xml()
         if not path.is_file():
             raise FileNotFoundError(f"MJCF not found: {path}")
         self.xml_path = path.resolve()
@@ -53,6 +53,11 @@ class Simulation:
         with self._lock:
             for _ in range(n):
                 mujoco.mj_step(self.model, self.data)
+
+    def sync_viewer(self, viewer: Any) -> None:
+        """パッシブ Viewer と共有する model/data の整合のため、ロック下で sync する。"""
+        with self._lock:
+            viewer.sync()
 
     def actuator_names(self) -> list[str]:
         return [

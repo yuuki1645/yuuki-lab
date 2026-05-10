@@ -1,10 +1,11 @@
-"""Run the HTTP API: python -m mujoco_sim [--host] [--port] [--xml PATH]."""
+"""Run the HTTP API: python -m mujoco_sim [--no-viewer] ..."""
 
 from __future__ import annotations
 
 import argparse
 import logging
 import os
+import threading
 
 
 def main() -> None:
@@ -16,6 +17,11 @@ def main() -> None:
         "--xml",
         default=None,
         help="Path to main MJCF file (sets MUJOCO_SIM_XML for this process)",
+    )
+    parser.add_argument(
+        "--no-viewer",
+        action="store_true",
+        help="パッシブ Viewer を出さず HTTP のみ（GUI なし・ヘッドレス）",
     )
     parser.add_argument(
         "--quiet-http",
@@ -35,9 +41,28 @@ def main() -> None:
         logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
     from mujoco_sim.app import create_app
+    from mujoco_sim.core import Simulation
+    from mujoco_sim.passive_viewer import run_passive_viewer_follow_sim
 
-    app = create_app()
-    app.run(host=args.host, port=args.port, threaded=True, use_reloader=False)
+    if args.no_viewer:
+        app = create_app()
+        app.run(host=args.host, port=args.port, threaded=True, use_reloader=False)
+        return
+
+    sim = Simulation()
+    app = create_app(simulation=sim)
+
+    def run_flask() -> None:
+        app.run(
+            host=args.host,
+            port=args.port,
+            threaded=True,
+            use_reloader=False,
+        )
+
+    thread = threading.Thread(target=run_flask, daemon=True)
+    thread.start()
+    run_passive_viewer_follow_sim(sim)
 
 
 if __name__ == "__main__":

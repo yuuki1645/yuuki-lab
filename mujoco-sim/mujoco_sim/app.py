@@ -1,34 +1,23 @@
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
 from typing import Any
 
 from flask import Flask, current_app, jsonify, request
 from flask_cors import CORS
 
 from mujoco_sim.core import Simulation
-from mujoco_sim.paths import DEFAULT_MODEL_XML
-
 LOG = logging.getLogger("mujoco_sim.api")
-
-
-def _model_path() -> Path:
-    env = os.environ.get("MUJOCO_SIM_XML")
-    if env:
-        return Path(env).resolve()
-    return DEFAULT_MODEL_XML
 
 
 def _get_sim() -> Simulation:
     return current_app.extensions["simulation"]
 
 
-def create_app() -> Flask:
+def create_app(simulation: Simulation | None = None) -> Flask:
     app = Flask(__name__)
     CORS(app)
-    app.extensions["simulation"] = Simulation(xml_path=_model_path())
+    app.extensions["simulation"] = simulation or Simulation()
 
     @app.before_request
     def _log_request() -> None:

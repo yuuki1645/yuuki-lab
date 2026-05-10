@@ -26,7 +26,9 @@ pip install -r requirements.txt
 python -m mujoco_sim
 ```
 
-既定では **`0.0.0.0:8787`**（すべてのネットワークインターフェース）で待ち受けます。同一 PC のみに限定したいときは `--host 127.0.0.1` を付けてください。インストール後は `mujoco-sim-serve` でも同じ処理を起動できます。
+既定では **`0.0.0.0:8787`** で HTTP を待ち受けると同時に **MuJoCo パッシブ Viewer** が開きます（ポーズエディタからの指令と同一シミュをその場で表示）。Viewer を出したくないとき（サーバーだけ・ヘッドレス）は **`--no-viewer`** を付けます。
+
+同一 PC のみに限定したいときは `--host 127.0.0.1` を付けてください。インストール後は `mujoco-sim-serve` でも同じ処理を起動できます。
 
 ### オプション
 
@@ -36,6 +38,7 @@ python -m mujoco_sim
 | `--port` | ポート（既定: `8787`） |
 | `--xml PATH` | 使用する MJCF（メイン XML）。環境変数 `MUJOCO_SIM_XML` と同じ効果 |
 | `--quiet-http` | Werkzeug のアクセス行だけ抑える（`mujoco_sim.api` の受信ログはそのまま） |
+| `--no-viewer` | Viewer を出さず **HTTP のみ**（GUI なしで常駐させたいとき） |
 
 ### ログ（フロントから届いているかの確認）
 
@@ -56,9 +59,16 @@ python -m mujoco_sim
 |------|------|
 | `MUJOCO_SIM_XML` | メイン MJCF へのパス。未設定時はパッケージ内の `xmls/main.xml` |
 
-## Viewer のみ（HTTP なし）
+### Viewer と HTTP の関係（既定）
 
-MuJoCo のパッシブ Viewer でモデルを表示し、物理ステップのみ回します。
+- `python -m mujoco_sim` だけなら **Viewer 付き**。ブラウザからの `POST /api/step` で **`mj_step` した姿勢**がウィンドウに反映されます。
+- **別プロセス**の `viewer_cmd` は REST と共有しないため、ポーズエディタと見た目を合わせるときは **この既定起動（または同一コードパス）**を使ってください。
+- Viewer を閉じると **プロセス全体が終わり** HTTP も止まります。
+- **Viewer なし**で HTTP だけにしたいとき: `python -m mujoco_sim --no-viewer`
+
+## Viewer のみ（HTTP なし・単体で物理ステップ）
+
+MuJoCo のパッシブ Viewer でモデルを表示し、Viewer 側ループだけで物理ステップします（REST とは共有しません）。
 
 ```bash
 python -m mujoco_sim.viewer_cmd

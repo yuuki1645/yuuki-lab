@@ -1,24 +1,14 @@
 from __future__ import annotations
 
 import os
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from pydantic import BaseModel, Field
+from flask import Flask, current_app, jsonify, request
+from flask_cors import CORS
 
 from mujoco_sim.core import Simulation
 from mujoco_sim.paths import DEFAULT_MODEL_XML
-
-
-class StepRequest(BaseModel):
-    n: int = Field(default=1, ge=1, le=10_000)
-    ctrl: dict[str, float] | None = None
-
-
-class CtrlRequest(BaseModel):
-    ctrl: dict[str, float]
 
 
 def _model_path() -> Path:
@@ -28,66 +18,82 @@ def _model_path() -> Path:
     return DEFAULT_MODEL_XML
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    xml = _model_path()
-    app.state.sim = Simulation(xml_path=xml)
-    yield
+def _get_sim() -> Simulation:
+    return current_app.extensions["simulation"]
 
 
-app = FastAPI(
-    title="mujoco-sim",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+def create_app() -> Flask:
+    app = Flask(__name__)
+    CORS(app)
+    app.extensions["simulation"] = Simulation(xml_path=_model_path())
 
+    @app.route("/health", methods=["GET"])
+    def health() -> Any:
+        return jsonify({"status": "ok"})
 
-def get_sim(request: Request) -> Simulation:
-    return request.app.state.sim
+    @app.route("/api/meta", methods=["GET"])
+    def meta() -> Any:
+        sim = _get_sim()
+        return jsonify(
+            {
+                "xml_path": str(sim.xml_path),
+                "actuator_names": sim.actuator_names(),
+            }
+        )
 
+    @app.route("/api/state", methods=["GET"])
+    def get_state() -> Any:
+        return jsonify(_get_sim().state_dict())
 
-SimDep = Annotated[Simulation, Depends(get_sim)]
+    @app.route("/api/reset", methods=["POST"])
+    def post_reset() -> Any:
+        sim = _get_sim()
+        sim.reset()
+        return jsonify(sim.state_dict())
 
+    @app.route("/api/step", methods=["POST"])
+    def post_step() -> Any:
+        body = request.get_json(silent=True)
+        if body is None:
+            body = {}
+        if not isinstance(body, dict):
+            return jsonify({"error": "JSON object expected"}), 400
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+        n_raw = body.get("n", 1)
+        try:
+            n = int(n_raw)
+        except (TypeError, ValueError):
+            return jsonify({"error": "n must be an integer"}), 400
+        if n < 1 or n > 10_000:
+            return jsonify({"error": "n must be between 1 and 10000"}), 400
 
+        ctrl = body.get("ctrl")
+        if ctrl is not None and not isinstance(ctrl, dict):
+            return jsonify({"error": "ctrl must be an object mapping names to numbers"}), 400
 
-@app.get("/api/meta")
-def meta(sim: SimDep) -> dict[str, Any]:
-    return {
-        "xml_path": str(sim.xml_path),
-        "actuator_names": sim.actuator_names(),
-    }
+        sim = _get_sim()
+        try:
+            if ctrl:
+                sim.set_ctrl({str(k): float(v) for k, v in ctrl.items()})
+            sim.step(n)
+        except (KeyError, TypeError, ValueError) as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify(sim.state_dict())
 
+    @app.route("/api/ctrl", methods=["PUT"])
+    def put_ctrl() -> Any:
+        body = request.get_json(silent=True)
+        if body is None or not isinstance(body, dict):
+            return jsonify({"error": "JSON object expected"}), 400
+        ctrl = body.get("ctrl")
+        if ctrl is None or not isinstance(ctrl, dict):
+            return jsonify({"error": "ctrl object required"}), 400
 
-@app.get("/api/state")
-def get_state(sim: SimDep) -> dict[str, Any]:
-    return sim.state_dict()
+        sim = _get_sim()
+        try:
+            sim.set_ctrl({str(k): float(v) for k, v in ctrl.items()})
+        except (KeyError, TypeError, ValueError) as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify(sim.state_dict())
 
-
-@app.post("/api/reset")
-def post_reset(sim: SimDep) -> dict[str, Any]:
-    sim.reset()
-    return sim.state_dict()
-
-
-@app.post("/api/step")
-def post_step(sim: SimDep, body: StepRequest) -> dict[str, Any]:
-    try:
-        if body.ctrl:
-            sim.set_ctrl(body.ctrl)
-        sim.step(body.n)
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    return sim.state_dict()
-
-
-@app.put("/api/ctrl")
-def put_ctrl(sim: SimDep, body: CtrlRequest) -> dict[str, Any]:
-    try:
-        sim.set_ctrl(body.ctrl)
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    return sim.state_dict()
+    return app

@@ -40,18 +40,28 @@ export function radiansToLogicalDegrees(rad: number): number {
 
 /**
  * mujoco-sim の /api/state を useServos 互換の Servo 配列に変換する。
- * 角度はヒンジ実角度（rad）から度へ変換し、論理角として表示する（当面は数値そのまま）。
+ *
+ * サーバ側 kinematics で計算済みの ``logical_deg`` を最優先で使う（論理角）。
+ * もし古いサーバや欠損などで取れなかった場合は、フォールバックとして
+ * ``hinge_joint_rad`` を度に直した値（=MuJoCo 関節角の度表現）を使う。
  */
 export function servosFromMujocoState(state: MujocoSimStateResponse): Servo[] {
+  const logical = state.logical_deg ?? {};
   const hinge = state.hinge_joint_rad ?? {};
   const list: Servo[] = [];
   for (const ch of SERVO_CHANNELS) {
     const name = CH_TO_SERVO_NAME[ch];
     if (!name) continue;
+    const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
     const jointName = SERVO_NAME_TO_MUJOCO_JOINT[name];
-    const rad = jointName !== undefined ? hinge[jointName] : undefined;
-    const last_logical =
-      rad !== undefined ? radiansToLogicalDegrees(rad) : 0;
+
+    let last_logical = 0;
+    if (actuator !== undefined && logical[actuator] !== undefined) {
+      last_logical = Math.round(logical[actuator]);
+    } else if (jointName !== undefined && hinge[jointName] !== undefined) {
+      last_logical = radiansToLogicalDegrees(hinge[jointName]);
+    }
+
     list.push({
       name,
       ch,

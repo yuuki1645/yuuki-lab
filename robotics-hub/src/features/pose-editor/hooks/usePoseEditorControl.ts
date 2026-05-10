@@ -99,7 +99,7 @@ export function usePoseEditorControl(
           } else {
             const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
             if (actuator === undefined) return;
-            await mujocoSetServo(actuator, "deg", angle);
+            await mujocoSetServo(actuator, "logical", angle);
           }
         } catch (err) {
           if (seq !== moveSeqRef.current) return;

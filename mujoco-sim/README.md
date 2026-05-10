@@ -89,8 +89,8 @@ python -m mujoco_sim.viewer_cmd
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/health` | 生存確認 `{"status":"ok"}` |
-| GET | `/api/meta` | MJCF のパス、アクチュエータ名、`timestep`、実時間ステッパの状態 |
-| GET | `/api/state` | 現在のシミュ状態（`time`, `qpos`, `qvel`, `ctrl`, `hinge_joint_rad`, `sensors` など） |
+| GET | `/api/meta` | MJCF のパス、アクチュエータ名、`timestep`、実時間ステッパの状態、論理角メタ（`logical`） |
+| GET | `/api/state` | 現在のシミュ状態（`time`, `qpos`, `qvel`, `ctrl`, `hinge_joint_rad`, `logical_deg`, `sensors` など） |
 | POST | `/api/reset` | シミュをリセットしたうえで状態を返す |
 | POST | `/api/set` | **単一サーボ**の目標角度を更新（`robot-daemon` の `/set` と同形）。ボディ: `{actuator, angle, mode?}` |
 | POST | `/api/set_multiple` | **複数サーボ**を一括更新（`/set_multiple` と同形）。ボディ: `{angles: {name: angle, ...}, mode?}` |
@@ -109,21 +109,37 @@ python -m mujoco_sim.viewer_cmd
 |------|------|
 | `"rad"`（既定） | `angle` / `ctrl` は MuJoCo ネイティブの単位（ラジアン）。 |
 | `"deg"` | `angle` / `ctrl` は度。サーバー側で `math.radians` 換算してから適用する。 |
+| `"logical"` | `angle` / `ctrl` は **論理角（度）**。`mujoco_sim/kinematics.py` の `KINEMATICS` テーブル（offset + sign）で MuJoCo 関節角に写してから rad に変換する。`robot-daemon` の `mode: "logical"` と同じ意味で使える。 |
 
-度で送ると `mujoco_sim.api` の JSON ログがそのまま読みやすい数字（例: `12`）になります。
-ポーズエディタは `/api/set` を `"deg"` で叩きます。例:
+`"deg"` で送ると `mujoco_sim.api` の JSON ログが読みやすい数字（例: `12`）になります。
+ポーズエディタは `/api/set` を **`"logical"`** で叩いて、実機（robot-daemon）と同じ「論理角」表現で操作します。例:
 
 ```bash
-# 単一: 左膝を 12°
+# 単一: 左膝を 12° (deg)
 curl -X POST http://127.0.0.1:8787/api/set \
   -H "Content-Type: application/json" \
   -d "{\"actuator\": \"left_knee_pitch_motor\", \"mode\": \"deg\", \"angle\": 12}"
+
+# 単一: 左股関節 pitch を 60° (logical, 立ち姿勢の既定値)
+curl -X POST http://127.0.0.1:8787/api/set \
+  -H "Content-Type: application/json" \
+  -d "{\"actuator\": \"left_hip_pitch_motor\", \"mode\": \"logical\", \"angle\": 60}"
 
 # 複数: 左右の股関節 pitch を同時に
 curl -X POST http://127.0.0.1:8787/api/set_multiple \
   -H "Content-Type: application/json" \
   -d "{\"mode\": \"deg\", \"angles\": {\"left_hip_pitch_motor\": 10, \"right_hip_pitch_motor\": -10}}"
 ```
+
+#### 論理角キネマティクス
+
+`mujoco_sim/kinematics.py` の `KINEMATICS` 辞書が、サーボ毎に
+**`mujoco_deg = sign * logical_deg + offset_deg`** という線形変換を持ちます。
+ここを書き換えれば、フロントの「論理角」と MuJoCo の「関節角」のズレ（左右の符号反転、立ち姿勢オフセット）を吸収できます。
+
+`GET /api/meta` の `logical` フィールドに、各アクチュエータの `lo`/`hi`/`default`/`sign`/`offset_deg` が載るので、フロントのスライダ端や初期姿勢に流し込めます。`GET /api/state` の `logical_deg` には、その逆写像で計算した現在の論理角（度）が入ります。
+
+> サインとオフセットの **校正は Viewer での目視合わせが必要** です。初期値は「実機 robot-daemon と同じ logical レンジ・default で立ち姿勢が出る」よう仮置きしているだけで、MJCF の axis 方向によっては符号反転が必要になる場合があります。
 
 ### 動作確認の例
 
@@ -142,6 +158,7 @@ mujoco-sim/
     core.py            # Simulation（MjModel / MjData）
     realtime.py        # 実時間 mj_step デーモンスレッド
     passive_viewer.py  # サーバ共有の Viewer メインループ
+    kinematics.py      # 論理角(度) ⇄ MuJoCo 関節角(度) の変換テーブル
     xmls/              # MJCF（package-data で配布）
   pyproject.toml
   requirements.txt

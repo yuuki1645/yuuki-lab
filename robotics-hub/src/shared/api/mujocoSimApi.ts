@@ -6,10 +6,29 @@ export interface MujocoSimStateResponse {
   qvel: number[];
   ctrl: Record<string, number>;
   hinge_joint_rad: Record<string, number>;
+  /** kinematics 経由で計算済みの論理角（度）。アクチュエータ名がキー。 */
+  logical_deg?: Record<string, number>;
   sensors: Record<string, number[]>;
 }
 
-export type MujocoCtrlMode = "rad" | "deg";
+export interface MujocoLogicalMeta {
+  joint: string;
+  lo: number;
+  hi: number;
+  default: number;
+  sign: 1 | -1;
+  offset_deg: number;
+}
+
+export interface MujocoSimMetaResponse {
+  xml_path: string;
+  actuator_names: string[];
+  timestep: number;
+  realtime: { running: boolean; paused: boolean };
+  logical: Record<string, MujocoLogicalMeta>;
+}
+
+export type MujocoCtrlMode = "rad" | "deg" | "logical";
 
 async function readError(response: Response, fallback: string): Promise<string> {
   let detail = "";
@@ -36,11 +55,21 @@ export async function mujocoFetchState(): Promise<MujocoSimStateResponse> {
   return (await response.json()) as MujocoSimStateResponse;
 }
 
+export async function mujocoFetchMeta(): Promise<MujocoSimMetaResponse> {
+  const base = getMujocoSimUrl();
+  const response = await fetch(`${base}/api/meta`);
+  if (!response.ok) {
+    throw new Error(`MuJoCo meta: HTTP ${response.status}`);
+  }
+  return (await response.json()) as MujocoSimMetaResponse;
+}
+
 export interface MujocoSetServoResponse {
   status: "ok";
   actuator: string;
   rad: number;
   deg: number;
+  logical: number | null;
 }
 
 /**

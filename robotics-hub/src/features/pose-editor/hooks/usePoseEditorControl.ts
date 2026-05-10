@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { mujocoPostStep } from "@/shared/api/mujocoSimApi";
+import { mujocoSetServo } from "@/shared/api/mujocoSimApi";
 import { moveServo } from "@/shared/api/servoApi";
 import { SERVO_NAME_TO_CH } from "@/shared/constants";
 import { clamp } from "@/shared/utils";
@@ -99,11 +99,7 @@ export function usePoseEditorControl(
           } else {
             const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
             if (actuator === undefined) return;
-            await mujocoPostStep({
-              n: 1,
-              mode: "deg",
-              ctrl: { [actuator]: angle },
-            });
+            await mujocoSetServo(actuator, "deg", angle);
           }
         } catch (err) {
           if (seq !== moveSeqRef.current) return;

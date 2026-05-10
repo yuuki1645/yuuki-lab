@@ -24,6 +24,11 @@ def main() -> None:
         help="パッシブ Viewer を出さず HTTP のみ（GUI なし・ヘッドレス）",
     )
     parser.add_argument(
+        "--no-auto-step",
+        action="store_true",
+        help="サーバー側の常時 mj_step（実時間ペース）を行わない",
+    )
+    parser.add_argument(
         "--quiet-http",
         action="store_true",
         help="Werkzeug の HTTP アクセス行を抑える（mujoco_sim.api の行は出る）",
@@ -43,14 +48,15 @@ def main() -> None:
     from mujoco_sim.app import create_app
     from mujoco_sim.core import Simulation
     from mujoco_sim.passive_viewer import run_passive_viewer_follow_sim
-
-    if args.no_viewer:
-        app = create_app()
-        app.run(host=args.host, port=args.port, threaded=True, use_reloader=False)
-        return
+    from mujoco_sim.realtime import RealtimeStepper
 
     sim = Simulation()
-    app = create_app(simulation=sim)
+    stepper: RealtimeStepper | None = None
+    if not args.no_auto_step:
+        stepper = RealtimeStepper(sim)
+        stepper.start()
+
+    app = create_app(simulation=sim, stepper=stepper)
 
     def run_flask() -> None:
         app.run(
@@ -59,6 +65,11 @@ def main() -> None:
             threaded=True,
             use_reloader=False,
         )
+
+    if args.no_viewer:
+        # ヘッドレス: メインスレッドで Flask を回す。
+        run_flask()
+        return
 
     thread = threading.Thread(target=run_flask, daemon=True)
     thread.start()

@@ -9,6 +9,24 @@ export interface MujocoSimStateResponse {
   sensors: Record<string, number[]>;
 }
 
+export type MujocoCtrlMode = "rad" | "deg";
+
+async function readError(response: Response, fallback: string): Promise<string> {
+  let detail = "";
+  try {
+    detail = await response.text();
+  } catch {
+    /* keep empty */
+  }
+  try {
+    const j = JSON.parse(detail) as { error?: string };
+    if (j.error) return j.error;
+  } catch {
+    /* keep text */
+  }
+  return detail || fallback;
+}
+
 export async function mujocoFetchState(): Promise<MujocoSimStateResponse> {
   const base = getMujocoSimUrl();
   const response = await fetch(`${base}/api/state`);
@@ -18,33 +36,58 @@ export async function mujocoFetchState(): Promise<MujocoSimStateResponse> {
   return (await response.json()) as MujocoSimStateResponse;
 }
 
+export interface MujocoSetServoResponse {
+  status: "ok";
+  actuator: string;
+  rad: number;
+  deg: number;
+}
+
 /**
- * mujoco-sim の `/api/step` を叩く。
+ * mujoco-sim の `/api/set`（単一サーボ）を叩く。`robot-daemon` の `/set` と同型。
  *
- * `mode` を `"deg"` にすると、`ctrl` の値はサーバー側で度→ラジアンに換算される。
- * 省略時 (`"rad"`) は MuJoCo ネイティブの単位そのまま。
- * ログを度のままで残したいときに `"deg"` を使う。
+ * シミュ本体の `mj_step` はサーバ側のスレッドが実時間で常時回しているため、
+ * このエンドポイントは **目標角度（ctrl）の更新だけ** を行う。
  */
-export async function mujocoPostStep(body: {
-  n: number;
-  mode?: "rad" | "deg";
-  ctrl?: Record<string, number>;
-}): Promise<MujocoSimStateResponse> {
+export async function mujocoSetServo(
+  actuator: string,
+  mode: MujocoCtrlMode,
+  angle: number
+): Promise<MujocoSetServoResponse> {
   const base = getMujocoSimUrl();
-  const response = await fetch(`${base}/api/step`, {
+  const response = await fetch(`${base}/api/set`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ actuator, mode, angle }),
   });
   if (!response.ok) {
-    let detail = await response.text();
-    try {
-      const j = (await response.json()) as { error?: string };
-      if (j.error) detail = j.error;
-    } catch {
-      /* keep text */
-    }
-    throw new Error(detail || `MuJoCo step: HTTP ${response.status}`);
+    const detail = await readError(response, `MuJoCo set: HTTP ${response.status}`);
+    throw new Error(detail);
   }
-  return (await response.json()) as MujocoSimStateResponse;
+  return (await response.json()) as MujocoSetServoResponse;
+}
+
+export interface MujocoSetServosResponse {
+  status: "ok";
+  applied: number;
+}
+
+/**
+ * mujoco-sim の `/api/set_multiple`（複数サーボ）を叩く。`robot-daemon` の `/set_multiple` と同型。
+ */
+export async function mujocoSetServos(
+  mode: MujocoCtrlMode,
+  angles: Record<string, number>
+): Promise<MujocoSetServosResponse> {
+  const base = getMujocoSimUrl();
+  const response = await fetch(`${base}/api/set_multiple`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode, angles }),
+  });
+  if (!response.ok) {
+    const detail = await readError(response, `MuJoCo set_multiple: HTTP ${response.status}`);
+    throw new Error(detail);
+  }
+  return (await response.json()) as MujocoSetServosResponse;
 }

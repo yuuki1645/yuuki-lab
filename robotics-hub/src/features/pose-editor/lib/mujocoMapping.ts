@@ -16,7 +16,7 @@ export const SERVO_NAME_TO_MUJOCO_JOINT: Record<string, string> = {
   R_HEEL_ROLL: "right_ankle_roll",
 };
 
-/** サーボ名 → position アクチュエータ名（mujoco-sim の /api/step ctrl） */
+/** サーボ名 → position アクチュエータ名（mujoco-sim の /api/set / /api/set_multiple のキー） */
 export const SERVO_NAME_TO_MUJOCO_ACTUATOR: Record<string, string> = {
   L_HIP1: "left_hip_roll_motor",
   L_HIP2: "left_hip_pitch_motor",

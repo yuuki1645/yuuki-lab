@@ -1,6 +1,8 @@
 # mujoco-sim
 
-MuJoCo で脚ロボモデルを動かすための **Python パッケージ `mujoco_sim`** と、HTTP で状態取得・ステップ実行できる **Flask サーバー**です。MJCF は `mujoco_sim/xmls/` に同梱されています。
+MuJoCo で脚ロボモデルを動かすための **Python パッケージ `mujoco_sim`** と、それを **実時間ペースで常時シミュレートしながら** 状態取得・サーボ指令を受け付ける **Flask サーバー**です。MJCF は `mujoco_sim/xmls/` に同梱されています。
+
+サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新だけ** を担当します。これは `robot-daemon` の `/set` / `/set_multiple` と揃えた設計です。
 
 ## 前提
 
@@ -39,13 +41,15 @@ python -m mujoco_sim
 | `--xml PATH` | 使用する MJCF（メイン XML）。環境変数 `MUJOCO_SIM_XML` と同じ効果 |
 | `--quiet-http` | Werkzeug のアクセス行だけ抑える（`mujoco_sim.api` の受信ログはそのまま） |
 | `--no-viewer` | Viewer を出さず **HTTP のみ**（GUI なしで常駐させたいとき） |
+| `--no-auto-step` | サーバー側の常時 `mj_step`（実時間ペース）を行わない。状態は `PUT /api/ctrl` 等で書いた直後の姿勢のまま固まる（旧挙動寄り） |
 
 ### ログ（フロントから届いているかの確認）
 
 起動時に **`logging.basicConfig`** により、コンソールに INFO が出ます。
 
-- **`werkzeug`**: 標準の HTTP アクセス行（`POST /api/step ... 200` など）。既定で有効。冗長なら `--quiet-http`。
-- **`mujoco_sim.api`**: `/health`・`/api/*` ごとに **`GET/POST`・パス・`client=`（接続元 IP）** を出力。`POST /api/step` と `PUT /api/ctrl` では **JSON 本文**も 1 行に載せます（ポーズエディタからの指令確認用）。
+- **`werkzeug`**: 標準の HTTP アクセス行（`POST /api/set ... 200` など）。既定で有効。冗長なら `--quiet-http`。
+- **`mujoco_sim.api`**: `/health`・`/api/*` ごとに **`GET/POST`・パス・`client=`（接続元 IP）** を出力。`POST /api/set`・`POST /api/set_multiple`・`PUT /api/ctrl` では **JSON 本文** も 1 行に載せます（ポーズエディタからの指令確認用）。
+- **`mujoco_sim.realtime`**: 実時間ステッパの起動・例外を 1 行ずつ出します。
 
 ### トラブルシュート（ブラウザで「Failed to fetch」）
 
@@ -59,12 +63,14 @@ python -m mujoco_sim
 |------|------|
 | `MUJOCO_SIM_XML` | メイン MJCF へのパス。未設定時はパッケージ内の `xmls/main.xml` |
 
-### Viewer と HTTP の関係（既定）
+### Viewer と HTTP・実時間ステッパの関係（既定）
 
-- `python -m mujoco_sim` だけなら **Viewer 付き**。ブラウザからの `POST /api/step` で **`mj_step` した姿勢**がウィンドウに反映されます。
-- **別プロセス**の `viewer_cmd` は REST と共有しないため、ポーズエディタと見た目を合わせるときは **この既定起動（または同一コードパス）**を使ってください。
+- `python -m mujoco_sim` だけなら **Viewer 付き**。サーバー内のバックグラウンドスレッドが **常時 `mj_step` を実時間で回し**、Viewer はその同一 `MjData` を 60 Hz で表示します。
+- HTTP からは **目標角度の更新（`/api/set` 等）だけ** を行います。物理時間の進行は HTTP の有無に依存しません。
+- **別プロセス**の `viewer_cmd` は REST と共有しないため、ポーズエディタと見た目を合わせるときは **この既定起動（または同一コードパス）** を使ってください。
 - Viewer を閉じると **プロセス全体が終わり** HTTP も止まります。
 - **Viewer なし**で HTTP だけにしたいとき: `python -m mujoco_sim --no-viewer`
+- **物理を進めたくない**（旧 `/api/step` 駆動のような挙動が必要）なら: `python -m mujoco_sim --no-auto-step`
 
 ## Viewer のみ（HTTP なし・単体で物理ステップ）
 
@@ -78,35 +84,45 @@ python -m mujoco_sim.viewer_cmd
 
 ## HTTP API
 
-すべて JSON を返します。エラー時は HTTP 400 と `{"error": "..."}` になります。
+すべて JSON を返します。エラー時は HTTP 400 と `{"error": "..."}` になります（`/api/step` だけは廃止のため 410）。
 
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/health` | 生存確認 `{"status":"ok"}` |
-| GET | `/api/meta` | MJCF のパスとアクチュエータ名一覧 |
-| GET | `/api/state` | 現在のシミュ状態（`qpos`, `qvel`, `ctrl`, `hinge_joint_rad`, `sensors` など） |
+| GET | `/api/meta` | MJCF のパス、アクチュエータ名、`timestep`、実時間ステッパの状態 |
+| GET | `/api/state` | 現在のシミュ状態（`time`, `qpos`, `qvel`, `ctrl`, `hinge_joint_rad`, `sensors` など） |
 | POST | `/api/reset` | シミュをリセットしたうえで状態を返す |
-| POST | `/api/step` | ボディ例: `{"n": 10, "ctrl": {"left_knee_pitch_motor": -0.2}}`。`n` は 1〜10000、`ctrl` は省略可 |
-| PUT | `/api/ctrl` | ボディ例: `{"ctrl": {"left_knee_pitch_motor": -0.2}}`。指令のみ更新（ステップはしない） |
+| POST | `/api/set` | **単一サーボ**の目標角度を更新（`robot-daemon` の `/set` と同形）。ボディ: `{actuator, angle, mode?}` |
+| POST | `/api/set_multiple` | **複数サーボ**を一括更新（`/set_multiple` と同形）。ボディ: `{angles: {name: angle, ...}, mode?}` |
+| PUT | `/api/ctrl` | 低レベルの ctrl 一括書き込み（`/api/set_multiple` と等価。歴史的経路） |
+| POST | `/api/pause` | 実時間ステッパを一時停止 |
+| POST | `/api/resume` | 実時間ステッパを再開 |
+| ~~POST~~ | ~~`/api/step`~~ | **廃止** (HTTP 410)。サーバ側が常時自動でステップするため、外部から step を進める必要はありません。 |
 
 アクチュエータ名は `GET /api/meta` の `actuator_names` を参照してください。
 
-#### `ctrl` の単位（`mode`）
+#### 角度の単位（`mode`）
 
-`POST /api/step` と `PUT /api/ctrl` のボディには `"mode"` を付けられます。
+`/api/set`・`/api/set_multiple`・`PUT /api/ctrl` のボディには `"mode"` を付けられます。
 
 | 値 | 意味 |
 |------|------|
-| `"rad"`（既定） | `ctrl` は MuJoCo ネイティブの単位（ラジアン）。後方互換。 |
-| `"deg"` | `ctrl` は度。サーバー側で `math.radians` 換算してから適用する。 |
+| `"rad"`（既定） | `angle` / `ctrl` は MuJoCo ネイティブの単位（ラジアン）。 |
+| `"deg"` | `angle` / `ctrl` は度。サーバー側で `math.radians` 換算してから適用する。 |
 
 度で送ると `mujoco_sim.api` の JSON ログがそのまま読みやすい数字（例: `12`）になります。
-ポーズエディタは `"deg"` で送信する設定です。例:
+ポーズエディタは `/api/set` を `"deg"` で叩きます。例:
 
 ```bash
-curl -X POST http://127.0.0.1:8787/api/step \
+# 単一: 左膝を 12°
+curl -X POST http://127.0.0.1:8787/api/set \
   -H "Content-Type: application/json" \
-  -d "{\"n\": 1, \"mode\": \"deg\", \"ctrl\": {\"left_knee_pitch_motor\": 12}}"
+  -d "{\"actuator\": \"left_knee_pitch_motor\", \"mode\": \"deg\", \"angle\": 12}"
+
+# 複数: 左右の股関節 pitch を同時に
+curl -X POST http://127.0.0.1:8787/api/set_multiple \
+  -H "Content-Type: application/json" \
+  -d "{\"mode\": \"deg\", \"angles\": {\"left_hip_pitch_motor\": 10, \"right_hip_pitch_motor\": -10}}"
 ```
 
 ### 動作確認の例
@@ -114,7 +130,7 @@ curl -X POST http://127.0.0.1:8787/api/step \
 ```bash
 curl http://127.0.0.1:8787/health
 curl http://127.0.0.1:8787/api/meta
-curl -X POST http://127.0.0.1:8787/api/step -H "Content-Type: application/json" -d "{\"n\": 5}"
+curl http://127.0.0.1:8787/api/state | python -m json.tool   # time が増えているはず
 ```
 
 ## ディレクトリ構成（概要）
@@ -124,6 +140,8 @@ mujoco-sim/
   mujoco_sim/          # Python パッケージ
     app.py             # Flask create_app()
     core.py            # Simulation（MjModel / MjData）
+    realtime.py        # 実時間 mj_step デーモンスレッド
+    passive_viewer.py  # サーバ共有の Viewer メインループ
     xmls/              # MJCF（package-data で配布）
   pyproject.toml
   requirements.txt

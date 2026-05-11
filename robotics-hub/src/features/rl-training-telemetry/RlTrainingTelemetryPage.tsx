@@ -2,6 +2,12 @@ import { useMemo } from "react";
 import { useRlTelemetryStream } from "@/shared/hooks/useRlTelemetryStream";
 import "./RlTrainingTelemetryPage.css";
 
+const RAD2DEG = 180 / Math.PI;
+
+function radiansListToDegrees(rad: number[]): number[] {
+  return rad.map((x) => x * RAD2DEG);
+}
+
 /** 小数第 1 位。整数部（符号含む）の文字幅を揃えて小数点を縦に揃える */
 function intPartWidth1dp(values: number[]): number {
   let m = 1;
@@ -30,10 +36,13 @@ function VecTable({
   title,
   labels,
   values,
+  valueHeader = "値",
 }: {
   title: string;
   labels: string[];
   values: number[];
+  /** 数値列ヘッダ（例: 「値 (°)」） */
+  valueHeader?: string;
 }) {
   const intWidth = useMemo(() => intPartWidth1dp(values), [values]);
 
@@ -47,7 +56,7 @@ function VecTable({
           <thead>
             <tr>
               <th>軸 / 関節</th>
-              <th className="rl-telemetry__th-num">値</th>
+              <th className="rl-telemetry__th-num">{valueHeader}</th>
             </tr>
           </thead>
           <tbody>
@@ -86,7 +95,8 @@ export default function RlTrainingTelemetryPage() {
         <h1>RL 学習テレメトリ</h1>
         <p>
           <code>mujoco_rl_sim.scripts.train_002_full_actuators</code> 実行中に、方策への入力（IMU
-          加速度・角速度・観測内の直前コマンド）と行動（各サーボ目標角 [rad]）を表示します。観測末尾の
+          加速度・角速度・観測内の直前コマンド）と行動（各サーボ目標角）を表示します。モータ角（prev
+          ctrl / action）は配信がラジアンでも、ここでは度数法（°）に換算して表示します。観測末尾の
           prev_ctrl は環境仕様どおり前ステップのコマンドです。
         </p>
       </header>
@@ -129,18 +139,20 @@ export default function RlTrainingTelemetryPage() {
         <VecTable title="入力: 加速度 (局所 m/s²)" labels={accLabels} values={step?.obs_acc ?? []} />
         <VecTable title="入力: 角速度 (局所 rad/s)" labels={gyroLabels} values={step?.obs_gyro ?? []} />
         <VecTable
-          title="入力: 観測内 prev_ctrl (rad, 1 step 遅れ)"
+          title="入力: 観測内 prev_ctrl (°, 1 step 遅れ)"
           labels={prevCtrlLabels}
-          values={step?.obs_prev_ctrl ?? []}
+          values={radiansListToDegrees(step?.obs_prev_ctrl ?? [])}
+          valueHeader="値 (°)"
         />
         <VecTable
-          title="行動: 目標角 action (rad)"
+          title="行動: 目標角 action (°)"
           labels={
             actionLabels.length
               ? actionLabels
               : (step?.action ?? []).map((_, i) => `action[${i}]`)
           }
-          values={step?.action ?? []}
+          values={radiansListToDegrees(step?.action ?? [])}
+          valueHeader="値 (°)"
         />
       </div>
     </div>

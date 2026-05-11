@@ -148,6 +148,7 @@ class Env002FullActuators(gym.Env):
             shape=(nu,),
             dtype=np.float32,
         )
+        print("self.action_space: ", self.action_space)
 
         self.observation_space = spaces.Box(
             low=-np.inf,

@@ -76,6 +76,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
         return obs, info
 
     def step(self, action: ActType):
+        print("env_wrapper.step action: ", action)
         obs_before = self._last_obs.copy() if self._last_obs is not None else None
         obs, reward, terminated, truncated, info = self.env.step(action)
         self._episode_step += 1

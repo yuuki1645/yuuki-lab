@@ -23,6 +23,7 @@ const DaemonSocketTestPage = lazy(
   () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
 );
 const TelemetryPage = lazy(() => import("@/features/telemetry/TelemetryPage"));
+const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -60,5 +61,13 @@ export const hubTools: HubTool[] = [
     description:
       "学習（mujoco_rl_sim）の観測・行動に加え、robot-daemon の実機 IMU を表示します。",
     LazyPage: TelemetryPage,
+  },
+  {
+    id: "data-viewer",
+    path: "/data-viewer",
+    label: "データビュワー",
+    description:
+      "IMU / サーボの CSV と動画を wall_unix で突き合わせ、シーク位置のログを確認します。",
+    LazyPage: DataViewerPage,
   },
 ];

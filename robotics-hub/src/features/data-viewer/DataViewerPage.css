@@ -1,0 +1,269 @@
+.data-viewer {
+  padding: 18px 20px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #e8ecff;
+}
+
+.data-viewer__head {
+  margin-bottom: 20px;
+}
+
+.data-viewer__title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.data-viewer__lead {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #a8b0d6;
+  line-height: 1.55;
+}
+
+.data-viewer__code {
+  font-size: 0.88em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(110, 168, 255, 0.12);
+  border: 1px solid rgba(110, 168, 255, 0.25);
+}
+
+.data-viewer__panel {
+  background: #12182e;
+  border: 1px solid rgba(200, 210, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  margin-bottom: 16px;
+}
+
+.data-viewer__panel--video {
+  min-width: 0;
+}
+
+.data-viewer__h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #cfd6ff;
+}
+
+.data-viewer__loads {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-viewer__file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 0.88rem;
+}
+
+.data-viewer__file-label {
+  min-width: 100px;
+  color: #a8b0d6;
+}
+
+.data-viewer__fname {
+  color: #8ee4af;
+  font-size: 0.85rem;
+}
+
+.data-viewer__public-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.data-viewer__public-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.85rem;
+  color: #a8b0d6;
+}
+
+.data-viewer__public-input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  background: #0b1020;
+  color: #e8ecff;
+}
+
+.data-viewer__btn {
+  font: inherit;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(110, 168, 255, 0.45);
+  background: rgba(110, 168, 255, 0.18);
+  color: #fff;
+}
+
+.data-viewer__btn:hover {
+  background: rgba(110, 168, 255, 0.28);
+}
+
+.data-viewer__error {
+  margin: 10px 0 0;
+  color: #ff9b9b;
+  font-size: 0.88rem;
+}
+
+.data-viewer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .data-viewer__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.data-viewer__video {
+  width: 100%;
+  max-height: min(52vh, 520px);
+  border-radius: 10px;
+  background: #000;
+}
+
+.data-viewer__seek {
+  margin-top: 10px;
+}
+
+.data-viewer__seek-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a8b0d6;
+}
+
+.data-viewer__range {
+  width: 100%;
+  accent-color: #6ea8ff;
+}
+
+.data-viewer__hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #7e86b8;
+}
+
+.data-viewer__empty {
+  margin: 0;
+  color: #7e86b8;
+  font-size: 0.9rem;
+}
+
+.data-viewer__muted {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: #a8b0d6;
+}
+
+.data-viewer__anchor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.data-viewer__anchor-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a8b0d6;
+}
+
+.data-viewer__anchor-input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  background: #0b1020;
+  color: #e8ecff;
+  max-width: 280px;
+}
+
+.data-viewer__nudge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.data-viewer__dl {
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.data-viewer__dl > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.data-viewer__dl dt {
+  margin: 0;
+  color: #7e86b8;
+}
+
+.data-viewer__dl dd {
+  margin: 0;
+}
+
+.data-viewer__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.data-viewer__table th {
+  text-align: left;
+  color: #a8b0d6;
+  font-weight: 500;
+  padding: 6px 10px 6px 0;
+  vertical-align: top;
+  white-space: nowrap;
+  width: 160px;
+}
+
+.data-viewer__table td {
+  padding: 6px 0;
+}
+
+.data-viewer__table--wide th,
+.data-viewer__table--wide td {
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.08);
+}
+
+.data-viewer__table--wide thead th {
+  color: #cfd6ff;
+  font-size: 0.82rem;
+}
+
+.data-viewer__td-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-viewer__table-wrap {
+  overflow-x: auto;
+}

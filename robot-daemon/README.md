@@ -36,3 +36,7 @@ IMU が無い／開発時は `imu.py` のモック経由で動く構成にもな
 **[robotics-hub](../robotics-hub/)** の `src/shared/constants.ts` にある **`SERVO_DAEMON_URL`**（実質 robot-daemon のベース URL）が、このプロセスのオリジン（通常は `http://<ホスト名>:5000`）を指します。変数名は歴史的なものですが、接続先は **robot-daemon** です。
 
 同一マシンで **[iphone-camera-relay](../iphone-camera-relay/)** など別サービスをポート **5000** で動かす場合は、どちらかのポートをずらす必要があります。
+
+### Robotics Hub のテレメトリページ
+
+**[robotics-hub](../robotics-hub/)** の **テレメトリ**（`/telemetry`）は、ブラウザから本デーモンへ Socket.IO で接続し、接続直後に **`imu/start`**（既定 30 Hz）を送ります。サーバー側は従来どおり **`imu/sample`** で加速度・角速度・推定角をブロードキャストします（実装は `imu_stream_service.py`）。Hub を別マシンのブラウザで開く場合は、デーモンが `0.0.0.0:5000` で待ち受けていることと、Hub 側の **`VITE_TELEMETRY_IMU_SOCKET_URL`**（または同一 LAN なら既定の `hostname:5000`）を確認してください。

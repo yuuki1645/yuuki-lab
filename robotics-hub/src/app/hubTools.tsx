@@ -22,9 +22,7 @@ const PoseEditorPage = lazy(() => import("@/features/pose-editor/PoseEditorPage"
 const DaemonSocketTestPage = lazy(
   () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
 );
-const RlTrainingTelemetryPage = lazy(
-  () => import("@/features/rl-training-telemetry/RlTrainingTelemetryPage")
-);
+const TelemetryPage = lazy(() => import("@/features/telemetry/TelemetryPage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -56,11 +54,11 @@ export const hubTools: HubTool[] = [
     LazyPage: DaemonSocketTestPage,
   },
   {
-    id: "rl-training-telemetry",
-    path: "/rl-telemetry",
-    label: "RL 学習テレメトリ",
+    id: "telemetry",
+    path: "/telemetry",
+    label: "テレメトリ",
     description:
-      "train_002_full_actuators の学習中に、観測（IMU + prev ctrl）と行動を Socket.IO で表示します。",
-    LazyPage: RlTrainingTelemetryPage,
+      "学習（mujoco_rl_sim）の観測・行動に加え、robot-daemon の実機 IMU を表示します。",
+    LazyPage: TelemetryPage,
   },
 ];

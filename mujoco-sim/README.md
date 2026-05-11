@@ -152,7 +152,7 @@ python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuat
 
 ### 学習テレメトリ（Robotics Hub）
 
-学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（実装は **`mujoco_rl_sim/telemetry/`**）。Hub の **「RL 学習テレメトリ」**ページがこの Socket.IO に接続します。
+学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（実装は **`mujoco_rl_sim/telemetry/`**）。Hub の **「テレメトリ」**ページ（`/telemetry`）がこの Socket.IO に接続します。
 
 - 配信されるモータ関連の角は **ラジアン**（環境の `ctrl` / 観測の prev ctrl と同じ）。Hub 側で **度（°）** に換算して表示します。
 - 実時間 HTTP シム（`8787`）とは **別ポート**です。ファイアウォールで **8791**（または変更した `--telemetry-port`）を許可してください。

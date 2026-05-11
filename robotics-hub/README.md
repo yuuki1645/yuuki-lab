@@ -8,7 +8,7 @@
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner-react` の TypeScript 版）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **RL 学習テレメトリ** — `mujoco-sim` の `train_002_full_actuators` 実行中に、Socket.IO で流れる観測（IMU・prev ctrl）と行動を表示（モータ角は **度（°）**、IMU は従来どおり m/s²・rad/s）
+- **テレメトリ** — 学習時は `train_002_full_actuators` の Socket.IO（観測・行動）に加え、`robot-daemon` の実機 IMU（`imu/sample`）を同一ページで表示
 
 ## 前提
 
@@ -42,7 +42,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 **`robot-daemon` について:** REST・Socket.IO のベース URL は **`window.location.hostname` + `:5000`**（`src/shared/constants.ts` の `SERVO_DAEMON_URL`。名前は歴史的経緯のためそのまま）です。タブレットなどから `http://192.168.x.x:5173` で開いた場合、フロントからは `http://192.168.x.x:5000` にリクエスト・WebSocket 相当の接続が飛びます。デーモンを動かしているマシンとポート 5000 が、他端末から届くようにファイアウォールで許可されているか確認してください（デーモンとハブを同一 PC で動かしているのが最も単純です）。
 
-**RL 学習テレメトリについて:** 接続先は `getRlTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（学習側の `train_002_full_actuators` が `--telemetry-port` で待ち受ける Socket.IO）。学習を **別マシン**で動かす場合は、ビルド時に **`VITE_RL_TELEMETRY_SOCKET_URL`**（例: `http://192.168.x.x:8791`）を指定してください。学習プロセスの `--no-telemetry` でサーバを出さないときは、このページは接続できません。
+**テレメトリページについて:** 学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（`train_002_full_actuators` の `--telemetry-port`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://<hostname>:5000`**（`SERVO_DAEMON_URL` と同じ）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。ブックマーク用に **`/rl-telemetry`** は **`/telemetry`** へリダイレクトされます。
 
 本番ビルドを LAN 向けにプレビューする場合の例:
 
@@ -63,8 +63,10 @@ npm run preview
 | 名前 | 説明 |
 |------|------|
 | `VITE_MUJOCO_SIM_URL` | 実時間 MuJoCo HTTP シムのベース URL（未設定時は `http://<hostname>:8787`） |
-| `VITE_IMU_SOCKET_URL` | IMU 用 Socket.IO（未設定時は `getMujocoSimUrl()` と同じ） |
-| `VITE_RL_TELEMETRY_SOCKET_URL` | PPO 学習テレメトリ用 Socket.IO（未設定時は `http://<hostname>:8791`） |
+| `VITE_IMU_SOCKET_URL` | IMU 用 Socket.IO（未設定時は `getMujocoSimUrl()` と同じ。Daemon Socket Test 等） |
+| `VITE_TELEMETRY_SOCKET_URL` | 学習テレメトリ用 Socket.IO（未設定時は `VITE_RL_TELEMETRY_SOCKET_URL` のあと `http://<hostname>:8791`） |
+| `VITE_RL_TELEMETRY_SOCKET_URL` | （非推奨）上記と同用途。`VITE_TELEMETRY_SOCKET_URL` を優先してください |
+| `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
 
 ## 新しいツールを追加する手順
 
@@ -80,6 +82,6 @@ npm run preview
 ```
 src/
   app/           # ハブシェル・ルート定義・ツール一覧（hubTools.tsx）
-  shared/        # 複数ツール共通（servo API・型・定数・hooks・RL テレメトリ型）
-  features/      # ツール別（motion-editor, leg-servo-tuner, rl-training-telemetry, …）
+  shared/        # 複数ツール共通（servo API・型・定数・hooks・テレメトリ用 hooks 等）
+  features/      # ツール別（motion-editor, leg-servo-tuner, telemetry, …）
 ```

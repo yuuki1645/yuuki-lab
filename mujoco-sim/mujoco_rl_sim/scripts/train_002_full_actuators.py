@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
         "--telemetry-port",
         type=int,
         default=8791,
-        help="テレメトリ Socket.IO のポート（Hub の VITE_RL_TELEMETRY_SOCKET_URL と合わせる）",
+        help="テレメトリ Socket.IO のポート（Hub の VITE_TELEMETRY_SOCKET_URL と合わせる）",
     )
     p.add_argument(
         "--telemetry-max-hz",

@@ -1,11 +1,11 @@
-/** mujoco_rl_sim の ``RlTelemetryServer`` / ``RlTelemetryWrapper`` が送るペイロード */
+/** mujoco_rl_sim の ``RlTelemetryServer`` / ``RlTelemetryWrapper`` が送るペイロード（Socket.IO イベント名は従来どおり ``rl_telemetry/*``） */
 
-export interface RlTelemetryHelloPayload {
+export interface TrainingTelemetryHelloPayload {
   ok?: boolean;
   server_ts?: number;
 }
 
-export interface RlTelemetryResetPayload {
+export interface TrainingTelemetryResetPayload {
   wall_time: number;
   actuator_names: string[];
   obs_dim: number;
@@ -18,7 +18,7 @@ export interface RlTelemetryResetPayload {
   num_timesteps: number | null;
 }
 
-export interface RlTelemetryStepPayload {
+export interface TrainingTelemetryStepPayload {
   wall_time: number;
   episode_step: number;
   num_timesteps: number | null;

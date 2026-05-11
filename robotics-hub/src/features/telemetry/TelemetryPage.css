@@ -1,6 +1,6 @@
 /* Hub のダークテーマ（index.css）に合わせ、継承色で白パネルが潰れないようにする */
 
-.rl-telemetry {
+.telemetry {
   max-width: 1800px;
   width: 100%;
   margin: 0 auto;
@@ -8,25 +8,25 @@
   color: #e8ecff;
 }
 
-.rl-telemetry__header {
+.telemetry__header {
   margin-bottom: 1rem;
 }
 
-.rl-telemetry__header h1 {
+.telemetry__header h1 {
   font-size: 1.35rem;
   font-weight: 600;
   margin: 0 0 0.35rem;
   color: #f4f6ff;
 }
 
-.rl-telemetry__header p {
+.telemetry__header p {
   margin: 0;
   color: #a8b0d6;
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
-.rl-telemetry__header code {
+.telemetry__header code {
   padding: 0.1em 0.35em;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.35);
@@ -34,12 +34,20 @@
   font-size: 0.84em;
 }
 
-.rl-telemetry__status {
+.telemetry__section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b8c4f0;
+  margin: 1rem 0 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+.telemetry__status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
   background: #1a223c;
@@ -47,36 +55,36 @@
   color: #e8ecff;
 }
 
-.rl-telemetry__status-badge {
+.telemetry__status-badge {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
 }
 
-.rl-telemetry__status-badge--connected {
+.telemetry__status-badge--connected {
   background: rgba(74, 222, 128, 0.22);
   color: #86efac;
 }
 
-.rl-telemetry__status-badge--connecting {
+.telemetry__status-badge--connecting {
   background: rgba(250, 204, 21, 0.2);
   color: #fde047;
 }
 
-.rl-telemetry__status-badge--disconnected {
+.telemetry__status-badge--disconnected {
   background: rgba(148, 163, 184, 0.2);
   color: #cbd5e1;
 }
 
-.rl-telemetry__url {
+.telemetry__url {
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
   word-break: break-all;
   color: #b4bce0;
 }
 
-.rl-telemetry__logical-tag {
+.telemetry__logical-tag {
   font-size: 0.78rem;
   font-weight: 600;
   padding: 0.2rem 0.5rem;
@@ -86,7 +94,7 @@
   border: 1px solid rgba(110, 168, 255, 0.35);
 }
 
-.rl-telemetry__error {
+.telemetry__error {
   margin-bottom: 1rem;
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
@@ -96,17 +104,17 @@
   font-size: 0.88rem;
 }
 
-.rl-telemetry__grid {
+.telemetry__grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.rl-telemetry__grid-row2 {
+.telemetry__grid-row2 {
   grid-column: 1 / -1;
 }
 
-.rl-telemetry__panel {
+.telemetry__panel {
   border: 1px solid rgba(200, 210, 255, 0.18);
   border-radius: 10px;
   padding: 0.75rem 0.85rem;
@@ -114,20 +122,20 @@
   color: #e8ecff;
 }
 
-.rl-telemetry__panel h2 {
+.telemetry__panel h2 {
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
   color: #f4f6ff;
 }
 
-.rl-telemetry__meta {
+.telemetry__meta {
   font-size: 0.8rem;
   color: #a8b0d6;
   margin-bottom: 0.5rem;
 }
 
-.rl-telemetry table {
+.telemetry table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
@@ -135,20 +143,20 @@
   color: #e8ecff;
 }
 
-.rl-telemetry th,
-.rl-telemetry td {
+.telemetry th,
+.telemetry td {
   text-align: right;
   padding: 0.35rem 0.4rem;
   border-bottom: 1px solid rgba(200, 210, 255, 0.1);
 }
 
-.rl-telemetry th {
+.telemetry th {
   color: #a8b0d6;
   font-weight: 600;
 }
 
-.rl-telemetry th:first-child,
-.rl-telemetry td:first-child {
+.telemetry th:first-child,
+.telemetry td:first-child {
   text-align: left;
   font-family: ui-monospace, monospace;
   color: #c8d0f0;
@@ -158,8 +166,8 @@
   text-overflow: ellipsis;
 }
 
-.rl-telemetry th.rl-telemetry__th-num,
-.rl-telemetry td.rl-telemetry__td-num {
+.telemetry th.telemetry__th-num,
+.telemetry td.telemetry__td-num {
   text-align: right;
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
   font-variant-numeric: tabular-nums;
@@ -167,29 +175,29 @@
   white-space: pre;
 }
 
-.rl-telemetry th.rl-telemetry__th-pos {
+.telemetry th.telemetry__th-pos {
   text-align: left;
   width: 38%;
 }
 
-.rl-telemetry td.rl-telemetry__td-pos {
+.telemetry td.telemetry__td-pos {
   text-align: left;
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
   color: #d8e0ff;
 }
 
-.rl-telemetry__num-fixed {
+.telemetry__num-fixed {
   display: inline-block;
   text-align: right;
 }
 
-.rl-telemetry__range-cell {
+.telemetry__range-cell {
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.rl-telemetry__range-track {
+.telemetry__range-track {
   position: relative;
   height: 0.52rem;
   flex: 0 0 120px;
@@ -200,7 +208,7 @@
   overflow: hidden;
 }
 
-.rl-telemetry__range-fill {
+.telemetry__range-fill {
   position: absolute;
   left: 0;
   top: 0;
@@ -208,7 +216,7 @@
   background: linear-gradient(90deg, rgba(94, 234, 212, 0.42), rgba(96, 165, 250, 0.72));
 }
 
-.rl-telemetry__range-midline {
+.telemetry__range-midline {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -217,7 +225,7 @@
   background: rgba(255, 255, 255, 0.45);
 }
 
-.rl-telemetry__range-label {
+.telemetry__range-label {
   font-size: 0.72rem;
   color: #aeb7df;
   white-space: nowrap;
@@ -226,17 +234,17 @@
   text-align: right;
 }
 
-.rl-telemetry td {
+.telemetry td {
   font-variant-numeric: tabular-nums;
   color: #f4f6ff;
 }
 
-.rl-telemetry__empty {
+.telemetry__empty {
   color: #8b93c4;
   font-size: 0.85rem;
 }
 
-.rl-telemetry__actions {
+.telemetry__actions {
   margin-top: 0.5rem;
   display: flex;
   flex-wrap: wrap;
@@ -244,7 +252,7 @@
   gap: 0.75rem 1rem;
 }
 
-.rl-telemetry__btn {
+.telemetry__btn {
   font-size: 0.85rem;
   padding: 0.4rem 0.85rem;
   border-radius: 8px;
@@ -254,12 +262,12 @@
   cursor: pointer;
 }
 
-.rl-telemetry__btn:hover {
+.telemetry__btn:hover {
   background: rgba(110, 168, 255, 0.28);
   border-color: rgba(110, 168, 255, 0.45);
 }
 
-.rl-telemetry__sleep-control {
+.telemetry__sleep-control {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -269,12 +277,12 @@
   background: rgba(90, 120, 180, 0.12);
 }
 
-.rl-telemetry__sleep-label {
+.telemetry__sleep-label {
   font-size: 0.8rem;
   color: #d2daf8;
   white-space: nowrap;
 }
 
-.rl-telemetry__sleep-control input[type="range"] {
+.telemetry__sleep-control input[type="range"] {
   width: 180px;
 }

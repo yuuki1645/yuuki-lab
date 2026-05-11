@@ -1,10 +1,10 @@
-import { getRlTelemetrySocketUrl } from "@/shared/constants";
+import { getTrainingTelemetrySocketUrl } from "@/shared/constants";
 
-export interface RlTelemetryConfigResponse {
+export interface TrainingTelemetryConfigResponse {
   step_wall_sleep_sec: number | null;
 }
 
-export interface RlTelemetryConfigSetResponse {
+export interface TrainingTelemetryConfigSetResponse {
   status: "ok";
   step_wall_sleep_sec: number;
 }
@@ -25,27 +25,27 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return detail || fallback;
 }
 
-export async function rlTelemetryFetchConfig(): Promise<RlTelemetryConfigResponse> {
-  const base = getRlTelemetrySocketUrl();
+export async function trainingTelemetryFetchConfig(): Promise<TrainingTelemetryConfigResponse> {
+  const base = getTrainingTelemetrySocketUrl();
   const response = await fetch(`${base}/api/rl_telemetry/config`);
   if (!response.ok) {
-    throw new Error(`RL telemetry config: HTTP ${response.status}`);
+    throw new Error(`Training telemetry config: HTTP ${response.status}`);
   }
-  return (await response.json()) as RlTelemetryConfigResponse;
+  return (await response.json()) as TrainingTelemetryConfigResponse;
 }
 
-export async function rlTelemetrySetStepWallSleepSec(
+export async function trainingTelemetrySetStepWallSleepSec(
   stepWallSleepSec: number
-): Promise<RlTelemetryConfigSetResponse> {
-  const base = getRlTelemetrySocketUrl();
+): Promise<TrainingTelemetryConfigSetResponse> {
+  const base = getTrainingTelemetrySocketUrl();
   const response = await fetch(`${base}/api/rl_telemetry/config`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ step_wall_sleep_sec: stepWallSleepSec }),
   });
   if (!response.ok) {
-    const detail = await readError(response, `RL telemetry config: HTTP ${response.status}`);
+    const detail = await readError(response, `Training telemetry config: HTTP ${response.status}`);
     throw new Error(detail);
   }
-  return (await response.json()) as RlTelemetryConfigSetResponse;
+  return (await response.json()) as TrainingTelemetryConfigSetResponse;
 }

@@ -83,18 +83,35 @@ export function getImuSocketUrl(): string {
 }
 
 /**
- * 強化学習テレメトリ用 Socket.IO（``train_002_full_actuators`` の ``--telemetry-port``、既定 8791）。
+ * 学習プロセスのテレメトリ用 Socket.IO（``train_002_full_actuators`` の ``--telemetry-port``、既定 8791）。
+ * 旧名 ``VITE_RL_TELEMETRY_SOCKET_URL`` も未設定時のみフォールバックとして読む。
  */
-export function getRlTelemetrySocketUrl(): string {
-  const fromEnv = import.meta.env.VITE_RL_TELEMETRY_SOCKET_URL;
-  if (typeof fromEnv === "string" && fromEnv.length > 0) {
-    return fromEnv.replace(/\/$/, "");
+export function getTrainingTelemetrySocketUrl(): string {
+  const primary = import.meta.env.VITE_TELEMETRY_SOCKET_URL;
+  if (typeof primary === "string" && primary.length > 0) {
+    return primary.replace(/\/$/, "");
+  }
+  const legacy = import.meta.env.VITE_RL_TELEMETRY_SOCKET_URL;
+  if (typeof legacy === "string" && legacy.length > 0) {
+    return legacy.replace(/\/$/, "");
   }
   return (
     "http://" +
     (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
     ":8791"
   );
+}
+
+/**
+ * テレメトリページ用の IMU（robot-daemon）Socket.IO。
+ * 未設定時は ``SERVO_DAEMON_URL`` と同じ（通常 ``http://<hostname>:5000``）。
+ */
+export function getTelemetryImuSocketUrl(): string {
+  const fromEnv = import.meta.env.VITE_TELEMETRY_IMU_SOCKET_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return SERVO_DAEMON_URL.replace(/\/$/, "");
 }
 
 /** 物理角スライダー範囲（レッグチューナーなど） */

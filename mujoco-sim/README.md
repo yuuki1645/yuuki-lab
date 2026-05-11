@@ -161,7 +161,8 @@ mujoco-sim/
   mujoco_sim_assets/
     paths.py           # 既定 MJCF パス・環境変数解決
     xmls/              # MJCF 世代別（既定は 001_leg_default/）
-      001_leg_default/ # main.xml + include 断片
+      001_leg_default/ # 胴固定（root freejoint なし）
+      002_leg_freejoint/ # 001 と同構成 + root に freejoint
   mujoco_realtime_sim/
     __main__.py        # HTTP + オプション Viewer
     app.py             # Flask create_app()

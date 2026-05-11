@@ -1,0 +1,13 @@
+<actuator>
+  <position name="left_hip_roll_motor" joint="left_hip_roll" kp="500"/>
+  <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="500" />
+  <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="500"/>
+  <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="500"/>
+  <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="500"/>
+
+  <position name="right_hip_roll_motor" joint="right_hip_roll" kp="500"/>
+  <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="500"/>
+  <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="500"/>
+  <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="500"/>
+  <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="500"/>
+</actuator>

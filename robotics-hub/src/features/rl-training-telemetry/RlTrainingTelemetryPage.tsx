@@ -2,6 +2,21 @@ import { useMemo } from "react";
 import { useRlTelemetryStream } from "@/shared/hooks/useRlTelemetryStream";
 import "./RlTrainingTelemetryPage.css";
 
+type LogicalRange = { lo: number; hi: number };
+
+const LOGICAL_RANGE_BY_ACTUATOR: Record<string, LogicalRange> = {
+  left_hip_roll_motor: { lo: -30, hi: 90 },
+  left_hip_pitch_motor: { lo: -30, hi: 120 },
+  left_knee_pitch_motor: { lo: 0, hi: 120 },
+  left_ankle_pitch_motor: { lo: -50, hi: 90 },
+  left_ankle_roll_motor: { lo: -20, hi: 20 },
+  right_hip_roll_motor: { lo: -30, hi: 90 },
+  right_hip_pitch_motor: { lo: -30, hi: 120 },
+  right_knee_pitch_motor: { lo: 0, hi: 120 },
+  right_ankle_pitch_motor: { lo: -50, hi: 90 },
+  right_ankle_roll_motor: { lo: -20, hi: 20 },
+};
+
 /** 小数第 1 位。整数部（符号含む）の文字幅を揃えて小数点を縦に揃える */
 function intPartWidth1dp(values: number[]): number {
   let m = 1;
@@ -31,17 +46,24 @@ function VecTable({
   labels,
   values,
   valueHeader = "値",
+  ranges,
+  noPanel = false,
 }: {
   title: string;
   labels: string[];
   values: number[];
   /** 数値列ヘッダ（例: 「値 (°)」） */
   valueHeader?: string;
+  /** 各行の表示レンジ（バー表示用） */
+  ranges?: Array<LogicalRange | null>;
+  /** true のとき外側パネルを描画しない */
+  noPanel?: boolean;
 }) {
   const intWidth = useMemo(() => intPartWidth1dp(values), [values]);
+  const showBars = Boolean(ranges?.length);
 
-  return (
-    <div className="rl-telemetry__panel">
+  const content = (
+    <>
       <h2>{title}</h2>
       {values.length === 0 ? (
         <p className="rl-telemetry__empty">データ待ち</p>
@@ -50,25 +72,60 @@ function VecTable({
           <thead>
             <tr>
               <th>軸 / 関節</th>
+              {showBars && <th className="rl-telemetry__th-pos">位置</th>}
               <th className="rl-telemetry__th-num">{valueHeader}</th>
             </tr>
           </thead>
           <tbody>
-            {labels.map((lab, i) => (
-              <tr key={lab}>
-                <td>{lab}</td>
-                <td className="rl-telemetry__td-num">
-                  <span className="rl-telemetry__num-fixed">
-                    {formatValue1dpAligned(values[i], intWidth)}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {labels.map((lab, i) => {
+              const v = values[i];
+              const r = ranges?.[i] ?? null;
+              const hasRange =
+                r !== null &&
+                Number.isFinite(r.lo) &&
+                Number.isFinite(r.hi) &&
+                r.hi > r.lo &&
+                Number.isFinite(v);
+              const ratio = hasRange ? Math.max(0, Math.min(1, (v - r.lo) / (r.hi - r.lo))) : 0;
+              return (
+                <tr key={lab}>
+                  <td>{lab}</td>
+                  {showBars && (
+                    <td className="rl-telemetry__td-pos">
+                      {hasRange ? (
+                        <div className="rl-telemetry__range-cell">
+                          <div className="rl-telemetry__range-track">
+                            <div
+                              className="rl-telemetry__range-fill"
+                              style={{ width: `${(ratio * 100).toFixed(1)}%` }}
+                            />
+                            <div className="rl-telemetry__range-midline" />
+                          </div>
+                          <span className="rl-telemetry__range-label">
+                            {r.lo}..{r.hi}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="rl-telemetry__range-label">—</span>
+                      )}
+                    </td>
+                  )}
+                  <td className="rl-telemetry__td-num">
+                    <span className="rl-telemetry__num-fixed">
+                      {formatValue1dpAligned(values[i], intWidth)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
-    </div>
+    </>
   );
+
+  if (noPanel) return content;
+  return <div className="rl-telemetry__panel">{content}</div>;
 }
 
 export default function RlTrainingTelemetryPage() {
@@ -85,11 +142,14 @@ export default function RlTrainingTelemetryPage() {
     step?.obs_prev_ctrl ??
     reset?.obs_prev_ctrl ??
     [];
-  const actionLogical = step?.action_logical_deg ?? step?.action ?? [];
+  const actionLogical = step?.action_logical_deg ?? [];
   const prevCtrlLabels = names.length
     ? names.map((n) => `prev ${n}`)
     : prevLogical.map((_, i) => `prev_logical[${i}]`);
   const actionLabels = names.length ? names.map((n) => `action ${n}`) : [];
+  const logicalRanges = names.map((n) => LOGICAL_RANGE_BY_ACTUATOR[n] ?? null);
+  const prevRanges = logicalRanges.length === prevLogical.length ? logicalRanges : [];
+  const actionRanges = logicalRanges.length === actionLogical.length ? logicalRanges : [];
 
   return (
     <div className="rl-telemetry">
@@ -138,13 +198,17 @@ export default function RlTrainingTelemetryPage() {
       )}
 
       <div className="rl-telemetry__grid" style={{ marginTop: "1rem" }}>
-        <VecTable title="入力: 加速度 (局所 m/s²)" labels={accLabels} values={step?.obs_acc ?? []} />
-        <VecTable title="入力: 角速度 (局所 rad/s)" labels={gyroLabels} values={step?.obs_gyro ?? []} />
+        <div className="rl-telemetry__panel">
+          <h2>入力: IMU（局所）</h2>
+          <VecTable title="加速度 (m/s²)" labels={accLabels} values={step?.obs_acc ?? []} noPanel />
+          <VecTable title="角速度 (rad/s)" labels={gyroLabels} values={step?.obs_gyro ?? []} noPanel />
+        </div>
         <VecTable
           title="入力: 観測内 prev（論理角 deg, 1 step 遅れ）"
           labels={prevCtrlLabels}
           values={prevLogical}
           valueHeader="値 (論理角 deg)"
+          ranges={prevRanges}
         />
         <VecTable
           title="行動: 目標角 action（論理角 deg）"
@@ -155,6 +219,7 @@ export default function RlTrainingTelemetryPage() {
           }
           values={actionLogical}
           valueHeader="値 (論理角 deg)"
+          ranges={actionRanges}
         />
       </div>
     </div>

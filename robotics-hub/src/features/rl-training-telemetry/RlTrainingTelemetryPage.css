@@ -1,7 +1,8 @@
 /* Hub のダークテーマ（index.css）に合わせ、継承色で白パネルが潰れないようにする */
 
 .rl-telemetry {
-  max-width: 1200px;
+  max-width: 1800px;
+  width: 100%;
   margin: 0 auto;
   padding: 1rem 1.25rem 2rem;
   color: #e8ecff;
@@ -98,7 +99,7 @@
 .rl-telemetry__grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 }
 
 .rl-telemetry__panel {
@@ -125,6 +126,7 @@
 .rl-telemetry table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 0.82rem;
   color: #e8ecff;
 }
@@ -146,6 +148,10 @@
   text-align: left;
   font-family: ui-monospace, monospace;
   color: #c8d0f0;
+  width: 44%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rl-telemetry th.rl-telemetry__th-num,
@@ -157,8 +163,62 @@
   white-space: pre;
 }
 
+.rl-telemetry th.rl-telemetry__th-pos {
+  text-align: left;
+  width: 38%;
+}
+
+.rl-telemetry td.rl-telemetry__td-pos {
+  text-align: left;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  color: #d8e0ff;
+}
+
 .rl-telemetry__num-fixed {
   display: inline-block;
+  text-align: right;
+}
+
+.rl-telemetry__range-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rl-telemetry__range-track {
+  position: relative;
+  height: 0.52rem;
+  flex: 0 0 120px;
+  min-width: 90px;
+  border-radius: 999px;
+  background: rgba(120, 140, 190, 0.22);
+  border: 1px solid rgba(140, 160, 220, 0.35);
+  overflow: hidden;
+}
+
+.rl-telemetry__range-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(94, 234, 212, 0.42), rgba(96, 165, 250, 0.72));
+}
+
+.rl-telemetry__range-midline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.rl-telemetry__range-label {
+  font-size: 0.72rem;
+  color: #aeb7df;
+  white-space: nowrap;
+  display: inline-block;
+  width: 60px;
   text-align: right;
 }
 

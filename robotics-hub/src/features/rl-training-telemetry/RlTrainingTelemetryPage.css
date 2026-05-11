@@ -138,6 +138,20 @@
   color: #c8d0f0;
 }
 
+.rl-telemetry th.rl-telemetry__th-num,
+.rl-telemetry td.rl-telemetry__td-num {
+  text-align: right;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  color: #f4f6ff;
+  white-space: pre;
+}
+
+.rl-telemetry__num-fixed {
+  display: inline-block;
+  text-align: right;
+}
+
 .rl-telemetry td {
   font-variant-numeric: tabular-nums;
   color: #f4f6ff;

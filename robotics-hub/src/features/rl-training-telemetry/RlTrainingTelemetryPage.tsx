@@ -1,9 +1,29 @@
+import { useMemo } from "react";
 import { useRlTelemetryStream } from "@/shared/hooks/useRlTelemetryStream";
 import "./RlTrainingTelemetryPage.css";
 
-function fmt(v: number | null | undefined, digits = 4): string {
-  if (typeof v !== "number" || !Number.isFinite(v)) return "—";
-  return v.toFixed(digits);
+/** 小数第 1 位。整数部（符号含む）の文字幅を揃えて小数点を縦に揃える */
+function intPartWidth1dp(values: number[]): number {
+  let m = 1;
+  for (const v of values) {
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    const s = v.toFixed(1);
+    const dot = s.indexOf(".");
+    if (dot <= 0) continue;
+    m = Math.max(m, s.slice(0, dot).length);
+  }
+  return m;
+}
+
+function formatValue1dpAligned(v: number | undefined, intWidth: number): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) {
+    return "\u2014".padStart(intWidth + 2, "\u00a0");
+  }
+  const s = v.toFixed(1);
+  const dot = s.indexOf(".");
+  const intSide = dot > 0 ? s.slice(0, dot) : s;
+  const decSide = dot > 0 ? s.slice(dot) : "";
+  return intSide.padStart(intWidth, "\u00a0") + decSide;
 }
 
 function VecTable({
@@ -15,6 +35,8 @@ function VecTable({
   labels: string[];
   values: number[];
 }) {
+  const intWidth = useMemo(() => intPartWidth1dp(values), [values]);
+
   return (
     <div className="rl-telemetry__panel">
       <h2>{title}</h2>
@@ -25,14 +47,18 @@ function VecTable({
           <thead>
             <tr>
               <th>軸 / 関節</th>
-              <th>値</th>
+              <th className="rl-telemetry__th-num">値</th>
             </tr>
           </thead>
           <tbody>
             {labels.map((lab, i) => (
               <tr key={lab}>
                 <td>{lab}</td>
-                <td>{fmt(values[i], 5)}</td>
+                <td className="rl-telemetry__td-num">
+                  <span className="rl-telemetry__num-fixed">
+                    {formatValue1dpAligned(values[i], intWidth)}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

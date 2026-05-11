@@ -96,6 +96,18 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
             info_dict.get("action_logical_deg", a_norm.tolist()),
             dtype=np.float64,
         ).reshape(-1)
+        reward_total = float(info_dict.get("reward_total", reward))
+        reward_action_penalty = float(
+            info_dict.get("reward_action_penalty", reward_total)
+        )
+        reward_fall_penalty = float(info_dict.get("reward_fall_penalty", 0.0))
+        torso_height = info_dict.get("torso_height")
+        torso_height_num = (
+            float(torso_height)
+            if isinstance(torso_height, (float, int))
+            else None
+        )
+        is_fallen = bool(info_dict.get("is_fallen", bool(terminated)))
         self._publish_step(
             {
                 "wall_time": now,
@@ -114,6 +126,14 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "action_norm_unit": "normalized",
                 "action_logical_deg": a_logical.tolist(),
                 "action_unit": "logical_deg",
+                "reward": reward_total,
+                "reward_total": reward_total,
+                "reward_action_penalty": reward_action_penalty,
+                "reward_fall_penalty": reward_fall_penalty,
+                "torso_height": torso_height_num,
+                "is_fallen": is_fallen,
+                "terminated": bool(terminated),
+                "truncated": bool(truncated),
                 # 物理更新後の次観測（s_{t+1}）
                 "obs_next_acc": o_next[:3].tolist(),
                 "obs_next_gyro": o_next[3:6].tolist(),

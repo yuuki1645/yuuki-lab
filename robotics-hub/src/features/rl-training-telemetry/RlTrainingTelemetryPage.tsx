@@ -41,6 +41,30 @@ function formatValue1dpAligned(v: number | undefined, intWidth: number): string 
   return intSide.padStart(intWidth, "\u00a0") + decSide;
 }
 
+function ScalarPanel({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="rl-telemetry__panel">
+      <h2>{title}</h2>
+      <table>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td>{row.label}</td>
+              <td className="rl-telemetry__td-num">{row.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function VecTable({
   title,
   labels,
@@ -150,6 +174,10 @@ export default function RlTrainingTelemetryPage() {
   const logicalRanges = names.map((n) => LOGICAL_RANGE_BY_ACTUATOR[n] ?? null);
   const prevRanges = logicalRanges.length === prevLogical.length ? logicalRanges : [];
   const actionRanges = logicalRanges.length === actionLogical.length ? logicalRanges : [];
+  const rewardTotal = step?.reward_total ?? step?.reward;
+  const rewardActionPenalty = step?.reward_action_penalty;
+  const rewardFallPenalty = step?.reward_fall_penalty;
+  const torsoHeight = step?.torso_height;
 
   return (
     <div className="rl-telemetry">
@@ -198,18 +226,38 @@ export default function RlTrainingTelemetryPage() {
       )}
 
       <div className="rl-telemetry__grid" style={{ marginTop: "1rem" }}>
+        <ScalarPanel
+          title="報酬と判定（この step）"
+          rows={[
+            {
+              label: "報酬 total",
+              value: typeof rewardTotal === "number" ? rewardTotal.toFixed(5) : "—",
+            },
+            {
+              label: "角度ペナルティ",
+              value:
+                typeof rewardActionPenalty === "number"
+                  ? rewardActionPenalty.toFixed(5)
+                  : "—",
+            },
+            {
+              label: "転倒ペナルティ",
+              value:
+                typeof rewardFallPenalty === "number" ? rewardFallPenalty.toFixed(5) : "—",
+            },
+            {
+              label: "torso height (m)",
+              value: typeof torsoHeight === "number" ? torsoHeight.toFixed(4) : "—",
+            },
+            { label: "terminated", value: step?.terminated ? "true" : "false" },
+            { label: "truncated", value: step?.truncated ? "true" : "false" },
+          ]}
+        />
         <div className="rl-telemetry__panel">
           <h2>入力: IMU（局所）</h2>
           <VecTable title="加速度 (m/s²)" labels={accLabels} values={step?.obs_acc ?? []} noPanel />
           <VecTable title="角速度 (rad/s)" labels={gyroLabels} values={step?.obs_gyro ?? []} noPanel />
         </div>
-        <VecTable
-          title="入力: 観測内 prev（論理角 deg, 1 step 遅れ）"
-          labels={prevCtrlLabels}
-          values={prevLogical}
-          valueHeader="値 (論理角 deg)"
-          ranges={prevRanges}
-        />
         <VecTable
           title="行動: 目標角 action（論理角 deg）"
           labels={
@@ -221,6 +269,15 @@ export default function RlTrainingTelemetryPage() {
           valueHeader="値 (論理角 deg)"
           ranges={actionRanges}
         />
+        <div className="rl-telemetry__grid-row2">
+          <VecTable
+            title="入力: 観測内 prev（論理角 deg, 1 step 遅れ）"
+            labels={prevCtrlLabels}
+            values={prevLogical}
+            valueHeader="値 (論理角 deg)"
+            ranges={prevRanges}
+          />
+        </div>
       </div>
     </div>
   );

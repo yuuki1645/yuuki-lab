@@ -239,19 +239,28 @@ class Env002FullActuators(gym.Env):
         obs = self._get_obs()
         self._prev_action_logical_deg = np.asarray(a_logical, dtype=np.float32).copy()
 
-        # 物理的な大きさ（rad）に対して小さなペナルティ
-        reward = float(-1e-4 * np.sum(np.square(ctrl_rad)))
+        torso_height = self._torso_height()
+        # 物理的な大きさ（rad）に対する行動ペナルティ（常時）
+        reward_action_penalty = float(-1e-4 * np.sum(np.square(ctrl_rad)))
+        reward_fall_penalty = 0.0
 
         terminated = False
-        if self._has_free_root and self._torso_height() < 0.45:
+        if self._has_free_root and torso_height < 0.45:
             terminated = True
-            reward -= 1.0
+            reward_fall_penalty = -1.0
+
+        reward = reward_action_penalty + reward_fall_penalty
 
         truncated = self.step_count >= self.max_steps
         return obs, reward, terminated, truncated, {
             "action_norm": a_norm.tolist(),
             "action_logical_deg": a_logical.tolist(),
             "action_logical_unit": "logical_deg",
+            "reward_total": float(reward),
+            "reward_action_penalty": float(reward_action_penalty),
+            "reward_fall_penalty": float(reward_fall_penalty),
+            "torso_height": float(torso_height),
+            "is_fallen": bool(terminated and reward_fall_penalty < 0.0),
         }
 
     def render(self):

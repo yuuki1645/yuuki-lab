@@ -107,6 +107,12 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
             if isinstance(torso_height, (float, int))
             else None
         )
+        step_wall_sleep = info_dict.get("step_wall_sleep_sec")
+        step_wall_sleep_num = (
+            float(step_wall_sleep)
+            if isinstance(step_wall_sleep, (float, int))
+            else None
+        )
         is_fallen = bool(info_dict.get("is_fallen", bool(terminated)))
         self._publish_step(
             {
@@ -131,6 +137,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "reward_action_penalty": reward_action_penalty,
                 "reward_fall_penalty": reward_fall_penalty,
                 "torso_height": torso_height_num,
+                "step_wall_sleep_sec": step_wall_sleep_num,
                 "is_fallen": is_fallen,
                 "terminated": bool(terminated),
                 "truncated": bool(truncated),

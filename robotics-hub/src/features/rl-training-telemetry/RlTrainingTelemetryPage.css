@@ -238,6 +238,10 @@
 
 .rl-telemetry__actions {
   margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
 }
 
 .rl-telemetry__btn {
@@ -253,4 +257,24 @@
 .rl-telemetry__btn:hover {
   background: rgba(110, 168, 255, 0.28);
   border-color: rgba(110, 168, 255, 0.45);
+}
+
+.rl-telemetry__sleep-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(90, 120, 180, 0.12);
+}
+
+.rl-telemetry__sleep-label {
+  font-size: 0.8rem;
+  color: #d2daf8;
+  white-space: nowrap;
+}
+
+.rl-telemetry__sleep-control input[type="range"] {
+  width: 180px;
 }

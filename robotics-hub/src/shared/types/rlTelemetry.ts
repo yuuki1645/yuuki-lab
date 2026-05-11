@@ -39,6 +39,7 @@ export interface RlTelemetryStepPayload {
   reward_action_penalty?: number;
   reward_fall_penalty?: number;
   torso_height?: number | null;
+  step_wall_sleep_sec?: number | null;
   is_fallen?: boolean;
   terminated?: boolean;
   truncated?: boolean;

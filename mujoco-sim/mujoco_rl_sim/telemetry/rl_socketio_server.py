@@ -7,9 +7,10 @@ from __future__ import annotations
 import queue
 import threading
 import time
+from collections.abc import Callable
 from typing import Any
 
-from flask import Flask
+from flask import Flask, jsonify, request
 
 
 class RlTelemetryServer:
@@ -18,15 +19,30 @@ class RlTelemetryServer:
     バックグラウンドタスクが ``rl_telemetry/*`` をクライアントへ送る。
     """
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 8791) -> None:
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 8791,
+        set_step_wall_sleep_sec: Callable[[float], None] | None = None,
+        get_step_wall_sleep_sec: Callable[[], float] | None = None,
+    ) -> None:
         self.host = host
         self.port = int(port)
         self._q: queue.Queue[tuple[str, dict[str, Any]]] = queue.Queue(maxsize=512)
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
+        self._set_step_wall_sleep_sec = set_step_wall_sleep_sec
+        self._get_step_wall_sleep_sec = get_step_wall_sleep_sec
 
         self.app = Flask(__name__)
         self.app.config["SECRET_KEY"] = "rl-telemetry"
+
+        @self.app.after_request
+        def _add_cors_headers(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            return response
 
         from flask_socketio import SocketIO
 
@@ -41,6 +57,32 @@ class RlTelemetryServer:
             from flask_socketio import emit
 
             emit("rl_telemetry/hello", {"ok": True, "server_ts": time.time()})
+
+        @self.app.get("/api/rl_telemetry/config")
+        def _get_config():
+            current = None
+            if callable(self._get_step_wall_sleep_sec):
+                try:
+                    current = float(self._get_step_wall_sleep_sec())
+                except Exception:
+                    current = None
+            return jsonify({"step_wall_sleep_sec": current})
+
+        @self.app.post("/api/rl_telemetry/config")
+        def _set_config():
+            if not callable(self._set_step_wall_sleep_sec):
+                return jsonify({"error": "step_wall_sleep setter is not available"}), 400
+            payload = request.get_json(silent=True) or {}
+            try:
+                value = max(0.0, float(payload.get("step_wall_sleep_sec", 0.0)))
+            except Exception:
+                return jsonify({"error": "step_wall_sleep_sec must be a number"}), 400
+            self._set_step_wall_sleep_sec(value)
+            return jsonify({"status": "ok", "step_wall_sleep_sec": value})
+
+        @self.app.route("/api/rl_telemetry/config", methods=["OPTIONS"])
+        def _config_options():
+            return ("", 204)
 
     def _drain_loop(self) -> None:
         while not self._stop.is_set():

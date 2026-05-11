@@ -185,6 +185,12 @@ class Env002FullActuators(gym.Env):
             return float(self.data.qpos[adr + 2])
         return 0.9
 
+    def set_step_wall_sleep_sec(self, value: float) -> None:
+        self._step_wall_sleep_sec = max(0.0, float(value))
+
+    def get_step_wall_sleep_sec(self) -> float:
+        return float(self._step_wall_sleep_sec)
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
@@ -261,6 +267,7 @@ class Env002FullActuators(gym.Env):
             "reward_fall_penalty": float(reward_fall_penalty),
             "torso_height": float(torso_height),
             "is_fallen": bool(terminated and reward_fall_penalty < 0.0),
+            "step_wall_sleep_sec": float(self._step_wall_sleep_sec),
         }
 
     def render(self):

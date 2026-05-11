@@ -1,4 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  rlTelemetryFetchConfig,
+  rlTelemetrySetStepWallSleepSec,
+} from "@/shared/api/rlTelemetryApi";
 import { useRlTelemetryStream } from "@/shared/hooks/useRlTelemetryStream";
 import "./RlTrainingTelemetryPage.css";
 
@@ -178,6 +182,42 @@ export default function RlTrainingTelemetryPage() {
   const rewardActionPenalty = step?.reward_action_penalty;
   const rewardFallPenalty = step?.reward_fall_penalty;
   const torsoHeight = step?.torso_height;
+  const [stepWallSleepSec, setStepWallSleepSec] = useState(0);
+  const [settingSleep, setSettingSleep] = useState(false);
+  const [sleepError, setSleepError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    rlTelemetryFetchConfig()
+      .then((cfg) => {
+        if (cancelled) return;
+        const v = typeof cfg.step_wall_sleep_sec === "number" ? cfg.step_wall_sleep_sec : 0;
+        setStepWallSleepSec(v);
+      })
+      .catch(() => {
+        // テレメトリ未起動時などは無視して、step payload 側の値で追従する。
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof step?.step_wall_sleep_sec !== "number") return;
+    setStepWallSleepSec(step.step_wall_sleep_sec);
+  }, [step?.step_wall_sleep_sec]);
+
+  const applyStepWallSleep = async () => {
+    setSettingSleep(true);
+    setSleepError(null);
+    try {
+      await rlTelemetrySetStepWallSleepSec(stepWallSleepSec);
+    } catch (e) {
+      setSleepError(e instanceof Error ? e.message : "step_wall_sleep の更新に失敗しました");
+    } finally {
+      setSettingSleep(false);
+    }
+  };
 
   return (
     <div className="rl-telemetry">
@@ -216,7 +256,30 @@ export default function RlTrainingTelemetryPage() {
         <button type="button" className="rl-telemetry__btn" onClick={() => stream.reconnect()}>
           再接続
         </button>
+        <div className="rl-telemetry__sleep-control">
+          <label htmlFor="step-wall-sleep" className="rl-telemetry__sleep-label">
+            step-wall-sleep: {stepWallSleepSec.toFixed(3)} s
+          </label>
+          <input
+            id="step-wall-sleep"
+            type="range"
+            min={0}
+            max={0.2}
+            step={0.005}
+            value={stepWallSleepSec}
+            onChange={(e) => setStepWallSleepSec(Number(e.target.value))}
+          />
+          <button
+            type="button"
+            className="rl-telemetry__btn"
+            onClick={applyStepWallSleep}
+            disabled={settingSleep}
+          >
+            {settingSleep ? "適用中..." : "速度を適用"}
+          </button>
+        </div>
       </div>
+      {sleepError && <div className="rl-telemetry__error">{sleepError}</div>}
 
       {step && (
         <p className="rl-telemetry__meta" style={{ marginTop: "0.75rem" }}>

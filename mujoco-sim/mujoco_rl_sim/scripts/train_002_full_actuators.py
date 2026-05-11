@@ -113,6 +113,8 @@ def main() -> None:
         telemetry_server = RlTelemetryServer(
             host=args.telemetry_host,
             port=args.telemetry_port,
+            set_step_wall_sleep_sec=env.set_step_wall_sleep_sec,
+            get_step_wall_sleep_sec=env.get_step_wall_sleep_sec,
         )
         telemetry_server.start()
         max_hz = args.telemetry_max_hz

@@ -3,6 +3,10 @@
 export interface ImuDaemonStatusPayload {
   streaming?: boolean;
   rate_hz?: number;
+  /** サーバが CSV ログを書けるか（``IMU_LOG_DISABLE`` 等） */
+  csv_enabled?: boolean;
+  /** 現在 CSV セッションが開いているか */
+  csv_recording?: boolean;
   sensor?: {
     enabled?: boolean;
     mock_mode?: boolean;

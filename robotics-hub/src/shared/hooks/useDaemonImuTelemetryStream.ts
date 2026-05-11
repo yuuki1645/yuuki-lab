@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { io, type Socket } from "socket.io-client";
 import { getTelemetryImuSocketUrl } from "@/shared/constants";
 import type { ImuDaemonSamplePayload, ImuDaemonStatusPayload } from "@/shared/types/imuDaemon";
 
 export type DaemonImuWsStatus = "disconnected" | "connecting" | "connected";
+
+export type ImuLogStatusPayload = {
+  ok?: boolean;
+  reason?: string;
+  recording?: boolean;
+};
 
 export type DaemonImuTelemetryStream = {
   wsStatus: DaemonImuWsStatus;
@@ -13,13 +19,18 @@ export type DaemonImuTelemetryStream = {
   lastImuError: string | null;
   sampleCount: number;
   lastError: string | null;
+  lastLogStatus: ImuLogStatusPayload | null;
   reconnect: () => void;
+  requestImuStatus: () => void;
+  startCsvLog: () => void;
+  stopCsvLog: () => void;
 };
 
 const DEFAULT_RATE_HZ = 30;
 
 /**
  * robot-daemon の IMU ストリーム（接続後に ``imu/start`` を送り ``imu/sample`` を購読）。
+ * CSV ログは ``imu/log_start`` / ``imu/log_stop`` で制御する。
  */
 export function useDaemonImuTelemetryStream(
   active: boolean,
@@ -31,11 +42,25 @@ export function useDaemonImuTelemetryStream(
   const [lastImuError, setLastImuError] = useState<string | null>(null);
   const [sampleCount, setSampleCount] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [lastLogStatus, setLastLogStatus] = useState<ImuLogStatusPayload | null>(null);
   const [url] = useState(() => getTelemetryImuSocketUrl());
   const [socketGen, setSocketGen] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
 
   const reconnect = useCallback(() => {
     setSocketGen((g) => g + 1);
+  }, []);
+
+  const requestImuStatus = useCallback(() => {
+    socketRef.current?.emit("imu/status");
+  }, []);
+
+  const startCsvLog = useCallback(() => {
+    socketRef.current?.emit("imu/log_start");
+  }, []);
+
+  const stopCsvLog = useCallback(() => {
+    socketRef.current?.emit("imu/log_stop");
   }, []);
 
   useEffect(() => {
@@ -44,14 +69,17 @@ export function useDaemonImuTelemetryStream(
     setWsStatus("connecting");
     setLastError(null);
     setLastImuError(null);
+    setLastLogStatus(null);
 
     const socket = io(url, {
-      transports: ["polling", "websocket"],
+      // WebSocket を優先し、サンプル・perf 表示の遅延を抑える
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 500,
       reconnectionDelayMax: 5000,
     });
+    socketRef.current = socket;
 
     socket.on("connect_error", (err: Error) => {
       setLastError(
@@ -88,6 +116,14 @@ export function useDaemonImuTelemetryStream(
       setLastImuError(msg);
     });
 
+    socket.on("imu/log_status", (payload: ImuLogStatusPayload) => {
+      if (payload.ok === false) {
+        setLastLogStatus(payload);
+      } else {
+        setLastLogStatus(null);
+      }
+    });
+
     return () => {
       try {
         socket.emit("imu/stop");
@@ -95,6 +131,7 @@ export function useDaemonImuTelemetryStream(
         /* ignore */
       }
       socket.disconnect();
+      socketRef.current = null;
     };
   }, [active, url, socketGen, rateHz]);
 
@@ -106,6 +143,10 @@ export function useDaemonImuTelemetryStream(
     lastImuError,
     sampleCount,
     lastError,
+    lastLogStatus,
     reconnect,
+    requestImuStatus,
+    startCsvLog,
+    stopCsvLog,
   };
 }

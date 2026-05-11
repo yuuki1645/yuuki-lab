@@ -36,6 +36,8 @@ class ImuStreamService:
             "streaming": streaming,
             "rate_hz": rate_hz,
             "sensor": self._reader.status(),
+            "csv_enabled": self._csv_log.enabled,
+            "csv_recording": self._csv_log.is_recording(),
         }
 
     def emit_error_broadcast(self, code: str, message: str, detail: str | None = None) -> None:
@@ -73,14 +75,7 @@ class ImuStreamService:
                 with self._lock:
                     self._enabled = False
                 self._csv_log.end_session()
-                self._socketio.emit(
-                    "imu/status",
-                    {
-                        "streaming": False,
-                        "rate_hz": rate_hz,
-                        "sensor": self._reader.status(),
-                    },
-                )
+                self._socketio.emit("imu/status", self.status_payload())
 
             self._socketio.sleep(interval)
 
@@ -113,7 +108,6 @@ class ImuStreamService:
                     emit("imu/status", self.status_payload())
                     return
                 self._ensure_background_task()
-                self._csv_log.begin_session()
                 emit("imu/status", self.status_payload())
             except Exception as e:
                 self.emit_error_broadcast(
@@ -147,3 +141,51 @@ class ImuStreamService:
         @socketio.on("imu/status")
         def ws_imu_status():
             emit("imu/status", self.status_payload())
+
+        @socketio.on("imu/log_start")
+        def ws_imu_log_start():
+            try:
+                if not self._csv_log.enabled:
+                    emit(
+                        "imu/log_status",
+                        {"ok": False, "reason": "csv_disabled", "recording": False},
+                    )
+                    return
+                with self._lock:
+                    streaming = self._enabled
+                if not streaming:
+                    emit(
+                        "imu/log_status",
+                        {"ok": False, "reason": "imu_not_streaming", "recording": False},
+                    )
+                    emit("imu/status", self.status_payload())
+                    return
+                self._csv_log.begin_session()
+                emit(
+                    "imu/log_status",
+                    {"ok": True, "recording": True},
+                )
+                emit("imu/status", self.status_payload())
+            except Exception as e:
+                self.emit_error_broadcast(
+                    "IMU_LOG_START_FAILED",
+                    "IMU CSV ログ開始の処理に失敗しました。",
+                    str(e),
+                )
+                emit(
+                    "imu/log_status",
+                    {"ok": False, "reason": "exception", "recording": False},
+                )
+
+        @socketio.on("imu/log_stop")
+        def ws_imu_log_stop():
+            try:
+                self._csv_log.end_session()
+                emit("imu/log_status", {"ok": True, "recording": False})
+                emit("imu/status", self.status_payload())
+            except Exception as e:
+                self.emit_error_broadcast(
+                    "IMU_LOG_STOP_FAILED",
+                    "IMU CSV ログ停止の処理に失敗しました。",
+                    str(e),
+                )

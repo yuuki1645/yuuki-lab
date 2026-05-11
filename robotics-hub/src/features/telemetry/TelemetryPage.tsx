@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { trainingTelemetryFetchConfig, trainingTelemetrySetStepWallSleepSec } from "@/shared/api/telemetryApi";
 import { useDaemonImuTelemetryStream } from "@/shared/hooks/useDaemonImuTelemetryStream";
 import { useTrainingTelemetryStream } from "@/shared/hooks/useTrainingTelemetryStream";
@@ -204,9 +204,24 @@ function radPerSecToDegPerSec(values: number[] | undefined): number[] {
   return v.map((x) => (typeof x === "number" && Number.isFinite(x) ? x * RAD_TO_DEG : Number.NaN));
 }
 
+/** ``imu/sample`` の ``timestamp``（ラズパイ ``perf_counter``）だけ描画し、親の再描画コストを抑える */
+const ImuPerfTimestampReadout = memo(function ImuPerfTimestampReadout({
+  perfS,
+}: {
+  perfS: number | undefined;
+}) {
+  if (typeof perfS !== "number" || !Number.isFinite(perfS)) {
+    return <span className="telemetry__perf-value">—</span>;
+  }
+  return <span className="telemetry__perf-value">{perfS.toFixed(9)}</span>;
+});
+
 export default function TelemetryPage() {
   const stream = useTrainingTelemetryStream(true);
   const imuStream = useDaemonImuTelemetryStream(true, 30);
+  const csvRecording = imuStream.lastStatus?.csv_recording === true;
+  const csvEnabledOnServer = imuStream.lastStatus?.csv_enabled !== false;
+  const imuStreaming = Boolean(imuStream.lastStatus?.streaming);
   const step = stream.lastStep;
   const reset = stream.lastReset;
   const names =
@@ -264,6 +279,12 @@ export default function TelemetryPage() {
     setStepWallSleepSec(step.step_wall_sleep_sec);
   }, [step?.step_wall_sleep_sec]);
 
+  useEffect(() => {
+    if (imuStream.wsStatus === "connected") {
+      imuStream.requestImuStatus();
+    }
+  }, [imuStream.wsStatus, imuStream.requestImuStatus]);
+
   const applyStepWallSleep = async () => {
     setSettingSleep(true);
     setSleepError(null);
@@ -284,7 +305,8 @@ export default function TelemetryPage() {
           学習時は <code>mujoco_rl_sim.scripts.train_002_full_actuators</code> の Socket.IO（
           <code>rl_telemetry/*</code>）で観測・行動を表示します。実機は{" "}
           <code>robot-daemon</code> の IMU（<code>imu/start</code> 後の <code>imu/sample</code>
-          ）を同一ページに表示します。学習ストリームの関節は<strong>論理角（deg）</strong>です。
+          ）を同一ページに表示します。ラズパイへの CSV ログは <code>imu/log_start</code> /{" "}
+          <code>imu/log_stop</code> で開始・停止します。学習ストリームの関節は<strong>論理角（deg）</strong>です。
         </p>
       </header>
 
@@ -322,17 +344,58 @@ export default function TelemetryPage() {
           streaming: {String(Boolean(imuStream.lastStatus?.streaming))}
         </span>
         <span className="telemetry__meta">受信サンプル数: {imuStream.sampleCount}</span>
+        <span className="telemetry__meta">
+          CSV ログ: {csvRecording ? "記録中" : "停止"}
+          {imuStream.lastStatus?.csv_enabled === false ? "（サーバ無効）" : ""}
+        </span>
         {imuStream.lastSample?.mock ? (
           <span className="telemetry__logical-tag">モック IMU</span>
         ) : null}
+      </div>
+      <div className="telemetry__perf-readout" aria-live="polite">
+        <span className="telemetry__perf-label">
+          perf_timestamp（ラズパイ <code>perf_counter</code>、秒）
+        </span>
+        <ImuPerfTimestampReadout perfS={imuStream.lastSample?.timestamp} />
       </div>
       {imuStream.lastError && <div className="telemetry__error">{imuStream.lastError}</div>}
       {imuStream.lastImuError && (
         <div className="telemetry__error">IMU: {imuStream.lastImuError}</div>
       )}
+      {imuStream.lastLogStatus?.ok === false && (
+        <div className="telemetry__error">
+          CSV ログ:{" "}
+          {imuStream.lastLogStatus.reason === "csv_disabled"
+            ? "サーバで CSV が無効です（IMU_LOG_DISABLE 等）"
+            : imuStream.lastLogStatus.reason === "imu_not_streaming"
+              ? "先に IMU ストリームを開始してください"
+              : imuStream.lastLogStatus.reason ?? "開始に失敗しました"}
+        </div>
+      )}
       <div className="telemetry__actions">
         <button type="button" className="telemetry__btn" onClick={() => imuStream.reconnect()}>
           IMU 再接続（imu/start を再送）
+        </button>
+        <button
+          type="button"
+          className="telemetry__btn"
+          onClick={() => imuStream.startCsvLog()}
+          disabled={
+            imuStream.wsStatus !== "connected" ||
+            !imuStreaming ||
+            !csvEnabledOnServer ||
+            csvRecording
+          }
+        >
+          CSV ログ開始
+        </button>
+        <button
+          type="button"
+          className="telemetry__btn"
+          onClick={() => imuStream.stopCsvLog()}
+          disabled={imuStream.wsStatus !== "connected" || !csvRecording}
+        >
+          CSV ログ停止
         </button>
       </div>
 

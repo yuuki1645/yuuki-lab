@@ -71,6 +71,11 @@ class ImuCsvLog:
     def enabled(self) -> bool:
         return self._log_dir is not None
 
+    def is_recording(self) -> bool:
+        """現在 CSV セッションが開いているか（``begin_session`` 済みで未 ``end_session``）。"""
+        with self._lock:
+            return self._file_path is not None
+
     def begin_session(self) -> None:
         """新しいストリーム開始時。未フラッシュ分を吐き出し、新しい CSV ファイルを用意する。"""
         self.flush()

@@ -105,6 +105,39 @@
 }
 
 /** 実機パネル群と学習パネル群のあいだの横罫 */
+.telemetry__perf-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin: 0.65rem 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(20, 28, 52, 0.85);
+  border: 1px solid rgba(160, 180, 255, 0.2);
+}
+
+.telemetry__perf-label {
+  font-size: 0.78rem;
+  color: #9ca8d8;
+}
+
+.telemetry__perf-label code {
+  font-size: 0.76em;
+  padding: 0.05em 0.25em;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #c8d4ff;
+}
+
+.telemetry__perf-value {
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  color: #e8f0ff;
+  letter-spacing: 0.02em;
+}
+
 .telemetry__data-zones {
   display: flex;
   flex-direction: column;

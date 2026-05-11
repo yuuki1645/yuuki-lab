@@ -34,7 +34,11 @@ IMU が無い／開発時は `imu.py` のモック経由で動く構成にもな
 
 ### IMU の CSV ログ（ラズパイでの解析用）
 
-`imu/start` でストリーミングが始まると、**セッションごと**に `IMU_LOG_DIR` 以下へ `imu_YYYYMMDD_HHMMSS.csv` を作成し、サンプルをメモリに蓄えます。**約 `IMU_LOG_FLUSH_SEC` 秒ごと**にバッファをファイルへ追記し、`imu/stop` や読み取りエラーでストリームが止まったときに**残りをすべて書き出します**。
+**`imu/start` だけでは CSV は書きません。** Socket.IO で **`imu/log_start`** を送ったときに `IMU_LOG_DIR` 以下へ `imu_YYYYMMDD_HHMMSS.csv` を開き、以降の **`imu/sample` と同じタイミング**でサンプルをメモリに溜めます。**約 `IMU_LOG_FLUSH_SEC` 秒ごと**にバッファをファイルへ追記します。**`imu/log_stop`** または **`imu/stop`**（ストリーム停止）・読み取りエラーで**残りを flush** してセッションを閉じます。
+
+- **`imu/log_start`** … IMU ストリーミング中のみ有効。成功時に `imu/log_status` `{"ok":true,"recording":true}` と `imu/status`（`csv_recording: true`）を返します。
+- **`imu/log_stop`** … 記録停止。`imu/log_status` `{"ok":true,"recording":false}`。
+- ストリーミング未開始で `imu/log_start` … `imu/log_status` `{"ok":false,"reason":"imu_not_streaming"}`。
 
 | 環境変数 | 説明 |
 |----------|------|

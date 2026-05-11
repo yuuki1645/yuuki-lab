@@ -204,10 +204,14 @@ class Env002FullActuators(gym.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
         self.step_count = 0
-        self._prev_action_logical_deg = np.zeros(int(self.model.nu), dtype=np.float32)
+        nu = int(self.model.nu)
+        initial_logical = np.zeros(nu, dtype=np.float32)
+        ctrl_rad = np.empty(nu, dtype=np.float32)
 
-        # 論理角のデフォルト姿勢（kinematics）を基準に初期化する
-        for kin in self._actuator_kin:
+        # 論理角のデフォルト姿勢（kinematics）を基準に qpos と ctrl を揃える。
+        # mj_resetData 直後は ctrl=0 のままだと、位置アクチュエータが関節を 0rad 目標に
+        # 引き寄せようとして加速度計が異常に大きくなる。
+        for aid, kin in enumerate(self._actuator_kin):
             jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, kin.joint)
             if jid < 0:
                 raise ValueError(
@@ -221,8 +225,15 @@ class Env002FullActuators(gym.Env):
                 self.reset_joint_noise * span,
             )
             logical_deg = float(kin.default_logical + noise)
+            initial_logical[aid] = float(logical_deg)
             mujoco_deg = float(kin.logical_to_mujoco_deg(logical_deg))
-            self.data.qpos[qadr] = float(np.deg2rad(mujoco_deg))
+            rad = float(np.deg2rad(mujoco_deg))
+            self.data.qpos[qadr] = rad
+            ctrl_rad[aid] = rad
+
+        ctrl_rad = np.clip(ctrl_rad, self._ctrl_low, self._ctrl_high)
+        self.data.ctrl[:] = ctrl_rad
+        self._prev_action_logical_deg = initial_logical.copy()
 
         mujoco.mj_forward(self.model, self.data)
         return self._get_obs(), {"actuator_names": list(self._actuator_names)}

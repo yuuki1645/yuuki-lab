@@ -19,6 +19,8 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
 
     - ``obs`` 末尾の ``prev_*`` は環境定義どおり **1 ステップ遅れ**（前回適用コマンド）。
     - ``action`` は当該ステップで ``env.step`` に渡されたベクトル（クリップ前は上位で決まる）。
+    - step イベントでは ``obs_*`` を「エージェント入力（step 前観測）」として送る。
+      物理更新後の観測は ``obs_next_*`` で併送する。
     - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）であるため、
       payload に ``*_logical_deg`` と ``*_unit`` を明示して送る。
     """
@@ -40,6 +42,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
         self._last_emit_t = 0.0
         self._episode_step = 0
         self._actuator_names: list[str] = []
+        self._last_obs: np.ndarray | None = None
 
     def set_num_timesteps_getter(self, fn: Callable[[], int] | None) -> None:
         self._get_num_timesteps = fn
@@ -54,6 +57,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 names = [str(x) for x in raw]
         self._actuator_names = names
         o = np.asarray(obs, dtype=np.float64)
+        self._last_obs = o.copy()
         self._publish_reset(
             {
                 "wall_time": time.time(),
@@ -72,6 +76,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
         return obs, info
 
     def step(self, action: ActType):
+        obs_before = self._last_obs.copy() if self._last_obs is not None else None
         obs, reward, terminated, truncated, info = self.env.step(action)
         self._episode_step += 1
         now = time.time()
@@ -81,7 +86,11 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 return obs, reward, terminated, truncated, info
             self._last_emit_t = now
 
-        o = np.asarray(obs, dtype=np.float64)
+        o_next = np.asarray(obs, dtype=np.float64)
+        if obs_before is None:
+            # 通常は reset 後に step が呼ばれるため発生しないが、保険として次観測を採用する。
+            obs_before = o_next
+        self._last_obs = o_next.copy()
         a = np.asarray(action, dtype=np.float64).reshape(-1)
         self._publish_step(
             {
@@ -89,16 +98,24 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "episode_step": int(self._episode_step),
                 "num_timesteps": self._nts(),
                 "actuator_names": list(self._actuator_names),
-                "obs_acc": o[:3].tolist(),
-                "obs_gyro": o[3:6].tolist(),
+                # エージェントが意思決定に使った入力観測（step 前）
+                "obs_acc": obs_before[:3].tolist(),
+                "obs_gyro": obs_before[3:6].tolist(),
                 # 互換のため旧キー obs_prev_ctrl と action を残す
-                "obs_prev_ctrl": o[6:].tolist(),
-                "obs_prev_action_logical_deg": o[6:].tolist(),
+                "obs_prev_ctrl": obs_before[6:].tolist(),
+                "obs_prev_action_logical_deg": obs_before[6:].tolist(),
                 "obs_prev_action_unit": "logical_deg",
-                "obs_flat": o.tolist(),
+                "obs_flat": obs_before.tolist(),
                 "action": a.tolist(),
                 "action_logical_deg": a.tolist(),
                 "action_unit": "logical_deg",
+                # 物理更新後の次観測（s_{t+1}）
+                "obs_next_acc": o_next[:3].tolist(),
+                "obs_next_gyro": o_next[3:6].tolist(),
+                "obs_next_prev_ctrl": o_next[6:].tolist(),
+                "obs_next_prev_action_logical_deg": o_next[6:].tolist(),
+                "obs_next_prev_action_unit": "logical_deg",
+                "obs_next_flat": o_next.tolist(),
             }
         )
         return obs, reward, terminated, truncated, info

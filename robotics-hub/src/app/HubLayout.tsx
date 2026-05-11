@@ -4,9 +4,10 @@ import HubWindowMenu from "@/app/components/HubWindowMenu";
 import ImuAttitudeFloatingWindow from "@/app/components/ImuAttitudeFloatingWindow";
 import ImuFloatingWindow from "@/app/components/ImuFloatingWindow";
 import { hubTools } from "@/app/hubTools";
+import { DaemonImuTelemetryProvider } from "@/shared/contexts/DaemonImuTelemetryContext";
 import { useImuDaemonStream } from "@/shared/hooks/useImuDaemonStream";
 
-export default function HubLayout() {
+function HubLayoutInner() {
   const [imuWindowOpen, setImuWindowOpen] = useState(false);
   const [imuAttitudeOpen, setImuAttitudeOpen] = useState(false);
 
@@ -53,5 +54,13 @@ export default function HubLayout() {
         stream={imuStream}
       />
     </div>
+  );
+}
+
+export default function HubLayout() {
+  return (
+    <DaemonImuTelemetryProvider>
+      <HubLayoutInner />
+    </DaemonImuTelemetryProvider>
   );
 }

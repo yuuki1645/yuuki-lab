@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { trainingTelemetryFetchConfig, trainingTelemetrySetStepWallSleepSec } from "@/shared/api/telemetryApi";
-import { useDaemonImuTelemetryStream } from "@/shared/hooks/useDaemonImuTelemetryStream";
+import { useDaemonImuTelemetry } from "@/shared/contexts/DaemonImuTelemetryContext";
 import { useTrainingTelemetryStream } from "@/shared/hooks/useTrainingTelemetryStream";
 import type { ImuDaemonSamplePayload } from "@/shared/types/imuDaemon";
 import "./TelemetryPage.css";
@@ -218,7 +218,7 @@ const ImuPerfTimestampReadout = memo(function ImuPerfTimestampReadout({
 
 export default function TelemetryPage() {
   const stream = useTrainingTelemetryStream(true);
-  const imuStream = useDaemonImuTelemetryStream(true, 30);
+  const imuStream = useDaemonImuTelemetry();
   const csvRecording = imuStream.lastStatus?.csv_recording === true;
   const csvEnabledOnServer = imuStream.lastStatus?.csv_enabled !== false;
   const imuStreaming = Boolean(imuStream.lastStatus?.streaming);
@@ -306,7 +306,8 @@ export default function TelemetryPage() {
           <code>rl_telemetry/*</code>）で観測・行動を表示します。実機は{" "}
           <code>robot-daemon</code> の IMU（<code>imu/start</code> 後の <code>imu/sample</code>
           ）を同一ページに表示します。ラズパイへの CSV ログは <code>imu/log_start</code> /{" "}
-          <code>imu/log_stop</code> で開始・停止します。学習ストリームの関節は<strong>論理角（deg）</strong>です。
+          <code>imu/log_stop</code> で開始・停止します（ハブ内の別画面に移っても接続は維持されます）。学習ストリームの関節は
+          <strong>論理角（deg）</strong>です。
         </p>
       </header>
 

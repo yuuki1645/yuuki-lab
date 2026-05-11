@@ -132,12 +132,15 @@ class Env002FullActuators(gym.Env):
             shape=(nu,),
             dtype=np.float32,
         )
+        print(f"self.action_space: {self.action_space}")
+
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
             shape=(6 + nu,),
             dtype=np.float32,
         )
+        print(f"self.observation_space: {self.observation_space}")
 
         self.root_joint_id = mujoco.mj_name2id(
             self.model, mujoco.mjtObj.mjOBJ_JOINT, "root"

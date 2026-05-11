@@ -54,7 +54,7 @@ class Env002FullActuators(gym.Env):
     MJCF 上の **すべての** アクチュエータに対して ``data.ctrl`` を設定する環境。
 
     - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している（``ctrl`` = 目標角 [rad]）。
-    - 観測: アクチュエータ順に、各伝達先ヒンジの ``(qpos, qvel)`` を連結した ``(2 * nu,)`` ベクトル。
+    - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** ``ctrl``（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
     既定 MJCF は本モジュール先頭の ``DEFAULT_ENV_MODEL_XML``。別ファイルを使うときは
@@ -99,6 +99,29 @@ class Env002FullActuators(gym.Env):
         self._act_low = np.array(lows, dtype=np.float32)
         self._act_high = np.array(highs, dtype=np.float32)
 
+        self._imu_acc_name = "imu_acc"
+        self._imu_gyro_name = "imu_gyro"
+        for sname, expected_dim in (
+            (self._imu_acc_name, 3),
+            (self._imu_gyro_name, 3),
+        ):
+            sid = mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_SENSOR, sname
+            )
+            if sid < 0:
+                raise ValueError(
+                    f"MJCF に IMU センサー {sname!r} がありません。"
+                    " ``<accelerometer name=\"imu_acc\" site=\"...\"/>`` および "
+                    " ``<gyro name=\"imu_gyro\" site=\"...\"/>`` を含めてください。"
+                )
+            if int(self.model.sensor_dim[sid]) != expected_dim:
+                raise ValueError(
+                    f"センサー {sname!r} の次元は {expected_dim} である必要があります"
+                    f"（実際 {int(self.model.sensor_dim[sid])}）"
+                )
+
+        self._prev_cmd = np.zeros(nu, dtype=np.float32)
+
         self.action_space = spaces.Box(
             low=self._act_low.copy(),
             high=self._act_high.copy(),
@@ -108,7 +131,7 @@ class Env002FullActuators(gym.Env):
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(2 * nu,),
+            shape=(6 + nu,),
             dtype=np.float32,
         )
 
@@ -121,14 +144,17 @@ class Env002FullActuators(gym.Env):
             == mujoco.mjtJoint.mjJNT_FREE
         )
 
+    def _sensor_vec(self, name: str, dim: int) -> np.ndarray:
+        sid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SENSOR, name)
+        adr = int(self.model.sensor_adr[sid])
+        return np.asarray(
+            self.data.sensordata[adr : adr + dim], dtype=np.float32
+        ).copy()
+
     def _get_obs(self) -> np.ndarray:
-        parts: list[float] = []
-        for jid in self._joint_ids:
-            qadr = int(self.model.jnt_qposadr[jid])
-            vadr = int(self.model.jnt_dofadr[jid])
-            parts.append(float(self.data.qpos[qadr]))
-            parts.append(float(self.data.qvel[vadr]))
-        return np.array(parts, dtype=np.float32)
+        acc = self._sensor_vec(self._imu_acc_name, 3)
+        gyr = self._sensor_vec(self._imu_gyro_name, 3)
+        return np.concatenate([acc, gyr, self._prev_cmd])
 
     def _torso_height(self) -> float:
         if self._has_free_root:
@@ -140,6 +166,7 @@ class Env002FullActuators(gym.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
         self.step_count = 0
+        self._prev_cmd = np.zeros(int(self.model.nu), dtype=np.float32)
 
         for jid in self._joint_ids:
             qadr = int(self.model.jnt_qposadr[jid])
@@ -173,6 +200,8 @@ class Env002FullActuators(gym.Env):
         mujoco.mj_step(self.model, self.data)
 
         obs = self._get_obs()
+        self._prev_cmd = np.asarray(a, dtype=np.float32).copy()
+
         reward = float(-1e-4 * np.sum(np.square(a)))
 
         terminated = False

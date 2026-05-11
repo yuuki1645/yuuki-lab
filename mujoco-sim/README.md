@@ -100,7 +100,7 @@ all_ctrl = Env002FullActuators()  # 全アクチュエータを同時に指令
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
 
-`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。行動・観測の次元は MJCF の `nu` に依存します。
+`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``/``imu_gyro``（各 3）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。
 
 環境実装ファイルは **`env_001_knee_track.py`** のように `env_<連番>_` プレフィックスで並べます（新規追加時は次番号のファイルを `envs/__init__.py` に登録）。
 

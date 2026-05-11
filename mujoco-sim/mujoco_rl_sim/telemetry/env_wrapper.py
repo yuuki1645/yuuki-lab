@@ -18,7 +18,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
     ``step`` / ``reset`` のたびに観測・行動などを ``publish`` へ渡す。
 
     - ``obs`` 末尾の ``prev_*`` は環境定義どおり **1 ステップ遅れ**（前回適用コマンド）。
-    - ``action`` は当該ステップで ``env.step`` に渡されたベクトル（クリップ前は上位で決まる）。
+    - ``action`` は当該ステップで ``env.step`` に渡された正規化ベクトル（``[-1, 1]``）。
     - step イベントでは ``obs_*`` を「エージェント入力（step 前観測）」として送る。
       物理更新後の観測は ``obs_next_*`` で併送する。
     - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）であるため、
@@ -65,7 +65,6 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "obs_dim": int(o.size),
                 "obs_acc": o[:3].tolist(),
                 "obs_gyro": o[3:6].tolist(),
-                # 互換のため旧キー obs_prev_ctrl を残す
                 "obs_prev_ctrl": o[6:].tolist(),
                 "obs_prev_action_logical_deg": o[6:].tolist(),
                 "obs_prev_action_unit": "logical_deg",
@@ -76,7 +75,6 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
         return obs, info
 
     def step(self, action: ActType):
-        print("env_wrapper.step action: ", action)
         obs_before = self._last_obs.copy() if self._last_obs is not None else None
         obs, reward, terminated, truncated, info = self.env.step(action)
         self._episode_step += 1
@@ -92,7 +90,12 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
             # 通常は reset 後に step が呼ばれるため発生しないが、保険として次観測を採用する。
             obs_before = o_next
         self._last_obs = o_next.copy()
-        a = np.asarray(action, dtype=np.float64).reshape(-1)
+        a_norm = np.asarray(action, dtype=np.float64).reshape(-1)
+        info_dict = info if isinstance(info, dict) else {}
+        a_logical = np.asarray(
+            info_dict.get("action_logical_deg", a_norm.tolist()),
+            dtype=np.float64,
+        ).reshape(-1)
         self._publish_step(
             {
                 "wall_time": now,
@@ -102,13 +105,14 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 # エージェントが意思決定に使った入力観測（step 前）
                 "obs_acc": obs_before[:3].tolist(),
                 "obs_gyro": obs_before[3:6].tolist(),
-                # 互換のため旧キー obs_prev_ctrl と action を残す
                 "obs_prev_ctrl": obs_before[6:].tolist(),
                 "obs_prev_action_logical_deg": obs_before[6:].tolist(),
                 "obs_prev_action_unit": "logical_deg",
                 "obs_flat": obs_before.tolist(),
-                "action": a.tolist(),
-                "action_logical_deg": a.tolist(),
+                "action": a_norm.tolist(),
+                "action_norm": a_norm.tolist(),
+                "action_norm_unit": "normalized",
+                "action_logical_deg": a_logical.tolist(),
                 "action_unit": "logical_deg",
                 # 物理更新後の次観測（s_{t+1}）
                 "obs_next_acc": o_next[:3].tolist(),

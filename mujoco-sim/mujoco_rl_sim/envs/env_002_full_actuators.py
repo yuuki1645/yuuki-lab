@@ -56,7 +56,9 @@ class Env002FullActuators(gym.Env):
     MJCF 上の **すべての** アクチュエータに対して ``data.ctrl`` を設定する環境。
 
     - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している。
-    - 行動: **論理角(度)**（``nu`` 次元）。`mujoco_sim_common.kinematics.KINEMATICS` の変換で MuJoCo 関節角へ写像し、`data.ctrl` には **目標角 [rad]** を設定する。
+    - 行動: **正規化 action**（``nu`` 次元, 各軸 ``[-1, 1]``）。環境内で各関節の
+      論理角レンジへ線形写像し、`mujoco_sim_common.kinematics.KINEMATICS` で MuJoCo
+      関節角へ変換して `data.ctrl` に **目標角 [rad]** を設定する。
     - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** 論理角(度)（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
     - ``step_wall_sleep_sec``: 各 ``step`` の物理更新のあとに ``time.sleep`` する秒数（テレメトリ確認用。学習は壁時計で遅くなる）。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
@@ -143,12 +145,11 @@ class Env002FullActuators(gym.Env):
         self._prev_action_logical_deg = np.zeros(nu, dtype=np.float32)
 
         self.action_space = spaces.Box(
-            low=self._logical_low.copy(),
-            high=self._logical_high.copy(),
+            low=-1.0,
+            high=1.0,
             shape=(nu,),
             dtype=np.float32,
         )
-        print("self.action_space: ", self.action_space)
 
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -213,12 +214,16 @@ class Env002FullActuators(gym.Env):
 
     def step(self, action):
         self.step_count += 1
-        a_logical = np.asarray(action, dtype=np.float32).reshape(-1)
-        if a_logical.shape[0] != self.model.nu:
+        a_norm = np.asarray(action, dtype=np.float32).reshape(-1)
+        if a_norm.shape[0] != self.model.nu:
             raise ValueError(
-                f"action の長さは {self.model.nu} である必要があります（受け取り {a_logical.shape[0]}）"
+                f"action の長さは {self.model.nu} である必要があります（受け取り {a_norm.shape[0]}）"
             )
-        a_logical = np.clip(a_logical, self.action_space.low, self.action_space.high)
+        a_norm = np.clip(a_norm, self.action_space.low, self.action_space.high)
+        # [-1, 1] -> [logical_low, logical_high]
+        a_logical = self._logical_low + 0.5 * (a_norm + 1.0) * (
+            self._logical_high - self._logical_low
+        )
 
         ctrl_rad = np.empty_like(a_logical, dtype=np.float32)
         for aid, kin in enumerate(self._actuator_kin):
@@ -243,7 +248,11 @@ class Env002FullActuators(gym.Env):
             reward -= 1.0
 
         truncated = self.step_count >= self.max_steps
-        return obs, reward, terminated, truncated, {}
+        return obs, reward, terminated, truncated, {
+            "action_norm": a_norm.tolist(),
+            "action_logical_deg": a_logical.tolist(),
+            "action_logical_unit": "logical_deg",
+        }
 
     def render(self):
         return None

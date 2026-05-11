@@ -197,6 +197,13 @@ const ACC_LABELS = ["ax", "ay", "az"];
 const GYRO_LABELS = ["gx", "gy", "gz"];
 const ANGLE_LABELS = ["pitch", "roll", "yaw"];
 
+const RAD_TO_DEG = 180 / Math.PI;
+
+function radPerSecToDegPerSec(values: number[] | undefined): number[] {
+  const v = values ?? [];
+  return v.map((x) => (typeof x === "number" && Number.isFinite(x) ? x * RAD_TO_DEG : Number.NaN));
+}
+
 export default function TelemetryPage() {
   const stream = useTrainingTelemetryStream(true);
   const imuStream = useDaemonImuTelemetryStream(true, 30);
@@ -229,6 +236,11 @@ export default function TelemetryPage() {
   const { acc: daemonAcc, gyro: daemonGyro, angle: daemonAngle } = useMemo(
     () => daemonSampleToAccelGyroAngle(imuStream.lastSample),
     [imuStream.lastSample]
+  );
+
+  const trainingGyroDisplayDegS = useMemo(
+    () => radPerSecToDegPerSec(step?.obs_gyro),
+    [step?.obs_gyro]
   );
 
   useEffect(() => {
@@ -434,10 +446,13 @@ export default function TelemetryPage() {
             values={step?.obs_acc ?? []}
             noPanel
           />
+          <p className="telemetry__meta">
+            角速度は受信ペイロードが rad/s のため、下表のみ deg/s（×180/π）に換算して表示しています。
+          </p>
           <VecTable
-            title="角速度 (rad/s)"
+            title="角速度 (deg/s)"
             labels={GYRO_LABELS}
-            values={step?.obs_gyro ?? []}
+            values={trainingGyroDisplayDegS}
             noPanel
           />
         </div>

@@ -49,7 +49,7 @@ def _hinge_joint_for_position_actuator(model: mujoco.MjModel, aid: int) -> int:
     return jid
 
 
-class FullActuatorPositionEnv(gym.Env):
+class Env002FullActuators(gym.Env):
     """
     MJCF 上の **すべての** アクチュエータに対して ``data.ctrl`` を設定する環境。
 
@@ -58,7 +58,7 @@ class FullActuatorPositionEnv(gym.Env):
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
     既定 MJCF は本モジュール先頭の ``DEFAULT_ENV_MODEL_XML``。別ファイルを使うときは
-    ``FullActuatorPositionEnv(xml_path=...)`` を指定。
+    ``Env002FullActuators(xml_path=...)`` を指定。
     """
 
     metadata = {"render_modes": ["human"], "render_fps": 60}

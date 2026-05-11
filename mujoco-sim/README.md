@@ -91,15 +91,16 @@ python -m mujoco_realtime_sim.viewer_cmd
 例: 同梱 MJCF を使う膝トラッキング環境（MJCF に **`freejoint` の `root` が無い**場合は胴高・転倒終了を簡略化します）。
 
 ```python
-from mujoco_rl_sim import FullActuatorPositionEnv, KneeTrackEnv
+from mujoco_rl_sim import KneeTrackEnv
+from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
 
 env = KneeTrackEnv()  # xml_path 省略時は各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML``
-all_ctrl = FullActuatorPositionEnv()  # 全アクチュエータを同時に指令
+all_ctrl = Env002FullActuators()  # 全アクチュエータを同時に指令
 ```
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
 
-`FullActuatorPositionEnv` は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。行動・観測の次元は MJCF の `nu` に依存します。
+`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。行動・観測の次元は MJCF の `nu` に依存します。
 
 環境実装ファイルは **`env_001_knee_track.py`** のように `env_<連番>_` プレフィックスで並べます（新規追加時は次番号のファイルを `envs/__init__.py` に登録）。
 
@@ -122,7 +123,7 @@ python -m mujoco_rl_sim.scripts.watch_training_live
 python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
 ```
 
-### CLI（全アクチュエータ `FullActuatorPositionEnv`）
+### CLI（全アクチュエータ `Env002FullActuators`）
 
 | コマンド | 内容 |
 |----------|------|

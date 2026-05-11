@@ -1,6 +1,6 @@
 # type: ignore
 
-"""学習済み PPO を ``FullActuatorPositionEnv`` 上で MuJoCo Viewer 再生。"""
+"""学習済み PPO を ``Env002FullActuators`` 上で MuJoCo Viewer 再生。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import time
 
 import mujoco.viewer
 from mujoco_sim_assets.paths import resolved_model_xml
-from mujoco_rl_sim import FullActuatorPositionEnv
+from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
 from stable_baselines3 import PPO
 
 
@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     xml_path = args.xml_path or str(resolved_model_xml())
-    env = FullActuatorPositionEnv(
+    env = Env002FullActuators(
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,

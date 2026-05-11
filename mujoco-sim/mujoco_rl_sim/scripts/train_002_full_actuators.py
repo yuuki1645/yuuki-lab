@@ -1,6 +1,6 @@
 # type: ignore
 
-"""連番 002: PPO で ``FullActuatorPositionEnv`` を学習。オプションでライブ Viewer 子プロセス。"""
+"""連番 002: PPO で ``Env002FullActuators`` を学習。オプションでライブ Viewer 子プロセス。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 from mujoco_sim_assets.paths import resolved_model_xml
-from mujoco_rl_sim import FullActuatorPositionEnv
+from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
@@ -17,7 +17,7 @@ from stable_baselines3.common.monitor import Monitor
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="FullActuatorPositionEnv（全 position アクチュエータ）を PPO で学習"
+        description="Env002FullActuators（全 position アクチュエータ）を PPO で学習"
     )
     p.add_argument(
         "--xml-path",
@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
         "--reset-joint-noise",
         type=float,
         default=0.05,
-        help="リセット時の関節ノイズ（FullActuatorPositionEnv の引数）",
+        help="リセット時の関節ノイズ（Env002FullActuators の引数）",
     )
     p.add_argument("--total-timesteps", type=int, default=100_000)
     p.add_argument("--learn-chunk", type=int, default=10_000)
@@ -55,7 +55,7 @@ def main() -> None:
     args = parse_args()
     xml_path = args.xml_path or str(resolved_model_xml())
 
-    env = FullActuatorPositionEnv(
+    env = Env002FullActuators(
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,

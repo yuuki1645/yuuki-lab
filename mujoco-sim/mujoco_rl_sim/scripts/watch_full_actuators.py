@@ -1,6 +1,6 @@
 # type: ignore
 
-"""学習中チェックポイントを読み直しながら ``FullActuatorPositionEnv`` を Viewer で表示。"""
+"""学習中チェックポイントを読み直しながら ``Env002FullActuators`` を Viewer で表示。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import time
 import mujoco.viewer
 import numpy as np
 from mujoco_sim_assets.paths import resolved_model_xml
-from mujoco_rl_sim import FullActuatorPositionEnv
+from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
 from stable_baselines3 import PPO
 
 
@@ -46,7 +46,7 @@ def main() -> None:
         args.model_base if args.model_base.endswith(".zip") else f"{args.model_base}.zip"
     )
 
-    env = FullActuatorPositionEnv(
+    env = Env002FullActuators(
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,

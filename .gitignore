@@ -10,6 +10,7 @@ robot-daemon/imu_logs/
 
 # 動画（バイナリ・容量大のため追跡しない）
 *.mp4
+*.MP4
 *.m4v
 *.mov
 *.avi

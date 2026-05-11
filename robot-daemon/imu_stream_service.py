@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from flask_socketio import emit
 
 from imu import Mpu6050Reader
+from imu_csv_log import imu_csv_log_from_env
 
 if TYPE_CHECKING:
     from flask_socketio import SocketIO
@@ -25,6 +26,7 @@ class ImuStreamService:
         self._rate_hz = 30.0
         self._enabled = False
         self._task_started = False
+        self._csv_log = imu_csv_log_from_env()
 
     def status_payload(self) -> dict[str, Any]:
         with self._lock:
@@ -59,6 +61,7 @@ class ImuStreamService:
 
             try:
                 sample = self._reader.sample()
+                self._csv_log.record_sample(sample)
                 self._socketio.emit("imu/sample", sample)
             except Exception as e:
                 err = self._reader.get_error_info()
@@ -69,6 +72,7 @@ class ImuStreamService:
                 )
                 with self._lock:
                     self._enabled = False
+                self._csv_log.end_session()
                 self._socketio.emit(
                     "imu/status",
                     {
@@ -109,6 +113,7 @@ class ImuStreamService:
                     emit("imu/status", self.status_payload())
                     return
                 self._ensure_background_task()
+                self._csv_log.begin_session()
                 emit("imu/status", self.status_payload())
             except Exception as e:
                 self.emit_error_broadcast(
@@ -121,6 +126,7 @@ class ImuStreamService:
         def ws_imu_stop():
             with self._lock:
                 self._enabled = False
+            self._csv_log.end_session()
             emit("imu/status", self.status_payload())
 
         @socketio.on("imu/set_rate")

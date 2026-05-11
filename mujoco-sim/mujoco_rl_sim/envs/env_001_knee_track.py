@@ -6,10 +6,13 @@ from pathlib import Path
 
 import gymnasium as gym
 import mujoco
+import mujoco_sim_assets
 import numpy as np
 from gymnasium import spaces
 
-from mujoco_sim_assets.paths import resolved_model_xml
+_ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
+# この環境が既定で読み込む MJCF（必要ならここを書き換え）
+DEFAULT_ENV_MODEL_XML = _ASSETS_ROOT / "xmls" / "001_leg_default" / "main.xml"
 
 
 class KneeTrackEnv(gym.Env):
@@ -18,15 +21,15 @@ class KneeTrackEnv(gym.Env):
     - Control only left_knee_pitch target angle (position actuator control).
     - Reward is high when the joint angle tracks a fixed target.
 
-    既定 MJCF は ``mujoco_sim_assets`` 同梱の ``xmls/001_leg_default/main.xml``（環境変数
-    ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` で上書き可）。
+    既定 MJCF は本モジュール先頭の ``DEFAULT_ENV_MODEL_XML``。別ファイルを使うときは
+    ``KneeTrackEnv(xml_path=...)`` を指定。
     """
 
     metadata = {"render_modes": ["human"], "render_fps": 60}
 
     def __init__(self, xml_path: str | Path | None = None, max_steps: int = 500):
         super().__init__()
-        path = Path(xml_path) if xml_path is not None else resolved_model_xml()
+        path = Path(xml_path) if xml_path is not None else DEFAULT_ENV_MODEL_XML
         self.model = mujoco.MjModel.from_xml_path(str(path))
         self.data = mujoco.MjData(self.model)
         self.max_steps = max_steps

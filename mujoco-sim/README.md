@@ -93,11 +93,11 @@ python -m mujoco_realtime_sim.viewer_cmd
 ```python
 from mujoco_rl_sim import FullActuatorPositionEnv, KneeTrackEnv
 
-env = KneeTrackEnv()  # xml_path 省略時は mujoco_sim_assets の既定 MJCF
+env = KneeTrackEnv()  # xml_path 省略時は各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML``
 all_ctrl = FullActuatorPositionEnv()  # 全アクチュエータを同時に指令
 ```
 
-別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")`、または環境変数 `MUJOCO_REALTIME_SIM_XML` / `MUJOCO_SIM_XML` でパスを指定。
+別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
 
 `FullActuatorPositionEnv` は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。行動・観測の次元は MJCF の `nu` に依存します。
 

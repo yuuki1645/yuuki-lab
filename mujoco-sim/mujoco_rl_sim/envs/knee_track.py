@@ -9,7 +9,7 @@ import mujoco
 import numpy as np
 from gymnasium import spaces
 
-from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_sim_assets.paths import resolved_model_xml
 
 
 class KneeTrackEnv(gym.Env):
@@ -18,7 +18,7 @@ class KneeTrackEnv(gym.Env):
     - Control only left_knee_pitch target angle (position actuator control).
     - Reward is high when the joint angle tracks a fixed target.
 
-    既定 MJCF は ``mujoco_realtime_sim`` 同梱の ``xmls/main.xml``（環境変数
+    既定 MJCF は ``mujoco_sim_assets`` 同梱の ``xmls/main.xml``（環境変数
     ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` で上書き可）。
     """
 

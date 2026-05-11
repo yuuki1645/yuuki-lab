@@ -10,7 +10,7 @@ import time
 
 import mujoco.viewer
 import numpy as np
-from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_sim_assets.paths import resolved_model_xml
 from mujoco_rl_sim import KneeTrackEnv
 from stable_baselines3 import PPO
 
@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
         "--xml-path",
         type=str,
         default=None,
-        help="MJCF（省略時は mujoco_realtime_sim の既定）",
+        help="MJCF（省略時は mujoco_sim_assets の既定）",
     )
     p.add_argument(
         "--model-base",

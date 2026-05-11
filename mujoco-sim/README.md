@@ -1,8 +1,9 @@
 # mujoco-sim
 
-このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **2 つの Python パッケージ**があります。
+このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **3 つの Python パッケージ**があります。
 
-- **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。**MJCF は `mujoco_realtime_sim/xmls/` に同梱**。
+- **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも RL もここを参照します。
+- **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。
 - **`mujoco_rl_sim`** — **強化学習用の Gymnasium 環境**など（HTTP サーバとは別経路）。利用時は **`pip install -e ".[rl]"`** で `gymnasium` と学習ライブラリを追加。
 
 サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新** を主に担当します。
@@ -69,7 +70,7 @@ python -m mujoco_realtime_sim
 | 名前 | 説明 |
 |------|------|
 | `MUJOCO_REALTIME_SIM_XML` | メイン MJCF へのパス（推奨） |
-| `MUJOCO_SIM_XML` | 同上（後方互換。未設定で `MUJOCO_REALTIME_SIM_XML` も無いときはパッケージ内 `xmls/main.xml`） |
+| `MUJOCO_SIM_XML` | 同上（後方互換。未設定で上記も無いときは `mujoco_sim_assets/xmls/main.xml`） |
 
 ### Viewer と HTTP・実時間ステッパ（既定）
 
@@ -92,7 +93,7 @@ python -m mujoco_realtime_sim.viewer_cmd
 ```python
 from mujoco_rl_sim import FullActuatorPositionEnv, KneeTrackEnv
 
-env = KneeTrackEnv()  # xml_path 省略時は mujoco_realtime_sim の既定 MJCF
+env = KneeTrackEnv()  # xml_path 省略時は mujoco_sim_assets の既定 MJCF
 all_ctrl = FullActuatorPositionEnv()  # 全アクチュエータを同時に指令
 ```
 
@@ -140,6 +141,9 @@ python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
 
 ```
 mujoco-sim/
+  mujoco_sim_assets/
+    paths.py           # 既定 MJCF パス・環境変数解決
+    xmls/              # 共有 MJCF（package-data）
   mujoco_realtime_sim/
     __main__.py        # HTTP + オプション Viewer
     app.py             # Flask create_app()
@@ -148,7 +152,6 @@ mujoco-sim/
     passive_viewer.py
     kinematics.py
     viewer_cmd.py
-    xmls/              # MJCF（package-data）
   mujoco_rl_sim/
     envs/              # Gymnasium 環境
     scripts/           # 学習・ライブ Viewer・再生 CLI

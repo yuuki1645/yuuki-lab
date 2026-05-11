@@ -29,7 +29,7 @@ mujoco-rl-play-knee = "mujoco_rl_sim.scripts.play_knee_track:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mujoco_realtime_sim*", "mujoco_rl_sim*"]
+include = ["mujoco_realtime_sim*", "mujoco_rl_sim*", "mujoco_sim_assets*"]
 
 [tool.setuptools.package-data]
-mujoco_realtime_sim = ["xmls/*.xml"]
+mujoco_sim_assets = ["xmls/*.xml"]

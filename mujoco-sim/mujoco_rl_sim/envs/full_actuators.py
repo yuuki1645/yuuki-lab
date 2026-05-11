@@ -11,7 +11,7 @@ import mujoco
 import numpy as np
 from gymnasium import spaces
 
-from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_sim_assets.paths import resolved_model_xml
 
 _FALLBACK_HINGE = (-np.pi, np.pi)
 
@@ -54,7 +54,7 @@ class FullActuatorPositionEnv(gym.Env):
     - 観測: アクチュエータ順に、各伝達先ヒンジの ``(qpos, qvel)`` を連結した ``(2 * nu,)`` ベクトル。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
-    既定 MJCF は ``mujoco_realtime_sim`` 同梱（環境変数 ``MUJOCO_REALTIME_SIM_XML`` /
+    既定 MJCF は ``mujoco_sim_assets`` 同梱（環境変数 ``MUJOCO_REALTIME_SIM_XML`` /
     ``MUJOCO_SIM_XML`` で上書き可）。
     """
 

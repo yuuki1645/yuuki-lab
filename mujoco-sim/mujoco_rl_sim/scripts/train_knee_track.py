@@ -8,7 +8,7 @@ import argparse
 import subprocess
 import sys
 
-from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_sim_assets.paths import resolved_model_xml
 from mujoco_rl_sim import KneeTrackEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
@@ -20,7 +20,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--xml-path",
         default=None,
-        help="MJCF（省略時は mujoco_realtime_sim の既定）",
+        help="MJCF（省略時は mujoco_sim_assets の既定）",
     )
     p.add_argument("--max-steps", type=int, default=500, help="1 エピソード上限ステップ")
     p.add_argument("--total-timesteps", type=int, default=50_000)

@@ -1,6 +1,6 @@
 # type: ignore
 
-"""PPO で ``FullActuatorPositionEnv`` を学習する。オプションでライブ Viewer 子プロセス。"""
+"""連番 002: PPO で ``FullActuatorPositionEnv`` を学習。オプションでライブ Viewer 子プロセス。"""
 
 from __future__ import annotations
 

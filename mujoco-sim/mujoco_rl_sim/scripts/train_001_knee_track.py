@@ -1,6 +1,6 @@
 # type: ignore
 
-"""PPO で ``KneeTrackEnv`` を学習する。オプションで学習中チェックポイントを MuJoCo Viewer に表示。"""
+"""連番 001: PPO で ``KneeTrackEnv`` を学習。オプションで学習中チェックポイントを MuJoCo Viewer に表示。"""
 
 from __future__ import annotations
 

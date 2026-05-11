@@ -21,8 +21,8 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
     - ``action`` は当該ステップで ``env.step`` に渡された正規化ベクトル（``[-1, 1]``）。
     - step イベントでは ``obs_*`` を「エージェント入力（step 前観測）」として送る。
       物理更新後の観測は ``obs_next_*`` で併送する。
-    - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）であるため、
-      payload に ``*_logical_deg`` と ``*_unit`` を明示して送る。
+    - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）、先頭 3 要素の加速度は **g** であるため、
+      payload に ``*_logical_deg``・``*_unit``・``obs_acc_unit`` 等を明示して送る。
     """
 
     def __init__(
@@ -64,6 +64,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "actuator_names": list(self._actuator_names),
                 "obs_dim": int(o.size),
                 "obs_acc": o[:3].tolist(),
+                "obs_acc_unit": "g",
                 "obs_gyro": o[3:6].tolist(),
                 "obs_prev_ctrl": o[6:].tolist(),
                 "obs_prev_action_logical_deg": o[6:].tolist(),
@@ -122,6 +123,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "actuator_names": list(self._actuator_names),
                 # エージェントが意思決定に使った入力観測（step 前）
                 "obs_acc": obs_before[:3].tolist(),
+                "obs_acc_unit": "g",
                 "obs_gyro": obs_before[3:6].tolist(),
                 "obs_prev_ctrl": obs_before[6:].tolist(),
                 "obs_prev_action_logical_deg": obs_before[6:].tolist(),
@@ -143,6 +145,7 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "truncated": bool(truncated),
                 # 物理更新後の次観測（s_{t+1}）
                 "obs_next_acc": o_next[:3].tolist(),
+                "obs_next_acc_unit": "g",
                 "obs_next_gyro": o_next[3:6].tolist(),
                 "obs_next_prev_ctrl": o_next[6:].tolist(),
                 "obs_next_prev_action_logical_deg": o_next[6:].tolist(),

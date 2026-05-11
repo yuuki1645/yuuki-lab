@@ -59,7 +59,8 @@ class Env002FullActuators(gym.Env):
     - 行動: **正規化 action**（``nu`` 次元, 各軸 ``[-1, 1]``）。環境内で各関節の
       論理角レンジへ線形写像し、`mujoco_sim_common.kinematics.KINEMATICS` で MuJoCo
       関節角へ変換して `data.ctrl` に **目標角 [rad]** を設定する。
-    - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** 論理角(度)（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
+    - 観測: ``imu_acc``（3, 局所 **g** … MJCF 加速度計の m/s² を ``|model.opt.gravity|`` で除算）,
+      ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** 論理角(度)（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
     - ``step_wall_sleep_sec``: 各 ``step`` の物理更新のあとに ``time.sleep`` する秒数（テレメトリ確認用。学習は壁時計で遅くなる）。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
@@ -174,8 +175,16 @@ class Env002FullActuators(gym.Env):
             self.data.sensordata[adr : adr + dim], dtype=np.float32
         ).copy()
 
+    def _acc_sensor_ms2_to_g(self, acc_ms2: np.ndarray) -> np.ndarray:
+        """MJCF 加速度計（m/s²）を、モデル重力の大きさで割って g 単位にする。"""
+        g_mag = float(np.linalg.norm(self.model.opt.gravity))
+        if not np.isfinite(g_mag) or g_mag < 1e-6:
+            g_mag = 9.80665
+        return acc_ms2 / np.float32(g_mag)
+
     def _get_obs(self) -> np.ndarray:
-        acc = self._sensor_vec(self._imu_acc_name, 3)
+        acc_ms2 = self._sensor_vec(self._imu_acc_name, 3)
+        acc = self._acc_sensor_ms2_to_g(acc_ms2)
         gyr = self._sensor_vec(self._imu_gyro_name, 3)
         return np.concatenate([acc, gyr, self._prev_action_logical_deg])
 

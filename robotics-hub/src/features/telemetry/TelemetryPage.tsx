@@ -363,7 +363,10 @@ export default function TelemetryPage() {
       <div className="telemetry__grid" style={{ marginTop: "1rem" }}>
         <div className="telemetry__panel">
           <h2>実機 IMU（加速度・スケール g 相当）</h2>
-          <p className="telemetry__meta">MPU6050 の生スケールを 16384 で割った値（学習側の m/s² とは別単位）</p>
+          <p className="telemetry__meta">
+            MPU6050 の生スケールを 16384 で割った値（g）。学習ストリームの加速度も g（MuJoCo は{" "}
+            <code>|opt.gravity|</code> で正規化）で揃えています。
+          </p>
           <VecTable
             title=""
             labels={ACC_LABELS}
@@ -426,7 +429,7 @@ export default function TelemetryPage() {
         <div className="telemetry__panel">
           <h2>学習: 入力 IMU（局所・シミュ値）</h2>
           <VecTable
-            title="加速度 (m/s²)"
+            title={`加速度 (${step?.obs_acc_unit === "m/s2" ? "m/s²" : "g"})`}
             labels={ACC_LABELS}
             values={step?.obs_acc ?? []}
             noPanel

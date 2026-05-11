@@ -100,7 +100,7 @@ all_ctrl = Env002FullActuators()  # 全アクチュエータを同時に指令
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
 
-`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``/``imu_gyro``（各 3）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。**`step_wall_sleep_sec`**（既定 `0`）を正にすると、各 `step` で `mj_step` の直後にその秒数だけ **壁時計で待機**し、テレメトリ確認や再生を遅くできます（MDP の定義は変わりません）。
+`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``（各 3、**観測ベクトルでは g** … MJCF 加速度計の m/s² を ``|opt.gravity|`` で除算）/``imu_gyro``（各 3, rad/s）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。以前の観測スケール（加速度 m/s²）で学習したチェックポイントはそのままでは使えません。**`step_wall_sleep_sec`**（既定 `0`）を正にすると、各 `step` で `mj_step` の直後にその秒数だけ **壁時計で待機**し、テレメトリ確認や再生を遅くできます（MDP の定義は変わりません）。
 
 環境実装ファイルは **`env_001_knee_track.py`** のように `env_<連番>_` プレフィックスで並べます（新規追加時は次番号のファイルを `envs/__init__.py` に登録）。
 

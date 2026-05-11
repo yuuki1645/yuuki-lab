@@ -10,6 +10,8 @@ export interface TrainingTelemetryResetPayload {
   actuator_names: string[];
   obs_dim: number;
   obs_acc: number[];
+  /** 既定は ``g``（MuJoCo 加速度計 m/s² を ``|opt.gravity|`` で除算） */
+  obs_acc_unit?: "g" | "m/s2";
   obs_gyro: number[];
   obs_prev_ctrl: number[];
   obs_prev_action_logical_deg?: number[];
@@ -24,6 +26,7 @@ export interface TrainingTelemetryStepPayload {
   num_timesteps: number | null;
   actuator_names: string[];
   obs_acc: number[];
+  obs_acc_unit?: "g" | "m/s2";
   obs_gyro: number[];
   obs_prev_ctrl: number[];
   obs_prev_action_logical_deg?: number[];
@@ -44,6 +47,7 @@ export interface TrainingTelemetryStepPayload {
   terminated?: boolean;
   truncated?: boolean;
   obs_next_acc?: number[];
+  obs_next_acc_unit?: "g" | "m/s2";
   obs_next_gyro?: number[];
   obs_next_prev_ctrl?: number[];
   obs_next_prev_action_logical_deg?: number[];

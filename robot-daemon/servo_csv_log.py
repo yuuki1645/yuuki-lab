@@ -17,6 +17,7 @@ _LOG = logging.getLogger(__name__)
 
 SERVO_CSV_COLUMNS = [
     "wall_unix",
+    "perf_timestamp",
     "endpoint",
     "mode",
     "ch",
@@ -72,9 +73,11 @@ class ServoCsvLog:
         logical_deg: float,
         physical_deg: float,
     ) -> None:
+        perf_now = time.perf_counter()
         self._record_row(
             [
                 time.time(),
+                perf_now,
                 "set",
                 mode,
                 ch,
@@ -99,8 +102,9 @@ class ServoCsvLog:
             },
             ensure_ascii=False,
         )
+        perf_now = time.perf_counter()
         self._record_row(
-            [time.time(), "set_multiple", mode, -1, "", "", "", extra]
+            [time.time(), perf_now, "set_multiple", mode, -1, "", "", "", extra]
         )
 
     def record_transition(
@@ -117,8 +121,9 @@ class ServoCsvLog:
             },
             ensure_ascii=False,
         )
+        perf_now = time.perf_counter()
         self._record_row(
-            [time.time(), "transition", mode, -1, "", "", "", extra]
+            [time.time(), perf_now, "transition", mode, -1, "", "", "", extra]
         )
 
     def _record_row(self, row: list[Any]) -> None:
@@ -195,6 +200,9 @@ def servo_csv_log_from_env() -> ServoCsvLog:
     - ``IMU_LOG_DIR`` … 出力ディレクトリ（未設定または空なら ``./imu_logs``）
 
     サーボ CSV は指令のたびにディスクへ flush します（``IMU_LOG_FLUSH_SEC`` は IMU 用のみ）。
+
+    ``perf_timestamp`` は ``time.perf_counter()`` で、IMU CSV の ``perf_timestamp``
+    （``imu/sample`` の ``timestamp``、``Mpu6050Reader.sample()`` と同一基準）と突き合わせ可能です。
     """
     val = os.environ.get("IMU_LOG_DISABLE", "").lower()
     if val in ("1", "true", "yes", "on"):

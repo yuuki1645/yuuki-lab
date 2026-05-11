@@ -49,7 +49,7 @@ IMU が無い／開発時は `imu.py` のモック経由で動く構成にもな
 
 IMU ファイルの列は `wall_unix`, `perf_timestamp`, `mock`, 加速度・角速度・推定角（`imu/sample` と同じ構造をフラット化）です。
 
-サーボファイルの列は `wall_unix`, `endpoint`（`set` / `set_multiple` / `transition`）, `mode`, `ch`（一括時は `-1`）, `angle_in`, `logical_deg`, `physical_deg`, `extra_json`（一括・トランジション時に JSON で角度・結果・所要秒など）です。記録開始時に **`servo_*.csv` がヘッダ付きで必ず作成**され、以降の指令は **REST がデーモンに届いたタイミングで即追記**されます（IMU の `IMU_LOG_FLUSH_SEC` バッチとは無関係）。
+サーボファイルの列は `wall_unix`, `perf_timestamp`（`time.perf_counter()`、IMU CSV の `perf_timestamp` と同一プロセス内の単調時計）, `endpoint`（`set` / `set_multiple` / `transition`）, `mode`, `ch`（一括時は `-1`）, `angle_in`, `logical_deg`, `physical_deg`, `extra_json`（一括・トランジション時に JSON で角度・結果・所要秒など）です。記録開始時に **`servo_*.csv` がヘッダ付きで必ず作成**され、以降の指令は **REST がデーモンに届いたタイミングで即追記**されます（IMU の `IMU_LOG_FLUSH_SEC` バッチとは無関係）。
 
 記録してもサーボ CSV に行が増えないときは、**(1) Hub のテレメトリと同じホスト・ポートに対して** `/set` など REST が飛んでいるか（ブラウザから別 URL のデーモンへ叩いていないか）、**(2) CSV ログ開始後に**サーボ操作したかを確認してください。
 

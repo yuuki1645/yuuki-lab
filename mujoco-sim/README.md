@@ -90,12 +90,15 @@ python -m mujoco_realtime_sim.viewer_cmd
 例: 同梱 MJCF を使う膝トラッキング環境（MJCF に **`freejoint` の `root` が無い**場合は胴高・転倒終了を簡略化します）。
 
 ```python
-from mujoco_rl_sim import KneeTrackEnv
+from mujoco_rl_sim import FullActuatorPositionEnv, KneeTrackEnv
 
 env = KneeTrackEnv()  # xml_path 省略時は mujoco_realtime_sim の既定 MJCF
+all_ctrl = FullActuatorPositionEnv()  # 全アクチュエータを同時に指令
 ```
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")`、または環境変数 `MUJOCO_REALTIME_SIM_XML` / `MUJOCO_SIM_XML` でパスを指定。
+
+`FullActuatorPositionEnv` は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。行動・観測の次元は MJCF の `nu` に依存します。
 
 ### CLI（膝トラックの PPO サンプル）
 

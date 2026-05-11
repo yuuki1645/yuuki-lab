@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { SERVO_DAEMON_URL } from "@/shared/constants";
+import { getImuSocketUrl, SERVO_DAEMON_URL } from "@/shared/constants";
 import "./DaemonSocketTestPage.css";
 
 type WsStatus = "disconnected" | "connecting" | "connected";
@@ -44,7 +44,7 @@ export default function DaemonSocketTestPage() {
   const socketRef = useRef<Socket | null>(null);
   const logIdRef = useRef(0);
 
-  const wsUrl = useMemo(() => SERVO_DAEMON_URL, []);
+  const wsUrl = useMemo(() => getImuSocketUrl(), []);
 
   const pushLog = (message: string) => {
     const newEntry: LogEntry = {

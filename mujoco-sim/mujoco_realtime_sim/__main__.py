@@ -58,21 +58,23 @@ def main() -> None:
         stepper.start()
 
     app = create_app(simulation=sim, stepper=stepper)
+    socketio = app.extensions["socketio"]
 
-    def run_flask() -> None:
-        app.run(
+    def run_server() -> None:
+        socketio.run(
+            app,
             host=args.host,
             port=args.port,
-            threaded=True,
+            allow_unsafe_werkzeug=True,
             use_reloader=False,
         )
 
     if args.no_viewer:
-        # ヘッドレス: メインスレッドで Flask を回す。
-        run_flask()
+        # ヘッドレス: メインスレッドで HTTP + Socket.IO（IMU）を回す。
+        run_server()
         return
 
-    thread = threading.Thread(target=run_flask, daemon=True)
+    thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
     run_passive_viewer_follow_sim(sim)
 

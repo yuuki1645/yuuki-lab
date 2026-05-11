@@ -10,6 +10,7 @@ from flask import Flask, current_app, jsonify, request
 from flask_cors import CORS
 
 from mujoco_realtime_sim.core import Simulation
+from mujoco_realtime_sim.imu_stream_socket import attach_imu_socketio
 from mujoco_realtime_sim.kinematics import KINEMATICS, kinematics_by_joint
 from mujoco_realtime_sim.realtime import RealtimeStepper
 
@@ -87,9 +88,11 @@ def create_app(
 ) -> Flask:
     app = Flask(__name__)
     CORS(app)
-    app.extensions["simulation"] = simulation or Simulation()
+    sim = simulation or Simulation()
+    app.extensions["simulation"] = sim
     if stepper is not None:
         app.extensions["realtime_stepper"] = stepper
+    attach_imu_socketio(app, sim)
 
     @app.before_request
     def _log_request() -> None:

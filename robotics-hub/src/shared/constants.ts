@@ -54,6 +54,19 @@ export const SERVO_DAEMON_URL =
   ":5000";
 
 /**
+ * IMU 用 Socket.IO の接続先。
+ * `VITE_IMU_SOCKET_URL` を指定すると mujoco_realtime_sim（:8787 等）へ向けられる。
+ * 未指定時は `SERVO_DAEMON_URL`（robot-daemon :5000）。
+ */
+export function getImuSocketUrl(): string {
+  const fromEnv = import.meta.env.VITE_IMU_SOCKET_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return SERVO_DAEMON_URL;
+}
+
+/**
  * mujoco-sim（Flask）のベース URL。
  * `VITE_MUJOCO_SIM_URL` があればそれを優先（ビルド時に埋め込み）。
  */

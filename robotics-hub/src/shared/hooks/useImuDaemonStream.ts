@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { SERVO_DAEMON_URL } from "@/shared/constants";
+import { getImuSocketUrl } from "@/shared/constants";
 import type { ImuSamplePayload, ImuStatusPayload } from "@/shared/types/imu";
 
 export type WsStatus = "disconnected" | "connecting" | "connected";
@@ -40,7 +40,7 @@ export function useImuDaemonStream(active: boolean): ImuDaemonStream {
     setImuSample(null);
     setImuStatus(null);
 
-    const socket = io(SERVO_DAEMON_URL, {
+    const socket = io(getImuSocketUrl(), {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,

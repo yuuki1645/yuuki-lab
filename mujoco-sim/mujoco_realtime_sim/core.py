@@ -86,6 +86,11 @@ class Simulation:
         dim = int(self.model.sensor_dim[sid])
         return [float(x) for x in self.data.sensordata[adr : adr + dim]]
 
+    def read_sensor(self, name: str) -> list[float] | None:
+        """ロック下で ``sensordata`` のスナップショットを返す（存在しなければ ``None``）。"""
+        with self._lock:
+            return self._read_sensor(name)
+
     def state_dict(self) -> dict[str, Any]:
         with self._lock:
             ctrl = {

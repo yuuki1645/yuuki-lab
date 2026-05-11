@@ -7,3 +7,27 @@ MUJOCO_LOG.TXT
 
 # robot-daemon IMU CSV ログ（実行時に生成）
 robot-daemon/imu_logs/
+
+# 動画（バイナリ・容量大のため追跡しない）
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wmv
+*.flv
+*.f4v
+*.mpeg
+*.mpg
+*.m2ts
+*.mts
+*.3gp
+*.3g2
+*.ogv
+*.asf
+*.rm
+*.rmvb
+*.vob
+*.divx
+*.xvid

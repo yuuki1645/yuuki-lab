@@ -35,4 +35,4 @@ where = ["."]
 include = ["mujoco_realtime_sim*", "mujoco_rl_sim*", "mujoco_sim_assets*"]
 
 [tool.setuptools.package-data]
-mujoco_sim_assets = ["xmls/*.xml"]
+mujoco_sim_assets = ["xmls/**/*.xml"]

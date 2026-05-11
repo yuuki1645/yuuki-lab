@@ -70,7 +70,7 @@ python -m mujoco_realtime_sim
 | 名前 | 説明 |
 |------|------|
 | `MUJOCO_REALTIME_SIM_XML` | メイン MJCF へのパス（推奨） |
-| `MUJOCO_SIM_XML` | 同上（後方互換。未設定で上記も無いときは `mujoco_sim_assets/xmls/main.xml`） |
+| `MUJOCO_SIM_XML` | 同上（後方互換。未設定で上記も無いときは `mujoco_sim_assets/xmls/001_leg_default/main.xml`） |
 
 ### Viewer と HTTP・実時間ステッパ（既定）
 
@@ -160,7 +160,8 @@ python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuat
 mujoco-sim/
   mujoco_sim_assets/
     paths.py           # 既定 MJCF パス・環境変数解決
-    xmls/              # 共有 MJCF（package-data）
+    xmls/              # MJCF 世代別（既定は 001_leg_default/）
+      001_leg_default/ # main.xml + include 断片
   mujoco_realtime_sim/
     __main__.py        # HTTP + オプション Viewer
     app.py             # Flask create_app()

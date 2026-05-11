@@ -40,15 +40,25 @@ export function useImuDaemonStream(active: boolean): ImuDaemonStream {
     setImuSample(null);
     setImuStatus(null);
 
-    const socket = io(getImuSocketUrl(), {
-      transports: ["websocket"],
+    const url = getImuSocketUrl();
+    const socket = io(url, {
+      transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 500,
+      reconnectionDelayMax: 5000,
     });
     socketRef.current = socket;
 
+    socket.on("connect_error", (err: Error) => {
+      setLastError(
+        `Socket.IO 接続失敗 (${url}): ${err.message}。` +
+          "MuJoCo シムを起動しているか、実機 IMU なら VITE_IMU_SOCKET_URL を robot-daemon の URL に設定してください。",
+      );
+    });
+
     socket.on("connect", () => {
+      setLastError(null);
       setWsStatus("connected");
       socket.emit("imu/start", { rate_hz: rateRef.current });
     });

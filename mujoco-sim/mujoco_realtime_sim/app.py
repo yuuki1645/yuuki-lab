@@ -11,7 +11,7 @@ from flask_cors import CORS
 
 from mujoco_realtime_sim.core import Simulation
 from mujoco_realtime_sim.imu_stream_socket import attach_imu_socketio
-from mujoco_realtime_sim.kinematics import KINEMATICS, kinematics_by_joint
+from mujoco_sim_common.kinematics import KINEMATICS, kinematics_by_joint
 from mujoco_realtime_sim.realtime import RealtimeStepper
 
 LOG = logging.getLogger("mujoco_realtime_sim.api")

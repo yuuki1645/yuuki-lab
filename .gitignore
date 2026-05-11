@@ -4,3 +4,6 @@ state.json
 *.egg-info/
 *.egg-info
 MUJOCO_LOG.TXT
+
+# robot-daemon IMU CSV ログ（実行時に生成）
+robot-daemon/imu_logs/

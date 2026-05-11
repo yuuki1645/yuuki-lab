@@ -7,7 +7,7 @@
   <body pos="0 0 0.9">
     <freejoint name="root"/>
 
-    <site name="imu_site" pos="0 0 0" size="0.01" rgba="1 0 0 1"/>
+    <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.01" rgba="1 0 0 1"/>
 
     <geom name="basket" type="box" pos="0 0 0.07" size="0.085 0.14 0.07" material="basket" mass="0.3"/>
 

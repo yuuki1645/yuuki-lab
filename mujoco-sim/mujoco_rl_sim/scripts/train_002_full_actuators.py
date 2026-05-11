@@ -156,23 +156,29 @@ def main() -> None:
 
     viewer_proc: subprocess.Popen | None = None
     if not args.no_viewer:
-        viewer_proc = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "mujoco_rl_sim.scripts.watch_full_actuators",
-                "--xml-path",
-                xml_path,
-                "--model-base",
-                args.live_ckpt,
-                "--max-steps",
-                str(args.max_steps),
-                "--reset-joint-noise",
-                str(args.reset_joint_noise),
-                "--step-wall-sleep",
-                str(args.step_wall_sleep),
-            ]
-        )
+        viewer_cmd = [
+            sys.executable,
+            "-m",
+            "mujoco_rl_sim.scripts.watch_full_actuators",
+            "--xml-path",
+            xml_path,
+            "--model-base",
+            args.live_ckpt,
+            "--max-steps",
+            str(args.max_steps),
+            "--reset-joint-noise",
+            str(args.reset_joint_noise),
+            "--step-wall-sleep",
+            str(args.step_wall_sleep),
+        ]
+        if not args.no_telemetry:
+            viewer_cmd.extend(
+                [
+                    "--telemetry-config-url",
+                    f"http://127.0.0.1:{args.telemetry_port}/api/rl_telemetry/config",
+                ]
+            )
+        viewer_proc = subprocess.Popen(viewer_cmd)
 
     try:
         learned = 0

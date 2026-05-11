@@ -97,6 +97,25 @@ env = KneeTrackEnv()  # xml_path 省略時は mujoco_realtime_sim の既定 MJCF
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")`、または環境変数 `MUJOCO_REALTIME_SIM_XML` / `MUJOCO_SIM_XML` でパスを指定。
 
+### CLI（膝トラックの PPO サンプル）
+
+`pip install -e ".[rl]"` 後、コンソールから:
+
+| コマンド | 内容 |
+|----------|------|
+| `mujoco-rl-train-knee` | `KneeTrackEnv` を PPO で学習（既定でライブ Viewer 用子プロセスも起動） |
+| `mujoco-rl-watch-knee` | チェックポイント更新に追随して Viewer 表示 |
+| `mujoco-rl-play-knee` | 学習済み `ppo_knee_track` を Viewer で再生 |
+
+`python -m` でも同じです。
+
+```bash
+python -m mujoco_rl_sim.scripts.train_knee_track --help
+python -m mujoco_rl_sim.scripts.train_knee_track --no-viewer
+python -m mujoco_rl_sim.scripts.watch_training_live
+python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
+```
+
 ## HTTP API（要約）
 
 すべて JSON。エラー時は HTTP 400 と `{"error": "..."}`（`/api/step` は 410 で廃止）。
@@ -129,6 +148,7 @@ mujoco-sim/
     xmls/              # MJCF（package-data）
   mujoco_rl_sim/
     envs/              # Gymnasium 環境
+    scripts/           # 学習・ライブ Viewer・再生 CLI
   pyproject.toml
   requirements.txt
 ```

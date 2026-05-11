@@ -1,3 +1,5 @@
+# ruff: noqa: E741
+
 # kinematics.py
 from __future__ import annotations
 from dataclasses import dataclass

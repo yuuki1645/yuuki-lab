@@ -23,6 +23,9 @@ rl = [
 [project.scripts]
 mujoco-sim-serve = "mujoco_realtime_sim.__main__:main"
 mujoco-sim-view = "mujoco_realtime_sim.viewer_cmd:main"
+mujoco-rl-train-knee = "mujoco_rl_sim.scripts.train_knee_track:main"
+mujoco-rl-watch-knee = "mujoco_rl_sim.scripts.watch_training_live:main"
+mujoco-rl-play-knee = "mujoco_rl_sim.scripts.play_knee_track:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -12,6 +12,7 @@ import mujoco
 import mujoco_sim_assets
 import numpy as np
 from gymnasium import spaces
+from mujoco_sim_common.kinematics import KINEMATICS, JointKinematicsBase
 
 _ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
 # この環境が既定で読み込む MJCF（必要ならここを書き換え。例: 002_leg_freejoint/main.xml）
@@ -54,8 +55,9 @@ class Env002FullActuators(gym.Env):
     """
     MJCF 上の **すべての** アクチュエータに対して ``data.ctrl`` を設定する環境。
 
-    - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している（``ctrl`` = 目標角 [rad]）。
-    - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** ``ctrl``（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
+    - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している。
+    - 行動: **論理角(度)**（``nu`` 次元）。`mujoco_sim_common.kinematics.KINEMATICS` の変換で MuJoCo 関節角へ写像し、`data.ctrl` には **目標角 [rad]** を設定する。
+    - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** 論理角(度)（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
     - ``step_wall_sleep_sec``: 各 ``step`` の物理更新のあとに ``time.sleep`` する秒数（テレメトリ確認用。学習は壁時計で遅くなる）。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
@@ -86,22 +88,36 @@ class Env002FullActuators(gym.Env):
             raise ValueError("MJCF にアクチュエータが1つもありません")
 
         self._joint_ids: list[int] = []
-        lows: list[float] = []
-        highs: list[float] = []
+        ctrl_lows: list[float] = []
+        ctrl_highs: list[float] = []
+        logical_lows: list[float] = []
+        logical_highs: list[float] = []
         self._actuator_names: list[str] = []
+        self._actuator_kin: list[JointKinematicsBase] = []
 
         for aid in range(nu):
             self._joint_ids.append(_hinge_joint_for_position_actuator(self.model, aid))
             lo, hi = _ctrl_limits_for_actuator(self.model, aid)
-            lows.append(lo)
-            highs.append(hi)
+            ctrl_lows.append(lo)
+            ctrl_highs.append(hi)
             name = mujoco.mj_id2name(
                 self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, aid
             ) or f"actuator_{aid}"
             self._actuator_names.append(name)
 
-        self._act_low = np.array(lows, dtype=np.float32)
-        self._act_high = np.array(highs, dtype=np.float32)
+            kin = KINEMATICS.get(name)
+            if kin is None:
+                raise KeyError(
+                    f"論理角 kinematics が未登録のアクチュエータです: {name!r}"
+                )
+            self._actuator_kin.append(kin)
+            logical_lows.append(float(kin.logical_range.lo))
+            logical_highs.append(float(kin.logical_range.hi))
+
+        self._ctrl_low = np.array(ctrl_lows, dtype=np.float32)
+        self._ctrl_high = np.array(ctrl_highs, dtype=np.float32)
+        self._logical_low = np.array(logical_lows, dtype=np.float32)
+        self._logical_high = np.array(logical_highs, dtype=np.float32)
 
         self._imu_acc_name = "imu_acc"
         self._imu_gyro_name = "imu_gyro"
@@ -124,15 +140,14 @@ class Env002FullActuators(gym.Env):
                     f"（実際 {int(self.model.sensor_dim[sid])}）"
                 )
 
-        self._prev_cmd = np.zeros(nu, dtype=np.float32)
+        self._prev_action_logical_deg = np.zeros(nu, dtype=np.float32)
 
         self.action_space = spaces.Box(
-            low=self._act_low.copy(),
-            high=self._act_high.copy(),
+            low=self._logical_low.copy(),
+            high=self._logical_high.copy(),
             shape=(nu,),
             dtype=np.float32,
         )
-        print(f"self.action_space: {self.action_space}")
 
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -140,7 +155,6 @@ class Env002FullActuators(gym.Env):
             shape=(6 + nu,),
             dtype=np.float32,
         )
-        print(f"self.observation_space: {self.observation_space}")
 
         self.root_joint_id = mujoco.mj_name2id(
             self.model, mujoco.mjtObj.mjOBJ_JOINT, "root"
@@ -161,7 +175,7 @@ class Env002FullActuators(gym.Env):
     def _get_obs(self) -> np.ndarray:
         acc = self._sensor_vec(self._imu_acc_name, 3)
         gyr = self._sensor_vec(self._imu_gyro_name, 3)
-        return np.concatenate([acc, gyr, self._prev_cmd])
+        return np.concatenate([acc, gyr, self._prev_action_logical_deg])
 
     def _torso_height(self) -> float:
         if self._has_free_root:
@@ -173,45 +187,54 @@ class Env002FullActuators(gym.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
         self.step_count = 0
-        self._prev_cmd = np.zeros(int(self.model.nu), dtype=np.float32)
+        self._prev_action_logical_deg = np.zeros(int(self.model.nu), dtype=np.float32)
 
-        for jid in self._joint_ids:
+        # 論理角のデフォルト姿勢（kinematics）を基準に初期化する
+        for kin in self._actuator_kin:
+            jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, kin.joint)
+            if jid < 0:
+                raise ValueError(
+                    f"kinematics が参照する joint {kin.joint!r} が MJCF にありません"
+                )
             qadr = int(self.model.jnt_qposadr[jid])
-            lo, hi = float(self.model.jnt_range[jid, 0]), float(self.model.jnt_range[jid, 1])
-            if hi > lo + 1e-6:
-                mid = 0.5 * (lo + hi)
-                span = hi - lo
-                noise = self.np_random.uniform(
-                    -self.reset_joint_noise * span,
-                    self.reset_joint_noise * span,
-                )
-                self.data.qpos[qadr] = float(np.clip(mid + noise, lo, hi))
-            else:
-                self.data.qpos[qadr] += float(
-                    self.np_random.uniform(-self.reset_joint_noise, self.reset_joint_noise)
-                )
+
+            span = float(kin.logical_range.hi - kin.logical_range.lo)
+            noise = self.np_random.uniform(
+                -self.reset_joint_noise * span,
+                self.reset_joint_noise * span,
+            )
+            logical_deg = float(kin.default_logical + noise)
+            mujoco_deg = float(kin.logical_to_mujoco_deg(logical_deg))
+            self.data.qpos[qadr] = float(np.deg2rad(mujoco_deg))
 
         mujoco.mj_forward(self.model, self.data)
         return self._get_obs(), {"actuator_names": list(self._actuator_names)}
 
     def step(self, action):
         self.step_count += 1
-        a = np.asarray(action, dtype=np.float32).reshape(-1)
-        if a.shape[0] != self.model.nu:
+        a_logical = np.asarray(action, dtype=np.float32).reshape(-1)
+        if a_logical.shape[0] != self.model.nu:
             raise ValueError(
-                f"action の長さは {self.model.nu} である必要があります（受け取り {a.shape[0]}）"
+                f"action の長さは {self.model.nu} である必要があります（受け取り {a_logical.shape[0]}）"
             )
-        a = np.clip(a, self.action_space.low, self.action_space.high)
+        a_logical = np.clip(a_logical, self.action_space.low, self.action_space.high)
 
-        self.data.ctrl[:] = a
+        ctrl_rad = np.empty_like(a_logical, dtype=np.float32)
+        for aid, kin in enumerate(self._actuator_kin):
+            mujoco_deg = kin.logical_to_mujoco_deg(float(a_logical[aid]))
+            ctrl_rad[aid] = float(np.deg2rad(mujoco_deg))
+        ctrl_rad = np.clip(ctrl_rad, self._ctrl_low, self._ctrl_high)
+
+        self.data.ctrl[:] = ctrl_rad
         mujoco.mj_step(self.model, self.data)
         if self._step_wall_sleep_sec > 0.0:
             time.sleep(self._step_wall_sleep_sec)
 
         obs = self._get_obs()
-        self._prev_cmd = np.asarray(a, dtype=np.float32).copy()
+        self._prev_action_logical_deg = np.asarray(a_logical, dtype=np.float32).copy()
 
-        reward = float(-1e-4 * np.sum(np.square(a)))
+        # 物理的な大きさ（rad）に対して小さなペナルティ
+        reward = float(-1e-4 * np.sum(np.square(ctrl_rad)))
 
         terminated = False
         if self._has_free_root and self._torso_height() < 0.45:

@@ -33,7 +33,12 @@ mujoco-rl-play-full = "mujoco_rl_sim.scripts.play_full_actuators:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mujoco_realtime_sim*", "mujoco_rl_sim*", "mujoco_sim_assets*"]
+include = [
+  "mujoco_realtime_sim*",
+  "mujoco_rl_sim*",
+  "mujoco_sim_assets*",
+  "mujoco_sim_common*",
+]
 
 [tool.setuptools.package-data]
 mujoco_sim_assets = ["xmls/**/*.xml"]

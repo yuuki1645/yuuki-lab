@@ -172,7 +172,7 @@ python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuat
 | PUT | `/api/ctrl` | ctrl 一括 |
 | POST | `/api/pause` / `/api/resume` | 実時間ステッパの一時停止・再開 |
 
-`mode` は `"rad"`（既定）・`"deg"`・`"logical"`。論理角は **`mujoco_realtime_sim/kinematics.py`** の `KINEMATICS` で MuJoCo 関節角に写像します。
+`mode` は `"rad"`（既定）・`"deg"`・`"logical"`。論理角は **`mujoco_sim_common/kinematics.py`** の `KINEMATICS` で MuJoCo 関節角に写像します（互換のため `mujoco_realtime_sim/kinematics.py` からも参照できます）。
 
 ## ディレクトリ構成（概要）
 
@@ -189,7 +189,7 @@ mujoco-sim/
     core.py            # Simulation（MjModel / MjData）
     realtime.py        # 実時間 mj_step スレッド
     passive_viewer.py
-    kinematics.py
+    kinematics.py  # ← 共通部品（論理角⇄MuJoCo角）
     viewer_cmd.py
   mujoco_rl_sim/
     envs/              # Gymnasium 環境（env_001_*.py の連番命名）

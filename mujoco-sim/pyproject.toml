@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mujoco-sim"
 version = "0.1.0"
-description = "MuJoCo simulation + HTTP API for yuuki-lab"
+description = "MuJoCo realtime HTTP sim + RL envs for yuuki-lab"
 requires-python = ">=3.10"
 dependencies = [
   "mujoco>=3.0",
@@ -14,13 +14,19 @@ dependencies = [
   "flask-cors>=4.0",
 ]
 
+[project.optional-dependencies]
+rl = [
+  "gymnasium>=0.29.1",
+  "stable-baselines3>=2.2.0",
+]
+
 [project.scripts]
-mujoco-sim-serve = "mujoco_sim.__main__:main"
-mujoco-sim-view = "mujoco_sim.viewer_cmd:main"
+mujoco-sim-serve = "mujoco_realtime_sim.__main__:main"
+mujoco-sim-view = "mujoco_realtime_sim.viewer_cmd:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mujoco_sim*"]
+include = ["mujoco_realtime_sim*", "mujoco_rl_sim*"]
 
 [tool.setuptools.package-data]
-mujoco_sim = ["xmls/*.xml"]
+mujoco_realtime_sim = ["xmls/*.xml"]

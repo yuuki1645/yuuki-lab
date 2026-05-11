@@ -1,4 +1,4 @@
-"""Run the HTTP API: python -m mujoco_sim [--no-viewer] ..."""
+"""Run the HTTP API: python -m mujoco_realtime_sim [--no-viewer] ..."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def main() -> None:
     parser.add_argument(
         "--xml",
         default=None,
-        help="Path to main MJCF file (sets MUJOCO_SIM_XML for this process)",
+        help="Path to main MJCF file (sets MUJOCO_REALTIME_SIM_XML for this process)",
     )
     parser.add_argument(
         "--no-viewer",
@@ -31,10 +31,11 @@ def main() -> None:
     parser.add_argument(
         "--quiet-http",
         action="store_true",
-        help="Werkzeug の HTTP アクセス行を抑える（mujoco_sim.api の行は出る）",
+        help="Werkzeug の HTTP アクセス行を抑える（mujoco_realtime_sim.api の行は出る）",
     )
     args = parser.parse_args()
     if args.xml:
+        os.environ["MUJOCO_REALTIME_SIM_XML"] = args.xml
         os.environ["MUJOCO_SIM_XML"] = args.xml
 
     logging.basicConfig(
@@ -45,10 +46,10 @@ def main() -> None:
     if args.quiet_http:
         logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
-    from mujoco_sim.app import create_app
-    from mujoco_sim.core import Simulation
-    from mujoco_sim.passive_viewer import run_passive_viewer_follow_sim
-    from mujoco_sim.realtime import RealtimeStepper
+    from mujoco_realtime_sim.app import create_app
+    from mujoco_realtime_sim.core import Simulation
+    from mujoco_realtime_sim.passive_viewer import run_passive_viewer_follow_sim
+    from mujoco_realtime_sim.realtime import RealtimeStepper
 
     sim = Simulation()
     stepper: RealtimeStepper | None = None

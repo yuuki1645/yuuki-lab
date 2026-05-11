@@ -1,8 +1,11 @@
 # mujoco-sim
 
-MuJoCo で脚ロボモデルを動かすための **Python パッケージ `mujoco_sim`** と、それを **実時間ペースで常時シミュレートしながら** 状態取得・サーボ指令を受け付ける **Flask サーバー**です。MJCF は `mujoco_sim/xmls/` に同梱されています。
+このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **2 つの Python パッケージ**があります。
 
-サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新だけ** を担当します。これは `robot-daemon` の `/set` / `/set_multiple` と揃えた設計です。
+- **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。**MJCF は `mujoco_realtime_sim/xmls/` に同梱**。
+- **`mujoco_rl_sim`** — **強化学習用の Gymnasium 環境**など（HTTP サーバとは別経路）。利用時は **`pip install -e ".[rl]"`** で `gymnasium` と学習ライブラリを追加。
+
+サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新** を主に担当します。
 
 ## 前提
 
@@ -16,6 +19,12 @@ cd mujoco-sim
 pip install -e .
 ```
 
+RL 環境や Stable-Baselines3 を使う場合:
+
+```bash
+pip install -e ".[rl]"
+```
+
 依存のみ先に入れる場合:
 
 ```bash
@@ -25,12 +34,12 @@ pip install -r requirements.txt
 ## HTTP サーバーの起動
 
 ```bash
-python -m mujoco_sim
+python -m mujoco_realtime_sim
 ```
 
-既定では **`0.0.0.0:8787`** で HTTP を待ち受けると同時に **MuJoCo パッシブ Viewer** が開きます（ポーズエディタからの指令と同一シミュをその場で表示）。Viewer を出したくないとき（サーバーだけ・ヘッドレス）は **`--no-viewer`** を付けます。
+既定では **`0.0.0.0:8787`** で HTTP を待ち受けると同時に **MuJoCo パッシブ Viewer** が開きます（ポーズエディタからの指令と同一シミュをその場で表示）。Viewer を出したくないときは **`--no-viewer`** を付けます。
 
-同一 PC のみに限定したいときは `--host 127.0.0.1` を付けてください。インストール後は `mujoco-sim-serve` でも同じ処理を起動できます。
+同一 PC のみに限定したいときは `--host 127.0.0.1` を付けてください。インストール後は **`mujoco-sim-serve`** でも同じ処理を起動できます。
 
 ### オプション
 
@@ -38,133 +47,93 @@ python -m mujoco_sim
 |------------|------|
 | `--host` | バインドアドレス（既定: `0.0.0.0`。localhost のみなら `127.0.0.1`） |
 | `--port` | ポート（既定: `8787`） |
-| `--xml PATH` | 使用する MJCF（メイン XML）。環境変数 `MUJOCO_SIM_XML` と同じ効果 |
-| `--quiet-http` | Werkzeug のアクセス行だけ抑える（`mujoco_sim.api` の受信ログはそのまま） |
-| `--no-viewer` | Viewer を出さず **HTTP のみ**（GUI なしで常駐させたいとき） |
-| `--no-auto-step` | サーバー側の常時 `mj_step`（実時間ペース）を行わない。状態は `PUT /api/ctrl` 等で書いた直後の姿勢のまま固まる（旧挙動寄り） |
+| `--xml PATH` | 使用する MJCF。`MUJOCO_REALTIME_SIM_XML` と `MUJOCO_SIM_XML` の両方に反映（後方互換） |
+| `--quiet-http` | Werkzeug のアクセス行だけ抑える（`mujoco_realtime_sim.api` の受信ログはそのまま） |
+| `--no-viewer` | Viewer を出さず **HTTP のみ** |
+| `--no-auto-step` | サーバー側の常時 `mj_step` を行わない |
 
-### ログ（フロントから届いているかの確認）
+### ログ
 
-起動時に **`logging.basicConfig`** により、コンソールに INFO が出ます。
-
-- **`werkzeug`**: 標準の HTTP アクセス行（`POST /api/set ... 200` など）。既定で有効。冗長なら `--quiet-http`。
-- **`mujoco_sim.api`**: `/health`・`/api/*` ごとに **`GET/POST`・パス・`client=`（接続元 IP）** を出力。`POST /api/set`・`POST /api/set_multiple`・`PUT /api/ctrl` では **JSON 本文** も 1 行に載せます（ポーズエディタからの指令確認用）。
-- **`mujoco_sim.realtime`**: 実時間ステッパの起動・例外を 1 行ずつ出します。
+- **`werkzeug`**: HTTP アクセス行。`--quiet-http` で抑制。
+- **`mujoco_realtime_sim.api`**: `/health`・`/api/*` ごとのリクエストログ。
+- **`mujoco_realtime_sim.realtime`**: 実時間ステッパの起動・例外。
 
 ### トラブルシュート（ブラウザで「Failed to fetch」）
 
-1. **mujoco-sim が起動しているか**（この PC またはシミュを動かしているマシンで `python -m mujoco_sim`）。
-2. **ファイアウォール**で TCP **8787** がブロックされていないか（Windows なら「Python」のプライベートネットワーク許可など）。
-3. **別 PC／タブレットから robotics-hub を開いている場合**、ハブは `http://192.168.x.x:5173` のように **シミュ PC と同じ LAN の IP** で開き、mujoco-sim もそのマシンで動かすか、`VITE_MUJOCO_SIM_URL` で正しい `http://IP:8787` を指定する。
+1. **mujoco-sim が起動しているか**（`python -m mujoco_realtime_sim`）。
+2. **ファイアウォール**で TCP **8787** がブロックされていないか。
+3. **別端末から robotics-hub を開いている場合**、`VITE_MUJOCO_SIM_URL` で正しい `http://IP:8787` を指定する。
 
-### 環境変数
+### 環境変数（MJCF）
 
 | 名前 | 説明 |
 |------|------|
-| `MUJOCO_SIM_XML` | メイン MJCF へのパス。未設定時はパッケージ内の `xmls/main.xml` |
+| `MUJOCO_REALTIME_SIM_XML` | メイン MJCF へのパス（推奨） |
+| `MUJOCO_SIM_XML` | 同上（後方互換。未設定で `MUJOCO_REALTIME_SIM_XML` も無いときはパッケージ内 `xmls/main.xml`） |
 
-### Viewer と HTTP・実時間ステッパの関係（既定）
+### Viewer と HTTP・実時間ステッパ（既定）
 
-- `python -m mujoco_sim` だけなら **Viewer 付き**。サーバー内のバックグラウンドスレッドが **常時 `mj_step` を実時間で回し**、Viewer はその同一 `MjData` を 60 Hz で表示します。
-- HTTP からは **目標角度の更新（`/api/set` 等）だけ** を行います。物理時間の進行は HTTP の有無に依存しません。
-- **別プロセス**の `viewer_cmd` は REST と共有しないため、ポーズエディタと見た目を合わせるときは **この既定起動（または同一コードパス）** を使ってください。
-- Viewer を閉じると **プロセス全体が終わり** HTTP も止まります。
-- **Viewer なし**で HTTP だけにしたいとき: `python -m mujoco_sim --no-viewer`
-- **物理を進めたくない**（旧 `/api/step` 駆動のような挙動が必要）なら: `python -m mujoco_sim --no-auto-step`
+- バックグラウンドが **常時 `mj_step`**、Viewer は同一 `MjData` を約 60 Hz で表示。
+- **Viewer なし**: `python -m mujoco_realtime_sim --no-viewer`
+- **常時ステップ無効**: `python -m mujoco_realtime_sim --no-auto-step`
 
-## Viewer のみ（HTTP なし・単体で物理ステップ）
-
-MuJoCo のパッシブ Viewer でモデルを表示し、Viewer 側ループだけで物理ステップします（REST とは共有しません）。
+## Viewer のみ（HTTP なし）
 
 ```bash
-python -m mujoco_sim.viewer_cmd
+python -m mujoco_realtime_sim.viewer_cmd
 ```
 
-インストール後は `mujoco-sim-view` でも起動できます。
+`mujoco-sim-view` でも起動できます。
 
-## HTTP API
+## 強化学習（`mujoco_rl_sim`）
 
-すべて JSON を返します。エラー時は HTTP 400 と `{"error": "..."}` になります（`/api/step` だけは廃止のため 410）。
+例: 同梱 MJCF を使う膝トラッキング環境（MJCF に **`freejoint` の `root` が無い**場合は胴高・転倒終了を簡略化します）。
+
+```python
+from mujoco_rl_sim import KneeTrackEnv
+
+env = KneeTrackEnv()  # xml_path 省略時は mujoco_realtime_sim の既定 MJCF
+```
+
+別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")`、または環境変数 `MUJOCO_REALTIME_SIM_XML` / `MUJOCO_SIM_XML` でパスを指定。
+
+## HTTP API（要約）
+
+すべて JSON。エラー時は HTTP 400 と `{"error": "..."}`（`/api/step` は 410 で廃止）。
 
 | メソッド | パス | 説明 |
 |----------|------|------|
-| GET | `/health` | 生存確認 `{"status":"ok"}` |
-| GET | `/api/meta` | MJCF のパス、アクチュエータ名、`timestep`、実時間ステッパの状態、論理角メタ（`logical`） |
-| GET | `/api/state` | 現在のシミュ状態（`time`, `qpos`, `qvel`, `ctrl`, `hinge_joint_rad`, `logical_deg`, `sensors` など） |
-| POST | `/api/reset` | シミュをリセットしたうえで状態を返す |
-| POST | `/api/set` | **単一サーボ**の目標角度を更新（`robot-daemon` の `/set` と同形）。ボディ: `{actuator, angle, mode?}` |
-| POST | `/api/set_multiple` | **複数サーボ**を一括更新（`/set_multiple` と同形）。ボディ: `{angles: {name: angle, ...}, mode?}` |
-| PUT | `/api/ctrl` | 低レベルの ctrl 一括書き込み（`/api/set_multiple` と等価。歴史的経路） |
-| POST | `/api/pause` | 実時間ステッパを一時停止 |
-| POST | `/api/resume` | 実時間ステッパを再開 |
-| ~~POST~~ | ~~`/api/step`~~ | **廃止** (HTTP 410)。サーバ側が常時自動でステップするため、外部から step を進める必要はありません。 |
+| GET | `/health` | 生存確認 |
+| GET | `/api/meta` | MJCF パス、アクチュエータ名、`timestep`、ステッパ状態、論理角メタ |
+| GET | `/api/state` | 現在状態（`logical_deg` 等） |
+| POST | `/api/reset` | リセット後に状態を返す |
+| POST | `/api/set` | 単一サーボ（`robot-daemon` の `/set` 同形） |
+| POST | `/api/set_multiple` | 複数サーボ一括 |
+| PUT | `/api/ctrl` | ctrl 一括 |
+| POST | `/api/pause` / `/api/resume` | 実時間ステッパの一時停止・再開 |
 
-アクチュエータ名は `GET /api/meta` の `actuator_names` を参照してください。
-
-#### 角度の単位（`mode`）
-
-`/api/set`・`/api/set_multiple`・`PUT /api/ctrl` のボディには `"mode"` を付けられます。
-
-| 値 | 意味 |
-|------|------|
-| `"rad"`（既定） | `angle` / `ctrl` は MuJoCo ネイティブの単位（ラジアン）。 |
-| `"deg"` | `angle` / `ctrl` は度。サーバー側で `math.radians` 換算してから適用する。 |
-| `"logical"` | `angle` / `ctrl` は **論理角（度）**。`mujoco_sim/kinematics.py` の `KINEMATICS` テーブル（offset + sign）で MuJoCo 関節角に写してから rad に変換する。`robot-daemon` の `mode: "logical"` と同じ意味で使える。 |
-
-`"deg"` で送ると `mujoco_sim.api` の JSON ログが読みやすい数字（例: `12`）になります。
-ポーズエディタは `/api/set` を **`"logical"`** で叩いて、実機（robot-daemon）と同じ「論理角」表現で操作します。例:
-
-```bash
-# 単一: 左膝を 12° (deg)
-curl -X POST http://127.0.0.1:8787/api/set \
-  -H "Content-Type: application/json" \
-  -d "{\"actuator\": \"left_knee_pitch_motor\", \"mode\": \"deg\", \"angle\": 12}"
-
-# 単一: 左股関節 pitch を 60° (logical, 立ち姿勢の既定値)
-curl -X POST http://127.0.0.1:8787/api/set \
-  -H "Content-Type: application/json" \
-  -d "{\"actuator\": \"left_hip_pitch_motor\", \"mode\": \"logical\", \"angle\": 60}"
-
-# 複数: 左右の股関節 pitch を同時に
-curl -X POST http://127.0.0.1:8787/api/set_multiple \
-  -H "Content-Type: application/json" \
-  -d "{\"mode\": \"deg\", \"angles\": {\"left_hip_pitch_motor\": 10, \"right_hip_pitch_motor\": -10}}"
-```
-
-#### 論理角キネマティクス
-
-`mujoco_sim/kinematics.py` の `KINEMATICS` 辞書が、サーボ毎に
-**`mujoco_deg = sign * logical_deg + offset_deg`** という線形変換を持ちます。
-ここを書き換えれば、フロントの「論理角」と MuJoCo の「関節角」のズレ（左右の符号反転、立ち姿勢オフセット）を吸収できます。
-
-`GET /api/meta` の `logical` フィールドに、各アクチュエータの `lo`/`hi`/`default`/`sign`/`offset_deg` が載るので、フロントのスライダ端や初期姿勢に流し込めます。`GET /api/state` の `logical_deg` には、その逆写像で計算した現在の論理角（度）が入ります。
-
-> サインとオフセットの **校正は Viewer での目視合わせが必要** です。初期値は「実機 robot-daemon と同じ logical レンジ・default で立ち姿勢が出る」よう仮置きしているだけで、MJCF の axis 方向によっては符号反転が必要になる場合があります。
-
-### 動作確認の例
-
-```bash
-curl http://127.0.0.1:8787/health
-curl http://127.0.0.1:8787/api/meta
-curl http://127.0.0.1:8787/api/state | python -m json.tool   # time が増えているはず
-```
+`mode` は `"rad"`（既定）・`"deg"`・`"logical"`。論理角は **`mujoco_realtime_sim/kinematics.py`** の `KINEMATICS` で MuJoCo 関節角に写像します。
 
 ## ディレクトリ構成（概要）
 
 ```
 mujoco-sim/
-  mujoco_sim/          # Python パッケージ
+  mujoco_realtime_sim/
+    __main__.py        # HTTP + オプション Viewer
     app.py             # Flask create_app()
     core.py            # Simulation（MjModel / MjData）
-    realtime.py        # 実時間 mj_step デーモンスレッド
-    passive_viewer.py  # サーバ共有の Viewer メインループ
-    kinematics.py      # 論理角(度) ⇄ MuJoCo 関節角(度) の変換テーブル
-    xmls/              # MJCF（package-data で配布）
+    realtime.py        # 実時間 mj_step スレッド
+    passive_viewer.py
+    kinematics.py
+    viewer_cmd.py
+    xmls/              # MJCF（package-data）
+  mujoco_rl_sim/
+    envs/              # Gymnasium 環境
   pyproject.toml
   requirements.txt
 ```
 
 ## 備考
 
-- 開発用には `python -m mujoco_sim` の `app.run` で十分です。本番で Gunicorn 等を使う場合は、アプリケーション工場 **`mujoco_sim.app:create_app`** を指定してください。
-- `robotics-hub` や `robot-daemon` とは別プロセスです。連携する場合は別途ブリッジやクライアント側の設定が必要です。
+- Gunicorn 等では **`mujoco_realtime_sim.app:create_app`** を指定。
+- `robotics-hub`・`robot-daemon` とは **別プロセス**（ハブは HTTP のみ利用）。

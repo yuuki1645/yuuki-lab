@@ -9,11 +9,11 @@ from typing import Any
 from flask import Flask, current_app, jsonify, request
 from flask_cors import CORS
 
-from mujoco_sim.core import Simulation
-from mujoco_sim.kinematics import KINEMATICS, kinematics_by_joint
-from mujoco_sim.realtime import RealtimeStepper
+from mujoco_realtime_sim.core import Simulation
+from mujoco_realtime_sim.kinematics import KINEMATICS, kinematics_by_joint
+from mujoco_realtime_sim.realtime import RealtimeStepper
 
-LOG = logging.getLogger("mujoco_sim.api")
+LOG = logging.getLogger("mujoco_realtime_sim.api")
 
 CTRL_MODES = ("rad", "deg", "logical")
 _LOG_BODY_PATHS = ("/api/set", "/api/set_multiple", "/api/ctrl")

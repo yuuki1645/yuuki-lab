@@ -2,15 +2,16 @@
 
 import subprocess
 import sys
+
+from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_rl_sim import KneeTrackEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
 
-from mujoco_rl_env_simple import KneeTrackEnv
-
 
 def main():
-    xml_path = "xmls/main.xml"
+    xml_path = str(resolved_model_xml())
     total_timesteps = 50_000
     learn_chunk = 5_000
     live_ckpt_base = "ppo_knee_track_live"

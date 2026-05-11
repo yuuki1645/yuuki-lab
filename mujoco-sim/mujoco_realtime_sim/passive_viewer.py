@@ -7,9 +7,9 @@ import time
 
 import mujoco.viewer
 
-from mujoco_sim.core import Simulation
+from mujoco_realtime_sim.core import Simulation
 
-LOG = logging.getLogger("mujoco_sim.viewer")
+LOG = logging.getLogger("mujoco_realtime_sim.viewer")
 
 # 表示だけ更新（mj_step は Flask 内）。60 FPS 程度。
 _SYNC_HZ = 60.0

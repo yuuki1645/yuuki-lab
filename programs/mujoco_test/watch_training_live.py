@@ -6,23 +6,29 @@ import time
 
 import mujoco.viewer
 import numpy as np
+from mujoco_realtime_sim.paths import resolved_model_xml
+from mujoco_rl_sim import KneeTrackEnv
 from stable_baselines3 import PPO
-
-from mujoco_rl_env_simple import KneeTrackEnv
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--xml-path", type=str, default="xmls/main.xml")
+    parser.add_argument(
+        "--xml-path",
+        type=str,
+        default=None,
+        help="MJCF パス（省略時は mujoco_realtime_sim の既定）",
+    )
     parser.add_argument("--model-base", type=str, default="ppo_knee_track_live")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    xml_path = args.xml_path or str(resolved_model_xml())
     model_zip = args.model_base if args.model_base.endswith(".zip") else f"{args.model_base}.zip"
 
-    env = KneeTrackEnv(xml_path=args.xml_path, max_steps=500)
+    env = KneeTrackEnv(xml_path=xml_path, max_steps=500)
     obs, _ = env.reset()
     model = None
     last_mtime = -1.0

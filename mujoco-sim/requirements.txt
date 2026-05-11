@@ -2,3 +2,5 @@ mujoco>=3.0
 numpy>=1.23
 flask>=3.0
 flask-cors>=4.0
+
+# RL: pip install -e ".[rl]"

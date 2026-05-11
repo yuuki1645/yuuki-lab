@@ -11,9 +11,9 @@ import logging
 import threading
 import time
 
-from mujoco_sim.core import Simulation
+from mujoco_realtime_sim.core import Simulation
 
-LOG = logging.getLogger("mujoco_sim.realtime")
+LOG = logging.getLogger("mujoco_realtime_sim.realtime")
 
 # Windows の time.sleep は ~10〜15ms 粒度。短すぎると CPU を空回りするため、
 # ループは 5ms 単位で起き、その間にたまった分をまとめて mj_step する。

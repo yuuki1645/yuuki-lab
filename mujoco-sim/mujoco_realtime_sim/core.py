@@ -8,7 +8,7 @@ from typing import Any
 
 import mujoco
 
-from mujoco_sim.paths import resolved_model_xml
+from mujoco_realtime_sim.paths import resolved_model_xml
 
 
 class Simulation:

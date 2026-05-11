@@ -11,8 +11,10 @@ def default_model_path() -> Path:
 
 
 def resolved_model_xml() -> Path:
-    """MJCF パス（環境変数 MUJOCO_SIM_XML があれば優先）。"""
-    env = os.environ.get("MUJOCO_SIM_XML")
+    """MJCF パス（``MUJOCO_REALTIME_SIM_XML``、なければ ``MUJOCO_SIM_XML``、なければ既定）。"""
+    env = os.environ.get("MUJOCO_REALTIME_SIM_XML") or os.environ.get(
+        "MUJOCO_SIM_XML"
+    )
     if env:
         return Path(env).resolve()
     return DEFAULT_MODEL_XML

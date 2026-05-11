@@ -1,17 +1,16 @@
 # type: ignore
 
 import time
-import mujoco.viewer
-from stable_baselines3 import PPO
 
-from mujoco_rl_env_simple import KneeTrackEnv
+import mujoco.viewer
+from mujoco_rl_sim import KneeTrackEnv
+from stable_baselines3 import PPO
 
 
 def main():
-    env = KneeTrackEnv(xml_path="xmls/main.xml", max_steps=500)
+    env = KneeTrackEnv(max_steps=500)
     model = PPO.load("ppo_knee_track")
 
-    # Reuse env's model/data so viewer shows exactly what policy sees.
     with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
         obs, _ = env.reset()
         while viewer.is_running():

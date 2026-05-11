@@ -7,7 +7,7 @@ import time
 import mujoco
 import mujoco.viewer
 
-from mujoco_sim.paths import DEFAULT_MODEL_XML
+from mujoco_realtime_sim.paths import DEFAULT_MODEL_XML
 
 
 def main() -> None:

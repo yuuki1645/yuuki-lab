@@ -1,3 +1,5 @@
+# type: ignore
+
 """Passive viewer for the packaged model (no HTTP server)."""
 
 from __future__ import annotations

@@ -3,3 +3,4 @@ state.json
 *.zip
 *.egg-info/
 *.egg-info
+MUJOCO_LOG.TXT

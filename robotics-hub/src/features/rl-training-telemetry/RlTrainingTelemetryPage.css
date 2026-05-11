@@ -1,0 +1,140 @@
+.rl-telemetry {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+}
+
+.rl-telemetry__header {
+  margin-bottom: 1rem;
+}
+
+.rl-telemetry__header h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.rl-telemetry__header p {
+  margin: 0;
+  color: var(--hub-muted, #64748b);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.rl-telemetry__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: var(--hub-panel-bg, #f1f5f9);
+}
+
+.rl-telemetry__status-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.rl-telemetry__status-badge--connected {
+  background: #bbf7d0;
+  color: #14532d;
+}
+
+.rl-telemetry__status-badge--connecting {
+  background: #fef08a;
+  color: #713f12;
+}
+
+.rl-telemetry__status-badge--disconnected {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.rl-telemetry__url {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.rl-telemetry__error {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.88rem;
+}
+
+.rl-telemetry__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.rl-telemetry__panel {
+  border: 1px solid var(--hub-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  background: #fff;
+}
+
+.rl-telemetry__panel h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.rl-telemetry__meta {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.rl-telemetry table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rl-telemetry th,
+.rl-telemetry td {
+  text-align: right;
+  padding: 0.25rem 0.35rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.rl-telemetry th:first-child,
+.rl-telemetry td:first-child {
+  text-align: left;
+  font-family: ui-monospace, monospace;
+}
+
+.rl-telemetry td {
+  font-variant-numeric: tabular-nums;
+}
+
+.rl-telemetry__empty {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.rl-telemetry__actions {
+  margin-top: 0.5rem;
+}
+
+.rl-telemetry__btn {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+}
+
+.rl-telemetry__btn:hover {
+  background: #f8fafc;
+}

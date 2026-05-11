@@ -82,6 +82,21 @@ export function getImuSocketUrl(): string {
   return getMujocoSimUrl();
 }
 
+/**
+ * 強化学習テレメトリ用 Socket.IO（``train_002_full_actuators`` の ``--telemetry-port``、既定 8791）。
+ */
+export function getRlTelemetrySocketUrl(): string {
+  const fromEnv = import.meta.env.VITE_RL_TELEMETRY_SOCKET_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8791"
+  );
+}
+
 /** 物理角スライダー範囲（レッグチューナーなど） */
 export const PHYSICAL_MIN = 0;
 export const PHYSICAL_MAX = 180;

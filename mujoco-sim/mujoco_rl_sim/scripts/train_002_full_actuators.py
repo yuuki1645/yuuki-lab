@@ -12,6 +12,7 @@ from pathlib import Path
 from mujoco_rl_sim.envs.env_002_full_actuators import (
     Env002FullActuators,
 )
+from mujoco_rl_sim.telemetry import RlTelemetryServer, RlTelemetryWrapper
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
@@ -51,6 +52,28 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="学習中のライブ Viewer 子プロセスを起動しない",
     )
+    p.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="Robotics Hub 向け Socket.IO テレメトリサーバを起動しない",
+    )
+    p.add_argument(
+        "--telemetry-host",
+        default="127.0.0.1",
+        help="テレメトリ Socket.IO の bind ホスト",
+    )
+    p.add_argument(
+        "--telemetry-port",
+        type=int,
+        default=8791,
+        help="テレメトリ Socket.IO のポート（Hub の VITE_RL_TELEMETRY_SOCKET_URL と合わせる）",
+    )
+    p.add_argument(
+        "--telemetry-max-hz",
+        type=float,
+        default=60.0,
+        help="ステップイベントの最大送信レート（0 で無制限）",
+    )
     return p.parse_args()
 
 
@@ -64,6 +87,30 @@ def main() -> None:
         reset_joint_noise=args.reset_joint_noise,
     )
     check_env(env, warn=True)
+
+    telemetry_server: RlTelemetryServer | None = None
+    telemetry_wr: RlTelemetryWrapper | None = None
+    if not args.no_telemetry:
+        telemetry_server = RlTelemetryServer(
+            host=args.telemetry_host,
+            port=args.telemetry_port,
+        )
+        telemetry_server.start()
+        max_hz = args.telemetry_max_hz
+        if max_hz <= 0:
+            max_hz = None
+        env = RlTelemetryWrapper(
+            env,
+            telemetry_server.publish_step,
+            telemetry_server.publish_reset,
+            max_hz=max_hz,
+        )
+        telemetry_wr = env
+        print(
+            f"[train-full] RL telemetry Socket.IO: "
+            f"http://{args.telemetry_host}:{args.telemetry_port}"
+        )
+
     env = Monitor(env)
 
     model = PPO(
@@ -75,6 +122,9 @@ def main() -> None:
         gamma=0.99,
         verbose=1,
     )
+
+    if telemetry_wr is not None:
+        telemetry_wr.set_num_timesteps_getter(lambda: int(model.num_timesteps))
 
     viewer_proc: subprocess.Popen | None = None
     if not args.no_viewer:
@@ -112,6 +162,8 @@ def main() -> None:
         env.close()
         if viewer_proc is not None:
             viewer_proc.terminate()
+        if telemetry_server is not None:
+            telemetry_server.stop()
 
 
 if __name__ == "__main__":

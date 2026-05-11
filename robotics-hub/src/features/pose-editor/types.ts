@@ -1,5 +1,7 @@
+import type { ServoBackendMode } from "@/shared/types";
+
 /** ポーズエディタの指令先（実機 REST / MuJoCo HTTP） */
-export type PoseBackendMode = "daemon" | "mujoco";
+export type PoseBackendMode = ServoBackendMode;
 
 export type LegId = "L" | "R";
 

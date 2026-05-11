@@ -20,6 +20,10 @@ export interface MotionContextValue {
   selectedKeyframe: import("@/shared/types").Keyframe | null;
   selectedChannel: number | null;
   selectedServo: import("@/shared/types").Servo | null;
+  backendMode: import("@/shared/types").ServoBackendMode;
+  setBackendMode: (mode: import("@/shared/types").ServoBackendMode) => void;
+  backendError: string | null;
+  backendLoading: boolean;
   endKeyframeDragRef: React.MutableRefObject<(() => void) | null>;
   isInitialized: boolean;
   motionDuration: number;

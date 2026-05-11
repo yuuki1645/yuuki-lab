@@ -3,9 +3,9 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { mujocoSetServo } from "@/shared/api/mujocoSimApi";
 import { moveServo } from "@/shared/api/servoApi";
 import { SERVO_NAME_TO_CH } from "@/shared/constants";
+import { SERVO_NAME_TO_MUJOCO_ACTUATOR } from "@/shared/mujocoMapping";
 import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
-import { SERVO_NAME_TO_MUJOCO_ACTUATOR } from "../lib/mujocoMapping";
 import {
   limitsFor,
   readLegFromServos,

@@ -29,3 +29,6 @@ export interface Servo {
 
 /** サーボ制御モード */
 export type ServoMode = "logical" | "physical";
+
+/** サーボ指令の送信先（実機 REST / MuJoCo HTTP） */
+export type ServoBackendMode = "daemon" | "mujoco";

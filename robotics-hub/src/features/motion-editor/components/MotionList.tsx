@@ -84,7 +84,7 @@ export default function MotionList() {
                   <button
                     onClick={() => handleMoveToInitialPosition(motion)}
                     className="btn-move-initial"
-                    title="モーションの初期位置（0s）にゆっくり移動"
+                    title="モーションの初期位置（0s）へ移動"
                   >
                     初期位置へ
                   </button>

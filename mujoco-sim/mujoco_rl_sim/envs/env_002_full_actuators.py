@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import time
 
 import gymnasium as gym
 import mujoco
@@ -55,6 +56,7 @@ class Env002FullActuators(gym.Env):
 
     - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している（``ctrl`` = 目標角 [rad]）。
     - 観測: ``imu_acc``（3, 局所 m/s²）, ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** ``ctrl``（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
+    - ``step_wall_sleep_sec``: 各 ``step`` の物理更新のあとに ``time.sleep`` する秒数（テレメトリ確認用。学習は壁時計で遅くなる）。
     - 報酬: 小さな行動ペナルティのみ（タスク非依存）。必要に応じてラッパや別報酬で置き換えてください。
 
     既定 MJCF は本モジュール先頭の ``DEFAULT_ENV_MODEL_XML``。別ファイルを使うときは
@@ -68,6 +70,7 @@ class Env002FullActuators(gym.Env):
         xml_path: str | Path | None = None,
         max_steps: int = 500,
         reset_joint_noise: float = 0.05,
+        step_wall_sleep_sec: float = 0.0,
     ) -> None:
         super().__init__()
         path = Path(xml_path) if xml_path is not None else DEFAULT_ENV_MODEL_XML
@@ -75,6 +78,7 @@ class Env002FullActuators(gym.Env):
         self.data = mujoco.MjData(self.model)
         self.max_steps = max_steps
         self.reset_joint_noise = float(reset_joint_noise)
+        self._step_wall_sleep_sec = max(0.0, float(step_wall_sleep_sec))
         self.step_count = 0
 
         nu = int(self.model.nu)
@@ -198,6 +202,8 @@ class Env002FullActuators(gym.Env):
 
         self.data.ctrl[:] = a
         mujoco.mj_step(self.model, self.data)
+        if self._step_wall_sleep_sec > 0.0:
+            time.sleep(self._step_wall_sleep_sec)
 
         obs = self._get_obs()
         self._prev_cmd = np.asarray(a, dtype=np.float32).copy()

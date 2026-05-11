@@ -35,6 +35,15 @@ def parse_args() -> argparse.Namespace:
         default=0.05,
         help="リセット時の関節ノイズ（Env002FullActuators の引数）",
     )
+    p.add_argument(
+        "--step-wall-sleep",
+        type=float,
+        default=0.0,
+        help=(
+            "各環境ステップの MuJoCo 更新後に待つ秒数（壁時計）。テレメトリや挙動確認用。"
+            "例: 0.05 でおおよそ 20 steps/s 以下。0 で従来どおり最大速。"
+        ),
+    )
     p.add_argument("--total-timesteps", type=int, default=100_000)
     p.add_argument("--learn-chunk", type=int, default=10_000)
     p.add_argument(
@@ -89,7 +98,13 @@ def main() -> None:
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
+        step_wall_sleep_sec=args.step_wall_sleep,
     )
+    if args.step_wall_sleep > 0.0:
+        print(
+            f"[train-full] step_wall_sleep={args.step_wall_sleep}s / env step "
+            "(壁時計ベースで遅延。本番学習では 0 推奨)"
+        )
     check_env(env, warn=True)
 
     telemetry_server: RlTelemetryServer | None = None
@@ -152,6 +167,8 @@ def main() -> None:
                 str(args.max_steps),
                 "--reset-joint-noise",
                 str(args.reset_joint_noise),
+                "--step-wall-sleep",
+                str(args.step_wall_sleep),
             ]
         )
 

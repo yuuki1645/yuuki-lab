@@ -36,6 +36,12 @@ def parse_args() -> argparse.Namespace:
         default=0.05,
         help="環境リセットの関節ノイズ（学習スクリプトと揃える）",
     )
+    p.add_argument(
+        "--step-wall-sleep",
+        type=float,
+        default=0.0,
+        help="各 step 後の壁時計待ち秒（学習の --step-wall-sleep と揃える）",
+    )
     return p.parse_args()
 
 
@@ -50,6 +56,7 @@ def main() -> None:
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
+        step_wall_sleep_sec=args.step_wall_sleep,
     )
     obs, _ = env.reset()
     model = None

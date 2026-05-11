@@ -29,6 +29,12 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--max-steps", type=int, default=500)
     p.add_argument("--reset-joint-noise", type=float, default=0.05)
+    p.add_argument(
+        "--step-wall-sleep",
+        type=float,
+        default=0.0,
+        help="各 step 後の壁時計待ち秒（テスト再生を遅くする）",
+    )
     return p.parse_args()
 
 
@@ -39,6 +45,7 @@ def main() -> None:
         xml_path=xml_path,
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
+        step_wall_sleep_sec=args.step_wall_sleep,
     )
     model = PPO.load(args.model_base)
 

@@ -7,22 +7,25 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
-from mujoco_sim_assets.paths import resolved_model_xml
-from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
+from mujoco_rl_sim.envs.env_002_full_actuators import (
+    Env002FullActuators,
+)
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
+import mujoco_sim_assets
+
+
+# 学習に使う MJCF（別モデルにしたいときはこの定数だけ書き換え）
+_ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
+TRAIN_MJCF_XML: Path | str = _ASSETS_ROOT / "xmls" / "002_leg_freejoint" / "main.xml"
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Env002FullActuators（全 position アクチュエータ）を PPO で学習"
-    )
-    p.add_argument(
-        "--xml-path",
-        default=None,
-        help="MJCF（省略時は mujoco_sim_assets の既定）",
     )
     p.add_argument("--max-steps", type=int, default=500, help="1 エピソード上限ステップ")
     p.add_argument(
@@ -53,7 +56,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    xml_path = args.xml_path or str(resolved_model_xml())
+    xml_path = str(TRAIN_MJCF_XML)
 
     env = Env002FullActuators(
         xml_path=xml_path,

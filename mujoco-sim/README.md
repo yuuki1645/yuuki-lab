@@ -100,7 +100,7 @@ all_ctrl = Env002FullActuators()  # 全アクチュエータを同時に指令
 
 別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
 
-`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``/``imu_gyro``（各 3）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。
+`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``/``imu_gyro``（各 3）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。**`step_wall_sleep_sec`**（既定 `0`）を正にすると、各 `step` で `mj_step` の直後にその秒数だけ **壁時計で待機**し、テレメトリ確認や再生を遅くできます（MDP の定義は変わりません）。
 
 環境実装ファイルは **`env_001_knee_track.py`** のように `env_<連番>_` プレフィックスで並べます（新規追加時は次番号のファイルを `envs/__init__.py` に登録）。
 
@@ -138,6 +138,25 @@ python -m mujoco_rl_sim.scripts.watch_full_actuators
 python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuators
 ```
 
+### `train_002_full_actuators` の追加オプション（要約）
+
+| オプション | 説明 |
+|------------|------|
+| `--no-telemetry` | Robotics Hub 向け **Socket.IO テレメトリ**を起動しない |
+| `--telemetry-host` | テレメトリのバインド（既定 **`0.0.0.0`**。LAN の IP から Hub を開くときに接続できるようにする） |
+| `--telemetry-port` | テレメトリポート（既定 **`8791`**） |
+| `--telemetry-max-hz` | 送信イベントの最大レート（既定 `60`。`0` で無制限） |
+| `--step-wall-sleep` | 各環境ステップの `mj_step` 後に待つ秒数（既定 `0`。例: `0.05` で壁時計ベースを遅くする） |
+
+`--no-viewer` でない場合、起動する **`watch_full_actuators`** 子プロセスには **`--step-wall-sleep`** がそのまま渡されます。`watch_full_actuators` / `play_full_actuators` 単体でも **`--step-wall-sleep`** を指定できます（環境の `Env002FullActuators(step_wall_sleep_sec=...)` に相当）。
+
+### 学習テレメトリ（Robotics Hub）
+
+学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（実装は **`mujoco_rl_sim/telemetry/`**）。Hub の **「RL 学習テレメトリ」**ページがこの Socket.IO に接続します。
+
+- 配信されるモータ関連の角は **ラジアン**（環境の `ctrl` / 観測の prev ctrl と同じ）。Hub 側で **度（°）** に換算して表示します。
+- 実時間 HTTP シム（`8787`）とは **別ポート**です。ファイアウォールで **8791**（または変更した `--telemetry-port`）を許可してください。
+
 ## HTTP API（要約）
 
 すべて JSON。エラー時は HTTP 400 と `{"error": "..."}`（`/api/step` は 410 で廃止）。
@@ -174,6 +193,7 @@ mujoco-sim/
     viewer_cmd.py
   mujoco_rl_sim/
     envs/              # Gymnasium 環境（env_001_*.py の連番命名）
+    telemetry/         # 学習中 Socket.IO テレメトリ（Hub 連携）
     scripts/           # 学習・ライブ Viewer・再生 CLI
   pyproject.toml
   requirements.txt
@@ -182,4 +202,4 @@ mujoco-sim/
 ## 備考
 
 - Gunicorn 等では **`mujoco_realtime_sim.app:create_app`** を指定。
-- `robotics-hub`・`robot-daemon` とは **別プロセス**（ハブは HTTP のみ利用）。
+- `robotics-hub`・`robot-daemon` とは **別プロセス**（ハブは実時間シムに対して主に HTTP を利用。RL 学習テレメトリは学習プロセスの Socket.IO を別途利用）。

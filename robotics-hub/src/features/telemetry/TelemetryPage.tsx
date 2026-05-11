@@ -372,104 +372,110 @@ export default function TelemetryPage() {
         </p>
       )}
 
-      <div className="telemetry__grid" style={{ marginTop: "1rem" }}>
-        <div className="telemetry__panel">
-          <h2>実機 IMU（局所・robot-daemon）</h2>
-          <p className="telemetry__meta">
-            MPU6050 の生スケールを 16384 で割った値（g）。学習ストリームの加速度も g（MuJoCo は{" "}
-            <code>|opt.gravity|</code> で正規化）で揃えています。
-          </p>
-          <VecTable
-            title="加速度（スケール g 相当）"
-            labels={ACC_LABELS}
-            values={daemonAcc}
-            valueHeader="値"
-            noPanel
-          />
-          <VecTable
-            title="角速度 (deg/s)"
-            labels={GYRO_LABELS}
-            values={daemonGyro}
-            valueHeader="値"
-            noPanel
-          />
-        </div>
-        <div className="telemetry__panel">
-          <h2>実機 IMU（推定角 deg）</h2>
-          <VecTable
-            title=""
-            labels={ANGLE_LABELS}
-            values={daemonAngle}
-            valueHeader="値"
-            noPanel
-            showTitle={false}
-          />
+      <div className="telemetry__data-zones">
+        <div className="telemetry__grid">
+          <div className="telemetry__panel">
+            <h2>実機 IMU（局所・robot-daemon）</h2>
+            <p className="telemetry__meta">
+              MPU6050 の生スケールを 16384 で割った値（g）。学習ストリームの加速度も g（MuJoCo は{" "}
+              <code>|opt.gravity|</code> で正規化）で揃えています。
+            </p>
+            <VecTable
+              title="加速度（スケール g 相当）"
+              labels={ACC_LABELS}
+              values={daemonAcc}
+              valueHeader="値"
+              noPanel
+            />
+            <VecTable
+              title="角速度 (deg/s)"
+              labels={GYRO_LABELS}
+              values={daemonGyro}
+              valueHeader="値"
+              noPanel
+            />
+          </div>
+          <div className="telemetry__panel">
+            <h2>実機 IMU（推定角 deg）</h2>
+            <VecTable
+              title=""
+              labels={ANGLE_LABELS}
+              values={daemonAngle}
+              valueHeader="値"
+              noPanel
+              showTitle={false}
+            />
+          </div>
         </div>
 
-        <ScalarPanel
-          title="報酬と判定（学習 step）"
-          rows={[
-            {
-              label: "報酬 total",
-              value: typeof rewardTotal === "number" ? rewardTotal.toFixed(5) : "—",
-            },
-            {
-              label: "角度ペナルティ",
-              value:
-                typeof rewardActionPenalty === "number"
-                  ? rewardActionPenalty.toFixed(5)
-                  : "—",
-            },
-            {
-              label: "転倒ペナルティ",
-              value:
-                typeof rewardFallPenalty === "number" ? rewardFallPenalty.toFixed(5) : "—",
-            },
-            {
-              label: "torso height (m)",
-              value: typeof torsoHeight === "number" ? torsoHeight.toFixed(4) : "—",
-            },
-            { label: "terminated", value: step?.terminated ? "true" : "false" },
-            { label: "truncated", value: step?.truncated ? "true" : "false" },
-          ]}
-        />
-        <div className="telemetry__panel">
-          <h2>学習: 入力 IMU（局所・シミュ値）</h2>
-          <VecTable
-            title={`加速度 (${step?.obs_acc_unit === "m/s2" ? "m/s²" : "g"})`}
-            labels={ACC_LABELS}
-            values={step?.obs_acc ?? []}
-            noPanel
+        <hr className="telemetry__divider" aria-hidden />
+
+        <div className="telemetry__grid">
+          <ScalarPanel
+            title="報酬と判定（学習 step）"
+            rows={[
+              {
+                label: "報酬 total",
+                value: typeof rewardTotal === "number" ? rewardTotal.toFixed(5) : "—",
+              },
+              {
+                label: "角度ペナルティ",
+                value:
+                  typeof rewardActionPenalty === "number"
+                    ? rewardActionPenalty.toFixed(5)
+                    : "—",
+              },
+              {
+                label: "転倒ペナルティ",
+                value:
+                  typeof rewardFallPenalty === "number" ? rewardFallPenalty.toFixed(5) : "—",
+              },
+              {
+                label: "torso height (m)",
+                value: typeof torsoHeight === "number" ? torsoHeight.toFixed(4) : "—",
+              },
+              { label: "terminated", value: step?.terminated ? "true" : "false" },
+              { label: "truncated", value: step?.truncated ? "true" : "false" },
+            ]}
           />
-          <p className="telemetry__meta">
-            角速度は受信ペイロードが rad/s のため、下表のみ deg/s（×180/π）に換算して表示しています。
-          </p>
+          <div className="telemetry__panel">
+            <h2>学習: 入力 IMU（局所・シミュ値）</h2>
+            <VecTable
+              title={`加速度 (${step?.obs_acc_unit === "m/s2" ? "m/s²" : "g"})`}
+              labels={ACC_LABELS}
+              values={step?.obs_acc ?? []}
+              noPanel
+            />
+            <p className="telemetry__meta">
+              角速度は受信ペイロードが rad/s のため、下表のみ deg/s（×180/π）に換算して表示しています。
+            </p>
+            <VecTable
+              title="角速度 (deg/s)"
+              labels={GYRO_LABELS}
+              values={trainingGyroDisplayDegS}
+              noPanel
+            />
+          </div>
           <VecTable
-            title="角速度 (deg/s)"
-            labels={GYRO_LABELS}
-            values={trainingGyroDisplayDegS}
-            noPanel
-          />
-        </div>
-        <VecTable
-          title="学習: 行動 目標角（論理角 deg）"
-          labels={
-            actionLabels.length
-              ? actionLabels
-              : actionLogical.map((_, i) => `action[${i}]`)
-          }
-          values={actionLogical}
-          valueHeader="値 (論理角 deg)"
-          ranges={actionRanges}
-        />
-        <div className="telemetry__grid-row2">
-          <VecTable
-            title="学習: 観測内 prev（論理角 deg, 1 step 遅れ）"
-            labels={prevCtrlLabels}
-            values={prevLogical}
+            title="学習: 行動 目標角（論理角 deg）"
+            labels={
+              actionLabels.length
+                ? actionLabels
+                : actionLogical.map((_, i) => `action[${i}]`)
+            }
+            values={actionLogical}
             valueHeader="値 (論理角 deg)"
-            ranges={prevRanges}
+            ranges={actionRanges}
           />
+          <div className="telemetry__grid-row2">
+            <VecTable
+              title="学習: 観測内 prev（論理角 deg, 1 step 遅れ）"
+              labels={prevCtrlLabels}
+              values={prevLogical}
+              valueHeader="値 (論理角 deg)"
+              ranges={prevRanges}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -104,6 +104,20 @@
   font-size: 0.88rem;
 }
 
+/** 実機パネル群と学習パネル群のあいだの横罫 */
+.telemetry__data-zones {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+.telemetry__divider {
+  border: none;
+  border-top: 1px solid rgba(200, 210, 255, 0.28);
+  margin: 1.25rem 0;
+  width: 100%;
+}
+
 .telemetry__grid {
   display: grid;
   gap: 1rem;

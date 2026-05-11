@@ -12,6 +12,8 @@ export interface RlTelemetryResetPayload {
   obs_acc: number[];
   obs_gyro: number[];
   obs_prev_ctrl: number[];
+  obs_prev_action_logical_deg?: number[];
+  obs_prev_action_unit?: "logical_deg" | "rad" | "deg";
   obs_flat: number[];
   num_timesteps: number | null;
 }
@@ -24,6 +26,10 @@ export interface RlTelemetryStepPayload {
   obs_acc: number[];
   obs_gyro: number[];
   obs_prev_ctrl: number[];
+  obs_prev_action_logical_deg?: number[];
+  obs_prev_action_unit?: "logical_deg" | "rad" | "deg";
   obs_flat: number[];
   action: number[];
+  action_logical_deg?: number[];
+  action_unit?: "logical_deg" | "rad" | "deg";
 }

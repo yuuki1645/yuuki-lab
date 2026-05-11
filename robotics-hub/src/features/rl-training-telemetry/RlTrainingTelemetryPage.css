@@ -75,6 +75,16 @@
   color: #b4bce0;
 }
 
+.rl-telemetry__logical-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(110, 168, 255, 0.18);
+  color: #cfe0ff;
+  border: 1px solid rgba(110, 168, 255, 0.35);
+}
+
 .rl-telemetry__error {
   margin-bottom: 1rem;
   padding: 0.65rem 0.85rem;

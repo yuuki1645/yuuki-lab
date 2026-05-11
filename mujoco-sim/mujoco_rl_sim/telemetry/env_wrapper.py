@@ -17,8 +17,10 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
     """
     ``step`` / ``reset`` のたびに観測・行動などを ``publish`` へ渡す。
 
-    - ``obs`` 末尾の ``prev_ctrl`` は環境定義どおり **1 ステップ遅れ**（前回適用コマンド）。
+    - ``obs`` 末尾の ``prev_*`` は環境定義どおり **1 ステップ遅れ**（前回適用コマンド）。
     - ``action`` は当該ステップで ``env.step`` に渡されたベクトル（クリップ前は上位で決まる）。
+    - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）であるため、
+      payload に ``*_logical_deg`` と ``*_unit`` を明示して送る。
     """
 
     def __init__(
@@ -59,7 +61,10 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "obs_dim": int(o.size),
                 "obs_acc": o[:3].tolist(),
                 "obs_gyro": o[3:6].tolist(),
+                # 互換のため旧キー obs_prev_ctrl を残す
                 "obs_prev_ctrl": o[6:].tolist(),
+                "obs_prev_action_logical_deg": o[6:].tolist(),
+                "obs_prev_action_unit": "logical_deg",
                 "obs_flat": o.tolist(),
                 "num_timesteps": self._nts(),
             }
@@ -86,9 +91,14 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
                 "actuator_names": list(self._actuator_names),
                 "obs_acc": o[:3].tolist(),
                 "obs_gyro": o[3:6].tolist(),
+                # 互換のため旧キー obs_prev_ctrl と action を残す
                 "obs_prev_ctrl": o[6:].tolist(),
+                "obs_prev_action_logical_deg": o[6:].tolist(),
+                "obs_prev_action_unit": "logical_deg",
                 "obs_flat": o.tolist(),
                 "action": a.tolist(),
+                "action_logical_deg": a.tolist(),
+                "action_unit": "logical_deg",
             }
         )
         return obs, reward, terminated, truncated, info

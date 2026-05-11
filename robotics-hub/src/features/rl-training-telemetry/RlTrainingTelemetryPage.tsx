@@ -2,12 +2,6 @@ import { useMemo } from "react";
 import { useRlTelemetryStream } from "@/shared/hooks/useRlTelemetryStream";
 import "./RlTrainingTelemetryPage.css";
 
-const RAD2DEG = 180 / Math.PI;
-
-function radiansListToDegrees(rad: number[]): number[] {
-  return rad.map((x) => x * RAD2DEG);
-}
-
 /** 小数第 1 位。整数部（符号含む）の文字幅を揃えて小数点を縦に揃える */
 function intPartWidth1dp(values: number[]): number {
   let m = 1;
@@ -80,13 +74,21 @@ function VecTable({
 export default function RlTrainingTelemetryPage() {
   const stream = useRlTelemetryStream(true);
   const step = stream.lastStep;
+  const reset = stream.lastReset;
   const names =
-    step?.actuator_names?.length ? step.actuator_names : stream.lastReset?.actuator_names ?? [];
+    step?.actuator_names?.length ? step.actuator_names : reset?.actuator_names ?? [];
   const accLabels = ["ax", "ay", "az"];
   const gyroLabels = ["gx", "gy", "gz"];
+  const prevLogical =
+    step?.obs_prev_action_logical_deg ??
+    reset?.obs_prev_action_logical_deg ??
+    step?.obs_prev_ctrl ??
+    reset?.obs_prev_ctrl ??
+    [];
+  const actionLogical = step?.action_logical_deg ?? step?.action ?? [];
   const prevCtrlLabels = names.length
     ? names.map((n) => `prev ${n}`)
-    : step?.obs_prev_ctrl?.map((_, i) => `prev_ctrl[${i}]`) ?? [];
+    : prevLogical.map((_, i) => `prev_logical[${i}]`);
   const actionLabels = names.length ? names.map((n) => `action ${n}`) : [];
 
   return (
@@ -95,9 +97,8 @@ export default function RlTrainingTelemetryPage() {
         <h1>RL 学習テレメトリ</h1>
         <p>
           <code>mujoco_rl_sim.scripts.train_002_full_actuators</code> 実行中に、方策への入力（IMU
-          加速度・角速度・観測内の直前コマンド）と行動（各サーボ目標角）を表示します。モータ角（prev
-          ctrl / action）は配信がラジアンでも、ここでは度数法（°）に換算して表示します。観測末尾の
-          prev_ctrl は環境仕様どおり前ステップのコマンドです。
+          加速度・角速度・観測内の直前コマンド）と行動（各サーボ目標角）を表示します。関節角の表示は
+          <strong>論理角（deg）</strong> です。観測末尾の prev は環境仕様どおり前ステップのコマンドです。
         </p>
       </header>
 
@@ -114,6 +115,7 @@ export default function RlTrainingTelemetryPage() {
               : "未接続"}
         </span>
         <span className="rl-telemetry__url">{stream.url}</span>
+        <span className="rl-telemetry__logical-tag">関節角表示: 論理角 (deg)</span>
         {typeof step?.num_timesteps === "number" && (
           <span className="rl-telemetry__meta">SB3 num_timesteps: {step.num_timesteps}</span>
         )}
@@ -139,20 +141,20 @@ export default function RlTrainingTelemetryPage() {
         <VecTable title="入力: 加速度 (局所 m/s²)" labels={accLabels} values={step?.obs_acc ?? []} />
         <VecTable title="入力: 角速度 (局所 rad/s)" labels={gyroLabels} values={step?.obs_gyro ?? []} />
         <VecTable
-          title="入力: 観測内 prev_ctrl (°, 1 step 遅れ)"
+          title="入力: 観測内 prev（論理角 deg, 1 step 遅れ）"
           labels={prevCtrlLabels}
-          values={radiansListToDegrees(step?.obs_prev_ctrl ?? [])}
-          valueHeader="値 (°)"
+          values={prevLogical}
+          valueHeader="値 (論理角 deg)"
         />
         <VecTable
-          title="行動: 目標角 action (°)"
+          title="行動: 目標角 action（論理角 deg）"
           labels={
             actionLabels.length
               ? actionLabels
-              : (step?.action ?? []).map((_, i) => `action[${i}]`)
+              : actionLogical.map((_, i) => `action[${i}]`)
           }
-          values={radiansListToDegrees(step?.action ?? [])}
-          valueHeader="値 (°)"
+          values={actionLogical}
+          valueHeader="値 (論理角 deg)"
         />
       </div>
     </div>

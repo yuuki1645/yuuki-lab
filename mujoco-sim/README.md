@@ -120,6 +120,21 @@ python -m mujoco_rl_sim.scripts.watch_training_live
 python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
 ```
 
+### CLI（全アクチュエータ `FullActuatorPositionEnv`）
+
+| コマンド | 内容 |
+|----------|------|
+| `mujoco-rl-train-full` | 全 `ctrl` を PPO で学習（既定チェックポイント `ppo_full_actuators_live`） |
+| `mujoco-rl-watch-full` | ライブ学習の Viewer（既定は `ppo_full_actuators_live` を監視） |
+| `mujoco-rl-play-full` | 学習済み `ppo_full_actuators` を Viewer で再生 |
+
+```bash
+python -m mujoco_rl_sim.scripts.train_full_actuators --help
+python -m mujoco_rl_sim.scripts.train_full_actuators --no-viewer
+python -m mujoco_rl_sim.scripts.watch_full_actuators
+python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuators
+```
+
 ## HTTP API（要約）
 
 すべて JSON。エラー時は HTTP 400 と `{"error": "..."}`（`/api/step` は 410 で廃止）。

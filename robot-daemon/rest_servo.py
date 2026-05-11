@@ -14,9 +14,14 @@ if TYPE_CHECKING:
     from flask import Flask
 
     from servo_controller import ServoController
+    from servo_csv_log import ServoCsvLog
 
 
-def register_servo_rest_routes(app: Flask, servo: ServoController) -> None:
+def register_servo_rest_routes(
+    app: Flask,
+    servo: ServoController,
+    servo_csv_log: ServoCsvLog | None = None,
+) -> None:
     @app.get("/servos")
     def get_servos():
         return jsonify(servo.list_payload())
@@ -28,6 +33,14 @@ def register_servo_rest_routes(app: Flask, servo: ServoController) -> None:
         mode = data.get("mode", "logical")
         angle = float(data.get("angle"))
         result = servo.set_angle(ch, angle, mode)
+        if servo_csv_log is not None:
+            servo_csv_log.record_set(
+                mode=str(mode),
+                ch=ch,
+                angle_in=angle,
+                logical_deg=float(result["logical"]),
+                physical_deg=float(result["physical"]),
+            )
         return jsonify(
             {
                 "status": "ok",
@@ -43,6 +56,10 @@ def register_servo_rest_routes(app: Flask, servo: ServoController) -> None:
         angles = data.get("angles", {})
         angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
         results = servo.set_angles_batch(angles_dict, mode)
+        if servo_csv_log is not None:
+            servo_csv_log.record_set_multiple(
+                mode=str(mode), angles_dict=angles_dict, results=results
+            )
         return jsonify(
             {
                 "status": "ok",
@@ -57,6 +74,10 @@ def register_servo_rest_routes(app: Flask, servo: ServoController) -> None:
         data = request.json or {}
         mode, angles_dict, duration = parse_transition_payload(data)
         transition_count = servo.start_transition(angles_dict, mode, duration)
+        if servo_csv_log is not None:
+            servo_csv_log.record_transition(
+                mode=str(mode), angles_dict=angles_dict, duration_sec=float(duration)
+            )
         return jsonify(
             {
                 "status": "ok",

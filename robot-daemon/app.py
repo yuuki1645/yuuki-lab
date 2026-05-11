@@ -13,6 +13,7 @@ from rest_servo import register_servo_rest_routes
 from servo_controller import ServoController
 from state_manager import StateManager
 import socketio_lifecycle
+from telemetry_csv_bundle import TelemetryCsvBundle
 
 app = Flask(__name__)
 CORS(app)
@@ -22,9 +23,10 @@ state_manager = StateManager(state_path="./state.json")
 imu_reader = Mpu6050Reader()
 
 servo_controller = ServoController(state_manager)
-imu_stream = ImuStreamService(socketio, imu_reader)
+telemetry_csv = TelemetryCsvBundle.from_env()
+imu_stream = ImuStreamService(socketio, imu_reader, telemetry_csv=telemetry_csv)
 
-register_servo_rest_routes(app, servo_controller)
+register_servo_rest_routes(app, servo_controller, servo_csv_log=telemetry_csv.servo)
 socketio_lifecycle.register_lifecycle_handlers(socketio, imu_stream)
 imu_stream.register_handlers(socketio)
 

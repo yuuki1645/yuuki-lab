@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from flask_socketio import emit
 
 from imu import Mpu6050Reader
-from imu_csv_log import imu_csv_log_from_env
+from telemetry_csv_bundle import TelemetryCsvBundle
 
 if TYPE_CHECKING:
     from flask_socketio import SocketIO
@@ -19,14 +19,19 @@ if TYPE_CHECKING:
 class ImuStreamService:
     """ストリーム状態・バックグラウンドループ・IMU 用 emit をまとめる。"""
 
-    def __init__(self, socketio: "SocketIO", imu_reader: Mpu6050Reader) -> None:
+    def __init__(
+        self,
+        socketio: "SocketIO",
+        imu_reader: Mpu6050Reader,
+        telemetry_csv: TelemetryCsvBundle | None = None,
+    ) -> None:
         self._socketio = socketio
         self._reader = imu_reader
         self._lock = threading.Lock()
         self._rate_hz = 30.0
         self._enabled = False
         self._task_started = False
-        self._csv_log = imu_csv_log_from_env()
+        self._telemetry = telemetry_csv or TelemetryCsvBundle.from_env()
 
     def status_payload(self) -> dict[str, Any]:
         with self._lock:
@@ -36,8 +41,9 @@ class ImuStreamService:
             "streaming": streaming,
             "rate_hz": rate_hz,
             "sensor": self._reader.status(),
-            "csv_enabled": self._csv_log.enabled,
-            "csv_recording": self._csv_log.is_recording(),
+            "csv_enabled": self._telemetry.enabled,
+            "csv_recording": self._telemetry.is_recording(),
+            "servo_csv_recording": self._telemetry.servo.is_recording(),
         }
 
     def emit_error_broadcast(self, code: str, message: str, detail: str | None = None) -> None:
@@ -63,7 +69,7 @@ class ImuStreamService:
 
             try:
                 sample = self._reader.sample()
-                self._csv_log.record_sample(sample)
+                self._telemetry.imu.record_sample(sample)
                 self._socketio.emit("imu/sample", sample)
             except Exception as e:
                 err = self._reader.get_error_info()
@@ -74,7 +80,7 @@ class ImuStreamService:
                 )
                 with self._lock:
                     self._enabled = False
-                self._csv_log.end_session()
+                self._telemetry.end_sessions()
                 self._socketio.emit("imu/status", self.status_payload())
 
             self._socketio.sleep(interval)
@@ -120,7 +126,7 @@ class ImuStreamService:
         def ws_imu_stop():
             with self._lock:
                 self._enabled = False
-            self._csv_log.end_session()
+            self._telemetry.end_sessions()
             emit("imu/status", self.status_payload())
 
         @socketio.on("imu/set_rate")
@@ -145,7 +151,7 @@ class ImuStreamService:
         @socketio.on("imu/log_start")
         def ws_imu_log_start():
             try:
-                if not self._csv_log.enabled:
+                if not self._telemetry.enabled:
                     emit(
                         "imu/log_status",
                         {"ok": False, "reason": "csv_disabled", "recording": False},
@@ -160,7 +166,7 @@ class ImuStreamService:
                     )
                     emit("imu/status", self.status_payload())
                     return
-                self._csv_log.begin_session()
+                self._telemetry.begin_sessions()
                 emit(
                     "imu/log_status",
                     {"ok": True, "recording": True},
@@ -180,7 +186,7 @@ class ImuStreamService:
         @socketio.on("imu/log_stop")
         def ws_imu_log_stop():
             try:
-                self._csv_log.end_session()
+                self._telemetry.end_sessions()
                 emit("imu/log_status", {"ok": True, "recording": False})
                 emit("imu/status", self.status_payload())
             except Exception as e:

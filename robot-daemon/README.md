@@ -9,6 +9,7 @@
 - **HTTP（Flask）**: `/servos`, `/set`, `/set_multiple`, `/transition` など（`rest_servo.py`）
 - **Socket.IO**: IMU 姿勢データの配信・ライフサイクル（`imu_stream_service.py`, `socketio_lifecycle.py`）
 - **IMU CSV ログ**（任意）: ストリーミング中のサンプルをメモリに溜め、一定間隔で CSV 追記（`imu_csv_log.py`）
+- **サーボ指令 CSV ログ**（任意）: **`imu/log_start`〜`imu/log_stop`** と同じセッションで、REST の `/set`・`/set_multiple`・`/transition` の指令を別ファイル `servo_*.csv` に追記（`servo_csv_log.py`・`telemetry_csv_bundle.py`）
 - **既定ポート**: **5000**（`app.py` の `socketio.run(..., port=5000)`）
 
 ## 起動
@@ -34,9 +35,9 @@ IMU が無い／開発時は `imu.py` のモック経由で動く構成にもな
 
 ### IMU の CSV ログ（ラズパイでの解析用）
 
-**`imu/start` だけでは CSV は書きません。** Socket.IO で **`imu/log_start`** を送ったときに `IMU_LOG_DIR` 以下へ `imu_YYYYMMDD_HHMMSS.csv` を開き、以降の **`imu/sample` と同じタイミング**でサンプルをメモリに溜めます。**約 `IMU_LOG_FLUSH_SEC` 秒ごと**にバッファをファイルへ追記します。**`imu/log_stop`** または **`imu/stop`**（ストリーム停止）・読み取りエラーで**残りを flush** してセッションを閉じます。
+**`imu/start` だけでは CSV は書きません。** Socket.IO で **`imu/log_start`** を送ったときに `IMU_LOG_DIR` 以下へ **`imu_YYYYMMDD_HHMMSS.csv`** と **`servo_YYYYMMDD_HHMMSS.csv`** の両方を開きます。IMU 側は以降の **`imu/sample` と同じタイミング**でサンプルをメモリに溜め、サーボ側は **`/set`・`/set_multiple`・`/transition` が成功した直後**に 1 行ずつバッファへ追加します。**約 `IMU_LOG_FLUSH_SEC` 秒ごと**に各バッファをファイルへ追記します。**`imu/log_stop`** または **`imu/stop`**（ストリーム停止）・IMU 読み取りエラーで**残りを flush** して**両方の**セッションを閉じます。
 
-- **`imu/log_start`** … IMU ストリーミング中のみ有効。成功時に `imu/log_status` `{"ok":true,"recording":true}` と `imu/status`（`csv_recording: true`）を返します。
+- **`imu/log_start`** … IMU ストリーミング中のみ有効。成功時に `imu/log_status` `{"ok":true,"recording":true}` と `imu/status`（`csv_recording: true`・`servo_csv_recording: true`）を返します。
 - **`imu/log_stop`** … 記録停止。`imu/log_status` `{"ok":true,"recording":false}`。
 - ストリーミング未開始で `imu/log_start` … `imu/log_status` `{"ok":false,"reason":"imu_not_streaming"}`。
 
@@ -46,7 +47,9 @@ IMU が無い／開発時は `imu.py` のモック経由で動く構成にもな
 | `IMU_LOG_DIR` | 出力ディレクトリ（既定: `./imu_logs`、相対パスはカレント基準） |
 | `IMU_LOG_FLUSH_SEC` | ディスクへのフラッシュ間隔（秒、既定: **10**、最小 0.5） |
 
-列は `wall_unix`, `perf_timestamp`, `mock`, 加速度・角速度・推定角（`imu/sample` と同じ構造をフラット化）です。
+IMU ファイルの列は `wall_unix`, `perf_timestamp`, `mock`, 加速度・角速度・推定角（`imu/sample` と同じ構造をフラット化）です。
+
+サーボファイルの列は `wall_unix`, `endpoint`（`set` / `set_multiple` / `transition`）, `mode`, `ch`（一括時は `-1`）, `angle_in`, `logical_deg`, `physical_deg`, `extra_json`（一括・トランジション時に JSON で角度・結果・所要秒など）です。
 
 ## フロント側との対応
 

@@ -7,6 +7,8 @@ export interface ImuDaemonStatusPayload {
   csv_enabled?: boolean;
   /** 現在 CSV セッションが開いているか */
   csv_recording?: boolean;
+  /** サーボ指令 CSV が同じセッションで記録中か（robot-daemon のテレメトリ CSV バンドル） */
+  servo_csv_recording?: boolean;
   sensor?: {
     enabled?: boolean;
     mock_mode?: boolean;

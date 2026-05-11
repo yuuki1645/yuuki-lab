@@ -30,19 +30,12 @@ SERVO_CSV_COLUMNS = [
 class ServoCsvLog:
     """バッファリング後に CSV へ追記。スレッドセーフ。"""
 
-    def __init__(
-        self,
-        *,
-        log_dir: Path | None,
-        flush_interval_sec: float = 10.0,
-    ) -> None:
+    def __init__(self, *, log_dir: Path | None) -> None:
         self._log_dir = log_dir
-        self._flush_interval_sec = max(0.5, float(flush_interval_sec))
         self._lock = threading.Lock()
         self._buffer: list[list[Any]] = []
         self._file_path: Path | None = None
         self._header_written = False
-        self._last_flush_monotonic = 0.0
 
     @property
     def enabled(self) -> bool:
@@ -61,7 +54,8 @@ class ServoCsvLog:
             name = time.strftime("servo_%Y%m%d_%H%M%S.csv")
             self._file_path = self._log_dir / name
             self._header_written = False
-            self._last_flush_monotonic = time.monotonic()
+        # IMU と違い指令は疎なので、開始時点でヘッダだけ書いてファイルを必ず作る
+        self._write_csv_header_if_new_file()
 
     def end_session(self) -> None:
         self.flush()
@@ -130,18 +124,12 @@ class ServoCsvLog:
     def _record_row(self, row: list[Any]) -> None:
         if not self.enabled:
             return
-        rows_to_write: list[list[Any]] | None = None
         with self._lock:
             if self._file_path is None:
                 return
             self._buffer.append(row)
-            now = time.monotonic()
-            if now - self._last_flush_monotonic >= self._flush_interval_sec:
-                rows_to_write = self._buffer
-                self._buffer = []
-                self._last_flush_monotonic = now
-        if rows_to_write:
-            self._append_rows_unlocked(rows_to_write)
+        # 指令は Hz が低いので毎回 flush（バッチ間隔で気づかず「書かれない」と見えるのを防ぐ）
+        self.flush()
 
     def flush(self) -> None:
         rows_to_write: list[list[Any]] | None = None
@@ -151,6 +139,30 @@ class ServoCsvLog:
                 self._buffer = []
         if rows_to_write:
             self._append_rows_unlocked(rows_to_write)
+
+    def _write_csv_header_if_new_file(self) -> None:
+        """セッション開始直後に空ファイル＋ヘッダだけ出力する。"""
+        need_header = False
+        path: Path | None = None
+        with self._lock:
+            path = self._file_path
+            if path is None:
+                return
+            if self._header_written:
+                return
+            self._header_written = True
+            need_header = True
+        if not need_header or path is None:
+            return
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(SERVO_CSV_COLUMNS)
+        except OSError as e:
+            _LOG.warning("サーボ CSV ヘッダ書き込みに失敗しました: %s", e)
+            with self._lock:
+                self._header_written = False
 
     def _append_rows_unlocked(self, rows: list[list[Any]]) -> None:
         if not rows:
@@ -181,7 +193,8 @@ def servo_csv_log_from_env() -> ServoCsvLog:
 
     - ``IMU_LOG_DISABLE`` … 1/true/on なら ``log_dir=None``
     - ``IMU_LOG_DIR`` … 出力ディレクトリ（未設定または空なら ``./imu_logs``）
-    - ``IMU_LOG_FLUSH_SEC`` … フラッシュ間隔（秒、既定 10）
+
+    サーボ CSV は指令のたびにディスクへ flush します（``IMU_LOG_FLUSH_SEC`` は IMU 用のみ）。
     """
     val = os.environ.get("IMU_LOG_DISABLE", "").lower()
     if val in ("1", "true", "yes", "on"):
@@ -191,10 +204,4 @@ def servo_csv_log_from_env() -> ServoCsvLog:
     if not raw_dir:
         return ServoCsvLog(log_dir=None)
 
-    flush_raw = os.environ.get("IMU_LOG_FLUSH_SEC", "10").strip()
-    try:
-        flush_sec = float(flush_raw) if flush_raw else 10.0
-    except ValueError:
-        flush_sec = 10.0
-
-    return ServoCsvLog(log_dir=Path(raw_dir).resolve(), flush_interval_sec=flush_sec)
+    return ServoCsvLog(log_dir=Path(raw_dir).resolve())

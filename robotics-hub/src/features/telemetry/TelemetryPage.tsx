@@ -374,29 +374,24 @@ export default function TelemetryPage() {
 
       <div className="telemetry__grid" style={{ marginTop: "1rem" }}>
         <div className="telemetry__panel">
-          <h2>実機 IMU（加速度・スケール g 相当）</h2>
+          <h2>実機 IMU（局所・robot-daemon）</h2>
           <p className="telemetry__meta">
             MPU6050 の生スケールを 16384 で割った値（g）。学習ストリームの加速度も g（MuJoCo は{" "}
             <code>|opt.gravity|</code> で正規化）で揃えています。
           </p>
           <VecTable
-            title=""
+            title="加速度（スケール g 相当）"
             labels={ACC_LABELS}
             values={daemonAcc}
             valueHeader="値"
             noPanel
-            showTitle={false}
           />
-        </div>
-        <div className="telemetry__panel">
-          <h2>実機 IMU（角速度 deg/s）</h2>
           <VecTable
-            title=""
+            title="角速度 (deg/s)"
             labels={GYRO_LABELS}
             values={daemonGyro}
             valueHeader="値"
             noPanel
-            showTitle={false}
           />
         </div>
         <div className="telemetry__panel">

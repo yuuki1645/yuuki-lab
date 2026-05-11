@@ -1,7 +1,10 @@
+/* Hub のダークテーマ（index.css）に合わせ、継承色で白パネルが潰れないようにする */
+
 .rl-telemetry {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem 1.25rem 2rem;
+  color: #e8ecff;
 }
 
 .rl-telemetry__header {
@@ -12,13 +15,22 @@
   font-size: 1.35rem;
   font-weight: 600;
   margin: 0 0 0.35rem;
+  color: #f4f6ff;
 }
 
 .rl-telemetry__header p {
   margin: 0;
-  color: var(--hub-muted, #64748b);
+  color: #a8b0d6;
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+.rl-telemetry__header code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #c8d4ff;
+  font-size: 0.84em;
 }
 
 .rl-telemetry__status {
@@ -28,8 +40,10 @@
   gap: 0.75rem 1rem;
   margin-bottom: 1rem;
   padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  background: var(--hub-panel-bg, #f1f5f9);
+  border-radius: 10px;
+  background: #1a223c;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  color: #e8ecff;
 }
 
 .rl-telemetry__status-badge {
@@ -40,32 +54,34 @@
 }
 
 .rl-telemetry__status-badge--connected {
-  background: #bbf7d0;
-  color: #14532d;
+  background: rgba(74, 222, 128, 0.22);
+  color: #86efac;
 }
 
 .rl-telemetry__status-badge--connecting {
-  background: #fef08a;
-  color: #713f12;
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde047;
 }
 
 .rl-telemetry__status-badge--disconnected {
-  background: #e2e8f0;
-  color: #475569;
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
 }
 
 .rl-telemetry__url {
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
   word-break: break-all;
+  color: #b4bce0;
 }
 
 .rl-telemetry__error {
   margin-bottom: 1rem;
   padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  background: #fef2f2;
-  color: #991b1b;
+  border-radius: 10px;
+  background: rgba(255, 80, 80, 0.12);
+  border: 1px solid rgba(255, 120, 120, 0.35);
+  color: #ffb4b4;
   font-size: 0.88rem;
 }
 
@@ -76,21 +92,23 @@
 }
 
 .rl-telemetry__panel {
-  border: 1px solid var(--hub-border, #e2e8f0);
-  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  border-radius: 10px;
   padding: 0.75rem 0.85rem;
-  background: #fff;
+  background: #151c34;
+  color: #e8ecff;
 }
 
 .rl-telemetry__panel h2 {
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
+  color: #f4f6ff;
 }
 
 .rl-telemetry__meta {
   font-size: 0.8rem;
-  color: #64748b;
+  color: #a8b0d6;
   margin-bottom: 0.5rem;
 }
 
@@ -98,27 +116,35 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.82rem;
+  color: #e8ecff;
 }
 
 .rl-telemetry th,
 .rl-telemetry td {
   text-align: right;
-  padding: 0.25rem 0.35rem;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.1);
+}
+
+.rl-telemetry th {
+  color: #a8b0d6;
+  font-weight: 600;
 }
 
 .rl-telemetry th:first-child,
 .rl-telemetry td:first-child {
   text-align: left;
   font-family: ui-monospace, monospace;
+  color: #c8d0f0;
 }
 
 .rl-telemetry td {
   font-variant-numeric: tabular-nums;
+  color: #f4f6ff;
 }
 
 .rl-telemetry__empty {
-  color: #94a3b8;
+  color: #8b93c4;
   font-size: 0.85rem;
 }
 
@@ -128,13 +154,15 @@
 
 .rl-telemetry__btn {
   font-size: 0.85rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.25);
+  background: rgba(110, 168, 255, 0.15);
+  color: #e8ecff;
   cursor: pointer;
 }
 
 .rl-telemetry__btn:hover {
-  background: #f8fafc;
+  background: rgba(110, 168, 255, 0.28);
+  border-color: rgba(110, 168, 255, 0.45);
 }

@@ -59,8 +59,12 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--telemetry-host",
-        default="127.0.0.1",
-        help="テレメトリ Socket.IO の bind ホスト",
+        default="0.0.0.0",
+        help=(
+            "テレメトリ Socket.IO の bind アドレス。既定は全インターフェース（Hub が "
+            "http://<LANのIP>:8791 のときに接続できるようにする）。ローカルのみにしたいときは "
+            "127.0.0.1 を指定。"
+        ),
     )
     p.add_argument(
         "--telemetry-port",
@@ -106,10 +110,17 @@ def main() -> None:
             max_hz=max_hz,
         )
         telemetry_wr = env
-        print(
-            f"[train-full] RL telemetry Socket.IO: "
-            f"http://{args.telemetry_host}:{args.telemetry_port}"
-        )
+        if str(args.telemetry_host) in ("0.0.0.0", "::", "::0"):
+            print(
+                f"[train-full] RL telemetry Socket.IO: bind {args.telemetry_host}:"
+                f"{args.telemetry_port}（Hub は http://<このPCのLAN-IP>:"
+                f"{args.telemetry_port} などで接続）"
+            )
+        else:
+            print(
+                f"[train-full] RL telemetry Socket.IO: "
+                f"http://{args.telemetry_host}:{args.telemetry_port}"
+            )
 
     env = Monitor(env)
 

@@ -21,15 +21,17 @@ function fmtFixed(n: number | undefined, digits: number): string {
   return n.toFixed(digits);
 }
 
-/** マイナス・小数点含めて等幅 9 桁（未値は中央付近に —） */
-const IMU_AXIS_NUM_WIDTH = 9;
+/** 先頭 1 文字を符号（負は `-`、正はスペース）、続く 8 文字に絶対値を左埋めし小数点位置を揃える（合計 9 桁想定。本体が 8 を超えるときはそのまま連結） */
+const IMU_AXIS_SIGN_BODY = 8;
 
 function fmtAxisAligned(n: number | undefined, fracDigits: number): string {
   if (n === undefined || !Number.isFinite(n)) {
     return "    —    ";
   }
-  const s = n.toFixed(fracDigits);
-  return s.length >= IMU_AXIS_NUM_WIDTH ? s : s.padStart(IMU_AXIS_NUM_WIDTH, " ");
+  const sign = n < 0 ? "-" : " ";
+  const body = Math.abs(n).toFixed(fracDigits);
+  const padded = body.length >= IMU_AXIS_SIGN_BODY ? body : body.padStart(IMU_AXIS_SIGN_BODY, " ");
+  return sign + padded;
 }
 
 function formatAccelAxisLine(row: ImuCsvRow): string {

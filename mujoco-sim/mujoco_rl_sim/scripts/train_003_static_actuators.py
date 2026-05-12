@@ -1,0 +1,216 @@
+# type: ignore
+
+"""連番 003: ``Env003StaticActuators``（関節指令固定）で PPO を回し、テレメトリ／ベースライン検証用。
+
+``Env003StaticActuators`` は行動で ``ctrl`` を変えないため、002 用の子プロセス
+``watch_full_actuators``（別シミュでチェックポイント再生）は **起動しない**。
+Viewer が必要なときは ``--training-viewer`` で学習と同一 ``MjData`` を表示する。
+"""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+import mujoco.viewer
+from mujoco_rl_sim.envs.env_003_static_actuators import Env003StaticActuators
+from mujoco_rl_sim.telemetry import RlTelemetryServer, RlTelemetryWrapper
+from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.monitor import Monitor
+import mujoco_sim_assets
+
+
+_ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
+TRAIN_MJCF_XML: Path | str = _ASSETS_ROOT / "xmls" / "002_leg_freejoint" / "main.xml"
+
+
+class _SyncTrainingViewerCallback(BaseCallback):
+    """学習環境の ``mj_step`` のたびに passive Viewer を同期する。"""
+
+    def __init__(self, viewer: mujoco.viewer.Handle, verbose: int = 0) -> None:
+        super().__init__(verbose)
+        self._viewer = viewer
+
+    def _on_step(self) -> bool:
+        self._viewer.sync()
+        return True
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description=(
+            "Env003StaticActuators（指令固定・関節目標は reset のみ）を PPO で学習。"
+            "加速度ベースライン／テレメトリ確認用。"
+        )
+    )
+    p.add_argument("--max-steps", type=int, default=500, help="1 エピソード上限ステップ")
+    p.add_argument(
+        "--reset-joint-noise",
+        type=float,
+        default=0.05,
+        help="リセット時の関節ノイズ（Env003StaticActuators の引数）",
+    )
+    p.add_argument(
+        "--step-wall-sleep",
+        type=float,
+        default=0.0,
+        help=(
+            "各環境ステップの MuJoCo 更新後に待つ秒数（壁時計）。テレメトリや挙動確認用。"
+        ),
+    )
+    p.add_argument("--total-timesteps", type=int, default=100_000)
+    p.add_argument("--learn-chunk", type=int, default=10_000)
+    p.add_argument(
+        "--live-ckpt",
+        default="ppo_static_actuators_live",
+        help="学習中に上書き保存するベース名（.zip は付けない）",
+    )
+    p.add_argument(
+        "--final-ckpt",
+        default="ppo_static_actuators",
+        help="学習完了時に保存するベース名（.zip は付けない）",
+    )
+    p.add_argument(
+        "--training-viewer",
+        action="store_true",
+        help=(
+            "学習環境と同一の MjData を MuJoCo Viewer で表示し、各ステップで同期する。"
+            "003 では watch_full_actuators 子プロセスは使わないため、主にこちらで可視化する。"
+        ),
+    )
+    p.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="Robotics Hub 向け Socket.IO テレメトリサーバを起動しない",
+    )
+    p.add_argument(
+        "--telemetry-host",
+        default="0.0.0.0",
+        help="テレメトリ Socket.IO の bind アドレス。",
+    )
+    p.add_argument(
+        "--telemetry-port",
+        type=int,
+        default=8791,
+        help="テレメトリ Socket.IO のポート（Hub の VITE_TELEMETRY_SOCKET_URL と合わせる）",
+    )
+    p.add_argument(
+        "--telemetry-max-hz",
+        type=float,
+        default=60.0,
+        help="ステップイベントの最大送信レート（0 で無制限）",
+    )
+    return p.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    xml_path = str(TRAIN_MJCF_XML)
+
+    env = Env003StaticActuators(
+        xml_path=xml_path,
+        max_steps=args.max_steps,
+        reset_joint_noise=args.reset_joint_noise,
+        step_wall_sleep_sec=args.step_wall_sleep,
+    )
+    if args.step_wall_sleep > 0.0:
+        print(
+            f"[train-static] step_wall_sleep={args.step_wall_sleep}s / env step "
+            "(壁時計ベースで遅延)"
+        )
+    check_env(env, warn=True)
+
+    telemetry_server: RlTelemetryServer | None = None
+    telemetry_wr: RlTelemetryWrapper | None = None
+    if not args.no_telemetry:
+        telemetry_server = RlTelemetryServer(
+            host=args.telemetry_host,
+            port=args.telemetry_port,
+            set_step_wall_sleep_sec=env.set_step_wall_sleep_sec,
+            get_step_wall_sleep_sec=env.get_step_wall_sleep_sec,
+        )
+        telemetry_server.start()
+        max_hz = args.telemetry_max_hz
+        if max_hz <= 0:
+            max_hz = None
+        env = RlTelemetryWrapper(
+            env,
+            telemetry_server.publish_step,
+            telemetry_server.publish_reset,
+            max_hz=max_hz,
+        )
+        telemetry_wr = env
+        if str(args.telemetry_host) in ("0.0.0.0", "::", "::0"):
+            print(
+                f"[train-static] RL telemetry Socket.IO: bind {args.telemetry_host}:"
+                f"{args.telemetry_port}（Hub は http://<このPCのLAN-IP>:"
+                f"{args.telemetry_port} などで接続）"
+            )
+        else:
+            print(
+                f"[train-static] RL telemetry Socket.IO: "
+                f"http://{args.telemetry_host}:{args.telemetry_port}"
+            )
+
+    env = Monitor(env)
+
+    model = PPO(
+        policy="MlpPolicy",
+        env=env,
+        n_steps=2048,
+        batch_size=512,
+        learning_rate=3e-4,
+        gamma=0.99,
+        verbose=1,
+    )
+
+    if telemetry_wr is not None:
+        telemetry_wr.set_num_timesteps_getter(lambda: int(model.num_timesteps))
+
+    inner = env.unwrapped
+    if not isinstance(inner, Env003StaticActuators):
+        raise RuntimeError(
+            "内部環境が Env003StaticActuators ではありません（ラッパー構成を確認してください）"
+        )
+
+    if args.training_viewer:
+        print(
+            "[train-static] training-viewer: 学習と同一 MjData を Viewer に表示します。"
+        )
+
+    def run_training_chunks(callback: BaseCallback | None) -> None:
+        learned = 0
+        while learned < args.total_timesteps:
+            chunk = min(args.learn_chunk, args.total_timesteps - learned)
+            model.learn(
+                total_timesteps=chunk,
+                reset_num_timesteps=False,
+                callback=callback,
+            )
+            learned += chunk
+            model.save(args.live_ckpt)
+            print(
+                f"[train-static] learned {learned}/{args.total_timesteps} "
+                f"(live checkpoint updated)"
+            )
+
+        model.save(args.final_ckpt)
+        print(f"[train-static] saved final model: {args.final_ckpt}.zip")
+
+    try:
+        if args.training_viewer:
+            with mujoco.viewer.launch_passive(inner.model, inner.data) as viewer:
+                cb = _SyncTrainingViewerCallback(viewer)
+                run_training_chunks(cb)
+        else:
+            run_training_chunks(None)
+    finally:
+        env.close()
+        if telemetry_server is not None:
+            telemetry_server.stop()
+
+
+if __name__ == "__main__":
+    main()

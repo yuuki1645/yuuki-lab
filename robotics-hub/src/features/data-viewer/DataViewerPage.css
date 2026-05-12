@@ -74,6 +74,48 @@
   font-size: 0.85rem;
 }
 
+.data-viewer__dataset-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 14px;
+}
+
+.data-viewer__dataset-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.85rem;
+  color: #a8b0d6;
+}
+
+.data-viewer__select {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  background: #0b1020;
+  color: #e8ecff;
+  max-width: 100%;
+}
+
+.data-viewer__select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.data-viewer__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.data-viewer__video-hint,
+.data-viewer__loaded-meta {
+  margin: 10px 0 0;
+}
+
 .data-viewer__public-row {
   display: flex;
   flex-wrap: wrap;

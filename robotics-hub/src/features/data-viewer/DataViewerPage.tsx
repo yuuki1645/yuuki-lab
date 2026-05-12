@@ -12,9 +12,85 @@ import {
   servoRowsAroundPerf,
 } from "./telemetryTimeSync";
 import "./DataViewerPage.css";
+import dataViewerDatasets from "./dataViewerDatasets.json";
 
 const SERVO_WINDOW_SEC = 0.35;
 const SERVO_MAX_ROWS = 24;
+
+const DATA_VIEWER_DATASETS_BASE = "/data-viewer-datasets/";
+const DATASET_IMU_FILE = "imu.csv";
+const DATASET_SERVO_FILE = "servo.csv";
+const DATASET_MANIFEST_FILE = "manifest.json";
+const VIDEO_FALLBACK_NAMES = ["video.mp4", "session.mp4", "recording.mp4"] as const;
+
+type DataViewerManifest = {
+  perf_timestamp_at_video_zero?: number;
+  video_file?: string;
+  video?: string;
+};
+
+function parseManifestJson(text: string): DataViewerManifest | null {
+  try {
+    const o = JSON.parse(text) as unknown;
+    if (typeof o !== "object" || o === null) return null;
+    const r = o as Record<string, unknown>;
+    const out: DataViewerManifest = {};
+    const p = r.perf_timestamp_at_video_zero;
+    if (typeof p === "number" && Number.isFinite(p)) {
+      out.perf_timestamp_at_video_zero = p;
+    }
+    if (typeof r.video_file === "string" && r.video_file.length > 0) {
+      out.video_file = r.video_file;
+    }
+    if (typeof r.video === "string" && r.video.length > 0) {
+      out.video = r.video;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchManifest(
+  base: string,
+  signal: AbortSignal
+): Promise<DataViewerManifest | null> {
+  const r = await fetch(`${base}${DATASET_MANIFEST_FILE}`, { signal });
+  if (!r.ok) return null;
+  const text = await r.text();
+  return parseManifestJson(text);
+}
+
+async function resolvePublicVideoUrl(
+  base: string,
+  manifest: DataViewerManifest | null,
+  signal: AbortSignal
+): Promise<string | null> {
+  const names: string[] = [];
+  if (manifest?.video_file) names.push(manifest.video_file);
+  if (manifest?.video) names.push(manifest.video);
+  for (const f of VIDEO_FALLBACK_NAMES) names.push(f);
+  const uniq = [...new Set(names)];
+  for (const name of uniq) {
+    if (name.includes("/") || name.includes("\\") || name.includes("..")) continue;
+    const url = `${base}${name}`;
+    try {
+      const head = await fetch(url, { method: "HEAD", signal });
+      if (head.ok) return url;
+      if (!signal.aborted && (head.status === 404 || head.status === 405)) {
+        const get = await fetch(url, {
+          method: "GET",
+          signal,
+          headers: { Range: "bytes=0-0" },
+        });
+        if (get.ok || get.status === 206) return url;
+      }
+    } catch (e) {
+      if (signal.aborted) throw e;
+    }
+  }
+  return null;
+}
 
 function fmtFixed(n: number | undefined, digits: number): string {
   if (n === undefined || !Number.isFinite(n)) return "—";
@@ -92,14 +168,18 @@ function rowsWithPerfSortedServo(rows: ServoCsvRow[]): ServoCsvRow[] {
 export default function DataViewerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoBlobUrlRef = useRef<string | null>(null);
+  const loadDatasetAbortRef = useRef<AbortController | null>(null);
 
   const [imuRows, setImuRows] = useState<ImuCsvRow[]>([]);
   const [servoRows, setServoRows] = useState<ServoCsvRow[]>([]);
   const [imuName, setImuName] = useState("");
   const [servoName, setServoName] = useState("");
-  const [diskVideoFileName, setDiskVideoFileName] = useState("");
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
-  const [publicVideoPath, setPublicVideoPath] = useState("/data-viewer-datasets/YuukiLab001/");
+
+  const firstDatasetId = dataViewerDatasets[0]?.id ?? "";
+  const [selectedDatasetId, setSelectedDatasetId] = useState(firstDatasetId);
+  const [datasetLoading, setDatasetLoading] = useState(false);
+  const [videoHint, setVideoHint] = useState<string | null>(null);
 
   const [videoAnchorPerf, setVideoAnchorPerf] = useState<number>(0);
   const [anchorTouched, setAnchorTouched] = useState(false);
@@ -135,66 +215,93 @@ export default function DataViewerPage() {
     }
   };
 
-  const onPickImu = async (f: File | null) => {
-    setParseError(null);
-    if (!f) return;
-    try {
-      const text = await f.text();
-      const rows = parseImuCsv(text);
-      setImuRows(rows);
-      setImuName(f.name);
-    } catch (e) {
-      setImuRows([]);
-      setImuName("");
-      setParseError(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const onPickServo = async (f: File | null) => {
-    setParseError(null);
-    if (!f) return;
-    try {
-      const text = await f.text();
-      const rows = parseServoCsv(text);
-      setServoRows(rows);
-      setServoName(f.name);
-    } catch (e) {
-      setServoRows([]);
-      setServoName("");
-      setParseError(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const onPickVideo = (f: File | null) => {
-    setParseError(null);
-    revokeVideoBlob();
-    setVideoSrc(null);
-    setDiskVideoFileName("");
-    setVideoDuration(0);
-    setVideoTime(0);
-    if (!f) return;
-    const url = URL.createObjectURL(f);
-    videoBlobUrlRef.current = url;
-    setVideoSrc(url);
-    setDiskVideoFileName(f.name);
-  };
-
-  const loadPublicVideo = () => {
-    setParseError(null);
-    revokeVideoBlob();
-    const raw = publicVideoPath.trim();
-    if (!raw) {
-      setParseError("動画のパスを入力してください（例: /data-viewer-datasets/YuukiLab001/session.mp4）");
+  const loadDatasetFromPublic = useCallback(async () => {
+    const id = selectedDatasetId.trim();
+    if (!id) {
+      setParseError("データセットを選んでください。");
       return;
     }
-    const path = raw.startsWith("/") ? raw : `/${raw}`;
-    setVideoSrc(path);
-    setDiskVideoFileName("");
-    setVideoDuration(0);
-    setVideoTime(0);
-  };
 
-  useEffect(() => () => revokeVideoBlob(), []);
+    loadDatasetAbortRef.current?.abort();
+    const ac = new AbortController();
+    loadDatasetAbortRef.current = ac;
+    const { signal } = ac;
+
+    setParseError(null);
+    setVideoHint(null);
+    setDatasetLoading(true);
+
+    const base = `${DATA_VIEWER_DATASETS_BASE}${id}/`;
+
+    try {
+      const manifest = await fetchManifest(base, signal);
+
+      const imuRes = await fetch(`${base}${DATASET_IMU_FILE}`, { signal });
+      if (!imuRes.ok) {
+        throw new Error(`imu.csv が取得できません (${imuRes.status})`);
+      }
+      const imuText = await imuRes.text();
+      const imuParsed = parseImuCsv(imuText);
+
+      const servoRes = await fetch(`${base}${DATASET_SERVO_FILE}`, { signal });
+      if (!servoRes.ok) {
+        throw new Error(`servo.csv が取得できません (${servoRes.status})`);
+      }
+      const servoText = await servoRes.text();
+      const servoParsed = parseServoCsv(servoText);
+
+      revokeVideoBlob();
+      setImuRows(imuParsed);
+      setServoRows(servoParsed);
+      setImuName(`${id}/${DATASET_IMU_FILE}`);
+      setServoName(`${id}/${DATASET_SERVO_FILE}`);
+
+      const perfAnchor = manifest?.perf_timestamp_at_video_zero;
+      if (typeof perfAnchor === "number" && Number.isFinite(perfAnchor)) {
+        setVideoAnchorPerf(perfAnchor);
+        setAnchorTouched(true);
+      } else {
+        setAnchorTouched(false);
+      }
+
+      const videoUrl = await resolvePublicVideoUrl(base, manifest, signal);
+      if (videoUrl) {
+        setVideoSrc(videoUrl);
+        setVideoHint(null);
+      } else {
+        setVideoSrc(null);
+        setVideoDuration(0);
+        setVideoTime(0);
+        setVideoHint(
+          "動画ファイルが見つかりませんでした。manifest.json に video_file を書くか、video.mp4 / session.mp4 を置いてください。"
+        );
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setImuRows([]);
+      setServoRows([]);
+      setImuName("");
+      setServoName("");
+      revokeVideoBlob();
+      setVideoSrc(null);
+      setParseError(e instanceof Error ? e.message : String(e));
+    } finally {
+      if (loadDatasetAbortRef.current === ac) {
+        setDatasetLoading(false);
+      }
+    }
+  }, [selectedDatasetId]);
+
+  useEffect(() => {
+    return () => {
+      loadDatasetAbortRef.current?.abort();
+      const u = videoBlobUrlRef.current;
+      if (u) {
+        URL.revokeObjectURL(u);
+        videoBlobUrlRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -273,56 +380,59 @@ export default function DataViewerPage() {
           IMU / サーボの CSV と動画を突き合わせ、再生位置に対応するログ行を確認します。時刻合わせの基準は{" "}
           <code className="data-viewer__code">perf_timestamp</code>（
           <code className="data-viewer__code">perf_counter</code> 秒）で、{" "}
-          <code className="data-viewer__code">wall_unix</code> は参考表示です。データセット一式（動画・IMU / サーボ
-          CSV・マニフェストなど）は{" "}
-          <code className="data-viewer__code">robotics-hub/public/data-viewer-datasets/YuukiLab001/</code>
-          のようにセットごとにフォルダを分けて置きます。動画は下の「公開パスから読み込み」で指定できます。CSV はファイル選択から読み込んでください。
+          <code className="data-viewer__code">wall_unix</code> は参考表示です。データセットは{" "}
+          <code className="data-viewer__code">robotics-hub/public/data-viewer-datasets/</code> 直下のフォルダ（例:{" "}
+          <code className="data-viewer__code">YuukiLab001</code>）に{" "}
+          <code className="data-viewer__code">imu.csv</code>・
+          <code className="data-viewer__code">servo.csv</code>・任意の{" "}
+          <code className="data-viewer__code">manifest.json</code> と動画を置き、下の一覧から選んで読み込んでください。
         </p>
       </header>
 
-      <section className="data-viewer__panel" aria-label="ファイル読み込み">
+      <section className="data-viewer__panel" aria-label="データセット読み込み">
         <h2 className="data-viewer__h2">読み込み</h2>
-        <div className="data-viewer__loads">
-          <label className="data-viewer__file">
-            <span className="data-viewer__file-label">IMU CSV</span>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => void onPickImu(e.target.files?.[0] ?? null)}
-            />
-            {imuName ? <span className="data-viewer__fname">{imuName}</span> : null}
+        <div className="data-viewer__dataset-row">
+          <label className="data-viewer__dataset-label">
+            データセット（<code className="data-viewer__code">public/data-viewer-datasets/</code> 内）
+            <select
+              className="data-viewer__select"
+              value={selectedDatasetId}
+              onChange={(e) => setSelectedDatasetId(e.target.value)}
+              disabled={datasetLoading}
+            >
+              {dataViewerDatasets.length === 0 ? (
+                <option value="">（データセット未登録）</option>
+              ) : (
+                dataViewerDatasets.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.title} ({d.id})
+                  </option>
+                ))
+              )}
+            </select>
           </label>
-          <label className="data-viewer__file">
-            <span className="data-viewer__file-label">サーボ CSV</span>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => void onPickServo(e.target.files?.[0] ?? null)}
-            />
-            {servoName ? <span className="data-viewer__fname">{servoName}</span> : null}
-          </label>
-          <label className="data-viewer__file">
-            <span className="data-viewer__file-label">動画ファイル</span>
-            <input type="file" accept="video/*" onChange={(e) => onPickVideo(e.target.files?.[0] ?? null)} />
-            {diskVideoFileName ? <span className="data-viewer__fname">{diskVideoFileName}</span> : null}
-          </label>
-        </div>
-        <div className="data-viewer__public-row">
-          <label className="data-viewer__public-label">
-            公開パスから読み込み（Vite の public、動画のみ）
-            <input
-              className="data-viewer__public-input"
-              type="text"
-              value={publicVideoPath}
-              onChange={(e) => setPublicVideoPath(e.target.value)}
-              placeholder="/data-viewer-datasets/YuukiLab001/session.mp4"
-              spellCheck={false}
-            />
-          </label>
-          <button type="button" className="data-viewer__btn" onClick={loadPublicVideo}>
-            動画を適用
+          <button
+            type="button"
+            className="data-viewer__btn"
+            onClick={() => void loadDatasetFromPublic()}
+            disabled={datasetLoading || !dataViewerDatasets.length}
+          >
+            {datasetLoading ? "読み込み中…" : "データセットを読み込み"}
           </button>
         </div>
+        {videoHint ? <p className="data-viewer__muted data-viewer__video-hint">{videoHint}</p> : null}
+        {imuName ? (
+          <p className="data-viewer__muted data-viewer__loaded-meta">
+            読み込み: <code className="data-viewer__code">{imuName}</code>{" "}
+            <code className="data-viewer__code">{servoName}</code>
+            {videoSrc ? (
+              <>
+                {" "}
+                <code className="data-viewer__code">{videoSrc}</code>
+              </>
+            ) : null}
+          </p>
+        ) : null}
         {parseError ? <p className="data-viewer__error">{parseError}</p> : null}
       </section>
 
@@ -361,7 +471,9 @@ export default function DataViewerPage() {
               </p>
             </>
           ) : (
-            <p className="data-viewer__empty">動画を選択するか、公開パスから読み込んでください。</p>
+            <p className="data-viewer__empty">
+              動画がありません。上でデータセットを読み込むか、フォルダ内に動画（または manifest の video_file）を追加してください。
+            </p>
           )}
         </section>
 
@@ -457,7 +569,7 @@ export default function DataViewerPage() {
       <section className="data-viewer__panel" aria-label="IMU 行">
         <h2 className="data-viewer__h2">IMU（最も近い行）</h2>
         {!imuRows.length ? (
-          <p className="data-viewer__empty">IMU CSV を読み込んでください。</p>
+          <p className="data-viewer__empty">データセットを読み込んでください。</p>
         ) : !imuByPerf.length ? (
           <p className="data-viewer__empty">
             IMU 行に <code className="data-viewer__code">perf_timestamp</code> がありません。
@@ -552,7 +664,7 @@ export default function DataViewerPage() {
       <section className="data-viewer__panel" aria-label="サーボ行">
         <h2 className="data-viewer__h2">サーボ（前後 {SERVO_WINDOW_SEC} 秒以内・近い順）</h2>
         {!servoRows.length ? (
-          <p className="data-viewer__empty">サーボ CSV を読み込んでください。</p>
+          <p className="data-viewer__empty">データセットを読み込んでください。</p>
         ) : !servoByPerf.length ? (
           <p className="data-viewer__empty">
             サーボ行に <code className="data-viewer__code">perf_timestamp</code> がありません。

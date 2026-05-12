@@ -21,6 +21,29 @@ function fmtFixed(n: number | undefined, digits: number): string {
   return n.toFixed(digits);
 }
 
+/** 動画オーバーレイと同様、秒を経過時間として HH:MM:SS.ss（百分の一秒）で表す */
+function formatPerfSecondsAsHMSss(sec: number | undefined): string {
+  if (sec === undefined || !Number.isFinite(sec)) return "—";
+  const neg = sec < 0;
+  let t = Math.abs(sec);
+
+  let centis = Math.round((t % 1) * 100);
+  let whole = Math.floor(t);
+  if (centis >= 100) {
+    centis -= 100;
+    whole += 1;
+  }
+
+  const h = Math.floor(whole / 3600);
+  let rem = whole % 3600;
+  const m = Math.floor(rem / 60);
+  const s = rem % 60;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const core = `${pad(h)}:${pad(m)}:${pad(s)}.${pad(centis)}`;
+  return neg ? `-${core}` : core;
+}
+
 function wallToLocalString(wall: number): string {
   try {
     return new Date(wall * 1000).toLocaleString();
@@ -430,6 +453,10 @@ export default function DataViewerPage() {
                 <tr>
                   <th>perf_timestamp</th>
                   <td className="data-viewer__td-num">{fmtFixed(imuNearest.perf_timestamp, 6)}</td>
+                </tr>
+                <tr>
+                  <th>HH:MM:SS.ss</th>
+                  <td className="data-viewer__td-num">{formatPerfSecondsAsHMSss(imuNearest.perf_timestamp)}</td>
                 </tr>
                 <tr>
                   <th>wall_unix</th>

@@ -21,30 +21,30 @@ function fmtFixed(n: number | undefined, digits: number): string {
   return n.toFixed(digits);
 }
 
-/** 先頭 1 文字を符号（負は `-`、正はスペース）、続く 8 文字に絶対値を左埋めし小数点位置を揃える（合計 9 桁想定。本体が 8 を超えるときはそのまま連結） */
-const IMU_AXIS_SIGN_BODY = 8;
+/** 負は `-0.1234` のように数値先頭にマイナス。全体を左スペース埋めして小数点を縦に揃える */
+const IMU_NUM_FIELD_WIDTH = 10;
 
-function fmtAxisAligned(n: number | undefined, fracDigits: number): string {
+function fmtSignedNumPadded(n: number | undefined, fracDigits: number): string {
   if (n === undefined || !Number.isFinite(n)) {
-    return "    —    ";
+    return "    —    ".slice(0, IMU_NUM_FIELD_WIDTH).padStart(IMU_NUM_FIELD_WIDTH, " ");
   }
-  const sign = n < 0 ? "-" : " ";
   const body = Math.abs(n).toFixed(fracDigits);
-  const padded = body.length >= IMU_AXIS_SIGN_BODY ? body : body.padStart(IMU_AXIS_SIGN_BODY, " ");
-  return sign + padded;
+  const signed = n < 0 ? `-${body}` : body;
+  return signed.length >= IMU_NUM_FIELD_WIDTH ? signed : signed.padStart(IMU_NUM_FIELD_WIDTH, " ");
 }
 
-function formatAccelAxisLine(row: ImuCsvRow): string {
-  return `accel x=${fmtAxisAligned(row.accel_x, 4)} / y=${fmtAxisAligned(row.accel_y, 4)} / z=${fmtAxisAligned(row.accel_z, 4)}`;
+/** `label=` を固定幅にし、その直後に数値フィールド（fmtSignedNumPadded）を連結 */
+function fmtLabeledImuValue(
+  label: string,
+  n: number | undefined,
+  fracDigits: number,
+  labelWithEqWidth: number
+): string {
+  return (label + "=").padEnd(labelWithEqWidth, " ") + fmtSignedNumPadded(n, fracDigits);
 }
 
-function formatGyroAxisLine(row: ImuCsvRow): string {
-  return `gyro x=${fmtAxisAligned(row.gyro_x, 4)} / y=${fmtAxisAligned(row.gyro_y, 4)} / z=${fmtAxisAligned(row.gyro_z, 4)}`;
-}
-
-function formatAngleAxisLine(row: ImuCsvRow): string {
-  return `pitch=${fmtAxisAligned(row.angle_pitch, 4)} / roll=${fmtAxisAligned(row.angle_roll, 4)} / yaw=${fmtAxisAligned(row.angle_yaw, 4)}`;
-}
+const IMU_LABEL_XYZ = 3; // "x=", "y=", "z="
+const IMU_LABEL_ANGLE = 6; // "pitch=" までで roll=/yaw= を揃える
 
 /** 動画オーバーレイと同様、秒を経過時間として HH:MM:SS.ss（百分の一秒）で表す */
 function formatPerfSecondsAsHMSss(sec: number | undefined): string {
@@ -492,21 +492,54 @@ export default function DataViewerPage() {
                   <td>{imuNearest.mock === undefined ? "—" : imuNearest.mock ? "true" : "false"}</td>
                 </tr>
                 <tr>
-                  <th>加速度（各軸 g）</th>
-                  <td className="data-viewer__td-num data-viewer__imu-mono">
-                    {formatAccelAxisLine(imuNearest)}
-                  </td>
-                </tr>
-                <tr>
-                  <th>角速度（各軸 °/s）</th>
-                  <td className="data-viewer__td-num data-viewer__imu-mono">
-                    {formatGyroAxisLine(imuNearest)}
-                  </td>
-                </tr>
-                <tr>
-                  <th>姿勢角（pitch / roll / yaw、°）</th>
-                  <td className="data-viewer__td-num data-viewer__imu-mono">
-                    {formatAngleAxisLine(imuNearest)}
+                  <td colSpan={2} className="data-viewer__imu-vector-block">
+                    <table
+                      className="data-viewer__imu-3col"
+                      aria-label="加速度・角速度・姿勢角（各列で軸を縦に表示）"
+                    >
+                      <thead>
+                        <tr>
+                          <th scope="col">加速度（g）</th>
+                          <th scope="col">角速度（°/s）</th>
+                          <th scope="col">姿勢角（°）</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("x", imuNearest.accel_x, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("x", imuNearest.gyro_x, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("pitch", imuNearest.angle_pitch, 4, IMU_LABEL_ANGLE)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("y", imuNearest.accel_y, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("y", imuNearest.gyro_y, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("roll", imuNearest.angle_roll, 4, IMU_LABEL_ANGLE)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("z", imuNearest.accel_z, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("z", imuNearest.gyro_z, 4, IMU_LABEL_XYZ)}
+                          </td>
+                          <td className="data-viewer__td-num data-viewer__imu-mono">
+                            {fmtLabeledImuValue("yaw", imuNearest.angle_yaw, 4, IMU_LABEL_ANGLE)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </td>
                 </tr>
               </tbody>

@@ -272,6 +272,39 @@
   white-space: pre;
 }
 
+.data-viewer__imu-vector-block {
+  padding: 10px 0 4px;
+  vertical-align: top;
+}
+
+.data-viewer__imu-3col {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.data-viewer__imu-3col th {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 6px 12px 8px 0;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.12);
+  color: #cfd6ff;
+  font-weight: 600;
+  font-size: 0.82rem;
+  vertical-align: bottom;
+}
+
+.data-viewer__imu-3col td {
+  padding: 5px 12px 5px 0;
+  vertical-align: top;
+  border-bottom: none;
+}
+
+.data-viewer__imu-3col tbody tr:last-child td {
+  padding-bottom: 2px;
+}
+
 .data-viewer__table-wrap {
   overflow-x: auto;
 }

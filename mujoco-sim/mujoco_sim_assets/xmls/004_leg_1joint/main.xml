@@ -19,6 +19,18 @@
       <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.03" rgba="1 0 0 1"/>
 
       <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
+
+      <!-- 1 Leg -->
+      <body name="leg" pos="0 0 0">
+        <joint name="hip" type="hinge" axis="0 1 0"/>
+
+        <geom name="leg_link" type="box" pos="0 0 -0.45" size="0.02 0.04 0.35" material="metal" mass="1"/>
+        <geom name="foot_plate" type="box" pos="0.1 0 -0.8" size="0.15 0.085 0.03" material="metal" mass="0.5"/>
+      </body>
     </body>
   </worldbody>
+
+  <actuator>
+    <position name="hip_servo" joint="hip" kp="100"/>
+  </actuator>
 </mujoco>

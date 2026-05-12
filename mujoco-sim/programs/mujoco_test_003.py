@@ -31,7 +31,7 @@ data = mujoco.MjData(model)
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-acc = None
+acc = np.zeros(3, dtype=np.float32)
 
 @socketio.on("connect")
 def _on_connect():
@@ -42,14 +42,17 @@ def _drain_loop():
   global acc
 
   while True:
-    socketio.emit("rl_telemetry/step", {"obs_acc": acc.tolist()})
+    socketio.emit(
+      "rl_telemetry/step",
+      {"obs_acc": acc.tolist(), "obs_acc_unit": "g"},
+    )
     time.sleep(0.1)
 
 def _run_blocking():
   socketio.start_background_task(_drain_loop)
   socketio.run(app, host="0.0.0.0", port=8791, debug=False)
 
-thread = threading.Thread(target=_run_blocking)
+thread = threading.Thread(target=_run_blocking, daemon=True)
 thread.start()
 
 

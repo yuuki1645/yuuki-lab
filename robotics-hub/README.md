@@ -2,10 +2,12 @@
 
 複数のロボット用フロントエンドツールを **1 つの Vite + React + TypeScript アプリ** にまとめたポータルです。上部ナビでツールを切り替えます。
 
+**履歴について:** かつてリポジトリ直下にあったスタンドアロンプロジェクト（`leg-servo-tuner` / `leg-servo-tuner-react` / `motion-editor-react` / `motion-editor-react-ts`）は、本ハブへの統合後に**ディレクトリごと削除**しました。旧ソースが必要なときは Git の過去コミットを参照してください（ルート [README.md](../README.md) にも記載）。
+
 現在同梱:
 
-- **モーションエディタ** — タイムライン・キーフレーム編集（旧 `motion-editor-react-ts`）
-- **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner-react` の TypeScript 版）
+- **モーションエディタ** — タイムライン・キーフレーム編集（旧スタンドアロン `motion-editor-react-ts` 系から統合）
+- **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
 - **テレメトリ** — 学習時は `train_002_full_actuators` の Socket.IO（観測・行動）に加え、`robot-daemon` の実機 IMU（`imu/sample`）を同一ページで表示

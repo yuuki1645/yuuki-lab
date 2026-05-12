@@ -30,29 +30,17 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
 
-## ■ （更新停止・レガシー）leg-servo-tuner
+## ■ 削除済み：旧スタンドアロンのフロントエンド
 
-サーボの角度を 1 つずつ調整する Flask アプリです。相当機能は **robotics-hub** のレッグサーボ調整にあります。
+次のディレクトリは、**[robotics-hub](robotics-hub/)** へ機能を集約したのち、リポジトリから**削除済み**です（重複メンテナンスの解消のため）。  
+当時のソースを参照したい場合は、**該当コミットより前の Git 履歴**を辿ってください。
 
-詳細は [leg-servo-tuner/README.md](leg-servo-tuner/README.md) を参照してください。
+- `leg-servo-tuner`（Flask 版のレッグサーボ調整）
+- `leg-servo-tuner-react`
+- `motion-editor-react`
+- `motion-editor-react-ts`
 
-## ■ （更新停止・レガシー）leg-servo-tuner-react
-
-`leg-servo-tuner` を React で実装したものです。相当機能は **robotics-hub** にあります。
-
-詳細は [leg-servo-tuner-react/README.md](leg-servo-tuner-react/README.md) を参照してください。
-
-## ■ （更新停止・レガシー）motion-editor-react
-
-React で作ったモーションエディタです。後継の TypeScript 版や **robotics-hub** に流れを寄せています。
-
-詳細は [motion-editor-react/README.md](motion-editor-react/README.md) を参照してください。
-
-## ■ （更新停止・レガシー）motion-editor-react-ts
-
-`motion-editor-react` を TypeScript で作り直したものでした。**機能は [robotics-hub](robotics-hub/) のモーションエディタへ移行済み**であり、日常的な開発の中心ではありません（参照・履歴用）。
-
-詳細は [motion-editor-react-ts/README.md](motion-editor-react-ts/README.md) を参照してください。
+上記の役割は **robotics-hub** の **レッグサーボ調整**・**モーションエディタ** 等に引き継がれています。手順の詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
 ## ■ （更新停止中）programs
 

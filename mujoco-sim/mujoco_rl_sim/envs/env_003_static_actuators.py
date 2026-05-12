@@ -242,6 +242,7 @@ class Env003StaticActuators(gym.Env):
         a_logical = np.asarray(self._prev_action_logical_deg, dtype=np.float32).copy()
 
         ctrl_rad = np.asarray(self._fixed_ctrl_rad, dtype=np.float32)
+        ctrl_rad = np.zeros_like(ctrl_rad)
         self.data.ctrl[:] = ctrl_rad
         mujoco.mj_step(self.model, self.data)
         if self._step_wall_sleep_sec > 0.0:

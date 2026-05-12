@@ -436,7 +436,7 @@ export default function DataViewerPage() {
         {parseError ? <p className="data-viewer__error">{parseError}</p> : null}
       </section>
 
-      <div className="data-viewer__grid">
+      <div className="data-viewer__main-row">
         <section className="data-viewer__panel data-viewer__panel--video" aria-label="動画">
           <h2 className="data-viewer__h2">動画</h2>
           {videoSrc ? (
@@ -477,21 +477,168 @@ export default function DataViewerPage() {
           )}
         </section>
 
-        <section className="data-viewer__panel" aria-label="時刻合わせ">
-          <h2 className="data-viewer__h2">時刻合わせ</h2>
-          <p className="data-viewer__muted">
-            動画の 0 秒が、次の <code className="data-viewer__code">perf_timestamp</code>（
-            <code className="data-viewer__code">perf_counter</code> 秒）に対応します。CSV の{" "}
-            <code className="data-viewer__code">perf_timestamp</code> と揃えてください。
+        <div className="data-viewer__main-right">
+          <section className="data-viewer__panel data-viewer__panel--stack" aria-label="IMU 行">
+            <h2 className="data-viewer__h2">IMU（最も近い行）</h2>
+            {!imuRows.length ? (
+              <p className="data-viewer__empty">データセットを読み込んでください。</p>
+            ) : !imuByPerf.length ? (
+              <p className="data-viewer__empty">
+                IMU 行に <code className="data-viewer__code">perf_timestamp</code> がありません。
+              </p>
+            ) : imuNearest === undefined ? (
+              <p className="data-viewer__empty">該当行がありません。</p>
+            ) : (
+              <>
+                <p className="data-viewer__muted">
+                  現在位置との差分:{" "}
+                  {imuDeltaMs !== null ? (
+                    <code className="data-viewer__code">{imuDeltaMs.toFixed(1)} ms</code>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+                <table className="data-viewer__table">
+                  <tbody>
+                    <tr>
+                      <th>perf_timestamp</th>
+                      <td className="data-viewer__td-num">{fmtFixed(imuNearest.perf_timestamp, 6)}</td>
+                    </tr>
+                    <tr>
+                      <th>HH:MM:SS.ss</th>
+                      <td className="data-viewer__td-num">{formatPerfSecondsAsHMSss(imuNearest.perf_timestamp)}</td>
+                    </tr>
+                    <tr>
+                      <th>wall_unix</th>
+                      <td className="data-viewer__td-num">{fmtFixed(imuNearest.wall_unix, 6)}</td>
+                    </tr>
+                    <tr>
+                      <th>mock</th>
+                      <td>{imuNearest.mock === undefined ? "—" : imuNearest.mock ? "true" : "false"}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={2} className="data-viewer__imu-vector-block">
+                        <table
+                          className="data-viewer__imu-3col"
+                          aria-label="加速度・角速度・姿勢角（各列で軸を縦に表示）"
+                        >
+                          <thead>
+                            <tr>
+                              <th scope="col">加速度（g）</th>
+                              <th scope="col">角速度（°/s）</th>
+                              <th scope="col">姿勢角（°）</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("x", imuNearest.accel_x, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("x", imuNearest.gyro_x, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("pitch", imuNearest.angle_pitch, 4, IMU_LABEL_ANGLE)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("y", imuNearest.accel_y, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("y", imuNearest.gyro_y, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("roll", imuNearest.angle_roll, 4, IMU_LABEL_ANGLE)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("z", imuNearest.accel_z, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("z", imuNearest.gyro_z, 4, IMU_LABEL_XYZ)}
+                              </td>
+                              <td className="data-viewer__td-num data-viewer__imu-mono">
+                                {fmtLabeledImuValue("yaw", imuNearest.angle_yaw, 4, IMU_LABEL_ANGLE)}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+          </section>
+
+          <section className="data-viewer__panel data-viewer__panel--stack" aria-label="サーボ行">
+            <h2 className="data-viewer__h2">サーボ（前後 {SERVO_WINDOW_SEC} 秒以内・近い順）</h2>
+            {!servoRows.length ? (
+              <p className="data-viewer__empty">データセットを読み込んでください。</p>
+            ) : !servoByPerf.length ? (
+              <p className="data-viewer__empty">
+                サーボ行に <code className="data-viewer__code">perf_timestamp</code> がありません。
+              </p>
+            ) : servoNear.length === 0 ? (
+              <p className="data-viewer__empty">この付近にサーボログがありません。</p>
+            ) : (
+              <div className="data-viewer__table-wrap">
+                <table className="data-viewer__table data-viewer__table--wide">
+                  <thead>
+                    <tr>
+                      <th>Δ ms（perf）</th>
+                      <th>perf_timestamp</th>
+                      <th>wall_unix</th>
+                      <th>ch</th>
+                      <th>mode</th>
+                      <th>logical°</th>
+                      <th>physical°</th>
+                      <th>endpoint</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {servoNear.map((r, i) => {
+                      const p = r.perf_timestamp!;
+                      const dms = (p - currentPerf) * 1000;
+                      return (
+                        <tr key={`${p}-${r.ch}-${i}`}>
+                          <td className="data-viewer__td-num">{dms.toFixed(1)}</td>
+                          <td className="data-viewer__td-num">{fmtFixed(r.perf_timestamp, 6)}</td>
+                          <td className="data-viewer__td-num">{fmtFixed(r.wall_unix, 6)}</td>
+                          <td>{r.ch ?? "—"}</td>
+                          <td>{r.mode ?? "—"}</td>
+                          <td className="data-viewer__td-num">{fmtFixed(r.logical_deg, 3)}</td>
+                          <td className="data-viewer__td-num">{fmtFixed(r.physical_deg, 3)}</td>
+                          <td>{r.endpoint ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <section className="data-viewer__panel data-viewer__panel--sync" aria-label="時刻合わせ">
+        <h2 className="data-viewer__h2">時刻合わせ</h2>
+        <p className="data-viewer__muted">
+          動画の 0 秒が、次の <code className="data-viewer__code">perf_timestamp</code>（
+          <code className="data-viewer__code">perf_counter</code> 秒）に対応します。CSV の{" "}
+          <code className="data-viewer__code">perf_timestamp</code> と揃えてください。
+        </p>
+        {(imuRows.length > 0 || servoRows.length > 0) &&
+        csvRange.lo === null &&
+        csvRange.hi === null ? (
+          <p className="data-viewer__error" role="status">
+            読み込んだ CSV に有限な <code className="data-viewer__code">perf_timestamp</code>{" "}
+            がありません。daemon の新しいログ形式（perf 列付き）を使うか、列を追加してください。
           </p>
-          {(imuRows.length > 0 || servoRows.length > 0) &&
-          csvRange.lo === null &&
-          csvRange.hi === null ? (
-            <p className="data-viewer__error" role="status">
-              読み込んだ CSV に有限な <code className="data-viewer__code">perf_timestamp</code>{" "}
-              がありません。daemon の新しいログ形式（perf 列付き）を使うか、列を追加してください。
-            </p>
-          ) : null}
+        ) : null}
+        <div className="data-viewer__sync-body">
           <div className="data-viewer__anchor-row">
             <label className="data-viewer__anchor-label">
               アンカー perf_timestamp
@@ -525,7 +672,7 @@ export default function DataViewerPage() {
               </button>
             </div>
           </div>
-          <dl className="data-viewer__dl">
+          <dl className="data-viewer__dl data-viewer__dl--sync">
             <div>
               <dt>現在の perf_timestamp</dt>
               <dd>
@@ -563,150 +710,7 @@ export default function DataViewerPage() {
               </dd>
             </div>
           </dl>
-        </section>
-      </div>
-
-      <section className="data-viewer__panel" aria-label="IMU 行">
-        <h2 className="data-viewer__h2">IMU（最も近い行）</h2>
-        {!imuRows.length ? (
-          <p className="data-viewer__empty">データセットを読み込んでください。</p>
-        ) : !imuByPerf.length ? (
-          <p className="data-viewer__empty">
-            IMU 行に <code className="data-viewer__code">perf_timestamp</code> がありません。
-          </p>
-        ) : imuNearest === undefined ? (
-          <p className="data-viewer__empty">該当行がありません。</p>
-        ) : (
-          <>
-            <p className="data-viewer__muted">
-              現在位置との差分:{" "}
-              {imuDeltaMs !== null ? (
-                <code className="data-viewer__code">{imuDeltaMs.toFixed(1)} ms</code>
-              ) : (
-                "—"
-              )}
-            </p>
-            <table className="data-viewer__table">
-              <tbody>
-                <tr>
-                  <th>perf_timestamp</th>
-                  <td className="data-viewer__td-num">{fmtFixed(imuNearest.perf_timestamp, 6)}</td>
-                </tr>
-                <tr>
-                  <th>HH:MM:SS.ss</th>
-                  <td className="data-viewer__td-num">{formatPerfSecondsAsHMSss(imuNearest.perf_timestamp)}</td>
-                </tr>
-                <tr>
-                  <th>wall_unix</th>
-                  <td className="data-viewer__td-num">{fmtFixed(imuNearest.wall_unix, 6)}</td>
-                </tr>
-                <tr>
-                  <th>mock</th>
-                  <td>{imuNearest.mock === undefined ? "—" : imuNearest.mock ? "true" : "false"}</td>
-                </tr>
-                <tr>
-                  <td colSpan={2} className="data-viewer__imu-vector-block">
-                    <table
-                      className="data-viewer__imu-3col"
-                      aria-label="加速度・角速度・姿勢角（各列で軸を縦に表示）"
-                    >
-                      <thead>
-                        <tr>
-                          <th scope="col">加速度（g）</th>
-                          <th scope="col">角速度（°/s）</th>
-                          <th scope="col">姿勢角（°）</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("x", imuNearest.accel_x, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("x", imuNearest.gyro_x, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("pitch", imuNearest.angle_pitch, 4, IMU_LABEL_ANGLE)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("y", imuNearest.accel_y, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("y", imuNearest.gyro_y, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("roll", imuNearest.angle_roll, 4, IMU_LABEL_ANGLE)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("z", imuNearest.accel_z, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("z", imuNearest.gyro_z, 4, IMU_LABEL_XYZ)}
-                          </td>
-                          <td className="data-viewer__td-num data-viewer__imu-mono">
-                            {fmtLabeledImuValue("yaw", imuNearest.angle_yaw, 4, IMU_LABEL_ANGLE)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </>
-        )}
-      </section>
-
-      <section className="data-viewer__panel" aria-label="サーボ行">
-        <h2 className="data-viewer__h2">サーボ（前後 {SERVO_WINDOW_SEC} 秒以内・近い順）</h2>
-        {!servoRows.length ? (
-          <p className="data-viewer__empty">データセットを読み込んでください。</p>
-        ) : !servoByPerf.length ? (
-          <p className="data-viewer__empty">
-            サーボ行に <code className="data-viewer__code">perf_timestamp</code> がありません。
-          </p>
-        ) : servoNear.length === 0 ? (
-          <p className="data-viewer__empty">この付近にサーボログがありません。</p>
-        ) : (
-          <div className="data-viewer__table-wrap">
-            <table className="data-viewer__table data-viewer__table--wide">
-              <thead>
-                <tr>
-                  <th>Δ ms（perf）</th>
-                  <th>perf_timestamp</th>
-                  <th>wall_unix</th>
-                  <th>ch</th>
-                  <th>mode</th>
-                  <th>logical°</th>
-                  <th>physical°</th>
-                  <th>endpoint</th>
-                </tr>
-              </thead>
-              <tbody>
-                {servoNear.map((r, i) => {
-                  const p = r.perf_timestamp!;
-                  const dms = (p - currentPerf) * 1000;
-                  return (
-                    <tr key={`${p}-${r.ch}-${i}`}>
-                      <td className="data-viewer__td-num">{dms.toFixed(1)}</td>
-                      <td className="data-viewer__td-num">{fmtFixed(r.perf_timestamp, 6)}</td>
-                      <td className="data-viewer__td-num">{fmtFixed(r.wall_unix, 6)}</td>
-                      <td>{r.ch ?? "—"}</td>
-                      <td>{r.mode ?? "—"}</td>
-                      <td className="data-viewer__td-num">{fmtFixed(r.logical_deg, 3)}</td>
-                      <td className="data-viewer__td-num">{fmtFixed(r.physical_deg, 3)}</td>
-                      <td>{r.endpoint ?? "—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
       </section>
     </div>
   );

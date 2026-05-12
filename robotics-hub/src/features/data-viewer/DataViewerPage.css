@@ -268,6 +268,8 @@
   font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
+  /* 連続スペースを HTML 畳み込みしない（パディング用スペースをそのまま表示） */
+  white-space: pre;
 }
 
 .data-viewer__table-wrap {

@@ -21,6 +21,14 @@ def _acc_sensor_ms2_to_g(acc_ms2: np.ndarray) -> np.ndarray:
 model = mujoco.MjModel.from_xml_path("../mujoco_sim_assets/xmls/004_leg_1joint/main.xml")
 data = mujoco.MjData(model)
 
+
+
+
+
+
+
+
+
 with mujoco.viewer.launch_passive(model, data) as viewer:
   while viewer.is_running():
     mujoco.mj_step(model, data)

@@ -130,14 +130,13 @@ python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
 | `mujoco-rl-train-full` | 全 `ctrl` を PPO で学習（既定チェックポイント `ppo_full_actuators_live`） |
 | `mujoco-rl-watch-full` | ライブ学習の Viewer（既定は `ppo_full_actuators_live` を監視） |
 | `mujoco-rl-play-full` | 学習済み `ppo_full_actuators` を Viewer で再生 |
-| `mujoco-rl-verify-full` | **検証用**: 単一シミュで Viewer とテレメトリを同期（低速既定・高速学習とは別途） |
 
 ```bash
 python -m mujoco_rl_sim.scripts.train_002_full_actuators --help
 python -m mujoco_rl_sim.scripts.train_002_full_actuators --no-viewer
+python -m mujoco_rl_sim.scripts.train_002_full_actuators --training-viewer --step-wall-sleep 0.2
 python -m mujoco_rl_sim.scripts.watch_full_actuators
 python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuators
-python -m mujoco_rl_sim.scripts.verify_full_actuators_viewer_telemetry --model-base ppo_full_actuators --step-wall-sleep 0.2
 ```
 
 ### `train_002_full_actuators` の追加オプション（要約）
@@ -149,8 +148,11 @@ python -m mujoco_rl_sim.scripts.verify_full_actuators_viewer_telemetry --model-b
 | `--telemetry-port` | テレメトリポート（既定 **`8791`**） |
 | `--telemetry-max-hz` | 送信イベントの最大レート（既定 `60`。`0` で無制限） |
 | `--step-wall-sleep` | 各環境ステップの `mj_step` 後に待つ秒数（既定 `0`。例: `0.05` で壁時計ベースを遅くする） |
+| `--training-viewer` | **学習中**に、テレメトリと同一の `MjData` を MuJoCo passive Viewer で表示（各ステップで同期）。指定時は **`watch_full_actuators` 子プロセスは起動しない**（別シミュのライブ Viewer と混ぜない） |
 
-`--no-viewer` でない場合、起動する **`watch_full_actuators`** 子プロセスには **`--step-wall-sleep`** がそのまま渡されます。`watch_full_actuators` / `play_full_actuators` 単体でも **`--step-wall-sleep`** を指定できます（環境の `Env002FullActuators(step_wall_sleep_sec=...)` に相当）。
+`--training-viewer` を付けない場合でも、`--no-viewer` でない限り **`watch_full_actuators`** 子プロセスが起動します（チェックポイント追随の **別シミュ**）。**Hub のテレメトリと画面を一致させたいときは `--training-viewer`** を使ってください。
+
+`watch_full_actuators` / `play_full_actuators` 単体でも **`--step-wall-sleep`** を指定できます（環境の `Env002FullActuators(step_wall_sleep_sec=...)` に相当）。
 
 ### 学習テレメトリ（Robotics Hub）
 

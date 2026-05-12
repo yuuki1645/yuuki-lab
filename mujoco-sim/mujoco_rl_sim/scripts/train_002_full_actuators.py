@@ -1,6 +1,12 @@
 # type: ignore
 
-"""連番 002: PPO で ``Env002FullActuators`` を学習。オプションでライブ Viewer 子プロセス。"""
+"""連番 002: PPO で ``Env002FullActuators`` を学習。
+
+オプション:
+- ``--training-viewer``: 学習に使っている **同一** ``MjData`` を MuJoCo passive Viewer で表示し、
+  各環境ステップで ``viewer.sync()``。Robotics Hub テレメトリと画面が一致する。
+- （従来）子プロセス ``watch_full_actuators``: 別シミュレーションでチェックポイント再生（ ``--no-viewer`` で抑止）。
+"""
 
 from __future__ import annotations
 
@@ -9,11 +15,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from mujoco_rl_sim.envs.env_002_full_actuators import (
-    Env002FullActuators,
-)
+import mujoco.viewer
+from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
 from mujoco_rl_sim.telemetry import RlTelemetryServer, RlTelemetryWrapper
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
 import mujoco_sim_assets
@@ -22,6 +28,18 @@ import mujoco_sim_assets
 # 学習に使う MJCF（別モデルにしたいときはこの定数だけ書き換え）
 _ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
 TRAIN_MJCF_XML: Path | str = _ASSETS_ROOT / "xmls" / "002_leg_freejoint" / "main.xml"
+
+
+class _SyncTrainingViewerCallback(BaseCallback):
+    """学習環境の ``mj_step`` のたびに passive Viewer を同期する。"""
+
+    def __init__(self, viewer: mujoco.viewer.Handle, verbose: int = 0) -> None:
+        super().__init__(verbose)
+        self._viewer = viewer
+
+    def _on_step(self) -> bool:
+        self._viewer.sync()
+        return True
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,9 +84,20 @@ def parse_args() -> argparse.Namespace:
         help="学習完了時に保存するベース名（.zip は付けない）",
     )
     p.add_argument(
+        "--training-viewer",
+        action="store_true",
+        help=(
+            "学習環境と同一の MjData を MuJoCo Viewer で表示し、各ステップで同期する。"
+            "テレメトリと画面が一致する。指定時は別プロセスの watch_full_actuators は起動しない。"
+        ),
+    )
+    p.add_argument(
         "--no-viewer",
         action="store_true",
-        help="学習中のライブ Viewer 子プロセスを起動しない",
+        help=(
+            "別プロセスのライブ Viewer（watch_full_actuators）を起動しない。"
+            "--training-viewer とは独立（組み合わせ可能で、その場合は内蔵 Viewer のみ）。"
+        ),
     )
     p.add_argument(
         "--no-telemetry",
@@ -165,7 +194,8 @@ def main() -> None:
         telemetry_wr.set_num_timesteps_getter(lambda: int(model.num_timesteps))
 
     viewer_proc: subprocess.Popen | None = None
-    if not args.no_viewer:
+    # --training-viewer のときは学習本体と同一シミュなので子プロセス Viewer は使わない
+    if not args.no_viewer and not args.training_viewer:
         viewer_cmd = [
             sys.executable,
             "-m",
@@ -180,6 +210,8 @@ def main() -> None:
             str(args.reset_joint_noise),
             "--step-wall-sleep",
             str(args.step_wall_sleep),
+            "--max-logical-delta-fraction",
+            str(args.max_logical_delta_fraction),
         ]
         if not args.no_telemetry:
             viewer_cmd.extend(
@@ -190,11 +222,27 @@ def main() -> None:
             )
         viewer_proc = subprocess.Popen(viewer_cmd)
 
-    try:
+    inner = env.unwrapped
+    if not isinstance(inner, Env002FullActuators):
+        raise RuntimeError(
+            "内部環境が Env002FullActuators ではありません（ラッパー構成を確認してください）"
+        )
+
+    if args.training_viewer:
+        print(
+            "[train-full] training-viewer: 学習と同一 MjData を Viewer に表示します "
+            "（テレメトリと一致）。子プロセス watch_full_actuators は起動していません。"
+        )
+
+    def run_training_chunks(callback: BaseCallback | None) -> None:
         learned = 0
         while learned < args.total_timesteps:
             chunk = min(args.learn_chunk, args.total_timesteps - learned)
-            model.learn(total_timesteps=chunk, reset_num_timesteps=False)
+            model.learn(
+                total_timesteps=chunk,
+                reset_num_timesteps=False,
+                callback=callback,
+            )
             learned += chunk
             model.save(args.live_ckpt)
             print(
@@ -204,6 +252,14 @@ def main() -> None:
 
         model.save(args.final_ckpt)
         print(f"[train-full] saved final model: {args.final_ckpt}.zip")
+
+    try:
+        if args.training_viewer:
+            with mujoco.viewer.launch_passive(inner.model, inner.data) as viewer:
+                cb = _SyncTrainingViewerCallback(viewer)
+                run_training_chunks(cb)
+        else:
+            run_training_chunks(None)
     finally:
         env.close()
         if viewer_proc is not None:

@@ -264,6 +264,12 @@
   white-space: nowrap;
 }
 
+.data-viewer__imu-mono {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 .data-viewer__table-wrap {
   overflow-x: auto;
 }

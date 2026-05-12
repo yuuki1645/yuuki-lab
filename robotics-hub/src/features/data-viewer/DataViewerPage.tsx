@@ -21,6 +21,29 @@ function fmtFixed(n: number | undefined, digits: number): string {
   return n.toFixed(digits);
 }
 
+/** マイナス・小数点含めて等幅 9 桁（未値は中央付近に —） */
+const IMU_AXIS_NUM_WIDTH = 9;
+
+function fmtAxisAligned(n: number | undefined, fracDigits: number): string {
+  if (n === undefined || !Number.isFinite(n)) {
+    return "    —    ";
+  }
+  const s = n.toFixed(fracDigits);
+  return s.length >= IMU_AXIS_NUM_WIDTH ? s : s.padStart(IMU_AXIS_NUM_WIDTH, " ");
+}
+
+function formatAccelAxisLine(row: ImuCsvRow): string {
+  return `accel x=${fmtAxisAligned(row.accel_x, 4)} / y=${fmtAxisAligned(row.accel_y, 4)} / z=${fmtAxisAligned(row.accel_z, 4)}`;
+}
+
+function formatGyroAxisLine(row: ImuCsvRow): string {
+  return `gyro x=${fmtAxisAligned(row.gyro_x, 4)} / y=${fmtAxisAligned(row.gyro_y, 4)} / z=${fmtAxisAligned(row.gyro_z, 4)}`;
+}
+
+function formatAngleAxisLine(row: ImuCsvRow): string {
+  return `pitch=${fmtAxisAligned(row.angle_pitch, 4)} / roll=${fmtAxisAligned(row.angle_roll, 4)} / yaw=${fmtAxisAligned(row.angle_yaw, 4)}`;
+}
+
 /** 動画オーバーレイと同様、秒を経過時間として HH:MM:SS.ss（百分の一秒）で表す */
 function formatPerfSecondsAsHMSss(sec: number | undefined): string {
   if (sec === undefined || !Number.isFinite(sec)) return "—";
@@ -467,24 +490,21 @@ export default function DataViewerPage() {
                   <td>{imuNearest.mock === undefined ? "—" : imuNearest.mock ? "true" : "false"}</td>
                 </tr>
                 <tr>
-                  <th>accel (x,y,z)</th>
-                  <td className="data-viewer__td-num">
-                    {fmtFixed(imuNearest.accel_x, 4)} / {fmtFixed(imuNearest.accel_y, 4)} /{" "}
-                    {fmtFixed(imuNearest.accel_z, 4)}
+                  <th>加速度（各軸 g）</th>
+                  <td className="data-viewer__td-num data-viewer__imu-mono">
+                    {formatAccelAxisLine(imuNearest)}
                   </td>
                 </tr>
                 <tr>
-                  <th>gyro (x,y,z)</th>
-                  <td className="data-viewer__td-num">
-                    {fmtFixed(imuNearest.gyro_x, 4)} / {fmtFixed(imuNearest.gyro_y, 4)} /{" "}
-                    {fmtFixed(imuNearest.gyro_z, 4)}
+                  <th>角速度（各軸 °/s）</th>
+                  <td className="data-viewer__td-num data-viewer__imu-mono">
+                    {formatGyroAxisLine(imuNearest)}
                   </td>
                 </tr>
                 <tr>
-                  <th>angle (pitch,roll,yaw)</th>
-                  <td className="data-viewer__td-num">
-                    {fmtFixed(imuNearest.angle_pitch, 3)} / {fmtFixed(imuNearest.angle_roll, 3)} /{" "}
-                    {fmtFixed(imuNearest.angle_yaw, 3)}
+                  <th>姿勢角（pitch / roll / yaw、°）</th>
+                  <td className="data-viewer__td-num data-viewer__imu-mono">
+                    {formatAngleAxisLine(imuNearest)}
                   </td>
                 </tr>
               </tbody>

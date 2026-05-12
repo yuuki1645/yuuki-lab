@@ -6,10 +6,10 @@ import {
   type ServoCsvRow,
 } from "./csvParse";
 import {
-  maxWallUnix,
-  minWallUnix,
-  nearestImuIndex,
-  servoRowsAround,
+  maxPerfTimestamp,
+  minPerfTimestamp,
+  nearestImuIndexByPerf,
+  servoRowsAroundPerf,
 } from "./telemetryTimeSync";
 import "./DataViewerPage.css";
 
@@ -29,6 +29,18 @@ function wallToLocalString(wall: number): string {
   }
 }
 
+function rowsWithPerfSortedImu(rows: ImuCsvRow[]): ImuCsvRow[] {
+  return [...rows]
+    .filter((r) => r.perf_timestamp !== undefined && Number.isFinite(r.perf_timestamp))
+    .sort((a, b) => a.perf_timestamp! - b.perf_timestamp!);
+}
+
+function rowsWithPerfSortedServo(rows: ServoCsvRow[]): ServoCsvRow[] {
+  return [...rows]
+    .filter((r) => r.perf_timestamp !== undefined && Number.isFinite(r.perf_timestamp))
+    .sort((a, b) => a.perf_timestamp! - b.perf_timestamp!);
+}
+
 export default function DataViewerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoBlobUrlRef = useRef<string | null>(null);
@@ -41,18 +53,21 @@ export default function DataViewerPage() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [publicVideoPath, setPublicVideoPath] = useState("/data-viewer-videos/");
 
-  const [videoAnchorWall, setVideoAnchorWall] = useState<number>(0);
+  const [videoAnchorPerf, setVideoAnchorPerf] = useState<number>(0);
   const [anchorTouched, setAnchorTouched] = useState(false);
 
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoTime, setVideoTime] = useState(0);
 
-  const [currentWall, setCurrentWall] = useState<number>(0);
+  const [currentPerf, setCurrentPerf] = useState<number>(0);
   const [parseError, setParseError] = useState<string | null>(null);
 
+  const imuByPerf = useMemo(() => rowsWithPerfSortedImu(imuRows), [imuRows]);
+  const servoByPerf = useMemo(() => rowsWithPerfSortedServo(servoRows), [servoRows]);
+
   const csvRange = useMemo(() => {
-    const lo = minWallUnix(imuRows, servoRows);
-    const hi = maxWallUnix(imuRows, servoRows);
+    const lo = minPerfTimestamp(imuRows, servoRows);
+    const hi = maxPerfTimestamp(imuRows, servoRows);
     return { lo, hi };
   }, [imuRows, servoRows]);
 
@@ -60,7 +75,7 @@ export default function DataViewerPage() {
     if (anchorTouched) return;
     const lo = csvRange.lo;
     if (lo !== null && Number.isFinite(lo)) {
-      setVideoAnchorWall(lo);
+      setVideoAnchorPerf(lo);
     }
   }, [csvRange.lo, anchorTouched]);
 
@@ -136,16 +151,16 @@ export default function DataViewerPage() {
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !Number.isFinite(el.currentTime)) return;
-    setCurrentWall(videoAnchorWall + el.currentTime);
-  }, [videoAnchorWall]);
+    setCurrentPerf(videoAnchorPerf + el.currentTime);
+  }, [videoAnchorPerf]);
 
-  const syncWallFromVideo = useCallback(() => {
+  const syncPerfFromVideo = useCallback(() => {
     const el = videoRef.current;
     if (!el) return;
     const t = el.currentTime;
     setVideoTime(t);
-    setCurrentWall(videoAnchorWall + t);
-  }, [videoAnchorWall]);
+    setCurrentPerf(videoAnchorPerf + t);
+  }, [videoAnchorPerf]);
 
   const seekVideo = useCallback(
     (sec: number) => {
@@ -156,44 +171,47 @@ export default function DataViewerPage() {
         Number.isFinite(d) && d > 0 ? Math.min(Math.max(0, sec), d) : Math.max(0, sec);
       el.currentTime = clamped;
       setVideoTime(clamped);
-      setCurrentWall(videoAnchorWall + clamped);
+      setCurrentPerf(videoAnchorPerf + clamped);
     },
-    [videoAnchorWall]
+    [videoAnchorPerf]
   );
 
   const onVideoTime = () => {
-    syncWallFromVideo();
+    syncPerfFromVideo();
   };
 
   const onLoadedMeta = () => {
     const el = videoRef.current;
     if (!el) return;
     setVideoDuration(Number.isFinite(el.duration) ? el.duration : 0);
-    syncWallFromVideo();
+    syncPerfFromVideo();
   };
 
   const imuIdx = useMemo(
-    () => nearestImuIndex(imuRows, currentWall),
-    [imuRows, currentWall]
+    () => nearestImuIndexByPerf(imuByPerf, currentPerf),
+    [imuByPerf, currentPerf]
   );
-  const imuNearest = imuIdx >= 0 ? imuRows[imuIdx] : undefined;
+  const imuNearest = imuIdx >= 0 ? imuByPerf[imuIdx] : undefined;
   const imuDeltaMs =
-    imuNearest !== undefined ? (currentWall - imuNearest.wall_unix) * 1000 : null;
+    imuNearest !== undefined && imuNearest.perf_timestamp !== undefined
+      ? (currentPerf - imuNearest.perf_timestamp) * 1000
+      : null;
 
   const servoNear = useMemo(
-    () => servoRowsAround(servoRows, currentWall, SERVO_WINDOW_SEC, SERVO_MAX_ROWS),
-    [servoRows, currentWall]
+    () =>
+      servoRowsAroundPerf(servoByPerf, currentPerf, SERVO_WINDOW_SEC, SERVO_MAX_ROWS),
+    [servoByPerf, currentPerf]
   );
 
   const nudgeAnchor = (deltaSec: number) => {
     setAnchorTouched(true);
-    setVideoAnchorWall((a) => a + deltaSec);
+    setVideoAnchorPerf((a) => a + deltaSec);
   };
 
   const resetAnchorToCsvStart = () => {
     setAnchorTouched(false);
     const lo = csvRange.lo;
-    if (lo !== null) setVideoAnchorWall(lo);
+    if (lo !== null) setVideoAnchorPerf(lo);
   };
 
   const scrubberMax = videoDuration > 0 ? videoDuration : 1;
@@ -204,8 +222,10 @@ export default function DataViewerPage() {
       <header className="data-viewer__head">
         <h1 className="data-viewer__title">データビュワー</h1>
         <p className="data-viewer__lead">
-          IMU / サーボの CSV（<code className="data-viewer__code">wall_unix</code>
-          ）と動画を突き合わせ、再生位置に対応するログ行を確認します。動画ファイルは{" "}
+          IMU / サーボの CSV と動画を突き合わせ、再生位置に対応するログ行を確認します。時刻合わせの基準は{" "}
+          <code className="data-viewer__code">perf_timestamp</code>（
+          <code className="data-viewer__code">perf_counter</code> 秒）で、{" "}
+          <code className="data-viewer__code">wall_unix</code> は参考表示です。動画ファイルは{" "}
           <code className="data-viewer__code">robotics-hub/public/data-viewer-videos/</code>{" "}
           に置き、下の「公開パスから読み込み」で指定できます。
         </p>
@@ -299,21 +319,30 @@ export default function DataViewerPage() {
         <section className="data-viewer__panel" aria-label="時刻合わせ">
           <h2 className="data-viewer__h2">時刻合わせ</h2>
           <p className="data-viewer__muted">
-            動画の 0 秒が、次の UNIX 時刻（wall clock）に対応します。CSV の{" "}
-            <code className="data-viewer__code">wall_unix</code> と揃えてください。
+            動画の 0 秒が、次の <code className="data-viewer__code">perf_timestamp</code>（
+            <code className="data-viewer__code">perf_counter</code> 秒）に対応します。CSV の{" "}
+            <code className="data-viewer__code">perf_timestamp</code> と揃えてください。
           </p>
+          {(imuRows.length > 0 || servoRows.length > 0) &&
+          csvRange.lo === null &&
+          csvRange.hi === null ? (
+            <p className="data-viewer__error" role="status">
+              読み込んだ CSV に有限な <code className="data-viewer__code">perf_timestamp</code>{" "}
+              がありません。daemon の新しいログ形式（perf 列付き）を使うか、列を追加してください。
+            </p>
+          ) : null}
           <div className="data-viewer__anchor-row">
             <label className="data-viewer__anchor-label">
-              アンカー wall_unix
+              アンカー perf_timestamp
               <input
                 type="number"
                 className="data-viewer__anchor-input"
                 step="0.001"
-                value={Number.isFinite(videoAnchorWall) ? videoAnchorWall : 0}
+                value={Number.isFinite(videoAnchorPerf) ? videoAnchorPerf : 0}
                 onChange={(e) => {
                   setAnchorTouched(true);
                   const v = Number(e.target.value);
-                  if (Number.isFinite(v)) setVideoAnchorWall(v);
+                  if (Number.isFinite(v)) setVideoAnchorPerf(v);
                 }}
               />
             </label>
@@ -337,17 +366,27 @@ export default function DataViewerPage() {
           </div>
           <dl className="data-viewer__dl">
             <div>
-              <dt>現在の wall_unix</dt>
+              <dt>現在の perf_timestamp</dt>
               <dd>
-                <code className="data-viewer__code">{fmtFixed(currentWall, 6)}</code>
+                <code className="data-viewer__code">{fmtFixed(currentPerf, 6)}</code>
               </dd>
             </div>
             <div>
-              <dt>ローカル時刻（表示）</dt>
-              <dd>{wallToLocalString(currentWall)}</dd>
+              <dt>最も近い IMU 行の wall_unix（参考・ローカル）</dt>
+              <dd>
+                {imuNearest !== undefined ? (
+                  <>
+                    <code className="data-viewer__code">{fmtFixed(imuNearest.wall_unix, 6)}</code>
+                    {" · "}
+                    {wallToLocalString(imuNearest.wall_unix)}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </dd>
             </div>
             <div>
-              <dt>CSV ログ範囲</dt>
+              <dt>CSV perf 範囲</dt>
               <dd>
                 {csvRange.lo !== null && csvRange.hi !== null ? (
                   <>
@@ -355,6 +394,8 @@ export default function DataViewerPage() {
                     {" — "}
                     <code className="data-viewer__code">{fmtFixed(csvRange.hi, 3)}</code>
                   </>
+                ) : imuRows.length > 0 || servoRows.length > 0 ? (
+                  "perf なし"
                 ) : (
                   "CSV 未読込"
                 )}
@@ -368,6 +409,10 @@ export default function DataViewerPage() {
         <h2 className="data-viewer__h2">IMU（最も近い行）</h2>
         {!imuRows.length ? (
           <p className="data-viewer__empty">IMU CSV を読み込んでください。</p>
+        ) : !imuByPerf.length ? (
+          <p className="data-viewer__empty">
+            IMU 行に <code className="data-viewer__code">perf_timestamp</code> がありません。
+          </p>
         ) : imuNearest === undefined ? (
           <p className="data-viewer__empty">該当行がありません。</p>
         ) : (
@@ -382,6 +427,10 @@ export default function DataViewerPage() {
             </p>
             <table className="data-viewer__table">
               <tbody>
+                <tr>
+                  <th>perf_timestamp</th>
+                  <td className="data-viewer__td-num">{fmtFixed(imuNearest.perf_timestamp, 6)}</td>
+                </tr>
                 <tr>
                   <th>wall_unix</th>
                   <td className="data-viewer__td-num">{fmtFixed(imuNearest.wall_unix, 6)}</td>
@@ -421,6 +470,10 @@ export default function DataViewerPage() {
         <h2 className="data-viewer__h2">サーボ（前後 {SERVO_WINDOW_SEC} 秒以内・近い順）</h2>
         {!servoRows.length ? (
           <p className="data-viewer__empty">サーボ CSV を読み込んでください。</p>
+        ) : !servoByPerf.length ? (
+          <p className="data-viewer__empty">
+            サーボ行に <code className="data-viewer__code">perf_timestamp</code> がありません。
+          </p>
         ) : servoNear.length === 0 ? (
           <p className="data-viewer__empty">この付近にサーボログがありません。</p>
         ) : (
@@ -428,7 +481,8 @@ export default function DataViewerPage() {
             <table className="data-viewer__table data-viewer__table--wide">
               <thead>
                 <tr>
-                  <th>Δ ms</th>
+                  <th>Δ ms（perf）</th>
+                  <th>perf_timestamp</th>
                   <th>wall_unix</th>
                   <th>ch</th>
                   <th>mode</th>
@@ -439,10 +493,12 @@ export default function DataViewerPage() {
               </thead>
               <tbody>
                 {servoNear.map((r, i) => {
-                  const dms = (r.wall_unix - currentWall) * 1000;
+                  const p = r.perf_timestamp!;
+                  const dms = (p - currentPerf) * 1000;
                   return (
-                    <tr key={`${r.wall_unix}-${r.ch}-${i}`}>
+                    <tr key={`${p}-${r.ch}-${i}`}>
                       <td className="data-viewer__td-num">{dms.toFixed(1)}</td>
+                      <td className="data-viewer__td-num">{fmtFixed(r.perf_timestamp, 6)}</td>
                       <td className="data-viewer__td-num">{fmtFixed(r.wall_unix, 6)}</td>
                       <td>{r.ch ?? "—"}</td>
                       <td>{r.mode ?? "—"}</td>

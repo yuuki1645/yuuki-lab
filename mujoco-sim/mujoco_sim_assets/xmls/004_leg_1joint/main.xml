@@ -33,4 +33,9 @@
   <actuator>
     <position name="hip_servo" joint="hip" kp="1000" kv="50" ctrlrange="-1.571 1.571"/>
   </actuator>
+
+  <sensor>
+    <gyro name="imu_gyro" site="imu_site"/>
+    <accelerometer name="imu_acc" site="imu_site"/>
+  </sensor>
 </mujoco>

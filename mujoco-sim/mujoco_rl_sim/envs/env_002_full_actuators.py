@@ -266,7 +266,10 @@ class Env002FullActuators(gym.Env):
             raise ValueError(
                 f"action の長さは {self.model.nu} である必要があります（受け取り {a_norm.shape[0]}）"
             )
+
         a_norm = np.clip(a_norm, self.action_space.low, self.action_space.high)
+        # a_norm = np.zeros_like(a_norm)
+        
         # 現在の実関節角（論理角）に、[-1,1] をレンジ比でスケールした差分を加える
         current_logical = self._read_logical_deg_from_qpos()
         span = self._logical_high - self._logical_low

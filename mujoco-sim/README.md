@@ -130,12 +130,14 @@ python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
 | `mujoco-rl-train-full` | 全 `ctrl` を PPO で学習（既定チェックポイント `ppo_full_actuators_live`） |
 | `mujoco-rl-watch-full` | ライブ学習の Viewer（既定は `ppo_full_actuators_live` を監視） |
 | `mujoco-rl-play-full` | 学習済み `ppo_full_actuators` を Viewer で再生 |
+| `mujoco-rl-verify-full` | **検証用**: 単一シミュで Viewer とテレメトリを同期（低速既定・高速学習とは別途） |
 
 ```bash
 python -m mujoco_rl_sim.scripts.train_002_full_actuators --help
 python -m mujoco_rl_sim.scripts.train_002_full_actuators --no-viewer
 python -m mujoco_rl_sim.scripts.watch_full_actuators
 python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuators
+python -m mujoco_rl_sim.scripts.verify_full_actuators_viewer_telemetry --model-base ppo_full_actuators --step-wall-sleep 0.2
 ```
 
 ### `train_002_full_actuators` の追加オプション（要約）

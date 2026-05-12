@@ -30,6 +30,7 @@ mujoco-rl-play-knee = "mujoco_rl_sim.scripts.play_knee_track:main"
 mujoco-rl-train-full = "mujoco_rl_sim.scripts.train_002_full_actuators:main"
 mujoco-rl-watch-full = "mujoco_rl_sim.scripts.watch_full_actuators:main"
 mujoco-rl-play-full = "mujoco_rl_sim.scripts.play_full_actuators:main"
+mujoco-rl-verify-full = "mujoco_rl_sim.scripts.verify_full_actuators_viewer_telemetry:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

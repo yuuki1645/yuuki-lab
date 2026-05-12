@@ -23,7 +23,7 @@ import mujoco_sim_assets
 
 
 _ASSETS_ROOT = Path(mujoco_sim_assets.__file__).resolve().parent
-TRAIN_MJCF_XML: Path | str = _ASSETS_ROOT / "xmls" / "002_leg_freejoint" / "main.xml"
+TRAIN_MJCF_XML: Path | str = _ASSETS_ROOT / "xmls" / "003_leg_freejoint" / "main.xml"
 
 
 class _SyncTrainingViewerCallback(BaseCallback):

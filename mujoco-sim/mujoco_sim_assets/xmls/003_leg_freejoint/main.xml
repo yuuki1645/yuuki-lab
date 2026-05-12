@@ -1,0 +1,12 @@
+<mujoco model="yuuki_robot_freejoint_passive">
+  <asset>
+    <include file="assets.xml"/>
+  </asset>
+  <worldbody>
+    <include file="world.xml"/>
+  </worldbody>
+  <!-- 002 との差: position アクチュエータ無し（受動関節 + 鉸リンクダンピングのみ） -->
+  <sensor>
+    <include file="sensors.xml"/>
+  </sensor>
+</mujoco>

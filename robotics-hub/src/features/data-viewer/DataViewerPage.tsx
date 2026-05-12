@@ -99,7 +99,7 @@ export default function DataViewerPage() {
   const [servoName, setServoName] = useState("");
   const [diskVideoFileName, setDiskVideoFileName] = useState("");
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
-  const [publicVideoPath, setPublicVideoPath] = useState("/data-viewer-videos/");
+  const [publicVideoPath, setPublicVideoPath] = useState("/data-viewer-datasets/YuukiLab001/");
 
   const [videoAnchorPerf, setVideoAnchorPerf] = useState<number>(0);
   const [anchorTouched, setAnchorTouched] = useState(false);
@@ -184,7 +184,7 @@ export default function DataViewerPage() {
     revokeVideoBlob();
     const raw = publicVideoPath.trim();
     if (!raw) {
-      setParseError("動画のパスを入力してください（例: /data-viewer-videos/foo.mp4）");
+      setParseError("動画のパスを入力してください（例: /data-viewer-datasets/YuukiLab001/session.mp4）");
       return;
     }
     const path = raw.startsWith("/") ? raw : `/${raw}`;
@@ -273,9 +273,10 @@ export default function DataViewerPage() {
           IMU / サーボの CSV と動画を突き合わせ、再生位置に対応するログ行を確認します。時刻合わせの基準は{" "}
           <code className="data-viewer__code">perf_timestamp</code>（
           <code className="data-viewer__code">perf_counter</code> 秒）で、{" "}
-          <code className="data-viewer__code">wall_unix</code> は参考表示です。動画ファイルは{" "}
-          <code className="data-viewer__code">robotics-hub/public/data-viewer-videos/</code>{" "}
-          に置き、下の「公開パスから読み込み」で指定できます。
+          <code className="data-viewer__code">wall_unix</code> は参考表示です。データセット一式（動画・IMU / サーボ
+          CSV・マニフェストなど）は{" "}
+          <code className="data-viewer__code">robotics-hub/public/data-viewer-datasets/YuukiLab001/</code>
+          のようにセットごとにフォルダを分けて置きます。動画は下の「公開パスから読み込み」で指定できます。CSV はファイル選択から読み込んでください。
         </p>
       </header>
 
@@ -308,13 +309,13 @@ export default function DataViewerPage() {
         </div>
         <div className="data-viewer__public-row">
           <label className="data-viewer__public-label">
-            公開パスから読み込み（Vite の public 直下）
+            公開パスから読み込み（Vite の public、動画のみ）
             <input
               className="data-viewer__public-input"
               type="text"
               value={publicVideoPath}
               onChange={(e) => setPublicVideoPath(e.target.value)}
-              placeholder="/data-viewer-videos/foo.mp4"
+              placeholder="/data-viewer-datasets/YuukiLab001/session.mp4"
               spellCheck={false}
             />
           </label>

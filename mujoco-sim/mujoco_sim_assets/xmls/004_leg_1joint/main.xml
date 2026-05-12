@@ -31,6 +31,6 @@
   </worldbody>
 
   <actuator>
-    <position name="hip_servo" joint="hip" kp="100"/>
+    <position name="hip_servo" joint="hip" kp="1000" kv="50" ctrlrange="-1.571 1.571"/>
   </actuator>
 </mujoco>

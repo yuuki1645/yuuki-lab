@@ -1,6 +1,13 @@
 # type: ignore
 
+# ``pip install -e .`` なしで実行するとき用に、mujoco-sim ルートを path に載せる。
+import sys
 import time
+from pathlib import Path
+
+_SIM_ROOT = Path(__file__).resolve().parents[1]
+if str(_SIM_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SIM_ROOT))
 
 import mujoco
 import mujoco.viewer
@@ -23,7 +30,9 @@ def _acc_g(model, data) -> np.ndarray:
     return acc_ms2 / np.float32(g_mag)
 
 
-model = mujoco.MjModel.from_xml_path("../mujoco_sim_assets/xmls/004_leg_1joint/main.xml")
+model = mujoco.MjModel.from_xml_path(
+    str(_SIM_ROOT / "mujoco_sim_assets/xmls/004_leg_1joint/main.xml")
+)
 data = mujoco.MjData(model)
 
 tel = HubTelemetrySocketIoServer(host="0.0.0.0", port=8791)

@@ -1,4 +1,8 @@
 <mujoco model="yuuki_robot_1joint">
+  <option>
+    <flag filterparent="disable"/>
+  </option>
+
   <asset>
     <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" />
     <material name="floor_mat" texture="grid" texrepeat="8 8"/>
@@ -13,7 +17,8 @@
     <geom type="plane" size="5 5 0.1" material="floor_mat"/>
 
     <!-- 基準はカゴの底中央としている。 -->
-    <body pos="0 0 0.9">
+    <!-- <body pos="0 0 0.9"> -->
+    <body pos="0 0 2">
       <freejoint name="root"/>
 
       <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.03" rgba="1 0 0 1"/>
@@ -31,7 +36,7 @@
   </worldbody>
 
   <actuator>
-    <position name="hip_servo" joint="hip" kp="1000" kv="50" ctrlrange="-1.571 1.571"/>
+    <position name="hip_servo" joint="hip" kp="300" kv="1" ctrlrange="-1.571 1.571" forcerange="-14.7 14.7"/>
   </actuator>
 
   <sensor>

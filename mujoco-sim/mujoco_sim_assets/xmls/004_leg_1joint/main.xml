@@ -1,0 +1,24 @@
+<mujoco model="yuuki_robot_1joint">
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" />
+    <material name="floor_mat" texture="grid" texrepeat="8 8"/>
+    <material name="basket" rgba="0.85 0.82 0.7 1"/>
+    <material name="servo" rgba="0.65 0.1 0.18 1"/>
+    <material name="metal" rgba="0.7 0.7 0.7 1"/>
+  </asset>
+
+  <worldbody>
+    <camera pos="0 -1 1" xyaxes="0 1 0 0 0 1"/>
+    <light pos="0 0 10" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    <geom type="plane" size="5 5 0.1" material="floor_mat"/>
+
+    <!-- 基準はカゴの底中央としている。 -->
+    <body pos="0 0 0.9">
+      <!-- <freejoint name="root"/> -->
+
+      <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.01" rgba="1 0 0 1"/>
+
+      <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
+    </body>
+  </worldbody>
+</mujoco>

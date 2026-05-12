@@ -16,6 +16,7 @@ import dataViewerDatasets from "./dataViewerDatasets.json";
 
 const SERVO_WINDOW_SEC = 0.35;
 const SERVO_MAX_ROWS = 24;
+const SEEK_KEYBOARD_STEP_SEC = 0.1;
 
 const DATA_VIEWER_DATASETS_BASE = "/data-viewer-datasets/";
 const DATASET_IMU_FILE = "imu.csv";
@@ -331,6 +332,33 @@ export default function DataViewerPage() {
     [videoAnchorPerf]
   );
 
+  useEffect(() => {
+    if (!videoSrc) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      if (t instanceof HTMLElement && t.isContentEditable) return;
+
+      const el = videoRef.current;
+      if (!el || !Number.isFinite(el.currentTime)) return;
+
+      e.preventDefault();
+      const delta = e.key === "ArrowRight" ? SEEK_KEYBOARD_STEP_SEC : -SEEK_KEYBOARD_STEP_SEC;
+      seekVideo(el.currentTime + delta);
+    };
+
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [videoSrc, seekVideo]);
+
   const onVideoTime = () => {
     syncPerfFromVideo();
   };
@@ -467,7 +495,8 @@ export default function DataViewerPage() {
                 </label>
               </div>
               <p className="data-viewer__hint">
-                コントロールバーまたは上のスライダーで任意位置へ移動できます。
+                コントロールバー・スライダーで任意位置へ移動できます。左右キーで{" "}
+                {SEEK_KEYBOARD_STEP_SEC} 秒単位にシークします（入力欄にフォーカスがあるときは無効）。
               </p>
             </>
           ) : (

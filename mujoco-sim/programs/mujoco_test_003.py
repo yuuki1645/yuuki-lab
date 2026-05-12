@@ -55,16 +55,26 @@ def _run_blocking():
 thread = threading.Thread(target=_run_blocking, daemon=True)
 thread.start()
 
+step = 0
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
   while viewer.is_running():
+    # print(f"step: {step}")
+    step += 1
     mujoco.mj_step(model, data)
 
+    print(f"data.time: {data.time}")
+
     # IMU センサーデータを取得
-    acc_ms2 = _sensor_vec("imu_acc", 3)
-    acc = _acc_sensor_ms2_to_g(acc_ms2)
+    # acc_ms2 = _sensor_vec("imu_acc", 3)
+    # acc = _acc_sensor_ms2_to_g(acc_ms2)
     # print(f"acc: {acc}")
 
 
     viewer.sync()
-    time.sleep(model.opt.timestep)
+
+    timestep = model.opt.timestep
+    print(f"timestep: {timestep}")
+    # time.sleep(timestep)
+    time.sleep(1)
+    # time.sleep(0.3)

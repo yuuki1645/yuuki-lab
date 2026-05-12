@@ -14,7 +14,7 @@
 
     <!-- 基準はカゴの底中央としている。 -->
     <body pos="0 0 0.9">
-      <!-- <freejoint name="root"/> -->
+      <freejoint name="root"/>
 
       <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.03" rgba="1 0 0 1"/>
 

@@ -156,7 +156,7 @@ python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuat
 
 ### 学習テレメトリ（Robotics Hub）
 
-学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（実装は **`mujoco_rl_sim/telemetry/`**）。Hub の **「テレメトリ」**ページ（`/telemetry`）がこの Socket.IO に接続します。
+学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（Socket.IO サーバは共有モジュール **`mujoco_sim_common/telemetry/`** の `HubTelemetrySocketIoServer`。Gym からの送出は **`mujoco_rl_sim/telemetry/`** のラッパ）。Hub の **「テレメトリ」**ページ（`/telemetry`）がこの Socket.IO に接続します。
 
 - 配信されるモータ関連の角は **ラジアン**（環境の `ctrl` / 観測の prev ctrl と同じ）。Hub 側で **度（°）** に換算して表示します。
 - 実時間 HTTP シム（`8787`）とは **別ポート**です。ファイアウォールで **8791**（または変更した `--telemetry-port`）を許可してください。
@@ -195,9 +195,12 @@ mujoco-sim/
     passive_viewer.py
     kinematics.py  # ← 共通部品（論理角⇄MuJoCo角）
     viewer_cmd.py
+  mujoco_sim_common/
+    kinematics.py      # 論理角⇄MuJoCo 角（実時間・RL で共有）
+    telemetry/         # Hub 向け Socket.IO（HubTelemetrySocketIoServer）
   mujoco_rl_sim/
     envs/              # Gymnasium 環境（env_001_*.py の連番命名）
-    telemetry/         # 学習中 Socket.IO テレメトリ（Hub 連携）
+    telemetry/         # Gym ラッパ（RlTelemetryWrapper）— 送出先は上記 Socket.IO
     scripts/           # 学習・ライブ Viewer・再生 CLI
   pyproject.toml
   requirements.txt

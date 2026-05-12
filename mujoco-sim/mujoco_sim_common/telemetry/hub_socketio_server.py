@@ -1,6 +1,10 @@
 # type: ignore
 
-"""学習プロセス内で動かす Flask-SocketIO サーバ（キュー経由で emit）。"""
+"""Robotics Hub 向け Flask-SocketIO サーバ（キュー経由で ``rl_telemetry/*`` を emit）。
+
+学習スクリプト・単体の MuJoCo プログラムなど、mujoco-sim 配下から共通利用する。
+イベント名・REST パスは Hub 既存クライアント互換のため ``rl_telemetry`` のままとする。
+"""
 
 from __future__ import annotations
 
@@ -13,9 +17,9 @@ from typing import Any
 from flask import Flask, jsonify, request
 
 
-class RlTelemetryServer:
+class HubTelemetrySocketIoServer:
     """
-    別スレッドで ``socketio.run`` し、学習スレッドは ``publish_*`` でキューに積む。
+    別スレッドで ``socketio.run`` し、シミュ／学習スレッドは ``publish_*`` でキューに積む。
     バックグラウンドタスクが ``rl_telemetry/*`` をクライアントへ送る。
     """
 
@@ -35,7 +39,7 @@ class RlTelemetryServer:
         self._get_step_wall_sleep_sec = get_step_wall_sleep_sec
 
         self.app = Flask(__name__)
-        self.app.config["SECRET_KEY"] = "rl-telemetry"
+        self.app.config["SECRET_KEY"] = "hub-telemetry-socketio"
 
         @self.app.after_request
         def _add_cors_headers(response):
@@ -113,7 +117,6 @@ class RlTelemetryServer:
 
     def stop(self) -> None:
         self._stop.set()
-        # socketio.run はプロセス終了までブロックしがちなので、学習終了時はスレッド放置で可
 
     def publish_step(self, payload: dict[str, Any]) -> None:
         try:

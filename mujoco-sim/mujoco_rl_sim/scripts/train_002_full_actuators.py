@@ -17,12 +17,13 @@ from pathlib import Path
 
 import mujoco.viewer
 from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
-from mujoco_rl_sim.telemetry import RlTelemetryServer, RlTelemetryWrapper
+from mujoco_rl_sim.telemetry import RlTelemetryWrapper
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
 import mujoco_sim_assets
+from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
 
 
 # 学習に使う MJCF（別モデルにしたいときはこの定数だけ書き換え）
@@ -146,10 +147,10 @@ def main() -> None:
         )
     check_env(env, warn=True)
 
-    telemetry_server: RlTelemetryServer | None = None
+    telemetry_server: HubTelemetrySocketIoServer | None = None
     telemetry_wr: RlTelemetryWrapper | None = None
     if not args.no_telemetry:
-        telemetry_server = RlTelemetryServer(
+        telemetry_server = HubTelemetrySocketIoServer(
             host=args.telemetry_host,
             port=args.telemetry_port,
             set_step_wall_sleep_sec=env.set_step_wall_sleep_sec,
@@ -168,13 +169,13 @@ def main() -> None:
         telemetry_wr = env
         if str(args.telemetry_host) in ("0.0.0.0", "::", "::0"):
             print(
-                f"[train-full] RL telemetry Socket.IO: bind {args.telemetry_host}:"
+                f"[train-full] Hub telemetry Socket.IO: bind {args.telemetry_host}:"
                 f"{args.telemetry_port}（Hub は http://<このPCのLAN-IP>:"
                 f"{args.telemetry_port} などで接続）"
             )
         else:
             print(
-                f"[train-full] RL telemetry Socket.IO: "
+                f"[train-full] Hub telemetry Socket.IO: "
                 f"http://{args.telemetry_host}:{args.telemetry_port}"
             )
 

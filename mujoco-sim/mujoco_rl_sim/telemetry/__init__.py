@@ -1,6 +1,5 @@
-"""学習中の obs / action を Socket.IO で配信するテレメトリ。"""
+"""RL 環境向けテレメトリ（Gym ラッパ等）。Socket.IO 本体は ``mujoco_sim_common.telemetry``。"""
 
 from mujoco_rl_sim.telemetry.env_wrapper import RlTelemetryWrapper
-from mujoco_rl_sim.telemetry.rl_socketio_server import RlTelemetryServer
 
-__all__ = ["RlTelemetryServer", "RlTelemetryWrapper"]
+__all__ = ["RlTelemetryWrapper"]

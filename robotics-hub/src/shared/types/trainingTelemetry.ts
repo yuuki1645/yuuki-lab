@@ -1,4 +1,4 @@
-/** mujoco_rl_sim の ``RlTelemetryServer`` / ``RlTelemetryWrapper`` が送るペイロード（Socket.IO イベント名は従来どおり ``rl_telemetry/*``） */
+/** mujoco-sim の ``HubTelemetrySocketIoServer``（および RL 時は ``RlTelemetryWrapper``）が送るペイロード（Socket.IO イベント名は従来どおり ``rl_telemetry/*``） */
 
 export interface TrainingTelemetryHelloPayload {
   ok?: boolean;

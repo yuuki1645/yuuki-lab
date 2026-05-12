@@ -21,7 +21,7 @@ export type TrainingTelemetryStream = {
 };
 
 /**
- * mujoco_rl_sim 学習の Socket.IO から ``rl_telemetry/*`` を購読する。
+ * mujoco-sim（Hub 向け Socket.IO）の ``rl_telemetry/*`` を購読する。
  */
 export function useTrainingTelemetryStream(active: boolean): TrainingTelemetryStream {
   const [wsStatus, setWsStatus] = useState<TrainingTelemetryWsStatus>("disconnected");

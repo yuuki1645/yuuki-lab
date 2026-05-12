@@ -46,6 +46,12 @@ def parse_args() -> argparse.Namespace:
         help="各 step 後の壁時計待ち秒（学習の --step-wall-sleep と揃える）",
     )
     p.add_argument(
+        "--max-logical-delta-fraction",
+        type=float,
+        default=0.1,
+        help="論理角差分の上限比率（学習の --max-logical-delta-fraction と揃える）",
+    )
+    p.add_argument(
         "--telemetry-config-url",
         type=str,
         default="",
@@ -66,6 +72,7 @@ def main() -> None:
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
         step_wall_sleep_sec=args.step_wall_sleep,
+        max_logical_delta_fraction=args.max_logical_delta_fraction,
     )
     obs, _ = env.reset()
     model = None

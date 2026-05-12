@@ -44,6 +44,15 @@ def parse_args() -> argparse.Namespace:
             "例: 0.05 でおおよそ 20 steps/s 以下。0 で従来どおり最大速。"
         ),
     )
+    p.add_argument(
+        "--max-logical-delta-fraction",
+        type=float,
+        default=0.1,
+        help=(
+            "1 ステップあたりの論理角差分の上限（各関節の論理レンジ幅に対する比率）。"
+            "action=±1 で ±(この値)×レンジ幅まで動かす。"
+        ),
+    )
     p.add_argument("--total-timesteps", type=int, default=100_000)
     p.add_argument("--learn-chunk", type=int, default=10_000)
     p.add_argument(
@@ -99,6 +108,7 @@ def main() -> None:
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
         step_wall_sleep_sec=args.step_wall_sleep,
+        max_logical_delta_fraction=args.max_logical_delta_fraction,
     )
     if args.step_wall_sleep > 0.0:
         print(

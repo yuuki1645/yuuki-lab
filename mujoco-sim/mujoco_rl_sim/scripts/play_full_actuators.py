@@ -35,6 +35,12 @@ def parse_args() -> argparse.Namespace:
         default=0.0,
         help="各 step 後の壁時計待ち秒（テスト再生を遅くする）",
     )
+    p.add_argument(
+        "--max-logical-delta-fraction",
+        type=float,
+        default=0.1,
+        help="論理角差分の上限比率（学習時と揃える）",
+    )
     return p.parse_args()
 
 
@@ -46,6 +52,7 @@ def main() -> None:
         max_steps=args.max_steps,
         reset_joint_noise=args.reset_joint_noise,
         step_wall_sleep_sec=args.step_wall_sleep,
+        max_logical_delta_fraction=args.max_logical_delta_fraction,
     )
     model = PPO.load(args.model_base)
 

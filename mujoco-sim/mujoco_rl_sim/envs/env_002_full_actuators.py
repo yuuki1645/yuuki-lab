@@ -56,9 +56,10 @@ class Env002FullActuators(gym.Env):
     MJCF 上の **すべての** アクチュエータに対して ``data.ctrl`` を設定する環境。
 
     - 想定: 各アクチュエータが **position** 型で、ヒンジ関節を駆動している。
-    - 行動: **正規化 action**（``nu`` 次元, 各軸 ``[-1, 1]``）。環境内で各関節の
-      論理角レンジへ線形写像し、`mujoco_sim_common.kinematics.KINEMATICS` で MuJoCo
-      関節角へ変換して `data.ctrl` に **目標角 [rad]** を設定する。
+    - 行動: **正規化 action**（``nu`` 次元, 各軸 ``[-1, 1]``）。**現在のシミュレーション関節角**
+      を論理角に変換した値に、各関節の論理レンジ幅に対する比率（``max_logical_delta_fraction``）
+      でスケールした差分を足し、クリップした結果を目標論理角とする。``KINEMATICS`` で
+      MuJoCo 関節角へ変換し、`data.ctrl` に **目標角 [rad]** を設定する。
     - 観測: ``imu_acc``（3, 局所 **g** … MJCF 加速度計の m/s² を ``|model.opt.gravity|`` で除算）,
       ``imu_gyro``（3, 局所 rad/s）, **直前ステップで適用した** 論理角(度)（``nu``）を連結した ``(6 + nu,)`` ベクトル。MJCF に同名センサーが必要。
     - ``step_wall_sleep_sec``: 各 ``step`` の物理更新のあとに ``time.sleep`` する秒数（テレメトリ確認用。学習は壁時計で遅くなる）。
@@ -76,6 +77,8 @@ class Env002FullActuators(gym.Env):
         max_steps: int = 500,
         reset_joint_noise: float = 0.05,
         step_wall_sleep_sec: float = 0.0,
+        *,
+        max_logical_delta_fraction: float = 0.1,
     ) -> None:
         super().__init__()
         path = Path(xml_path) if xml_path is not None else DEFAULT_ENV_MODEL_XML
@@ -84,6 +87,12 @@ class Env002FullActuators(gym.Env):
         self.max_steps = max_steps
         self.reset_joint_noise = float(reset_joint_noise)
         self._step_wall_sleep_sec = max(0.0, float(step_wall_sleep_sec))
+        mld = float(max_logical_delta_fraction)
+        if not np.isfinite(mld) or mld <= 0.0:
+            raise ValueError(
+                "max_logical_delta_fraction は有限かつ正である必要があります"
+            )
+        self._max_logical_delta_fraction = mld
         self.step_count = 0
 
         nu = int(self.model.nu)
@@ -182,6 +191,18 @@ class Env002FullActuators(gym.Env):
             g_mag = 9.80665
         return acc_ms2 / np.float32(g_mag)
 
+    def _read_logical_deg_from_qpos(self) -> np.ndarray:
+        """現在の ``data.qpos`` から各ヒンジの論理角（度）を読む。"""
+        nu = int(self.model.nu)
+        out = np.empty(nu, dtype=np.float32)
+        for aid, kin in enumerate(self._actuator_kin):
+            jid = self._joint_ids[aid]
+            qadr = int(self.model.jnt_qposadr[jid])
+            rad = float(self.data.qpos[qadr])
+            mujoco_deg = float(np.rad2deg(rad))
+            out[aid] = float(kin.mujoco_deg_to_logical(mujoco_deg))
+        return out
+
     def _get_obs(self) -> np.ndarray:
         acc_ms2 = self._sensor_vec(self._imu_acc_name, 3)
         acc = self._acc_sensor_ms2_to_g(acc_ms2)
@@ -246,9 +267,14 @@ class Env002FullActuators(gym.Env):
                 f"action の長さは {self.model.nu} である必要があります（受け取り {a_norm.shape[0]}）"
             )
         a_norm = np.clip(a_norm, self.action_space.low, self.action_space.high)
-        # [-1, 1] -> [logical_low, logical_high]
-        a_logical = self._logical_low + 0.5 * (a_norm + 1.0) * (
-            self._logical_high - self._logical_low
+        # 現在の実関節角（論理角）に、[-1,1] をレンジ比でスケールした差分を加える
+        current_logical = self._read_logical_deg_from_qpos()
+        span = self._logical_high - self._logical_low
+        delta_logical = a_norm * self._max_logical_delta_fraction * span
+        a_logical = np.clip(
+            current_logical + delta_logical,
+            self._logical_low,
+            self._logical_high,
         )
 
         ctrl_rad = np.empty_like(a_logical, dtype=np.float32)
@@ -280,6 +306,9 @@ class Env002FullActuators(gym.Env):
         truncated = self.step_count >= self.max_steps
         return obs, reward, terminated, truncated, {
             "action_norm": a_norm.tolist(),
+            "action_delta_logical_deg": delta_logical.tolist(),
+            "action_delta_logical_unit": "logical_deg",
+            "max_logical_delta_fraction": float(self._max_logical_delta_fraction),
             "action_logical_deg": a_logical.tolist(),
             "action_logical_unit": "logical_deg",
             "reward_total": float(reward),

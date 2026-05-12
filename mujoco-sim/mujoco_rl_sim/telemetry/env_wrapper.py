@@ -21,7 +21,8 @@ class RlTelemetryWrapper(gym.Wrapper[ObsType, ActType, ObsType, ActType]):
     - ``action`` は当該ステップで ``env.step`` に渡された正規化ベクトル（``[-1, 1]``）。
     - step イベントでは ``obs_*`` を「エージェント入力（step 前観測）」として送る。
       物理更新後の観測は ``obs_next_*`` で併送する。
-    - ``Env002FullActuators`` では ``obs`` 末尾と ``action`` は論理角（deg）、先頭 3 要素の加速度は **g** であるため、
+    - ``Env002FullActuators`` では ``obs`` 末尾は直前コマンドの論理角（deg）、``action`` は ``[-1,1]`` の正規化ベクトル、
+      ``info['action_logical_deg']`` が解決後の論理角。先頭 3 要素の加速度は **g** であるため、
       payload に ``*_logical_deg``・``*_unit``・``obs_acc_unit`` 等を明示して送る。
     """
 

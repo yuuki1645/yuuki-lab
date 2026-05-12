@@ -2,3 +2,7 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# データビュワー用データセット一式（大容量・ローカルのみ）。ディレクトリ自体は .gitkeep で維持
+public/data-viewer-datasets/*
+!public/data-viewer-datasets/.gitkeep

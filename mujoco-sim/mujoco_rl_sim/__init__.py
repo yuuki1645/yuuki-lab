@@ -12,6 +12,6 @@ _PKG_ROOT = str(Path(__file__).resolve().parent.parent)
 if _PKG_ROOT not in sys.path:
     sys.path.insert(0, _PKG_ROOT)
 
-from mujoco_rl_sim.envs import Env002FullActuators, KneeTrackEnv
+from mujoco_rl_sim.envs import Env002FullActuators, Env003StaticActuators, KneeTrackEnv
 
-__all__ = ["Env002FullActuators", "KneeTrackEnv"]
+__all__ = ["Env002FullActuators", "Env003StaticActuators", "KneeTrackEnv"]

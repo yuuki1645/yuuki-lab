@@ -66,15 +66,14 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
     print(f"data.time: {data.time}")
 
     # IMU センサーデータを取得
-    # acc_ms2 = _sensor_vec("imu_acc", 3)
-    # acc = _acc_sensor_ms2_to_g(acc_ms2)
-    # print(f"acc: {acc}")
+    acc_ms2 = _sensor_vec("imu_acc", 3)
+    acc = _acc_sensor_ms2_to_g(acc_ms2)
+    print(f"acc: {acc}")
 
 
     viewer.sync()
 
     timestep = model.opt.timestep
     print(f"timestep: {timestep}")
-    # time.sleep(timestep)
-    time.sleep(1)
-    # time.sleep(0.3)
+    time.sleep(timestep)
+    # time.sleep(1)

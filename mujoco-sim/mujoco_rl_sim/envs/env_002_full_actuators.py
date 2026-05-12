@@ -281,6 +281,7 @@ class Env002FullActuators(gym.Env):
         for aid, kin in enumerate(self._actuator_kin):
             mujoco_deg = kin.logical_to_mujoco_deg(float(a_logical[aid]))
             ctrl_rad[aid] = float(np.deg2rad(mujoco_deg))
+            # ctrl_rad[aid] = 0.0
         ctrl_rad = np.clip(ctrl_rad, self._ctrl_low, self._ctrl_high)
 
         self.data.ctrl[:] = ctrl_rad

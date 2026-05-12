@@ -1,13 +1,88 @@
-<actuator>
-  <position name="left_hip_roll_motor" joint="left_hip_roll" kp="500"/>
-  <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="500" />
-  <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="500"/>
-  <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="500"/>
-  <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="500"/>
-
-  <position name="right_hip_roll_motor" joint="right_hip_roll" kp="500"/>
-  <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="500"/>
-  <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="500"/>
-  <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="500"/>
-  <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="500"/>
-</actuator>
+<actuator>
+  <!--
+    position PD（kp/kv）: world.xml の軽量リンク（～数 kg 脚）に対し、旧 kp=500 は剛性過多で
+    追従トルク・加速度が過大になりやすい。 hip/knee をやや強め、足首を弱めにしてバランス調整。
+    forcerange: ヒンジトルク [N·m] を上限（小型〜中型脚ロボのサーボ飽和の近似）。
+  -->
+  <position
+    name="left_hip_roll_motor"
+    joint="left_hip_roll"
+    kp="85"
+    kv="12"
+    forcelimited="true"
+    forcerange="-42 42"
+  />
+  <position
+    name="left_hip_pitch_motor"
+    joint="left_hip_pitch"
+    kp="85"
+    kv="12"
+    forcelimited="true"
+    forcerange="-42 42"
+  />
+  <position
+    name="left_knee_pitch_motor"
+    joint="left_knee_pitch"
+    kp="80"
+    kv="11"
+    forcelimited="true"
+    forcerange="-40 40"
+  />
+  <position
+    name="left_ankle_pitch_motor"
+    joint="left_ankle_pitch"
+    kp="55"
+    kv="8"
+    forcelimited="true"
+    forcerange="-28 28"
+  />
+  <position
+    name="left_ankle_roll_motor"
+    joint="left_ankle_roll"
+    kp="45"
+    kv="7"
+    forcelimited="true"
+    forcerange="-18 18"
+  />
+
+  <position
+    name="right_hip_roll_motor"
+    joint="right_hip_roll"
+    kp="85"
+    kv="12"
+    forcelimited="true"
+    forcerange="-42 42"
+  />
+  <position
+    name="right_hip_pitch_motor"
+    joint="right_hip_pitch"
+    kp="85"
+    kv="12"
+    forcelimited="true"
+    forcerange="-42 42"
+  />
+  <position
+    name="right_knee_pitch_motor"
+    joint="right_knee_pitch"
+    kp="80"
+    kv="11"
+    forcelimited="true"
+    forcerange="-40 40"
+  />
+  <position
+    name="right_ankle_pitch_motor"
+    joint="right_ankle_pitch"
+    kp="55"
+    kv="8"
+    forcelimited="true"
+    forcerange="-28 28"
+  />
+  <position
+    name="right_ankle_roll_motor"
+    joint="right_ankle_roll"
+    kp="45"
+    kv="7"
+    forcelimited="true"
+    forcerange="-18 18"
+  />
+</actuator>

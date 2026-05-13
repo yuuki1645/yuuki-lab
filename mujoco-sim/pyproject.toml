@@ -20,6 +20,10 @@ rl = [
   "gymnasium>=0.29.1",
   "stable-baselines3>=2.2.0",
 ]
+video = [
+  "imageio>=2.34",
+  "imageio-ffmpeg>=0.4.9",
+]
 
 [project.scripts]
 mujoco-sim-serve = "mujoco_realtime_sim.__main__:main"

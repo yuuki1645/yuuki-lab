@@ -24,6 +24,7 @@ const DaemonSocketTestPage = lazy(
 );
 const TelemetryPage = lazy(() => import("@/features/telemetry/TelemetryPage"));
 const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
+const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -69,5 +70,13 @@ export const hubTools: HubTool[] = [
     description:
       "IMU / サーボの CSV と動画を wall_unix で突き合わせ、シーク位置のログを確認します。",
     LazyPage: DataViewerPage,
+  },
+  {
+    id: "mujoco-viewer-aux",
+    path: "/mujoco-viewer-aux",
+    label: "MuJoCo ビュワー補助",
+    description:
+      "mujoco_test_009 と連携し、パッシブ viewer の状態をリアルタイム表示し、再生・リセット・表示オプションを操作します。",
+    LazyPage: MujocoViewerAuxPage,
   },
 ];

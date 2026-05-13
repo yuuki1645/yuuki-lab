@@ -70,6 +70,22 @@ export function getMujocoSimUrl(): string {
 }
 
 /**
+ * ``mujoco_test_009.py`` が立てるビュワー補助 API（Flask）のベース URL。
+ * ``VITE_MUJOCO_VIEWER_AUX_URL`` があれば優先（ビルド時に埋め込み）。
+ */
+export function getMujocoViewerAuxUrl(): string {
+  const fromEnv = import.meta.env.VITE_MUJOCO_VIEWER_AUX_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8788"
+  );
+}
+
+/**
  * IMU 用 Socket.IO の接続先。
  * - `VITE_IMU_SOCKET_URL` … 明示指定（例: 実機 MPU は `http://ホスト:5000` の robot-daemon）。
  * - 未指定時は **`getMujocoSimUrl()`**（MuJoCo シムと同じホスト・既定 :8787）。シムに Socket.IO IMU が載っている前提。

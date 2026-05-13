@@ -1,5 +1,5 @@
 <mujoco model="yuuki_robot_1joint">
-  <option>
+  <option timestep="0.002">
     <flag filterparent="disable"/>
   </option>
 

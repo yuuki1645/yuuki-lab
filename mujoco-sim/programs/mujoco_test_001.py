@@ -5,7 +5,7 @@ import mujoco.viewer
 import time
 
 
-model = mujoco.MjModel.from_xml_path("../mujoco_sim_assets/xmls/004_leg_1joint/main.xml")
+model = mujoco.MjModel.from_xml_path("../mujoco_sim_assets/xmls/005_leg_1joint/main.xml")
 data = mujoco.MjData(model)
 
 with mujoco.viewer.launch_passive(model, data) as viewer:

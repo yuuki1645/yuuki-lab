@@ -1,5 +1,6 @@
 [
   { "id": "YuukiLab001", "title": "Yuuki Lab 001" },
   { "id": "YuukiLab002", "title": "Yuuki Lab 002 (test)" },
-  { "id": "YuukiLab003", "title": "Yuuki Lab 003 (MuJoCo テンプレ)" }
+  { "id": "YuukiLab003", "title": "Yuuki Lab 003 (MuJoCo テンプレ)" },
+  { "id": "YuukiLab004", "title": "Yuuki Lab 004 (MuJoCo テンプレ)" }
 ]

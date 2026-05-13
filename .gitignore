@@ -34,3 +34,5 @@ robot-daemon/imu_logs/
 *.xvid
 
 *.csv
+
+YuukiLab*/

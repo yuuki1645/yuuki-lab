@@ -32,3 +32,5 @@ robot-daemon/imu_logs/
 *.vob
 *.divx
 *.xvid
+
+*.csv

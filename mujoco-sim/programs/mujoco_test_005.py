@@ -1,17 +1,22 @@
 # type: ignore
 
 """
-オフスクリーン描画（mujoco.Renderer）でシミュをレンダリングし、MP4 に保存する。
+オフスクリーン描画（mujoco.Renderer）でシミュをレンダリングし、
+Robotics Hub データビュワー用のデータセットフォルダ一式を出力する。
 
-CSV は Robotics Hub データビュワー用 ``imu.csv`` と同じ列名（+ 末尾にシム用メタ列）で出力する。
+出力先は **カレントディレクトリ** 直下の ``<dataset>/`` に固定し、次を配置する。
+
+- ``video.mp4`` … レンダリング動画
+- ``imu.csv`` … Hub 互換列（末尾にシム用メタ列）
+- ``servo.csv`` … ヘッダのみ（サーボログなし想定）
+- ``manifest.json`` … ``acquisition: mujoco`` 等
 
 依存: ``pip install -e ".[video]"`` または ``pip install imageio imageio-ffmpeg``
 
 例::
 
   cd mujoco-sim/programs
-  python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4 --write-manifest
-  # run.csv と manifest.json（Hub 用 acquisition=mujoco）を同ディレクトリに出力
+  python mujoco_test_005.py --dataset YuukiLab004 --steps 3000 --subsample 8
 """
 
 from __future__ import annotations
@@ -19,6 +24,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -39,6 +45,13 @@ except ImportError as e:
 # データビュワー用 wall_unix の単調性（実機と重ならないよう大きめの基準時刻 + 再生オフセット）
 _HUB_WALL_UNIX_BASE = 1_700_000_000.0
 
+# robot-daemon 出力の servo.csv と同一ヘッダ（行は置かない）
+_SERVO_CSV_HEADER = (
+    "wall_unix,perf_timestamp,endpoint,mode,ch,angle_in,logical_deg,physical_deg,extra_json\n"
+)
+
+_DATASET_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+
 
 def _sensor_vec(model: mujoco.MjModel, data: mujoco.MjData, name: str, dim: int) -> tuple[float, ...]:
     sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name)
@@ -50,15 +63,36 @@ def _sensor_vec(model: mujoco.MjModel, data: mujoco.MjData, name: str, dim: int)
     return tuple(float(data.sensordata[adr + k]) for k in range(dim))
 
 
+def _parse_dataset_id(raw: str) -> str:
+    s = raw.strip()
+    if not s:
+        raise SystemExit("--dataset に空文字は使えません。")
+    if not _DATASET_ID_PATTERN.fullmatch(s):
+        raise SystemExit(
+            "--dataset は英数字・._- のみ（パス区切りや .. は不可）にしてください。"
+        )
+    if s in {".", ".."}:
+        raise SystemExit("--dataset が無効です。")
+    return s
+
+
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    p.add_argument(
+        "--dataset",
+        type=str,
+        default="MujocoSimExport",
+        help=(
+            "出力データセットフォルダ名（カレントディレクトリ直下に作成）。"
+            "例: YuukiLab004。英数字・._- のみ。"
+        ),
+    )
     p.add_argument(
         "--xml",
         type=str,
         default=str(_SIM_ROOT / "mujoco_sim_assets/xmls/004_leg_1joint/main.xml"),
         help="MJCF パス",
     )
-    p.add_argument("--out", type=str, default="mujoco_test_005_out.mp4", help="出力 MP4")
     p.add_argument("--steps", type=int, default=2500, help="mj_step 回数")
     p.add_argument(
         "--subsample",
@@ -92,37 +126,25 @@ def _parse_args() -> argparse.Namespace:
         default="imu_gyro",
         help="ジャイロセンサ名（MJCF の <gyro name=...>）",
     )
-    p.add_argument(
-        "--csv",
-        type=str,
-        default=None,
-        help="センサー CSV（省略時は --out と同名の .csv）。Hub 用 imu.csv にコピー可",
-    )
-    p.add_argument(
-        "--write-manifest",
-        nargs="?",
-        const="",
-        default=None,
-        help="manifest.json を出力。引数省略時は --out と同じディレクトリの manifest.json",
-    )
     return p.parse_args()
 
 
 def _write_manifest_json(
     path: Path,
     *,
+    dataset_id: str,
     xml_path: str,
     out_fps: float,
     subsample: int,
     timestep: float,
-    video_file: str = "video.mp4",
 ) -> None:
     payload = {
         "acquisition": "mujoco",
         "schema_version": 1,
         "perf_timestamp_at_video_zero": 0.0,
-        "video_file": video_file,
+        "video_file": "video.mp4",
         "acquisition_detail": {
+            "dataset_id": dataset_id,
             "mjcf": xml_path,
             "video_fps": out_fps,
             "subsample": subsample,
@@ -136,6 +158,15 @@ def _write_manifest_json(
 
 def main() -> None:
     args = _parse_args()
+    dataset_id = _parse_dataset_id(args.dataset)
+    dataset_dir = Path.cwd() / dataset_id
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    out_path = dataset_dir / "video.mp4"
+    csv_path = dataset_dir / "imu.csv"
+    servo_path = dataset_dir / "servo.csv"
+    manifest_path = dataset_dir / "manifest.json"
+
     xml_path = str(Path(args.xml).resolve())
     model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
@@ -151,17 +182,6 @@ def main() -> None:
 
     renderer = mujoco.Renderer(model, height=args.height, width=args.width)
     cam_id = int(args.camera)
-
-    out_path = Path(args.out)
-    if not out_path.is_absolute():
-        out_path = Path.cwd() / out_path
-
-    if args.csv:
-        csv_path = Path(args.csv)
-        if not csv_path.is_absolute():
-            csv_path = Path.cwd() / csv_path
-    else:
-        csv_path = out_path.with_suffix(".csv")
 
     acc_name = str(args.acc_sensor)
     gyro_name = str(args.gyro_sensor)
@@ -225,30 +245,27 @@ def main() -> None:
                 writer.append_data(rgb)
                 n_frames += 1
 
-    if args.write_manifest is not None:
-        if args.write_manifest == "":
-            manifest_path = out_path.parent / "manifest.json"
-        else:
-            manifest_path = Path(args.write_manifest)
-            if not manifest_path.is_absolute():
-                manifest_path = Path.cwd() / manifest_path
-        _write_manifest_json(
-            manifest_path,
-            xml_path=xml_path,
-            out_fps=out_fps,
-            subsample=subsample,
-            timestep=dt,
-            video_file="video.mp4",
-        )
-        print(f"wrote {manifest_path} (acquisition=mujoco, video_file=video.mp4)")
+    servo_path.write_text(_SERVO_CSV_HEADER, encoding="utf-8")
+    _write_manifest_json(
+        manifest_path,
+        dataset_id=dataset_id,
+        xml_path=xml_path,
+        out_fps=out_fps,
+        subsample=subsample,
+        timestep=dt,
+    )
 
+    print(f"dataset dir: {dataset_dir.resolve()}")
     print(
-        f"wrote {out_path} ({n_frames} frames, ~{n_frames / out_fps:.2f}s playback, "
+        f"  video.mp4 ({n_frames} frames, ~{n_frames / out_fps:.2f}s playback, "
         f"fps={out_fps:.2f}, subsample={subsample}, sim_time~{args.steps * dt:.3f}s)"
     )
+    print(f"  imu.csv ({n_frames} rows; sensors {acc_name!r} / {gyro_name!r})")
+    print("  servo.csv (header only)")
+    print("  manifest.json (acquisition=mujoco)")
     print(
-        f"wrote {csv_path} ({n_frames} rows, Hub-compatible imu columns; "
-        f"sensors {acc_name!r} / {gyro_name!r})"
+        "Hub で使う場合: robotics-hub の public/data-viewer-datasets/ にこのフォルダをコピーし、"
+        "dataViewerDatasets.json に id を追加してください。"
     )
 
 

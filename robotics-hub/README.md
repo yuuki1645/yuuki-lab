@@ -90,7 +90,7 @@ npm run preview
   - **`schema_version`** — 整数（将来の manifest / CSV 拡張用）。
   - **`acquisition_detail`** — 任意オブジェクト（例: MuJoCo なら `mjcf`, `video_fps`, `imu_accel_unit` 等）。`acquisition` が `"other"` のとき、`imu_accel_column_label` / `imu_gyro_column_label` で列見出しを上書き可能。
 
-MuJoCo からの出力は **`mujoco-sim/programs/mujoco_test_005.py`**（`--write-manifest`）で上記に揃えた CSV / manifest を生成し、`video.mp4` にリネームした動画とともに `<id>` フォルダへ配置する。
+MuJoCo からの出力は **`mujoco-sim/programs/mujoco_test_005.py`**（`--dataset <id>`。カレントに `<id>/video.mp4` 等の一式を生成）を `public/data-viewer-datasets/<id>/` にコピーして使う。
 
 ## ディレクトリ構成（概要）
 

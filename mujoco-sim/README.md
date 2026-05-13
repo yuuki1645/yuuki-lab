@@ -32,6 +32,8 @@ pip install -e ".[rl]"
 pip install -e ".[video]"
 ```
 
+`mujoco_test_005.py` は **データビュワー用フォルダ一式**（`video.mp4` / `imu.csv` / `servo.csv` / `manifest.json`）をカレントに出力します。
+
 依存のみ先に入れる場合:
 
 ```bash
@@ -109,13 +111,14 @@ pip install -e ".[video]"
 
 ```bash
 cd mujoco-sim/programs
-python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4
+python mujoco_test_005.py --dataset YuukiLab004 --steps 3000 --subsample 8
 ```
 
-- `--out` は相対パスのとき **カレントディレクトリ**基準（上記なら `programs/run.mp4`）。
-- 動画に取り込んだ **各フレームの直後**（`mj_step` 済みの `sensordata`）に、Robotics Hub データビュワー互換の **`imu.csv` 形式**（`wall_unix`, `perf_timestamp`, `mock`, `accel_*`, `gyro_*` ほか末尾に `sim_time_s`, `frame_index`, `mj_step`）で **CSV** を書きます。加速度は MJCF センサーどおり **m/s²**、ジャイロは **rad/s**。出力は省略時 **`run.mp4` と同じディレクトリの `run.csv`**（`--csv` で変更可）。
-- **`--write-manifest`** を付けると同じディレクトリに **`manifest.json`** を出力します（`acquisition: "mujoco"`, `perf_timestamp_at_video_zero: 0`, `video_file: "video.mp4"` 等）。Hub の `public/data-viewer-datasets/YuukiLab00N/` に置くときは、動画を **`video.mp4`** にし、`imu.csv` に CSV をコピーし、`servo.csv` にサーボログが無ければヘッダのみを置く。
-- `--subsample` を省略（`0`）のときは、`--fps`（既定 `30`）と MJCF の `timestep` から間引きを自動計算し、再生時間がシミュ時間に概ね追従しやすくします。
+カレントディレクトリに `YuukiLab004/` ができ、その中に `video.mp4`・`imu.csv`・`servo.csv`（ヘッダのみ）・`manifest.json`（`acquisition: mujoco`）が入ります。フォルダ名は **`--dataset`**（既定 `MujocoSimExport`）。英数字と `._-` のみ。
+
+- 動画に取り込んだ各フレーム直後の `sensordata` を **`imu.csv`** に記録（Hub 互換列 + `sim_time_s`, `frame_index`, `mj_step`）。加速度は **m/s²**、ジャイロは **rad/s**。
+- Hub で使うときは **`robotics-hub/public/data-viewer-datasets/<id>/`** にフォルダごとコピーし、`src/features/data-viewer/dataViewerDatasets.json` に `id` を追加する。
+- `--subsample` を省略（`0`）のときは、`--fps`（既定 `30`）と MJCF の `timestep` から間引きを自動計算します。
 - `--xml` で MJCF、`--width` / `--height` で解像度、`--camera` で MJCF 内カメラ id（`-1` で既定）を指定できます。詳細は `python mujoco_test_005.py --help`。
 
 ## 強化学習（`mujoco_rl_sim`）

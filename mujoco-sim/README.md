@@ -26,6 +26,12 @@ RL 環境や Stable-Baselines3 を使う場合:
 pip install -e ".[rl]"
 ```
 
+オフスクリーンで MP4 を書き出すサンプル（`programs/mujoco_test_005.py`）を使う場合:
+
+```bash
+pip install -e ".[video]"
+```
+
 依存のみ先に入れる場合:
 
 ```bash
@@ -85,6 +91,30 @@ python -m mujoco_realtime_sim.viewer_cmd
 ```
 
 `mujoco-sim-view` でも起動できます。
+
+## オフスクリーン動画化（`programs/mujoco_test_005.py`）
+
+`mujoco.Renderer` でシミュレーションをレンダリングし、**MP4** に保存するサンプルです（パッシブ Viewer は開きません）。
+
+**依存（初回のみ）:**
+
+```bash
+cd mujoco-sim
+pip install -e ".[video]"
+```
+
+（または `pip install imageio imageio-ffmpeg`）
+
+**実行例:**
+
+```bash
+cd mujoco-sim/programs
+python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4
+```
+
+- `--out` は相対パスのとき **カレントディレクトリ**基準（上記なら `programs/run.mp4`）。
+- `--subsample` を省略（`0`）のときは、`--fps`（既定 `30`）と MJCF の `timestep` から間引きを自動計算し、再生時間がシミュ時間に概ね追従しやすくします。
+- `--xml` で MJCF、`--width` / `--height` で解像度、`--camera` で MJCF 内カメラ id（`-1` で既定）を指定できます。詳細は `python mujoco_test_005.py --help`。
 
 ## 強化学習（`mujoco_rl_sim`）
 

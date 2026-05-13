@@ -113,7 +113,8 @@ python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4
 ```
 
 - `--out` は相対パスのとき **カレントディレクトリ**基準（上記なら `programs/run.mp4`）。
-- 動画に取り込んだ **各フレームの直後**（`mj_step` 済みの `sensordata`）に、既定センサー `imu_acc`（m/s²）・`imu_gyro`（rad/s）を **CSV に 1 行ずつ**書きます。出力は省略時 **`run.mp4` と同じディレクトリの `run.csv`**（`--csv` で別パス、`--acc-sensor` / `--gyro-sensor` で名前変更可）。
+- 動画に取り込んだ **各フレームの直後**（`mj_step` 済みの `sensordata`）に、Robotics Hub データビュワー互換の **`imu.csv` 形式**（`wall_unix`, `perf_timestamp`, `mock`, `accel_*`, `gyro_*` ほか末尾に `sim_time_s`, `frame_index`, `mj_step`）で **CSV** を書きます。加速度は MJCF センサーどおり **m/s²**、ジャイロは **rad/s**。出力は省略時 **`run.mp4` と同じディレクトリの `run.csv`**（`--csv` で変更可）。
+- **`--write-manifest`** を付けると同じディレクトリに **`manifest.json`** を出力します（`acquisition: "mujoco"`, `perf_timestamp_at_video_zero: 0`, `video_file: "video.mp4"` 等）。Hub の `public/data-viewer-datasets/YuukiLab00N/` に置くときは、動画を **`video.mp4`** にし、`imu.csv` に CSV をコピーし、`servo.csv` にサーボログが無ければヘッダのみを置く。
 - `--subsample` を省略（`0`）のときは、`--fps`（既定 `30`）と MJCF の `timestep` から間引きを自動計算し、再生時間がシミュ時間に概ね追従しやすくします。
 - `--xml` で MJCF、`--width` / `--height` で解像度、`--camera` で MJCF 内カメラ id（`-1` で既定）を指定できます。詳細は `python mujoco_test_005.py --help`。
 

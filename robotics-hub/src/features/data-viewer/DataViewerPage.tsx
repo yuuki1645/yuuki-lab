@@ -13,6 +13,11 @@ import {
 } from "./telemetryTimeSync";
 import "./DataViewerPage.css";
 import dataViewerDatasets from "./dataViewerDatasets.json";
+import {
+  effectiveAcquisition,
+  parseDataViewerManifest,
+  type DataViewerManifest,
+} from "./dataViewerManifest";
 
 const SERVO_WINDOW_SEC = 0.35;
 const SERVO_MAX_ROWS = 24;
@@ -24,34 +29,6 @@ const DATASET_SERVO_FILE = "servo.csv";
 const DATASET_MANIFEST_FILE = "manifest.json";
 const VIDEO_FALLBACK_NAMES = ["video.mp4", "session.mp4", "recording.mp4"] as const;
 
-type DataViewerManifest = {
-  perf_timestamp_at_video_zero?: number;
-  video_file?: string;
-  video?: string;
-};
-
-function parseManifestJson(text: string): DataViewerManifest | null {
-  try {
-    const o = JSON.parse(text) as unknown;
-    if (typeof o !== "object" || o === null) return null;
-    const r = o as Record<string, unknown>;
-    const out: DataViewerManifest = {};
-    const p = r.perf_timestamp_at_video_zero;
-    if (typeof p === "number" && Number.isFinite(p)) {
-      out.perf_timestamp_at_video_zero = p;
-    }
-    if (typeof r.video_file === "string" && r.video_file.length > 0) {
-      out.video_file = r.video_file;
-    }
-    if (typeof r.video === "string" && r.video.length > 0) {
-      out.video = r.video;
-    }
-    return out;
-  } catch {
-    return null;
-  }
-}
-
 async function fetchManifest(
   base: string,
   signal: AbortSignal
@@ -59,7 +36,7 @@ async function fetchManifest(
   const r = await fetch(`${base}${DATASET_MANIFEST_FILE}`, { signal });
   if (!r.ok) return null;
   const text = await r.text();
-  return parseManifestJson(text);
+  return parseDataViewerManifest(text);
 }
 
 async function resolvePublicVideoUrl(
@@ -190,6 +167,47 @@ export default function DataViewerPage() {
 
   const [currentPerf, setCurrentPerf] = useState<number>(0);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [datasetManifest, setDatasetManifest] = useState<DataViewerManifest | null>(null);
+
+  const datasetAcquisition = useMemo(
+    () => effectiveAcquisition(datasetManifest),
+    [datasetManifest]
+  );
+
+  const imuColumnTitles = useMemo(() => {
+    const acq = datasetAcquisition;
+    const d = datasetManifest?.acquisition_detail;
+    const accelLabel =
+      typeof d?.imu_accel_column_label === "string"
+        ? (d.imu_accel_column_label as string)
+        : undefined;
+    const gyroLabel =
+      typeof d?.imu_gyro_column_label === "string"
+        ? (d.imu_gyro_column_label as string)
+        : undefined;
+    if (acq === "mujoco") {
+      return { accel: "加速度（m/s²）", gyro: "角速度（rad/s）", angle: "姿勢角（°）" };
+    }
+    if (acq === "other") {
+      return {
+        accel: accelLabel ?? "加速度",
+        gyro: gyroLabel ?? "角速度",
+        angle: "姿勢角（°）",
+      };
+    }
+    return { accel: "加速度（g）", gyro: "角速度（°/s）", angle: "姿勢角（°）" };
+  }, [datasetAcquisition, datasetManifest]);
+
+  const acquisitionLabelJa = useMemo(() => {
+    switch (datasetAcquisition) {
+      case "mujoco":
+        return "MuJoCo シミュレーション";
+      case "other":
+        return "その他";
+      default:
+        return "実機";
+    }
+  }, [datasetAcquisition]);
 
   const imuByPerf = useMemo(() => rowsWithPerfSortedImu(imuRows), [imuRows]);
   const servoByPerf = useMemo(() => rowsWithPerfSortedServo(servoRows), [servoRows]);
@@ -256,6 +274,7 @@ export default function DataViewerPage() {
       setServoRows(servoParsed);
       setImuName(`${id}/${DATASET_IMU_FILE}`);
       setServoName(`${id}/${DATASET_SERVO_FILE}`);
+      setDatasetManifest(manifest);
 
       const perfAnchor = manifest?.perf_timestamp_at_video_zero;
       if (typeof perfAnchor === "number" && Number.isFinite(perfAnchor)) {
@@ -283,6 +302,7 @@ export default function DataViewerPage() {
       setServoRows([]);
       setImuName("");
       setServoName("");
+      setDatasetManifest(null);
       revokeVideoBlob();
       setVideoSrc(null);
       setParseError(e instanceof Error ? e.message : String(e));
@@ -450,16 +470,27 @@ export default function DataViewerPage() {
         </div>
         {videoHint ? <p className="data-viewer__muted data-viewer__video-hint">{videoHint}</p> : null}
         {imuName ? (
-          <p className="data-viewer__muted data-viewer__loaded-meta">
-            読み込み: <code className="data-viewer__code">{imuName}</code>{" "}
-            <code className="data-viewer__code">{servoName}</code>
-            {videoSrc ? (
-              <>
-                {" "}
-                <code className="data-viewer__code">{videoSrc}</code>
-              </>
-            ) : null}
-          </p>
+          <>
+            <p className="data-viewer__muted data-viewer__loaded-meta">
+              読み込み: <code className="data-viewer__code">{imuName}</code>{" "}
+              <code className="data-viewer__code">{servoName}</code>
+              {videoSrc ? (
+                <>
+                  {" "}
+                  <code className="data-viewer__code">{videoSrc}</code>
+                </>
+              ) : null}
+            </p>
+            <p className="data-viewer__muted">
+              取得方法: <strong>{acquisitionLabelJa}</strong>
+              {datasetManifest?.schema_version !== undefined ? (
+                <>
+                  {" "}
+                  · schema_version={datasetManifest.schema_version}
+                </>
+              ) : null}
+            </p>
+          </>
         ) : null}
         {parseError ? <p className="data-viewer__error">{parseError}</p> : null}
       </section>
@@ -553,9 +584,9 @@ export default function DataViewerPage() {
                         >
                           <thead>
                             <tr>
-                              <th scope="col">加速度（g）</th>
-                              <th scope="col">角速度（°/s）</th>
-                              <th scope="col">姿勢角（°）</th>
+                              <th scope="col">{imuColumnTitles.accel}</th>
+                              <th scope="col">{imuColumnTitles.gyro}</th>
+                              <th scope="col">{imuColumnTitles.angle}</th>
                             </tr>
                           </thead>
                           <tbody>

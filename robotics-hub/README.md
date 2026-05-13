@@ -79,6 +79,19 @@ npm run preview
 
 パスは `path` で一意にし、他ツールと被らないようにしてください。
 
+## データビュワー用データセット（`public/data-viewer-datasets/`）
+
+- 一覧は **`src/features/data-viewer/dataViewerDatasets.json`** の `id` と、`public/data-viewer-datasets/<id>/` フォルダ名を一致させる。
+- 各フォルダに **`imu.csv`** と **`servo.csv`** が必須（サーボ無しでもヘッダのみの `servo.csv` で可）。
+- **`manifest.json`**（任意だが推奨）の主なキー:
+  - `perf_timestamp_at_video_zero` — 動画 `currentTime=0` に対応する perf 軸（秒）。
+  - `video_file` — 動画ファイル名（例: `video.mp4`）。未指定時は `video.mp4` / `session.mp4` / `recording.mp4` を順に探す。
+  - **`acquisition`** — `"robot"`（実機・省略時の既定） \| `"mujoco"` \| `"other"`。データビュワーは IMU 列見出しの単位表示などを切り替える。
+  - **`schema_version`** — 整数（将来の manifest / CSV 拡張用）。
+  - **`acquisition_detail`** — 任意オブジェクト（例: MuJoCo なら `mjcf`, `video_fps`, `imu_accel_unit` 等）。`acquisition` が `"other"` のとき、`imu_accel_column_label` / `imu_gyro_column_label` で列見出しを上書き可能。
+
+MuJoCo からの出力は **`mujoco-sim/programs/mujoco_test_005.py`**（`--write-manifest`）で上記に揃えた CSV / manifest を生成し、`video.mp4` にリネームした動画とともに `<id>` フォルダへ配置する。
+
 ## ディレクトリ構成（概要）
 
 ```

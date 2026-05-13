@@ -3,17 +3,22 @@
 """
 オフスクリーン描画（mujoco.Renderer）でシミュをレンダリングし、MP4 に保存する。
 
+CSV は Robotics Hub データビュワー用 ``imu.csv`` と同じ列名（+ 末尾にシム用メタ列）で出力する。
+
 依存: ``pip install -e ".[video]"`` または ``pip install imageio imageio-ffmpeg``
 
 例::
 
   cd mujoco-sim/programs
-  python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4
-  # 同時に run.csv（各動画フレーム時点の imu_acc [m/s²], imu_gyro [rad/s]）が出力される
+  python mujoco_test_005.py --steps 3000 --subsample 8 --out run.mp4 --write-manifest
+  # run.csv と manifest.json（Hub 用 acquisition=mujoco）を同ディレクトリに出力
 """
+
+from __future__ import annotations
 
 import argparse
 import csv
+import json
 import sys
 from pathlib import Path
 
@@ -30,6 +35,9 @@ except ImportError as e:
         "imageio が必要です。例: pip install imageio imageio-ffmpeg\n"
         "または mujoco-sim ルートで: pip install -e \".[video]\""
     ) from e
+
+# データビュワー用 wall_unix の単調性（実機と重ならないよう大きめの基準時刻 + 再生オフセット）
+_HUB_WALL_UNIX_BASE = 1_700_000_000.0
 
 
 def _sensor_vec(model: mujoco.MjModel, data: mujoco.MjData, name: str, dim: int) -> tuple[float, ...]:
@@ -88,14 +96,48 @@ def _parse_args() -> argparse.Namespace:
         "--csv",
         type=str,
         default=None,
-        help="フレーム同期のセンサー CSV（省略時は --out と同名の .csv）",
+        help="センサー CSV（省略時は --out と同名の .csv）。Hub 用 imu.csv にコピー可",
+    )
+    p.add_argument(
+        "--write-manifest",
+        nargs="?",
+        const="",
+        default=None,
+        help="manifest.json を出力。引数省略時は --out と同じディレクトリの manifest.json",
     )
     return p.parse_args()
 
 
+def _write_manifest_json(
+    path: Path,
+    *,
+    xml_path: str,
+    out_fps: float,
+    subsample: int,
+    timestep: float,
+    video_file: str = "video.mp4",
+) -> None:
+    payload = {
+        "acquisition": "mujoco",
+        "schema_version": 1,
+        "perf_timestamp_at_video_zero": 0.0,
+        "video_file": video_file,
+        "acquisition_detail": {
+            "mjcf": xml_path,
+            "video_fps": out_fps,
+            "subsample": subsample,
+            "timestep": timestep,
+            "imu_accel_unit": "m/s2",
+            "imu_gyro_unit": "rad/s",
+        },
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     args = _parse_args()
-    model = mujoco.MjModel.from_xml_path(args.xml)
+    xml_path = str(Path(args.xml).resolve())
+    model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
     gw, gh = int(model.vis.global_.offwidth), int(model.vis.global_.offheight)
     if args.width > gw or args.height > gh:
@@ -124,22 +166,25 @@ def main() -> None:
     acc_name = str(args.acc_sensor)
     gyro_name = str(args.gyro_sensor)
 
+    hub_header = [
+        "wall_unix",
+        "perf_timestamp",
+        "mock",
+        "accel_x",
+        "accel_y",
+        "accel_z",
+        "gyro_x",
+        "gyro_y",
+        "gyro_z",
+        "sim_time_s",
+        "frame_index",
+        "mj_step",
+    ]
+
     n_frames = 0
     with open(csv_path, "w", newline="", encoding="utf-8") as csv_f:
         csv_w = csv.writer(csv_f)
-        csv_w.writerow(
-            [
-                "frame_index",
-                "mj_step",
-                "time_s",
-                "acc_x_m_s2",
-                "acc_y_m_s2",
-                "acc_z_m_s2",
-                "gyro_x_rad_s",
-                "gyro_y_rad_s",
-                "gyro_z_rad_s",
-            ]
-        )
+        csv_w.writerow(hub_header)
         with imageio.get_writer(
             str(out_path),
             fps=out_fps,
@@ -151,9 +196,27 @@ def main() -> None:
                 mujoco.mj_step(model, data)
                 if (i + 1) % subsample != 0:
                     continue
+                perf_ts = n_frames / out_fps
+                wall = _HUB_WALL_UNIX_BASE + perf_ts
                 acc = _sensor_vec(model, data, acc_name, 3)
                 gyro = _sensor_vec(model, data, gyro_name, 3)
-                csv_w.writerow((n_frames, i + 1, float(data.time), *acc, *gyro))
+                sim_t = float(data.time)
+                csv_w.writerow(
+                    [
+                        wall,
+                        perf_ts,
+                        "True",
+                        acc[0],
+                        acc[1],
+                        acc[2],
+                        gyro[0],
+                        gyro[1],
+                        gyro[2],
+                        sim_t,
+                        n_frames,
+                        i + 1,
+                    ]
+                )
                 if cam_id >= 0:
                     renderer.update_scene(data, camera=cam_id)
                 else:
@@ -162,11 +225,31 @@ def main() -> None:
                 writer.append_data(rgb)
                 n_frames += 1
 
+    if args.write_manifest is not None:
+        if args.write_manifest == "":
+            manifest_path = out_path.parent / "manifest.json"
+        else:
+            manifest_path = Path(args.write_manifest)
+            if not manifest_path.is_absolute():
+                manifest_path = Path.cwd() / manifest_path
+        _write_manifest_json(
+            manifest_path,
+            xml_path=xml_path,
+            out_fps=out_fps,
+            subsample=subsample,
+            timestep=dt,
+            video_file="video.mp4",
+        )
+        print(f"wrote {manifest_path} (acquisition=mujoco, video_file=video.mp4)")
+
     print(
         f"wrote {out_path} ({n_frames} frames, ~{n_frames / out_fps:.2f}s playback, "
         f"fps={out_fps:.2f}, subsample={subsample}, sim_time~{args.steps * dt:.3f}s)"
     )
-    print(f"wrote {csv_path} ({n_frames} rows, sensors {acc_name!r} / {gyro_name!r})")
+    print(
+        f"wrote {csv_path} ({n_frames} rows, Hub-compatible imu columns; "
+        f"sensors {acc_name!r} / {gyro_name!r})"
+    )
 
 
 if __name__ == "__main__":

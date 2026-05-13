@@ -21,6 +21,8 @@ class Env004:
   def step(self, action):
     self.data.ctrl[0] = math.radians(-10.0 if action == 0 else 10.0)
     mujoco.mj_step(self.model, self.data)
+    print(f"time: {self.data.time:.2f}")
+    print(f"qpos.root: {self.data.joint("root").qpos}")
     self.viewer.sync()
 
     obs_next = self._get_obs()

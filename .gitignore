@@ -36,3 +36,5 @@ robot-daemon/imu_logs/
 *.csv
 
 YuukiLab*/
+
+MJMODEL.TXT

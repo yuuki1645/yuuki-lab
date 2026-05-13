@@ -9,11 +9,11 @@ _SIM_ROOT = Path(__file__).resolve().parents[1]
 if str(_SIM_ROOT) not in sys.path:
     sys.path.insert(0, str(_SIM_ROOT))
 
-import mujoco
-import mujoco.viewer
-import numpy as np
+import mujoco  # noqa: E402
+import mujoco.viewer  # noqa: E402
+import numpy as np  # noqa: E402
 
-from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
+from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer  # noqa: E402
 
 
 def _sensor_vec(model, data, name: str, dim: int) -> np.ndarray:

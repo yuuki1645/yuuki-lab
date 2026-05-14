@@ -3,18 +3,6 @@
     <flag filterparent="disable"/>
   </option>
 
-  <!-- <visual>
-    <map
-      alpha="0.5"
-    />
-    <scale
-      jointlength="0.6"
-      jointwidth="0.1"
-      framelength="0.8"
-      framewidth="0.04"
-    />
-  </visual> -->
-
   <asset>
     <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2=".6 .8 1" width="256" height="256"/>
     <!-- <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" /> -->

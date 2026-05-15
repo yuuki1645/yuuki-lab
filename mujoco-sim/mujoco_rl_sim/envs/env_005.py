@@ -24,6 +24,7 @@ class Env005:
     mujoco.mj_forward(self.model, self.data)
     self.viewer.sync()
     obs = self._get_obs()
+    
     return obs
 
   def step(self, action, visualize=False):

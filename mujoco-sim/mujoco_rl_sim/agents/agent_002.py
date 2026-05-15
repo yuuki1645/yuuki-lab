@@ -6,6 +6,7 @@ import numpy as np
 ETA = 0.5
 GAMMA = 0.99
 EPSILON = 0.1
+
 class Agent002:
   def __init__(self):
     self.Q_table = np.random.uniform(low=0, high=1, size=(30, 2))

@@ -4,7 +4,7 @@ from mujoco_rl_sim.agents.agent_007_ppo import Agent007PPO, ROLLOUT_STEPS
 import time
 
 
-NUM_UPDATES = 200
+NUM_UPDATES = 500
 MAX_STEPS_PER_EPISODE = 5000
 SLEEP_TIME = 0
 

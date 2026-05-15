@@ -48,6 +48,7 @@ class Env007PPO:
     obs_next = self._get_obs()
     x = obs_next[0]
     reward = -x
+    # reward = x
 
     return obs_next, reward
 

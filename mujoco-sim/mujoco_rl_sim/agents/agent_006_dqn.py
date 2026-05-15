@@ -72,7 +72,8 @@ class Agent006DQN:
         return self._action_index_to_action(action_index)
 
   def memorize(self, obs, action, reward, obs_next):
-    self.memory.push(obs, action, reward, obs_next)
+    action_index = self._action_deg_to_index(action)
+    self.memory.push(obs, action_index, reward, obs_next)
 
   # Experience ReplayでQ関数を更新する
   def update_Q_function(self):
@@ -80,36 +81,31 @@ class Agent006DQN:
       return
 
     batch = self.memory.sample(BATCH_SIZE)
-    # print(f"batch: {batch}")
 
     obs_batch = torch.tensor([obs for obs, _, _, _ in batch], dtype=torch.float32)
+    action_batch = torch.tensor([action for _, action, _, _ in batch], dtype=torch.int64)
     reward_batch = torch.tensor([reward for _, _, reward, _ in batch], dtype=torch.float32)
-    print(f"obs_batch: {obs_batch}")
-    print(f"reward_batch: {reward_batch}")
+    obs_next_batch = torch.tensor([obs_next for _, _, _, obs_next in batch], dtype=torch.float32)
 
-    # 教師信号となるQ値を計算
+    with torch.no_grad():
+      self.model.eval()
+      max_q_values_next_batch = self.model(obs_next_batch).max(dim=1)[0]
 
-    self.model.eval()
-
-    q_values = self.model(obs_batch)
-    print(f"q_values: {q_values}")
-
-    max_q_values_next_batch = q_values.max(dim=1)[0]
-    print(f"max_q_values_next_batch: {max_q_values_next_batch}")
-
-    # 教師となるQ値をQ学習の式から求める
     expected_q_values = reward_batch + GAMMA * max_q_values_next_batch
-    print(f"expected_q_values: {expected_q_values}")
 
-    # 結合パラメータの更新
-    
     self.model.train()
+    q_values = self.model(obs_batch)
+    q_value = q_values.gather(1, action_batch.unsqueeze(1)).squeeze(1)
 
-    loss = F.smooth_l1_loss(q_values, expected_q_values)
+    loss = F.smooth_l1_loss(q_value, expected_q_values)
 
     self.optimizer.zero_grad()
     loss.backward()
     self.optimizer.step()
+
+  def _action_deg_to_index(self, action_deg: float) -> int:
+    action_map = {-20.0: 0, -10.0: 1, 0.0: 2, 10.0: 3, 20.0: 4}
+    return action_map[action_deg]
 
   def _action_index_to_action(self, action_index):
     if action_index == 0:

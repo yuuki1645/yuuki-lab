@@ -5,7 +5,7 @@ import time
 
 
 NUM_UPDATES = 200
-MAX_STEPS_PER_EPISODE = 500
+MAX_STEPS_PER_EPISODE = 5000
 SLEEP_TIME = 0
 
 
@@ -34,9 +34,9 @@ for u in range(NUM_UPDATES):
 
   stats = agent.update(obs)
   print(
-    f"update {u + 1}/{NUM_UPDATES} | "
-    f"mean_return: {stats['mean_return']:.5f} | "
-    f"policy_loss: {stats['policy_loss']:.5f} | "
-    f"value_loss: {stats['value_loss']:.5f} | "
-    f"entropy: {stats['entropy']:.5f}"
+    f"update {u + 1: 3d}/{NUM_UPDATES} | "
+    f"mean_return: {stats['mean_return']:10.5f} | "
+    f"policy_loss: {stats['policy_loss']:10.5f} | "
+    f"value_loss: {stats['value_loss']:10.5f} | "
+    f"entropy: {stats['entropy']:10.5f}"
   )

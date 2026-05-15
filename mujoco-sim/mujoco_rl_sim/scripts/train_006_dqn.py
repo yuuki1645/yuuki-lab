@@ -3,8 +3,8 @@ from mujoco_rl_sim.agents.agent_006_dqn import Agent006DQN
 import time
 
 
-NUM_EPISODES = 5
-MAX_STEPS = 10
+NUM_EPISODES = 100
+MAX_STEPS = 1000
 SLEEP_TIME = 0
 
 

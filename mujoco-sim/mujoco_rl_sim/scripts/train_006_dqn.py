@@ -4,7 +4,7 @@ import time
 
 
 NUM_EPISODES = 100
-MAX_STEPS = 1000
+MAX_STEPS = 10000
 SLEEP_TIME = 0
 
 

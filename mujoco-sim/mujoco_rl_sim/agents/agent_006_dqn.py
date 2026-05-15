@@ -62,7 +62,7 @@ class Agent006DQN:
 
     obs_tensor = torch.tensor(obs, dtype=torch.float32)
 
-    if False and np.random.uniform(0, 1) < EPSILON:
+    if np.random.uniform(0, 1) < EPSILON:
       action_index = random.randint(0, 4)
       return self._action_index_to_action(action_index)
     else:

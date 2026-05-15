@@ -33,7 +33,7 @@ class Env006DQN:
 
     obs_next = self._get_obs()
     x = obs_next[0]
-    reward = X
+    reward = x
 
     return obs_next, reward
 

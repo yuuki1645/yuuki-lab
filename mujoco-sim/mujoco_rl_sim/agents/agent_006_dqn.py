@@ -3,9 +3,34 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 
 EPSILON = 0.1
+CAPACITY = 10000
+# BATCH_SIZE = 32
+BATCH_SIZE = 4
+GAMMA = 0.99
+
+
+class ReplayMemory:
+  def __init__(self, capacity):
+    self.capacity = capacity
+    self.memory = []
+    self.index = 0
+
+  def push(self, obs, action, reward, obs_next):
+    if len(self.memory) < self.capacity:
+      self.memory.append(None)
+    
+    self.memory[self.index] = (obs, action, reward, obs_next)
+    self.index = (self.index + 1) % self.capacity
+
+  def sample(self, batch_size):
+    return random.sample(self.memory, batch_size)
+
+  def __len__(self):
+    return len(self.memory)
 
 
 class Agent006DQN:
@@ -15,6 +40,8 @@ class Agent006DQN:
     self.num_actions = num_actions
 
     print(f"num_states: {self.num_states}, num_actions: {self.num_actions}")
+
+    self.memory = ReplayMemory(capacity=CAPACITY)
 
     # ニューラルネットワークを構築
     self.model = nn.Sequential(
@@ -31,7 +58,7 @@ class Agent006DQN:
 
   # 0 -> -20°, 1 -> -10°, 2 -> 0°, 3 -> 10°, 4 -> 20°
   def get_action(self, obs):
-    print(f"obs: {obs}")
+    # print(f"obs: {obs}")
 
     obs_tensor = torch.tensor(obs, dtype=torch.float32)
 
@@ -41,7 +68,48 @@ class Agent006DQN:
     else:
       self.model.eval()
       with torch.no_grad():
-        return self.model(obs_tensor)
+        action_index = self.model(obs_tensor).argmax().item()
+        return self._action_index_to_action(action_index)
+
+  def memorize(self, obs, action, reward, obs_next):
+    self.memory.push(obs, action, reward, obs_next)
+
+  # Experience ReplayでQ関数を更新する
+  def update_Q_function(self):
+    if len(self.memory) < BATCH_SIZE:
+      return
+
+    batch = self.memory.sample(BATCH_SIZE)
+    # print(f"batch: {batch}")
+
+    obs_batch = torch.tensor([obs for obs, _, _, _ in batch], dtype=torch.float32)
+    reward_batch = torch.tensor([reward for _, _, reward, _ in batch], dtype=torch.float32)
+    print(f"obs_batch: {obs_batch}")
+    print(f"reward_batch: {reward_batch}")
+
+    # 教師信号となるQ値を計算
+
+    self.model.eval()
+
+    q_values = self.model(obs_batch)
+    print(f"q_values: {q_values}")
+
+    max_q_values_next_batch = q_values.max(dim=1)[0]
+    print(f"max_q_values_next_batch: {max_q_values_next_batch}")
+
+    # 教師となるQ値をQ学習の式から求める
+    expected_q_values = reward_batch + GAMMA * max_q_values_next_batch
+    print(f"expected_q_values: {expected_q_values}")
+
+    # 結合パラメータの更新
+    
+    self.model.train()
+
+    loss = F.smooth_l1_loss(q_values, expected_q_values)
+
+    self.optimizer.zero_grad()
+    loss.backward()
+    self.optimizer.step()
 
   def _action_index_to_action(self, action_index):
     if action_index == 0:

@@ -6,8 +6,8 @@ from mujoco_rl_sim.agents.agent_001 import Agent001
 
 
 NUM_EPISODES = 10
-MAX_STEPS = 10
-SLEEP_TIME = 0.5
+MAX_STEPS = 1000
+SLEEP_TIME = 0
 
 env = Env004()
 agent = Agent001()
@@ -26,7 +26,7 @@ for episode in range(NUM_EPISODES):
     # 環境に行動を適用
     obs_next, reward = env.step(action)
 
-    print(f"step: {step+1: 3d} | obs: {obs:10.5f} | action: {action} | reward: {reward:10.5f} | obs_next: {obs_next:10.5f}")
+    print(f"step: {step+1: 4d} | obs(x): {obs:10.5f} | action: {action} | reward: {reward:10.5f} | obs_next(x): {obs_next:10.5f}")
 
     agent.update_Q_table(obs, action, reward, obs_next)
 
@@ -34,3 +34,6 @@ for episode in range(NUM_EPISODES):
     obs = obs_next
 
     time.sleep(SLEEP_TIME)
+
+
+agent.save_Q_table()

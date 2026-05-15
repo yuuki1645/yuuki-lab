@@ -38,3 +38,5 @@ robot-daemon/imu_logs/
 YuukiLab*/
 
 MJMODEL.TXT
+
+*.npy

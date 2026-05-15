@@ -26,6 +26,12 @@ class Agent001:
     self.Q_table[state, action] = self.Q_table[state, action] + \
       ETA * (reward + GAMMA * max_Q_next - self.Q_table[state, action])
 
+  def save_Q_table(self):
+    np.save("Q_table.npy", self.Q_table)
+
+  def load_Q_table(self):
+    self.Q_table = np.load("Q_table.npy")
+
   def _obs_to_state(self, obs):
     # 今のところobsはX座標
     x = obs

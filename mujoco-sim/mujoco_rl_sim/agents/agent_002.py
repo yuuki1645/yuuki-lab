@@ -32,18 +32,30 @@ class Agent002:
   def load_Q_table(self):
     self.Q_table = np.load("Q_table.npy")
 
-  def _obs_to_state(self, obs):
-    # 今のところobsはX座標
-    x = obs
+  def _obs_to_state(self, x, pitch):
     if x > 0.2:
-      return 5
+      x_state = 5
     elif x > 0.1:
-      return 4
+      x_state = 4
     elif x > 0.0:
-      return 3
+      x_state = 3
     elif x > -0.1:
-      return 2
+      x_state = 2
     elif x > -0.2:
-      return 1
+      x_state = 1
     else:
-      return 0
+      x_state = 0
+
+    if pitch < 0.0:
+      pitch_state = 0
+    elif pitch < 10.0:
+      pitch_state = 1
+    elif pitch < 20.0:
+      pitch_state = 2
+    elif pitch < 30.0:
+      pitch_state = 3
+    else:
+      pitch_state = 4
+
+    return 5 * x_state + pitch_state
+

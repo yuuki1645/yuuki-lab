@@ -27,7 +27,7 @@ for episode in range(NUM_EPISODES):
     # 環境に行動を適用
     obs_next, reward = env.step(action)
 
-    print(f"step: {step+1: 4d} | obs(x, leg_world_y_deg): {float(obs[0]):10.5f}, {obs[1]:10.5f} | action: {action} | reward: {reward:10.5f} | obs_next(x, leg_world_y_deg): {float(obs_next[0]):10.5f}, {math.degrees(obs_next[1]):10.5f}")
+    print(f"step: {step+1: 4d} | obs(x): {float(obs[0]):10.5f} | obs(pitch): {obs[1]:10.5f} | action: {action} | reward: {reward:10.5f} | obs_next(x): {float(obs_next[0]):10.5f} | obs_next(pitch): {obs_next[1]:10.5f}")
 
     agent.update_Q_table(obs, action, reward, obs_next)
 

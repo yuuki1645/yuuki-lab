@@ -4,6 +4,7 @@ import math
 import mujoco
 import mujoco.viewer
 import numpy as np
+import time
 
 
 class Env004:
@@ -13,15 +14,19 @@ class Env004:
     self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
 
   def reset(self):
+    mujoco.mj_resetData(self.model, self.data)
+    mujoco.mj_forward(self.model, self.data)
+    self.viewer.sync()
     obs = self._get_obs()
     return obs
 
-  def step(self, action):
+  def step(self, action, visualize=False):
     self.data.ctrl[0] = math.radians(-10.0 if action == 0 else 10.0)
 
     mujoco.mj_step(self.model, self.data)
 
     self.viewer.sync()
+    time.sleep(self.model.opt.timestep)
 
     obs_next = self._get_obs()
 
@@ -45,5 +50,5 @@ class Env004:
     # return acc
 
     x = self.data.joint("root").qpos[0]
-    
+
     return x

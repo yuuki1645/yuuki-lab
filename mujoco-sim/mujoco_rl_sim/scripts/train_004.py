@@ -5,7 +5,7 @@ from mujoco_rl_sim.envs.env_004 import Env004
 from mujoco_rl_sim.agents.agent_001 import Agent001
 
 
-NUM_EPISODES = 10
+NUM_EPISODES = 100
 MAX_STEPS = 1000
 SLEEP_TIME = 0
 

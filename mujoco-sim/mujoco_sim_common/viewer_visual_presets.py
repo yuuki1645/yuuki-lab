@@ -15,8 +15,8 @@ def apply_model_visual_preset(model):
   model.vis.headlight.specular = 1
 
 def apply_passive_viewer_options(viewer):
-  viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_JOINT] = 1
+  viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_JOINT] = 0
   viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = 1
-  viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_COM] = 1
-  viewer.opt.label = mujoco.mjtLabel.mjLABEL_GEOM
-  viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
+  viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_COM] = 0
+  viewer.opt.label = mujoco.mjtLabel.mjLABEL_SITE
+  viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE

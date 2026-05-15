@@ -3,6 +3,10 @@
     <flag filterparent="disable"/>
   </option>
 
+  <default>
+    <site size="0.03" rgba="1 1 0 1"/>
+  </default>
+
   <asset>
     <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2=".6 .8 1" width="256" height="256"/>
     <!-- <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" /> -->
@@ -23,13 +27,15 @@
     <body pos="0 0 1">
       <freejoint name="root"/>
 
-      <site name="imu_site" pos="0 0 0" euler="0 0 -90" size="0.03" rgba="1 0 0 1"/>
+      <site name="imu_site" pos="0 0 0.05" euler="0 0 -90"/>
 
       <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
 
       <!-- 1 Leg -->
       <body name="leg" pos="0 0 0">
         <joint name="hip" type="hinge" axis="0 1 0"/>
+
+        <site name="leg_site" pos="0 0 -0.45"/>
 
         <geom name="leg_link" type="box" pos="0 0 -0.45" size="0.02 0.04 0.35" material="metal" mass="1"/>
         <geom name="foot_plate" type="box" pos="0.1 0 -0.8" size="0.15 0.085 0.03" material="metal" mass="0.5"/>
@@ -44,5 +50,7 @@
   <sensor>
     <gyro name="imu_gyro" site="imu_site"/>
     <accelerometer name="imu_acc" site="imu_site"/>
+
+    <framequat name="leg_quat" objtype="site" objname="leg_site"/>
   </sensor>
 </mujoco>

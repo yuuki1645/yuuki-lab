@@ -76,8 +76,8 @@ class Agent007PPO:
     self._dones = []
 
   def _obs_tensor(self, obs):
-    x, pitch = obs
-    return torch.tensor([[float(x), float(pitch)]], dtype=torch.float32)
+    x, pitch, prev_action = obs
+    return torch.tensor([[float(x), float(pitch), float(prev_action)]], dtype=torch.float32)
 
   def act(self, obs):
     """行動選択（学習時はサンプル）。返り値: action(float), log_prob(tensor), value(tensor)"""
@@ -140,7 +140,7 @@ class Agent007PPO:
     adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
     obs_batch = torch.tensor(
-      [[float(o[0]), float(o[1])] for o in obs_list],
+      [[float(o[0]), float(o[1]), float(o[2])] for o in obs_list],
       dtype=torch.float32,
     )
     actions_batch = torch.tensor(self._actions, dtype=torch.float32).unsqueeze(-1)

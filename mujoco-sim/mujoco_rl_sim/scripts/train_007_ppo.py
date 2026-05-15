@@ -10,7 +10,7 @@ SLEEP_TIME = 0
 
 
 env = Env007PPO()
-agent = Agent007PPO(obs_dim=2)
+agent = Agent007PPO(obs_dim=3)
 
 obs = env.reset()
 episode_step = 0

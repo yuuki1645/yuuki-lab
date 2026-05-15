@@ -7,7 +7,8 @@ import time
 
 
 class Env007PPO:
-  """DQN用006環境と同じモデル。行動は [-1, 1] の1次元連続値（関節トルク係数）。"""
+  """DQN用006環境と同じモデル。行動は [-1, 1] の1次元連続値（関節トルク係数）。
+  観測は (leg_x, pitch, 直前行動)。エピソード先頭の直前行動は 0。"""
 
   def __init__(self):
     self.model = mujoco.MjModel.from_xml_path("../../mujoco_sim_assets/xmls/006_leg_1joint_dqn/main.xml")
@@ -18,11 +19,13 @@ class Env007PPO:
 
     # 連続行動をラジアン指令にスケール（DQNの離散 ±20° よりやや広め）
     self._max_ctrl_rad = math.radians(45.0)
+    self._prev_action = 0.0
 
   def reset(self):
     mujoco.mj_resetData(self.model, self.data)
     mujoco.mj_forward(self.model, self.data)
     self.viewer.sync()
+    self._prev_action = 0.0
     return self._get_obs()
 
   def step(self, action, visualize=False):
@@ -40,6 +43,8 @@ class Env007PPO:
     if visualize:
       time.sleep(self.model.opt.timestep)
 
+    # 次ステップの方策入力に使う「今適用した行動」（クリップ後）
+    self._prev_action = a
     obs_next = self._get_obs()
     x = obs_next[0]
     reward = -x
@@ -53,4 +58,4 @@ class Env007PPO:
     rot = R.from_quat([leg_xquat[1], leg_xquat[2], leg_xquat[3], leg_xquat[0]])
     roll, pitch, yaw = rot.as_euler("xyz", degrees=True)
 
-    return float(leg_xpos), float(pitch)
+    return float(leg_xpos), float(pitch), float(self._prev_action)

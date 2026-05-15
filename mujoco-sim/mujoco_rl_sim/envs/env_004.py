@@ -12,7 +12,7 @@ class Env004:
     self.data = mujoco.MjData(self.model)
     self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
     self.root_joint_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, "root")
-    print(f"self.root_joint_id: {self.root_joint_id}")
+    # print(f"self.root_joint_id: {self.root_joint_id}")
 
   def reset(self):
     obs = self._get_obs()
@@ -21,8 +21,8 @@ class Env004:
   def step(self, action):
     self.data.ctrl[0] = math.radians(-10.0 if action == 0 else 10.0)
     mujoco.mj_step(self.model, self.data)
-    print(f"time: {self.data.time:.2f}")
-    print(f"qpos.root: {self.data.joint("root").qpos}")
+    # print(f"time: {self.data.time:.2f}")
+    # print(f"qpos.root: {self.data.joint("root").qpos}")
     self.viewer.sync()
 
     obs_next = self._get_obs()

@@ -8,7 +8,7 @@ import math
 
 NUM_EPISODES = 100
 MAX_STEPS = 1000
-SLEEP_TIME = 0.1
+SLEEP_TIME = 0
 
 env = Env005()
 agent = Agent002()

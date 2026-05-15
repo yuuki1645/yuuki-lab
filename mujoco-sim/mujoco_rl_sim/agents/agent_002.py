@@ -8,20 +8,20 @@ GAMMA = 0.99
 EPSILON = 0.1
 class Agent002:
   def __init__(self):
-    self.Q_table = np.random.uniform(low=0, high=1, size=(6, 2))
+    self.Q_table = np.random.uniform(low=0, high=1, size=(30, 2))
     print(f"self.Q_table: {self.Q_table}")
 
   # 行動を求める (0なら-3°、1なら3°)
   def get_action(self, obs):
-    state = self._obs_to_state(obs[0])
+    state = self._obs_to_state(obs[0], obs[1])
     if np.random.rand() < EPSILON:
       return random.randint(0, 1)
     else:
       return np.argmax(self.Q_table[state][:])
 
   def update_Q_table(self, obs, action, reward, obs_next):
-    state = self._obs_to_state(obs[0])
-    state_next = self._obs_to_state(obs_next[0])
+    state = self._obs_to_state(obs[0], obs[1])
+    state_next = self._obs_to_state(obs_next[0], obs_next[1])
     max_Q_next = max(self.Q_table[state_next][:])
     self.Q_table[state, action] = self.Q_table[state, action] + \
       ETA * (reward + GAMMA * max_Q_next - self.Q_table[state, action])

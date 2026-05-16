@@ -46,7 +46,8 @@ class Env008A2C:
     self._prev_action = a
     obs_next = self._get_obs()
     x = obs_next[0]
-    reward = -x
+    # reward = -x
+    reward = x
 
     return obs_next, reward
 

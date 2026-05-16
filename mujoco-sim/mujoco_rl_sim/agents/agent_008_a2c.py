@@ -19,6 +19,7 @@ import torch.optim as optim
 GAMMA = 0.99
 LR = 3e-4
 ROLLOUT_STEPS = 512
+# ROLLOUT_STEPS = 15
 VALUE_COEF = 0.5
 ENTROPY_COEF = 0.01
 MAX_GRAD_NORM = 0.5
@@ -94,6 +95,7 @@ class Agent008A2C:
     """学習時: ガウスから行動をサンプル。返り値は (action, value)。"""
     o = self._obs_tensor(obs)
     mean, std = self.actor(o)
+    # print(f"mean: {mean} | std: {std}")
     dist = torch.distributions.Normal(mean, std)
     raw = dist.rsample()
     value = self.critic(o)
@@ -120,7 +122,7 @@ class Agent008A2C:
     self._values.append(value.detach())
     self._dones.append(float(done))
 
-    print(f"obs: ({obs[0]:7.3f}, {obs[1]:7.3f}, {obs[2]:7.3f}) | action: {action:7.3f} | reward: {reward:7.3f} | value: {value:7.3f} | done: {done}")
+    # print(f"obs: ({obs[0]:7.3f}, {obs[1]:7.3f}, {obs[2]:7.3f}) | action: {action:7.3f} | reward: {reward:7.3f} | value: {value:7.3f} | done: {done}")
 
   def update(self, last_obs):
     """ロールアウト全体で損失を計算し、勾配1セット分で更新する。
@@ -163,6 +165,7 @@ class Agent008A2C:
       dtype=torch.float32,
     )
     actions_batch = torch.tensor(self._actions, dtype=torch.float32).unsqueeze(-1)
+    # print(f"actions_batch: {actions_batch}")
 
     total_policy_loss = 0.0
     total_value_loss = 0.0

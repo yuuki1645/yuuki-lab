@@ -67,9 +67,11 @@ class Env010A2C:
     upright = float(imu_zaxis[2])
     imu_z = self._imu_z()
 
-    terminated = imu_z < MIN_IMU_Z or upright < MIN_IMU_UPRIGHT
+    # terminated = imu_z < MIN_IMU_Z or upright < MIN_IMU_UPRIGHT
+    terminated = imu_z < MIN_IMU_Z
 
-    reward = dx * FORWARD_REWARD_SCALE + upright * UPRIGHT_BONUS_SCALE
+    # reward = dx * FORWARD_REWARD_SCALE + upright * UPRIGHT_BONUS_SCALE
+    reward = x * 0.1 + upright * UPRIGHT_BONUS_SCALE
     if terminated:
       reward += FALL_PENALTY
 

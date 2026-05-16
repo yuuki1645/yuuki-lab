@@ -8,7 +8,8 @@ GAMMA = 0.99
 GAE_LAMBDA = 0.95
 CLIP_EPS = 0.2
 LR = 3e-4
-ROLLOUT_STEPS = 512
+# ROLLOUT_STEPS = 512
+ROLLOUT_STEPS = 10
 UPDATE_EPOCHS = 8
 MINIBATCH_SIZE = 64
 VALUE_COEF = 0.5
@@ -133,6 +134,8 @@ class Agent007PPO:
       delta = rewards[t] + GAMMA * next_value * next_non_terminal - values[t]
       last_gae = delta + GAMMA * GAE_LAMBDA * next_non_terminal * last_gae
       advantages[t] = last_gae
+
+    print(f"advantages: {advantages}")
 
     returns = advantages + values
 

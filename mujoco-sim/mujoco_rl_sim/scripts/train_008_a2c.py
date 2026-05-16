@@ -9,7 +9,7 @@ from mujoco_rl_sim.agents.agent_008_a2c import Agent008A2C, ROLLOUT_STEPS
 import time
 
 
-NUM_UPDATES = 200
+NUM_UPDATES = 500
 # NUM_UPDATES = 1
 MAX_STEPS_PER_EPISODE = 3000
 # MAX_STEPS_PER_EPISODE = 10

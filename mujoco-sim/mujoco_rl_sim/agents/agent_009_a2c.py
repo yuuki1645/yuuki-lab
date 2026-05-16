@@ -1,4 +1,4 @@
-"""009: 2関節脚用 A2C — 008 と同じ更新ロジック、観測6次元・行動2次元。"""
+"""009: 2関節脚用 A2C — 008 と同じ更新ロジック、観測9次元・行動2次元。"""
 
 import numpy as np
 import torch
@@ -14,7 +14,7 @@ ENTROPY_COEF = 0.01
 MAX_GRAD_NORM = 0.5
 MINIBATCH_SIZE = 256
 
-OBS_DIM = 6
+OBS_DIM = 9
 ACTION_DIM = 2
 
 

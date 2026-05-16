@@ -1,6 +1,6 @@
 """009: 2関節脚 A2C 学習ループ。
 
-  観測 6: knee, ankle, imu_z, foot_zaxis (x,y,z)
+  観測 9: knee, ankle, imu_z, imu_zaxis (x,y,z), foot_zaxis (x,y,z)
   行動 2: knee_servo, ankle_servo 目標角（[-1,1] -> ctrl [rad]）
 """
 

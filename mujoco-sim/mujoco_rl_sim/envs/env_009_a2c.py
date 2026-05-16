@@ -7,7 +7,7 @@ import time
 class Env009A2C:
   """007_leg_2joint 用 A2C 環境。
 
-  観測（6）: knee 角度, ankle 角度, imu_site の z, foot_zaxis (x, y, z)
+  観測（9）: knee 角度, ankle 角度, imu_site の z, imu_zaxis (x,y,z), foot_zaxis (x,y,z)
   行動（2）: [-1, 1] を knee_servo / ankle_servo の目標角 [rad] にスケール
   """
 
@@ -56,12 +56,16 @@ class Env009A2C:
     knee_angle = self.data.joint("knee").qpos[0]
     ankle_angle = self.data.joint("ankle").qpos[0]
     imu_z = self.data.site("imu_site").xpos[2]
+    imu_zaxis = self.data.sensor("imu_zaxis").data.copy()
     foot_zaxis = self.data.sensor("foot_zaxis").data.copy()
 
     return (
       float(knee_angle),
       float(ankle_angle),
       float(imu_z),
+      float(imu_zaxis[0]),
+      float(imu_zaxis[1]),
+      float(imu_zaxis[2]),
       float(foot_zaxis[0]),
       float(foot_zaxis[1]),
       float(foot_zaxis[2]),

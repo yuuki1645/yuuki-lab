@@ -120,6 +120,8 @@ class Agent008A2C:
     self._values.append(value.detach())
     self._dones.append(float(done))
 
+    print(f"obs: ({obs[0]:7.3f}, {obs[1]:7.3f}, {obs[2]:7.3f}) | action: {action:7.3f} | reward: {reward:7.3f} | value: {value:7.3f} | done: {done}")
+
   def update(self, last_obs):
     """ロールアウト全体で損失を計算し、勾配1セット分で更新する。
 

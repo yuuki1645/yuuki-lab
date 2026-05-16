@@ -1,4 +1,4 @@
-"""009: 2関節脚用 A2C — 008 と同じ更新ロジック、観測9次元・行動2次元。"""
+"""009: 2関節脚用 A2C — 008 と同じ更新ロジック、観測12次元・行動2次元。"""
 
 import numpy as np
 import torch
@@ -14,7 +14,7 @@ ENTROPY_COEF = 0.01
 MAX_GRAD_NORM = 0.5
 MINIBATCH_SIZE = 256
 
-OBS_DIM = 9
+OBS_DIM = 12
 ACTION_DIM = 2
 
 
@@ -83,7 +83,10 @@ class Agent009A2C:
 
   def _action_tuple(self, raw):
     a = raw.squeeze(0).detach()
-    return (float(a[0].item()), float(a[1].item()))
+    return (
+      max(-1.0, min(1.0, float(a[0].item()))),
+      max(-1.0, min(1.0, float(a[1].item()))),
+    )
 
   def act(self, obs):
     """学習時: ガウスから (knee, ankle) をサンプル。返り値は ((knee, ankle), value)。"""

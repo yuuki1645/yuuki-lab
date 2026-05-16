@@ -40,6 +40,7 @@
           <joint name="ankle" type="hinge" axis="0 1 0"/>
 
           <site name="foot_site" pos="0.1 0 0"/>
+          <site name="toe_site" pos="0.25 0 0"/>
 
           <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.15 0.085 0.01" material="metal" mass="0.271"/>
         </body>
@@ -68,7 +69,11 @@
 
     <!-- <framepos name="imu_pos" objtype="site" objname="imu_site"/> -->
     <framezaxis name="imu_zaxis" objtype="site" objname="imu_site"/>
+
+    <framexaxis name="foot_xaxis" objtype="site" objname="foot_site"/>
     <framezaxis name="foot_zaxis" objtype="site" objname="foot_site"/>
+
+    <framepos name="toe_pos" objtype="site" objname="toe_site"/>
 
     <!-- <framequat name="leg_quat" objtype="site" objname="leg_site"/> -->
   </sensor>

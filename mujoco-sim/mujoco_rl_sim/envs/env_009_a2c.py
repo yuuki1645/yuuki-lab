@@ -48,7 +48,7 @@ class Env009A2C:
     print(f"x: {x: 8.3f} | z: {z: 8.3f}")
 
     # reward = self.data.site("imu_site").xpos[0]
-    reward = x * 0.1 + z * 0.1
+    reward = x * 0.1 + (z - 0.4) * 0.1
 
     return obs_next, reward
 

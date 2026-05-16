@@ -16,4 +16,12 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
   while viewer.is_running():
     mujoco.mj_step(model, data)
     viewer.sync()
+
+    knee_angle = data.joint("knee").qpos[0]
+    ankle_angle = data.joint("ankle").qpos[0]
+    imu_z = data.site("imu_site").xpos[2]
+    foot_zaxis = data.sensor("foot_zaxis").data.copy()
+
+    print(f"knee_angle: {knee_angle: 8.3f} | ankle_angle: {ankle_angle: 8.3f} | imu_z: {imu_z: 8.3f} | foot_zaxis: ({foot_zaxis[0]: 8.3f}, {foot_zaxis[1]: 8.3f}, {foot_zaxis[2]: 8.3f})")
+
     time.sleep(model.opt.timestep)

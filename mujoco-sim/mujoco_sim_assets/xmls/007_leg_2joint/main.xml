@@ -39,6 +39,8 @@
         <body name="foot" pos="0 0 -0.46">
           <joint name="ankle" type="hinge" axis="0 1 0"/>
 
+          <site name="foot_site" pos="0.1 0 0"/>
+
           <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.15 0.085 0.01" material="metal" mass="0.271"/>
         </body>
       </body>
@@ -61,8 +63,11 @@
   </actuator>
 
   <sensor>
-    <gyro name="imu_gyro" site="imu_site"/>
-    <accelerometer name="imu_acc" site="imu_site"/>
+    <!-- <gyro name="imu_gyro" site="imu_site"/> -->
+    <!-- <accelerometer name="imu_acc" site="imu_site"/> -->
+
+    <!-- <framepos name="imu_pos" objtype="site" objname="imu_site"/> -->
+    <framezaxis name="foot_zaxis" objtype="site" objname="foot_site"/>
 
     <!-- <framequat name="leg_quat" objtype="site" objname="leg_site"/> -->
   </sensor>

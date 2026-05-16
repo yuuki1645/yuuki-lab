@@ -25,11 +25,11 @@ class Actor(nn.Module):
     super().__init__()
     self.action_dim = action_dim
     self.net = nn.Sequential(
-      nn.Linear(obs_dim, 32),
+      nn.Linear(obs_dim, 64),
       nn.ReLU(),
-      nn.Linear(32, 32),
+      nn.Linear(64, 64),
       nn.ReLU(),
-      nn.Linear(32, action_dim),
+      nn.Linear(64, action_dim),
       nn.Tanh(),
     )
     self.log_std = nn.Parameter(torch.zeros(action_dim))
@@ -44,11 +44,11 @@ class Critic(nn.Module):
   def __init__(self, obs_dim):
     super().__init__()
     self.net = nn.Sequential(
-      nn.Linear(obs_dim, 32),
+      nn.Linear(obs_dim, 64),
       nn.ReLU(),
-      nn.Linear(32, 32),
+      nn.Linear(64, 64),
       nn.ReLU(),
-      nn.Linear(32, 1),
+      nn.Linear(64, 1),
     )
 
   def forward(self, obs):

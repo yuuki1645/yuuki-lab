@@ -10,8 +10,8 @@ from mujoco_rl_sim.agents.agent_009_a2c import Agent009A2C, OBS_DIM, ROLLOUT_STE
 import time
 
 
-NUM_UPDATES = 500
-MAX_STEPS_PER_EPISODE = 3000
+NUM_UPDATES = 50000
+MAX_STEPS_PER_EPISODE = 5000
 SLEEP_TIME = 0
 
 

@@ -67,6 +67,7 @@
     <!-- <accelerometer name="imu_acc" site="imu_site"/> -->
 
     <!-- <framepos name="imu_pos" objtype="site" objname="imu_site"/> -->
+    <framezaxis name="imu_zaxis" objtype="site" objname="imu_site"/>
     <framezaxis name="foot_zaxis" objtype="site" objname="foot_site"/>
 
     <!-- <framequat name="leg_quat" objtype="site" objname="leg_site"/> -->

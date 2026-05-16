@@ -42,7 +42,13 @@ class Env009A2C:
       time.sleep(self.model.opt.timestep)
 
     obs_next = self._get_obs()
-    reward = self.data.site("imu_site").xpos[0]
+
+    x = self.data.site("imu_site").xpos[0]
+    z = self.data.site("imu_site").xpos[2]
+    print(f"x: {x: 8.3f} | z: {z: 8.3f}")
+
+    # reward = self.data.site("imu_site").xpos[0]
+    reward = x * 0.1 + z * 0.1
 
     return obs_next, reward
 

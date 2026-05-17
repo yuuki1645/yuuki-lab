@@ -40,3 +40,5 @@ YuukiLab*/
 MJMODEL.TXT
 
 *.npy
+
+wandb/

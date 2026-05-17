@@ -44,9 +44,10 @@ def bar(min_value: float, max_value: float, value: float):
 class Env010A2C:
   """007_leg_2joint 用 A2C 環境。
 
-  観測（7）: imu_z, foot_z, foot_xaxis[2], knee [deg], ankle [deg], com_x, com_z
+  観測（16）: foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
+              foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z
   行動（2）: [-1, 1] を knee_servo / ankle_servo の目標角 [rad] にスケール
-  報酬: 1 ステップあたりの +x 変位（前進）＋弱い直立ボーナス。転倒で終了。
+  報酬: imu_x と直立ボーナス。転倒で終了。
   """
 
   def __init__(self):
@@ -199,11 +200,20 @@ class Env010A2C:
     self.count += 1
 
     return (
+      float(foot_on_floor),
+      imu_gyro_x,
+      imu_gyro_y,
+      imu_gyro_z,
+      imu_zaxis_x,
+      imu_zaxis_y,
+      imu_zaxis_z,
       imu_z,
       foot_z,
       float(foot_xaxis[2]),
-      float(math.degrees(knee_angle)),
-      float(math.degrees(ankle_angle)),
+      float(knee_angle_logical),
+      float(ankle_angle_logical),
+      float(knee_vel),
+      float(ankle_vel),
       float(com_x),
       float(com_z),
     )

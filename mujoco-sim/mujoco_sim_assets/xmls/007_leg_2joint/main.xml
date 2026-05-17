@@ -1,7 +1,11 @@
 <mujoco model="yuuki_robot_1joint">
-  <option>
+  <!-- 
+    以下のオプションは、親子の(bodyの)geomが接触しないようにXMLを変更したためコメントアウトした。
+    有効にすると、親子の(bodyの)geomが接触するようになる。
+  -->
+  <!-- <option>
     <flag filterparent="disable"/>
-  </option>
+  </option> -->
 
   <default>
     <site size="0.03" rgba="1 1 0 1"/>
@@ -30,7 +34,14 @@
       <site name="imu_site" pos="0 0 0.05"/>
 
       <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.7"/>
-      <geom name="thigh_link" type="box" pos="0 0 -0.2" size="0.02 0.04 0.2" material="metal" mass="1.0"/>
+
+      <!--
+        【大腿リンク】
+        docs/human_anthropometry.mdを参考に170cm / 70kgの男性の例の下限値を採用した。
+        大腿の長さは 41 cm
+        大腿の質量は 9.9 kg
+      -->
+      <geom name="thigh_link" type="box" pos="0 0 -0.205" size="0.02 0.04 0.205" material="metal" mass="9.9"/>
 
       <body name="shank" pos="0 0 -0.43">
         <!--
@@ -39,7 +50,13 @@
         -->
         <joint name="knee" type="hinge" axis="0 1 0" range="0 100"/>
 
-        <geom name="shank_link" type="box" pos="0 0 -0.23" size="0.02 0.04 0.2" material="metal" mass="1.0"/>
+        <!--
+          【下腿リンク】
+          docs/human_anthropometry.mdを参考に170cm / 70kgの男性の例の下限値を採用した。
+          下腿の長さは 41 cm
+          下腿の質量は 3.0 kg
+        -->
+        <geom name="shank_link" type="box" pos="0 0 -0.205" size="0.02 0.04 0.205" material="metal" mass="3.0"/>
 
         <body name="foot" pos="0 0 -0.46">
           <!--

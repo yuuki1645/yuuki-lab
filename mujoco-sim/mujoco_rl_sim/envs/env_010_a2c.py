@@ -55,7 +55,7 @@ class Env010A2C:
   観測（20）: imu_x, dx, foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
               foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z,
               prev_knee/ankle 指令（[-1,1]）
-  行動（2）: [-1, 1] を knee_servo / ankle_servo の目標角 [rad] にスケール
+  行動（2）: [-1, 1] を各 actuator の ctrlrange（XML）内の目標角 [rad] に線形マッピング
   報酬: dx 前進 + 直立 + 膝屈曲（ctrl+ 側）ボーナス − 反対向きペナルティ。転倒で終了。
   """
 
@@ -67,7 +67,8 @@ class Env010A2C:
     apply_passive_viewer_options(self.viewer)
 
     self._basket_thigh_body_id = self.model.body("basket_thigh").id
-    self._max_ctrl_rad = 1.571
+    self._knee_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("knee_servo").id].copy()
+    self._ankle_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("ankle_servo").id].copy()
     self._prev_x = 0.0
     self._prev_action = (0.0, 0.0)
 
@@ -75,6 +76,13 @@ class Env010A2C:
 
     self.floor_id = self.model.geom("floor").id
     self.foot_id = self.model.geom("foot_plate").id
+
+  @staticmethod
+  def _action_to_ctrl(action_val: float, ctrl_range) -> float:
+    """[-1, 1] を ctrlrange [min, max] に線形マッピングする。"""
+    a = max(-1.0, min(1.0, float(action_val)))
+    lo, hi = float(ctrl_range[0]), float(ctrl_range[1])
+    return lo + (a + 1.0) * 0.5 * (hi - lo)
 
   def _imu_x(self):
     return float(self.data.site("imu_site").xpos[0])
@@ -94,8 +102,8 @@ class Env010A2C:
     knee_a = max(-1.0, min(1.0, float(action[0])))
     ankle_a = max(-1.0, min(1.0, float(action[1])))
 
-    self.data.ctrl[0] = knee_a * self._max_ctrl_rad
-    self.data.ctrl[1] = ankle_a * self._max_ctrl_rad
+    self.data.ctrl[self.model.actuator("knee_servo").id] = self._action_to_ctrl(knee_a, self._knee_ctrl_range)
+    self.data.ctrl[self.model.actuator("ankle_servo").id] = self._action_to_ctrl(ankle_a, self._ankle_ctrl_range)
 
     mujoco.mj_step(self.model, self.data)
     self.viewer.sync()

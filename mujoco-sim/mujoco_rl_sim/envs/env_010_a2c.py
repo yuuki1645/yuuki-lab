@@ -25,14 +25,18 @@ def bar(min_value: float, max_value: float, value: float):
   bar_length = 20
   filled_length = int(bar_length * rate)
 
+  if filled_length < 0:
+    filled_length = 0
   if filled_length > bar_length:
     filled_length = bar_length
   
   # bar = f"({min_value: 4.1f}) [" + "█" * filled_length + " " * (bar_length - filled_length) + f"] ({max_value: 4.1f})"
   bar = f"[" + "█" * filled_length + " " * (bar_length - filled_length) + f"] ({min_value:.1f} -- {max_value:.1f})"
 
+  if rate < 0.0:
+    bar += " (<<<)"
   if rate > 1.0:
-    bar += " (over)"
+    bar += " (   >>>)"
   
   return bar
 
@@ -104,10 +108,28 @@ class Env010A2C:
 
   def _get_obs(self):
     imu_z = self._imu_z()
+
+    # [IMU Gyro] (rad/s)
+    imu_gyro = self.data.sensor("imu_gyro").data.copy()
+    imu_gyro_x = float(imu_gyro[0])
+    imu_gyro_y = float(imu_gyro[1])
+    imu_gyro_z = float(imu_gyro[2])
+
+    # [IMU Z-axis]
+    imu_zaxis = self.data.sensor("imu_zaxis").data.copy()
+    imu_zaxis_x = float(imu_zaxis[0])
+    imu_zaxis_y = float(imu_zaxis[1])
+    imu_zaxis_z = float(imu_zaxis[2])
+
     foot_z = float(self.data.site("foot_site").xpos[2])
     foot_xaxis = self.data.sensor("foot_xaxis").data.copy()
+
     knee_angle = self.data.joint("knee").qpos[0]
     ankle_angle = self.data.joint("ankle").qpos[0]
+    
+    knee_vel = self.data.joint("knee").qvel[0]    # [rad/s]
+    ankle_vel = self.data.joint("ankle").qvel[0]  # [rad/s]
+    
     toe_pos = self.data.sensor("toe_pos").data.copy()
     com = self.data.subtree_com[self._basket_thigh_body_id]
     com_x = com[0] - toe_pos[0]
@@ -120,13 +142,40 @@ class Env010A2C:
       self.count = 0
 
       print(
+        f"\033[2K\n"
+
+        f"\033[2K[IMU Gyro] (rad/s)\n"
+        f"\033[2K  x          : {imu_gyro_x: 8.3f} {bar(-10.0, 10.0, imu_gyro_x)}\n"
+        f"\033[2K  y          : {imu_gyro_y: 8.3f} {bar(-10.0, 10.0, imu_gyro_y)}\n"
+        f"\033[2K  z          : {imu_gyro_z: 8.3f} {bar(-10.0, 10.0, imu_gyro_z)}\n"
+
+        f"\033[2K\n"
+
+        f"\033[2K[IMU Z-axis]\n"
+        f"\033[2K  x          : {imu_zaxis_x: 8.3f} {bar(-1.0, 1.0, imu_zaxis_x)}\n"
+        f"\033[2K  y          : {imu_zaxis_y: 8.3f} {bar(-1.0, 1.0, imu_zaxis_y)}\n"
+        f"\033[2K  z          : {imu_zaxis_z: 8.3f} {bar(-1.0, 1.0, imu_zaxis_z)}\n"
+
+        f"\033[2K\n"
+
         f"\033[2Kimu_z        : {imu_z: 8.3f} {bar(0.0, 1.0, imu_z)}\n"
         f"\033[2Kfoot_z       : {foot_z: 8.3f} {bar(0.0, 1.0, foot_z)}\n"
         f"\033[2Kfoot_xaxis_x : {foot_xaxis[2]: 8.3f} {bar(-1.0, 1.0, foot_xaxis[2])}\n"
-        f"\033[2Kknee         : {knee_angle_logical: 6.1f}°  ({knee_angle: 8.3f}) {bar(-180.0, 180.0, knee_angle_logical)}\n"
-        f"\033[2Kankle        : {ankle_angle_logical: 6.1f}°  ({ankle_angle: 8.3f}) {bar(-180.0, 180.0, ankle_angle_logical)}\n"
+        
+        f"\033[2K[Joints]\n"
+        f"\033[2K  knee       : {knee_angle_logical: 6.1f}°  ({knee_angle: 8.3f}) {bar(-180.0, 180.0, knee_angle_logical)}\n"
+        f"\033[2K  ankle      : {ankle_angle_logical: 6.1f}°  ({ankle_angle: 8.3f}) {bar(-180.0, 180.0, ankle_angle_logical)}\n"
+
+        f"\033[2K\n"
+        
+        f"\033[2K[Joints Vel]\n"
+        f"\033[2K  knee vel   : {knee_vel: 8.3f} {bar(-10.0, 10.0, knee_vel)}\n"
+        f"\033[2K  ankle vel  : {ankle_vel: 8.3f} {bar(-10.0, 10.0, ankle_vel)}\n"
+        
+        f"\033[2K\n"
+        
         f"\033[2Kcom_x        : {com_x: 8.3f} {bar(-1.0, 1.0, com_x)}\n"
-        f"\033[2Kcom_z        : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[6A\r"
+        f"\033[2Kcom_z        : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[23A\r"
       , end="")
     
     self.count += 1

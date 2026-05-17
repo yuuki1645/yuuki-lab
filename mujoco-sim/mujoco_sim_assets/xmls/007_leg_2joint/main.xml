@@ -26,7 +26,8 @@
     <body name="basket_thigh" pos="0 0 0.9">
       <freejoint name="root"/>
 
-      <site name="imu_site" pos="0 0 0.05" euler="0 0 -90"/>
+      <!-- <site name="imu_site" pos="0 0 0.05" euler="0 0 -90"/> -->
+      <site name="imu_site" pos="0 0 0.05"/>
 
       <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
       <geom name="thigh_link" type="box" pos="0 0 -0.2" size="0.02 0.04 0.2" material="metal" mass="0.8"/>
@@ -64,7 +65,8 @@
   </actuator>
 
   <sensor>
-    <!-- <gyro name="imu_gyro" site="imu_site"/> -->
+    <gyro name="imu_gyro" site="imu_site"/>
+
     <!-- <accelerometer name="imu_acc" site="imu_site"/> -->
 
     <!-- <framepos name="imu_pos" objtype="site" objname="imu_site"/> -->

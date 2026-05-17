@@ -13,12 +13,12 @@ FALL_PENALTY = -2.0
 MIN_IMU_Z = 0.35
 MIN_IMU_UPRIGHT = 0.35
 
-# 膝ヒンジ +Y: qpos>0 は前折れ（くの字）、qpos<0 は人間と同じ後方屈曲
-KNEE_FORWARD_THRESH_RAD = 0.05
-KNEE_FORWARD_PENALTY_SCALE = 5.0
-KNEE_HUMAN_FLEX_MIN_RAD = -1.2
-KNEE_HUMAN_FLEX_MAX_RAD = -0.02
-KNEE_BACKWARD_BONUS_SCALE = 0.15
+# 膝ヒンジ +Y: ctrl/qpos>0 が人間と同じ後方屈曲（良い）、負側が反対向き
+KNEE_WRONG_THRESH_RAD = 0.05
+KNEE_WRONG_PENALTY_SCALE = 5.0
+KNEE_HUMAN_FLEX_MIN_RAD = 0.02
+KNEE_HUMAN_FLEX_MAX_RAD = 1.2
+KNEE_HUMAN_FLEX_BONUS_SCALE = 0.15
 
 
 def _knee_angle_to_logical_deg(knee_angle: float) -> float:
@@ -55,7 +55,7 @@ class Env010A2C:
               foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z,
               prev_knee/ankle 指令（[-1,1]）
   行動（2）: [-1, 1] を knee_servo / ankle_servo の目標角 [rad] にスケール
-  報酬: dx 前進 + 直立 + 膝後方屈曲ボーナス − 膝前折れペナルティ。転倒で終了。
+  報酬: dx 前進 + 直立 + 膝屈曲（ctrl+ 側）ボーナス − 反対向きペナルティ。転倒で終了。
   """
 
   def __init__(self):
@@ -111,12 +111,12 @@ class Env010A2C:
     imu_z = self._imu_z()
 
     knee_angle = float(self.data.joint("knee").qpos[0])
-    knee_forward_excess = max(0.0, knee_angle - KNEE_FORWARD_THRESH_RAD)
-    knee_forward_penalty = knee_forward_excess * KNEE_FORWARD_PENALTY_SCALE
+    knee_wrong_excess = max(0.0, -knee_angle - KNEE_WRONG_THRESH_RAD)
+    knee_wrong_penalty = knee_wrong_excess * KNEE_WRONG_PENALTY_SCALE
 
-    knee_backward_bonus = 0.0
+    knee_human_flex_bonus = 0.0
     if KNEE_HUMAN_FLEX_MIN_RAD <= knee_angle <= KNEE_HUMAN_FLEX_MAX_RAD:
-      knee_backward_bonus = KNEE_BACKWARD_BONUS_SCALE
+      knee_human_flex_bonus = KNEE_HUMAN_FLEX_BONUS_SCALE
 
     terminated = imu_z < MIN_IMU_Z or upright < MIN_IMU_UPRIGHT
     # terminated = imu_z < MIN_IMU_Z
@@ -128,8 +128,8 @@ class Env010A2C:
     reward = (
       dx * FORWARD_REWARD_SCALE
       + upright * UPRIGHT_BONUS_SCALE
-      + knee_backward_bonus
-      - knee_forward_penalty
+      + knee_human_flex_bonus
+      - knee_wrong_penalty
     )
 
     if terminated:
@@ -142,8 +142,8 @@ class Env010A2C:
       episode_step,
       dx=dx,
       knee_angle=knee_angle,
-      knee_forward_penalty=knee_forward_penalty,
-      knee_backward_bonus=knee_backward_bonus,
+      knee_wrong_penalty=knee_wrong_penalty,
+      knee_human_flex_bonus=knee_human_flex_bonus,
     ), reward, terminated
 
   def _get_obs(
@@ -152,8 +152,8 @@ class Env010A2C:
     episode_step=0,
     dx=0.0,
     knee_angle=0.0,
-    knee_forward_penalty=0.0,
-    knee_backward_bonus=0.0,
+    knee_wrong_penalty=0.0,
+    knee_human_flex_bonus=0.0,
   ):
     imu_x = self._imu_x()
     imu_z = self._imu_z()
@@ -209,8 +209,8 @@ class Env010A2C:
 
         f"\033[2K[Reward]\n"
         f"\033[2K  reward     : {reward: 8.3f}\n"
-        f"\033[2K  knee_back  : {knee_backward_bonus: 8.3f}\n"
-        f"\033[2K  knee_fwd-  : {knee_forward_penalty: 8.3f}\n"
+        f"\033[2K  knee_flex+ : {knee_human_flex_bonus: 8.3f}\n"
+        f"\033[2K  knee_wrong : {knee_wrong_penalty: 8.3f}\n"
 
         f"\033[2K\n"
 

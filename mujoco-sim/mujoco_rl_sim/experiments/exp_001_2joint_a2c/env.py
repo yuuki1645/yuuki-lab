@@ -1,6 +1,7 @@
 import time
 
 import mujoco
+import mujoco.viewer
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config

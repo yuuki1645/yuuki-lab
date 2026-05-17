@@ -14,6 +14,29 @@ MIN_IMU_Z = 0.35
 MIN_IMU_UPRIGHT = 0.35
 
 
+def _knee_angle_to_logical_deg(knee_angle: float) -> float:
+  return math.degrees(knee_angle)
+
+def _ankle_angle_to_logical_deg(ankle_angle: float) -> float:
+  return math.degrees(ankle_angle)
+
+def bar(min_value: float, max_value: float, value: float):
+  rate = (value - min_value) / (max_value - min_value)
+  bar_length = 20
+  filled_length = int(bar_length * rate)
+
+  if filled_length > bar_length:
+    filled_length = bar_length
+  
+  # bar = f"({min_value: 4.1f}) [" + "█" * filled_length + " " * (bar_length - filled_length) + f"] ({max_value: 4.1f})"
+  bar = f"[" + "█" * filled_length + " " * (bar_length - filled_length) + f"] ({min_value:.1f} -- {max_value:.1f})"
+
+  if rate > 1.0:
+    bar += " (over)"
+  
+  return bar
+
+
 class Env010A2C:
   """007_leg_2joint 用 A2C 環境。
 
@@ -32,6 +55,8 @@ class Env010A2C:
     self._basket_thigh_body_id = self.model.body("basket_thigh").id
     self._max_ctrl_rad = 1.571
     self._prev_x = 0.0
+
+    self.count = 0
 
   def _imu_x(self):
     return float(self.data.site("imu_site").xpos[0])
@@ -87,6 +112,24 @@ class Env010A2C:
     com = self.data.subtree_com[self._basket_thigh_body_id]
     com_x = com[0] - toe_pos[0]
     com_z = com[2]
+
+    knee_angle_logical = _knee_angle_to_logical_deg(knee_angle)
+    ankle_angle_logical = _ankle_angle_to_logical_deg(ankle_angle)
+
+    if self.count == 100:
+      self.count = 0
+
+      print(
+        f"\033[2Kimu_z        : {imu_z: 8.3f} {bar(0.0, 1.0, imu_z)}\n"
+        f"\033[2Kfoot_z       : {foot_z: 8.3f} {bar(0.0, 1.0, foot_z)}\n"
+        f"\033[2Kfoot_xaxis_x : {foot_xaxis[2]: 8.3f} {bar(-1.0, 1.0, foot_xaxis[2])}\n"
+        f"\033[2Kknee         : {knee_angle_logical: 6.1f}°  ({knee_angle: 8.3f}) {bar(-180.0, 180.0, knee_angle_logical)}\n"
+        f"\033[2Kankle        : {ankle_angle_logical: 6.1f}°  ({ankle_angle: 8.3f}) {bar(-180.0, 180.0, ankle_angle_logical)}\n"
+        f"\033[2Kcom_x        : {com_x: 8.3f} {bar(-1.0, 1.0, com_x)}\n"
+        f"\033[2Kcom_z        : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[6A\r"
+      , end="")
+    
+    self.count += 1
 
     return (
       imu_z,

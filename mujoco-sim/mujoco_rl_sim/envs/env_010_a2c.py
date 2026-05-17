@@ -62,6 +62,9 @@ class Env010A2C:
 
     self.count = 0
 
+    self.floor_id = self.model.geom("floor").id
+    self.foot_id = self.model.geom("foot_plate").id
+
   def _imu_x(self):
     return float(self.data.site("imu_site").xpos[0])
 
@@ -109,6 +112,15 @@ class Env010A2C:
   def _get_obs(self):
     imu_z = self._imu_z()
 
+    # 足裏が床に接触しているかどうか
+    n = self.data.ncon
+    foot_on_floor = False
+    for i in range(n):
+      c = self.data.contact[i]
+      if (c.geom1 == self.foot_id and c.geom2 == self.floor_id) or (c.geom2 == self.foot_id and c.geom1 == self.floor_id):
+        foot_on_floor = True
+        break
+
     # [IMU Gyro] (rad/s)
     imu_gyro = self.data.sensor("imu_gyro").data.copy()
     imu_gyro_x = float(imu_gyro[0])
@@ -144,6 +156,11 @@ class Env010A2C:
       print(
         f"\033[2K\n"
 
+        f"\033[2K[Foot on Floor]\n"
+        f"\033[2K  flag       :    {int(foot_on_floor)}\n"
+
+        f"\033[2K\n"
+
         f"\033[2K[IMU Gyro] (rad/s)\n"
         f"\033[2K  x          : {imu_gyro_x: 8.3f} {bar(-10.0, 10.0, imu_gyro_x)}\n"
         f"\033[2K  y          : {imu_gyro_y: 8.3f} {bar(-10.0, 10.0, imu_gyro_y)}\n"
@@ -173,9 +190,10 @@ class Env010A2C:
         f"\033[2K  ankle vel  : {ankle_vel: 8.3f} {bar(-10.0, 10.0, ankle_vel)}\n"
         
         f"\033[2K\n"
-        
-        f"\033[2Kcom_x        : {com_x: 8.3f} {bar(-1.0, 1.0, com_x)}\n"
-        f"\033[2Kcom_z        : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[23A\r"
+
+        f"\033[2K[COM]\n"        
+        f"\033[2K  com_x      : {com_x: 8.3f} {bar(-1.0, 1.0, com_x)}\n"
+        f"\033[2K  com_z      : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[27A\r"
       , end="")
     
     self.count += 1

@@ -26,7 +26,7 @@ episode_return = 0.0
 for u in range(NUM_UPDATES):
   for _ in range(ROLLOUT_STEPS):
     action, value = agent.act(obs)
-    obs_next, reward, terminated = env.step(action)
+    obs_next, reward, terminated = env.step(action, visualize=False)
 
     episode_step += 1
     episode_return += reward

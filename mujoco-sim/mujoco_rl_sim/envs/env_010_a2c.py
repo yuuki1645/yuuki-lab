@@ -226,7 +226,7 @@ class Env010A2C:
 
         f"\033[2K[Prev Action]\n"
         f"\033[2K  knee       : {self._prev_action[0]: 8.3f} {bar(-1.0, 1.0, self._prev_action[0])}\n"
-        f"\033[2K  ankle      : {self._prev_action[1]: 8.3f} {bar(-1.0, 1.0, self._prev_action[1])}\033[40A\r"
+        f"\033[2K  ankle      : {self._prev_action[1]: 8.3f} {bar(-1.0, 1.0, self._prev_action[1])}\033[41A\r"
       , end="")
     
     self.count += 1

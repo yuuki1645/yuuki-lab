@@ -1,8 +1,7 @@
 """010: 2関節脚 A2C 学習ループ。
 
-  観測 20: imu_x, dx, foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
-           foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z,
-           prev_knee/ankle 指令（[-1,1]）
+  観測 20: 正規化済み（おおよそ [-1,1]）。rel_imu_x, dx, foot_on_floor, …
+           関節角は qpos [rad] を joint range で正規化。prev_action は [-1,1]。
   報酬: dx 前進 + 直立 + 膝屈曲（ctrl+ 側）ボーナス − 反対向きペナルティ。転倒で終了。
 """
 

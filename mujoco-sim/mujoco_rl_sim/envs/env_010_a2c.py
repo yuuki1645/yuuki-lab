@@ -21,6 +21,36 @@ KNEE_HUMAN_FLEX_MIN_RAD = 0.02
 KNEE_HUMAN_FLEX_MAX_RAD = 1.2
 KNEE_HUMAN_FLEX_BONUS_SCALE = 0.15
 
+# 観測正規化（おおよそ [-1, 1]）。スケールはモデル・歩行のオーダーから見積もり。
+MAX_REL_IMU_X = 2.0
+MAX_DX_PER_STEP = 0.05
+MAX_GYRO_RAD_S = 10.0
+MAX_JOINT_VEL_RAD_S = 10.0
+MAX_COM_X_OFFSET = 0.6
+MAX_IMU_Z = 1.2
+MIN_IMU_Z_NORM = 0.0
+
+
+def _clip_scale(value: float, scale: float) -> float:
+  if scale <= 0.0:
+    return 0.0
+  return max(-1.0, min(1.0, float(value) / scale))
+
+
+def _range_to_norm(value: float, lo: float, hi: float) -> float:
+  if hi <= lo:
+    return 0.0
+  t = (float(value) - lo) / (hi - lo)
+  return max(-1.0, min(1.0, 2.0 * t - 1.0))
+
+
+def _height_to_norm(z: float) -> float:
+  span = MAX_IMU_Z - MIN_IMU_Z_NORM
+  if span <= 0.0:
+    return 0.0
+  t = (float(z) - MIN_IMU_Z_NORM) / span
+  return max(-1.0, min(1.0, 2.0 * t - 1.0))
+
 
 def _knee_angle_to_logical_deg(knee_angle: float) -> float:
   return math.degrees(knee_angle)
@@ -52,9 +82,9 @@ def bar(min_value: float, max_value: float, value: float):
 class Env010A2C:
   """007_leg_2joint 用 A2C 環境。
 
-  観測（20）: imu_x, dx, foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
-              foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z,
-              prev_knee/ankle 指令（[-1,1]）
+  観測（20）: すべておおよそ [-1, 1]（関節角は qpos [rad] を joint range で正規化）。
+              rel_imu_x, dx, foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
+              foot_xaxis[2], knee/ankle, knee/ankle vel, com_x, com_z, prev_action (2)
   行動（2）: [-1, 1] を各 actuator の ctrlrange（XML）内の目標角 [rad] に線形マッピング
   報酬: dx 前進 + 直立 + 膝屈曲（ctrl+ 側）ボーナス − 反対向きペナルティ。転倒で終了。
   """
@@ -69,6 +99,9 @@ class Env010A2C:
     self._basket_thigh_body_id = self.model.body("basket_thigh").id
     self._knee_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("knee_servo").id].copy()
     self._ankle_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("ankle_servo").id].copy()
+    self._knee_q_range = self.model.jnt_range[self.model.joint("knee").id].copy()
+    self._ankle_q_range = self.model.jnt_range[self.model.joint("ankle").id].copy()
+    self._origin_imu_x = 0.0
     self._prev_x = 0.0
     self._prev_action = (0.0, 0.0)
 
@@ -90,11 +123,15 @@ class Env010A2C:
   def _imu_z(self):
     return float(self.data.site("imu_site").xpos[2])
 
+  def _capture_episode_origin(self):
+    self._origin_imu_x = self._imu_x()
+    self._prev_x = self._origin_imu_x
+
   def reset(self):
     mujoco.mj_resetData(self.model, self.data)
     mujoco.mj_forward(self.model, self.data)
     self.viewer.sync()
-    self._prev_x = self._imu_x()
+    self._capture_episode_origin()
     self._prev_action = (0.0, 0.0)
     return self._get_obs(0.0, episode_step=0, dx=0.0)
 
@@ -243,7 +280,7 @@ class Env010A2C:
         f"\033[2K\n"
 
         f"\033[2K[IMU Position]\n"
-        f"\033[2K  imu_x      : {imu_x: 8.3f} {bar(-5.0, 5.0, imu_x)}\n"
+        f"\033[2K  imu_x      : {imu_x: 8.3f} (rel {imu_x - self._origin_imu_x: 8.3f}) {bar(-5.0, 5.0, imu_x)}\n"
         f"\033[2K  dx         : {dx: 8.3f} {bar(-0.05, 0.05, dx)}\n"
         f"\033[2K  imu_z      : {imu_z: 8.3f} {bar(0.0, 1.0, imu_z)}\n"
 
@@ -277,25 +314,27 @@ class Env010A2C:
     
     self.count += 1
 
+    rel_imu_x = imu_x - self._origin_imu_x
+
     return (
-      imu_x,
-      float(dx),
-      float(foot_on_floor),
-      imu_gyro_x,
-      imu_gyro_y,
-      imu_gyro_z,
+      _clip_scale(rel_imu_x, MAX_REL_IMU_X),
+      _clip_scale(dx, MAX_DX_PER_STEP),
+      1.0 if foot_on_floor else -1.0,
+      _clip_scale(imu_gyro_x, MAX_GYRO_RAD_S),
+      _clip_scale(imu_gyro_y, MAX_GYRO_RAD_S),
+      _clip_scale(imu_gyro_z, MAX_GYRO_RAD_S),
       imu_zaxis_x,
       imu_zaxis_y,
       imu_zaxis_z,
-      imu_z,
-      foot_z,
+      _height_to_norm(imu_z),
+      _height_to_norm(foot_z),
       float(foot_xaxis[2]),
-      float(knee_angle_logical),
-      float(ankle_angle_logical),
-      float(knee_vel),
-      float(ankle_vel),
-      float(com_x),
-      float(com_z),
+      _range_to_norm(knee_angle, self._knee_q_range[0], self._knee_q_range[1]),
+      _range_to_norm(ankle_angle, self._ankle_q_range[0], self._ankle_q_range[1]),
+      _clip_scale(knee_vel, MAX_JOINT_VEL_RAD_S),
+      _clip_scale(ankle_vel, MAX_JOINT_VEL_RAD_S),
+      _clip_scale(com_x, MAX_COM_X_OFFSET),
+      _height_to_norm(com_z),
       float(self._prev_action[0]),
       float(self._prev_action[1]),
     )

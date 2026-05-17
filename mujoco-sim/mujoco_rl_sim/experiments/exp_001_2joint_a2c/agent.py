@@ -35,6 +35,11 @@ class Actor(nn.Module):
     base = Normal(loc, std)
     return TransformedDistribution(base, TanhTransform())
 
+  @staticmethod
+  def gaussian_entropy(loc: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
+    """Tanh 変換前の Normal のエントロピー（TransformedDistribution.entropy は未実装）。"""
+    return Normal(loc, std).entropy().sum(dim=-1).mean()
+
 
 class Critic(nn.Module):
   def __init__(self, obs_dim: int):
@@ -181,7 +186,8 @@ class AgentExp001A2C:
       new_values = self.critic(mb_obs)
       value_loss = nn.functional.mse_loss(new_values, mb_targets)
 
-      entropy = dist.entropy().sum(dim=-1).mean()
+      loc, std = self.actor(mb_obs)
+      entropy = self.actor.gaussian_entropy(loc, std)
 
       loss = policy_loss + config.VALUE_COEF * value_loss - config.ENTROPY_COEF * entropy
       if not torch.isfinite(loss):

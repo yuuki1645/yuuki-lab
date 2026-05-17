@@ -33,7 +33,7 @@
       <!-- <site name="imu_site" pos="0 0 0.05" euler="0 0 -90"/> -->
       <site name="imu_site" pos="0 0 0.05"/>
 
-      <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.7"/>
+      <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
 
       <!--
         【大腿リンク】
@@ -68,7 +68,14 @@
           <site name="foot_site" pos="0.1 0 0"/>
           <site name="toe_site" pos="0.25 0 0"/>
 
-          <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.15 0.085 0.01" material="metal" mass="1.0"/>
+          <!--
+            【足底板】
+            docs/human_anthropometry.mdを参考に170cm / 70kgの男性の例の下限値を採用した。
+            足底板の長さは 24 cm
+            足底板の幅は 8 cm
+            足底板の質量は 1.0 kg
+          -->
+          <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.12 0.04 0.01" material="metal" mass="1.0"/>
         </body>
       </body>
 

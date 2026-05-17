@@ -1,5 +1,1 @@
-"""SB3 を使う学習・可視化 CLI。pip install -e ".[rl]" が必要。
-
-- 膝単関節: ``train_001_knee_track`` / ``watch_training_live`` / ``play_knee_track``
-- 全アクチュエータ: ``train_002_full_actuators`` / ``watch_full_actuators`` / ``play_full_actuators``
-"""
+"""補助 CLI。学習は ``python -m mujoco_rl_sim.experiments.<name>.train`` を使用。"""

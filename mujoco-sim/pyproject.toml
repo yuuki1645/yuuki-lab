@@ -28,13 +28,6 @@ video = [
 [project.scripts]
 mujoco-sim-serve = "mujoco_realtime_sim.__main__:main"
 mujoco-sim-view = "mujoco_realtime_sim.viewer_cmd:main"
-mujoco-rl-train-knee = "mujoco_rl_sim.scripts.train_001_knee_track:main"
-mujoco-rl-watch-knee = "mujoco_rl_sim.scripts.watch_training_live:main"
-mujoco-rl-play-knee = "mujoco_rl_sim.scripts.play_knee_track:main"
-mujoco-rl-train-full = "mujoco_rl_sim.scripts.train_002_full_actuators:main"
-mujoco-rl-train-static = "mujoco_rl_sim.scripts.train_003_static_actuators:main"
-mujoco-rl-watch-full = "mujoco_rl_sim.scripts.watch_full_actuators:main"
-mujoco-rl-play-full = "mujoco_rl_sim.scripts.play_full_actuators:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -1,6 +1,6 @@
 # exp_001: 2 関節脚 A2C
 
-旧 `010` 系（`env_010_a2c` / `agent_010_a2c` / `train_010_a2c_2joint`）をこのフォルダに集約した実験です。
+旧 `010` 系（`env_010_a2c` / `agent_010_a2c`）をこのフォルダに集約した実験です。
 
 ## ファイル構成
 
@@ -20,12 +20,6 @@
 
 ```bash
 python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
-```
-
-互換エントリ（旧スクリプト）:
-
-```bash
-python -m mujoco_rl_sim.scripts.train_010_a2c_2joint
 ```
 
 ## モデル

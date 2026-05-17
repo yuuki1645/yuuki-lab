@@ -3,6 +3,11 @@
 実行例（mujoco-sim ディレクトリから）:
 
   python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
+
+wandb を無効にする例:
+
+  set WANDB_MODE=disabled
+  python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 """
 
 import time
@@ -10,46 +15,77 @@ import time
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c.agent import AgentExp001A2C
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c.env import EnvExp0012JointA2C
+from mujoco_rl_sim.experiments.exp_001_2joint_a2c import wandb_logging
 
 
 def main() -> None:
-  env = EnvExp0012JointA2C()
+  use_wandb = wandb_logging.init()
+  env = EnvExp0012JointA2C(enable_viewer=config.ENABLE_VIEWER)
   agent = AgentExp001A2C(obs_dim=config.OBS_DIM)
 
   obs = env.reset()
   episode_step = 0
   episode_return = 0.0
+  episode_index = 0
+  total_env_steps = 0
 
-  for u in range(config.NUM_UPDATES):
-    for _ in range(config.ROLLOUT_STEPS):
-      action, value = agent.act(obs)
-      obs_next, reward, terminated = env.step(
-        action,
-        visualize=False,
-        episode_step=episode_step,
-      )
+  try:
+    for u in range(config.NUM_UPDATES):
+      for _ in range(config.ROLLOUT_STEPS):
+        action, value = agent.act(obs)
+        obs_next, reward, terminated = env.step(
+          action,
+          visualize=False,
+          episode_step=episode_step,
+        )
 
-      episode_step += 1
-      episode_return += reward
-      done = terminated or episode_step >= config.MAX_STEPS_PER_EPISODE
+        episode_step += 1
+        episode_return += reward
+        total_env_steps += 1
+        done = terminated or episode_step >= config.MAX_STEPS_PER_EPISODE
 
-      agent.store(obs, action, reward, value, done)
+        agent.store(obs, action, reward, value, done)
 
-      obs = obs_next
-      if done:
-        obs = env.reset()
-        episode_step = 0
-        episode_return = 0.0
+        obs = obs_next
+        if done:
+          if use_wandb:
+            wandb_logging.log(
+              {
+                "episode/return": episode_return,
+                "episode/length": float(episode_step),
+                "episode/terminated": float(terminated),
+              },
+              step=total_env_steps,
+            )
+          episode_index += 1
+          obs = env.reset()
+          episode_step = 0
+          episode_return = 0.0
 
-    stats = agent.update(obs)
-    if (u + 1) % config.LOG_EVERY == 0 or u == 0:
-      print(
-        f"update {u + 1: 5d}/{config.NUM_UPDATES} | "
-        f"mean_target: {stats['mean_target']:10.5f} | "
-        f"policy_loss: {stats['policy_loss']:10.5f} | "
-        f"value_loss: {stats['value_loss']:10.5f} | "
-        f"entropy: {stats['entropy']:10.5f}"
-      )
+      stats = agent.update(obs)
+      if (u + 1) % config.LOG_EVERY == 0 or u == 0:
+        print(
+          f"update {u + 1: 5d}/{config.NUM_UPDATES} | "
+          f"mean_target: {stats['mean_target']:10.5f} | "
+          f"policy_loss: {stats['policy_loss']:10.5f} | "
+          f"value_loss: {stats['value_loss']:10.5f} | "
+          f"entropy: {stats['entropy']:10.5f} | "
+          f"episodes: {episode_index}"
+        )
+        if use_wandb:
+          wandb_logging.log(
+            {
+              "train/mean_target": stats["mean_target"],
+              "train/policy_loss": stats["policy_loss"],
+              "train/value_loss": stats["value_loss"],
+              "train/entropy": stats["entropy"],
+              "train/update": float(u + 1),
+              "train/episodes_finished": float(episode_index),
+            },
+            step=total_env_steps,
+          )
+  finally:
+    wandb_logging.finish()
 
 
 if __name__ == "__main__":

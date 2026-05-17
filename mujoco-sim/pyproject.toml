@@ -19,6 +19,7 @@ dependencies = [
 rl = [
   "gymnasium>=0.29.1",
   "stable-baselines3>=2.2.0",
+  "wandb>=0.16",
 ]
 video = [
   "imageio>=2.34",

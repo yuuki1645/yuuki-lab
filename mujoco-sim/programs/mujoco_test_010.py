@@ -5,6 +5,7 @@ import mujoco.viewer
 import time
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 import math
+import sys
 
 
 count = 0
@@ -13,7 +14,8 @@ def xprint(print_str: str):
   global count
 
   if count == 10:
-    print(print_str)
+    # print(print_str, end="\r", flush=True)
+    print(print_str, end="")
     count = 0
 
   count += 1
@@ -61,13 +63,13 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
     # xprint(f"knee_angle: {knee_angle: 8.3f} | ankle_angle: {ankle_angle: 8.3f} | imu_z: {imu_z: 8.3f} | foot_zaxis: ({foot_zaxis[0]: 8.3f}, {foot_zaxis[1]: 8.3f}, {foot_zaxis[2]: 8.3f})")
 
     xprint(
-      f"imu_z: {imu_z: 7.3f} | "
-      f"foot_z: {foot_z: 7.3f} | "
-      f"foot_xaxis_x: {foot_xaxis[2]: 8.3f} | "
-      f"knee: {knee_angle_logical: 6.1f}° ({knee_angle: 8.3f}) | "
-      f"ankle: {ankle_angle_logical: 6.1f}° ({ankle_angle: 8.3f}) | "
-      f"com_x: {com_x: 7.3f} | "
-      f"com_z: {com_z: 7.3f}"
+      f"imu_z        : {imu_z: 8.3f}\n"
+      f"foot_z       : {foot_z: 8.3f}\n"
+      f"foot_xaxis_x : {foot_xaxis[2]: 8.3f}\n"
+      f"knee         : {knee_angle_logical: 6.1f}°  ({knee_angle: 8.3f})\n"
+      f"ankle        : {ankle_angle_logical: 6.1f}°  ({ankle_angle: 8.3f})\n"
+      f"com_x        : {com_x: 8.3f}\n"
+      f"com_z        : {com_z: 8.3f}\033[6A\r"
     )
 
     time.sleep(model.opt.timestep)

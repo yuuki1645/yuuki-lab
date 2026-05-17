@@ -29,13 +29,13 @@
       <!-- <site name="imu_site" pos="0 0 0.05" euler="0 0 -90"/> -->
       <site name="imu_site" pos="0 0 0.05"/>
 
-      <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.3"/>
-      <geom name="thigh_link" type="box" pos="0 0 -0.2" size="0.02 0.04 0.2" material="metal" mass="0.8"/>
+      <geom name="basket" type="box" pos="0 0 0.0725" size="0.09 0.14 0.0725" material="basket" mass="0.7"/>
+      <geom name="thigh_link" type="box" pos="0 0 -0.2" size="0.02 0.04 0.2" material="metal" mass="1.0"/>
 
       <body name="shank" pos="0 0 -0.43">
         <joint name="knee" type="hinge" axis="0 1 0"/>
 
-        <geom name="shank_link" type="box" pos="0 0 -0.23" size="0.02 0.04 0.2" material="metal" mass="0.8"/>
+        <geom name="shank_link" type="box" pos="0 0 -0.23" size="0.02 0.04 0.2" material="metal" mass="1.0"/>
 
         <body name="foot" pos="0 0 -0.46">
           <joint name="ankle" type="hinge" axis="0 1 0"/>
@@ -43,7 +43,7 @@
           <site name="foot_site" pos="0.1 0 0"/>
           <site name="toe_site" pos="0.25 0 0"/>
 
-          <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.15 0.085 0.01" material="metal" mass="0.271"/>
+          <geom name="foot_plate" type="box" pos="0.1 0 0" size="0.15 0.085 0.01" material="metal" mass="1.0"/>
         </body>
       </body>
 

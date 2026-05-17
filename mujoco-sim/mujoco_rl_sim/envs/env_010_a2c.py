@@ -77,9 +77,9 @@ class Env010A2C:
     mujoco.mj_forward(self.model, self.data)
     self.viewer.sync()
     self._prev_x = self._imu_x()
-    return self._get_obs()
+    return self._get_obs(0.0)
 
-  def step(self, action, visualize=False):
+  def step(self, action, visualize=False, episode_step=0):
     knee_a = max(-1.0, min(1.0, float(action[0])))
     ankle_a = max(-1.0, min(1.0, float(action[1])))
 
@@ -101,16 +101,19 @@ class Env010A2C:
     imu_z = self._imu_z()
 
     # terminated = imu_z < MIN_IMU_Z or upright < MIN_IMU_UPRIGHT
-    terminated = imu_z < MIN_IMU_Z
+    # terminated = imu_z < MIN_IMU_Z
+    terminated = False
 
     # reward = dx * FORWARD_REWARD_SCALE + upright * UPRIGHT_BONUS_SCALE
-    reward = x * 0.1 + upright * UPRIGHT_BONUS_SCALE
+    # reward = x * 1.0 + upright * UPRIGHT_BONUS_SCALE
+    reward = x * 1.0 + imu_z * 1.0
+
     if terminated:
       reward += FALL_PENALTY
 
-    return self._get_obs(), reward, terminated
+    return self._get_obs(reward, episode_step), reward, terminated
 
-  def _get_obs(self):
+  def _get_obs(self, reward, episode_step=0):
     imu_z = self._imu_z()
 
     # 足裏が床に接触しているかどうか
@@ -157,6 +160,16 @@ class Env010A2C:
       print(
         f"\033[2K\n"
 
+        f"\033[2K[Episode Step]\n"
+        f"\033[2K  step       : {episode_step: 8.3f}\n"
+
+        f"\033[2K\n"
+
+        f"\033[2K[Reward]\n"
+        f"\033[2K  reward     : {reward: 8.3f}\n"
+
+        f"\033[2K\n"
+
         f"\033[2K[Foot on Floor]\n"
         f"\033[2K  flag       :    {int(foot_on_floor)}\n"
 
@@ -194,7 +207,7 @@ class Env010A2C:
 
         f"\033[2K[COM]\n"        
         f"\033[2K  com_x      : {com_x: 8.3f} {bar(-1.0, 1.0, com_x)}\n"
-        f"\033[2K  com_z      : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[27A\r"
+        f"\033[2K  com_z      : {com_z: 8.3f} {bar(0.0, 1.0, com_z)}\033[33A\r"
       , end="")
     
     self.count += 1

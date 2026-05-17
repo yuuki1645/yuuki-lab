@@ -8,7 +8,7 @@ MuJoCo XML と強化学習環境を、人間の典型値・実機スペックと
 
 | XML | 関節数 | 主な用途 |
 |-----|--------|---------|
-| `007_leg_2joint/main.xml` | 膝・足首（2） | `env_010_a2c` など現行 2 関節 RL |
+| `007_leg_2joint/main.xml` | 膝・足首（2） | `experiments/exp_001_2joint_a2c`（旧 env_010） |
 | `005_leg_1joint` / `006` | 股または膝 1 | 早期 A2C / DQN |
 | `002_leg_freejoint` | 両脚・多自由度 | バランス・高トルク設定例 |
 
@@ -83,6 +83,6 @@ MuJoCo XML と強化学習環境を、人間の典型値・実機スペックと
 
 | 種別 | パス |
 |------|------|
-| 環境 | `mujoco-sim/mujoco_rl_sim/envs/env_010_a2c.py` |
+| 環境 | `mujoco-sim/mujoco_rl_sim/experiments/exp_001_2joint_a2c/env.py` |
 | XML | `mujoco-sim/mujoco_sim_assets/xmls/007_leg_2joint/main.xml` |
-| 学習スクリプト | `mujoco-sim/mujoco_rl_sim/scripts/train_010_a2c_2joint.py` |
+| 学習 | `python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train` |

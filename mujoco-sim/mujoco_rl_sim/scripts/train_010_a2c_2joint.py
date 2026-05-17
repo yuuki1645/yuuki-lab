@@ -1,54 +1,10 @@
-"""010: 2関節脚 A2C 学習ループ。
+"""互換: 学習は experiments/exp_001_2joint_a2c.train へ移動。
 
-  観測 20: 正規化済み（おおよそ [-1,1]）。rel_imu_x, dx, foot_on_floor, …
-           関節角は qpos [rad] を joint range で正規化。prev_action は [-1,1]。
-  報酬: dx 前進 + 直立 + 膝屈曲（ctrl+ 側）ボーナス − 反対向きペナルティ。転倒で終了。
+推奨:
+  python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 """
 
-from mujoco_rl_sim.envs.env_010_a2c import Env010A2C
-from mujoco_rl_sim.agents.agent_010_a2c import Agent010A2C, OBS_DIM, ROLLOUT_STEPS
+from mujoco_rl_sim.experiments.exp_001_2joint_a2c.train import main
 
-import time
-
-
-NUM_UPDATES = 500000
-MAX_STEPS_PER_EPISODE = 5000
-SLEEP_TIME = 0
-LOG_EVERY = 50
-
-
-env = Env010A2C()
-agent = Agent010A2C(obs_dim=OBS_DIM)
-
-obs = env.reset()
-episode_step = 0
-episode_return = 0.0
-
-for u in range(NUM_UPDATES):
-  for _ in range(ROLLOUT_STEPS):
-    action, value = agent.act(obs) # actionは[-1,1]の範囲の2つの値
-    obs_next, reward, terminated = env.step(action, visualize=False, episode_step=episode_step)
-
-    episode_step += 1
-    episode_return += reward
-    done = terminated or episode_step >= MAX_STEPS_PER_EPISODE
-
-    agent.store(obs, action, reward, value, done)
-
-    obs = obs_next
-    if done:
-      obs = env.reset()
-      episode_step = 0
-      episode_return = 0.0
-
-    time.sleep(SLEEP_TIME)
-
-  stats = agent.update(obs)
-  if (u + 1) % LOG_EVERY == 0 or u == 0:
-    print(
-      f"update {u + 1: 5d}/{NUM_UPDATES} | "
-      f"mean_target: {stats['mean_target']:10.5f} | "
-      f"policy_loss: {stats['policy_loss']:10.5f} | "
-      f"value_loss: {stats['value_loss']:10.5f} | "
-      f"entropy: {stats['entropy']:10.5f}"
-    )
+if __name__ == "__main__":
+  main()

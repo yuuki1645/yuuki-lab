@@ -37,8 +37,9 @@ class Reward:
     if config.KNEE_HUMAN_FLEX_MIN_RAD <= knee_angle <= config.KNEE_HUMAN_FLEX_MAX_RAD:
       knee_flex_bonus = config.KNEE_HUMAN_FLEX_BONUS_SCALE
 
+    dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, float(dx)))
     return RewardBreakdown(
-      forward=dx * config.FORWARD_REWARD_SCALE,
+      forward=dx_clipped * config.FORWARD_REWARD_SCALE,
       upright=upright * config.UPRIGHT_BONUS_SCALE,
       knee_flex_bonus=knee_flex_bonus,
       knee_wrong_penalty=knee_wrong_penalty,

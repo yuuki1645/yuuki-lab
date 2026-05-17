@@ -37,6 +37,11 @@ VALUE_COEF = 0.5
 ENTROPY_COEF = 0.01
 MAX_GRAD_NORM = 0.5
 MINIBATCH_SIZE = 256
+# 学習安定化（報酬スパイク・advantage 爆発対策）
+REWARD_CLIP = 50.0
+ADV_CLIP = 10.0
+ADV_STD_MIN = 0.1
+ACTION_LOG_PROB_EPS = 1e-6
 
 # train.py
 NUM_UPDATES = 500_000
@@ -74,6 +79,9 @@ def training_config_dict() -> dict:
     "value_coef": VALUE_COEF,
     "entropy_coef": ENTROPY_COEF,
     "max_grad_norm": MAX_GRAD_NORM,
+    "reward_clip": REWARD_CLIP,
+    "adv_clip": ADV_CLIP,
+    "adv_std_min": ADV_STD_MIN,
     "minibatch_size": MINIBATCH_SIZE,
     "num_updates": NUM_UPDATES,
     "max_steps_per_episode": MAX_STEPS_PER_EPISODE,

@@ -126,17 +126,34 @@ class AgentExp001A2C:
         "mean_target": 0.0,
       }
 
-    rewards = torch.tensor(self._rewards, dtype=torch.float32)
+    rewards = torch.tensor(self._rewards, dtype=torch.float32).clamp(
+      -config.REWARD_CLIP,
+      config.REWARD_CLIP,
+    )
     values = torch.stack(self._values).squeeze(-1)
     dones = torch.tensor(self._dones, dtype=torch.float32)
 
     vals_next = torch.cat([values[1:], last_v.view(1)], dim=0)
     targets = rewards + config.GAMMA * vals_next * (1.0 - dones)
     advantages = targets - values
-    adv = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+    adv_std = max(float(advantages.std().item()), config.ADV_STD_MIN)
+    adv = (advantages - advantages.mean()) / adv_std
+    adv = adv.clamp(-config.ADV_CLIP, config.ADV_CLIP)
 
     obs_batch = torch.tensor([list(o) for o in obs_list], dtype=torch.float32)
     actions_batch = torch.tensor(self._actions, dtype=torch.float32)
+
+    with torch.no_grad():
+      probe_loc, _ = self.actor(obs_batch[: min(8, t_len)])
+      if not torch.isfinite(probe_loc).all():
+        print("[A2C exp_001] actor output is non-finite; skipping this update")
+        self._reset_rollout_storage()
+        return {
+          "policy_loss": float("nan"),
+          "value_loss": float("nan"),
+          "entropy": float("nan"),
+          "mean_target": float("nan"),
+        }
 
     total_policy_loss = 0.0
     total_value_loss = 0.0
@@ -149,12 +166,19 @@ class AgentExp001A2C:
     for start in range(0, t_len, config.MINIBATCH_SIZE):
       mb = idx[start : start + config.MINIBATCH_SIZE]
       mb_obs = obs_batch[mb]
-      mb_actions = actions_batch[mb]
+      if not torch.isfinite(mb_obs).all():
+        continue
+      mb_actions = actions_batch[mb].clamp(
+        -1.0 + config.ACTION_LOG_PROB_EPS,
+        1.0 - config.ACTION_LOG_PROB_EPS,
+      )
       mb_adv = adv[mb].detach()
       mb_targets = targets[mb].detach()
 
       dist = self.actor.squashed_dist(mb_obs)
       log_probs = dist.log_prob(mb_actions).sum(dim=-1)
+      if not torch.isfinite(log_probs).all():
+        continue
       policy_loss = -(log_probs * mb_adv).mean()
 
       new_values = self.critic(mb_obs)
@@ -164,6 +188,8 @@ class AgentExp001A2C:
       entropy = self.actor.squashed_entropy(loc, std, mb_actions).mean()
 
       loss = policy_loss + config.VALUE_COEF * value_loss - config.ENTROPY_COEF * entropy
+      if not torch.isfinite(loss):
+        continue
 
       self.optimizer.zero_grad()
       loss.backward()
@@ -171,6 +197,13 @@ class AgentExp001A2C:
         list(self.actor.parameters()) + list(self.critic.parameters()),
         config.MAX_GRAD_NORM,
       )
+      if not all(
+        torch.isfinite(p.grad).all()
+        for p in list(self.actor.parameters()) + list(self.critic.parameters())
+        if p.grad is not None
+      ):
+        self.optimizer.zero_grad()
+        continue
       self.optimizer.step()
 
       total_policy_loss += policy_loss.item()

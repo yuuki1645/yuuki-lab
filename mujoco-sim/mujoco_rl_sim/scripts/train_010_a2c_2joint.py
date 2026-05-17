@@ -1,8 +1,9 @@
 """010: 2関節脚 A2C 学習ループ。
 
-  観測 16: foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
-           foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z
-  報酬: imu_x と直立ボーナス。転倒でエピソード終了。
+  観測 20: imu_x, dx, foot_on_floor, imu_gyro (3), imu_zaxis (3), imu_z, foot_z,
+           foot_xaxis[2], knee/ankle [deg], knee/ankle vel [rad/s], com_x, com_z,
+           prev_knee/ankle 指令（[-1,1]）
+  報酬: dx 前進 + 直立ボーナス。転倒でエピソード終了。
 """
 
 from mujoco_rl_sim.envs.env_010_a2c import Env010A2C

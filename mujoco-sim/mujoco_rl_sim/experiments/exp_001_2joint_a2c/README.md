@@ -7,10 +7,14 @@
 | ファイル | 役割 |
 |---------|------|
 | `config.py` | 報酬・観測スケール・A2C・学習ループの定数 |
-| `env.py` | MuJoCo 環境（`reset` / `step` / 観測・報酬） |
+| `env.py` | MuJoCo 環境（`reset` / `step`、各コンポーネントの配線） |
+| `observation.py` | `ObsExp001` の組み立て（`Observation.build`） |
+| `reward.py` | 報酬項の計算（終了判定は含まない） |
+| `termination.py` | 転倒などの終了判定 |
+| `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
-| `debug.py` | ターミナル向けステップ表示（学習時は env 内で間引き表示） |
+| `debug.py` | ターミナル向けステップ表示 |
 
 共通処理は `mujoco_rl_sim/lib/` を参照。
 

@@ -71,9 +71,16 @@ class EnvExp0012JointA2C:
       dx=dx,
       upright=raw.upright,
       knee_angle=raw.knee_angle,
+      foot_on_floor=raw.foot_on_floor,
+      imu_z=raw.imu_z,
+      imu_zaxis_x=raw.imu_zaxis_x,
     )
 
-    terminated = self._termination.is_done(imu_z=raw.imu_z, upright=raw.upright)
+    terminated = self._termination.is_done(
+      imu_z=raw.imu_z,
+      upright=raw.upright,
+      imu_zaxis_x=raw.imu_zaxis_x,
+    )
 
     reward = reward_breakdown.total
     if terminated:
@@ -90,7 +97,16 @@ class EnvExp0012JointA2C:
 
     self._episode.prev_action = (knee_a, ankle_a)
 
-    return obs.to_vector(), reward, terminated
+    step_info = {
+      "upright": raw.upright,
+      "foot_on_floor": float(raw.foot_on_floor),
+      "reward_forward": reward_breakdown.forward,
+      "reward_upright": reward_breakdown.upright,
+      "reward_lean_penalty": reward_breakdown.lean_penalty,
+      "reward_height_penalty": reward_breakdown.height_penalty,
+    }
+
+    return obs.to_vector(), reward, terminated, step_info
 
 
 Env010A2C = EnvExp0012JointA2C

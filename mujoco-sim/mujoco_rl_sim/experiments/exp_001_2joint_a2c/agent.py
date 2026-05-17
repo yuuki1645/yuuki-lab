@@ -23,23 +23,17 @@ class Actor(nn.Module):
       nn.ReLU(),
       nn.Linear(64, action_dim),
     )
-    self.log_std = nn.Parameter(torch.zeros(action_dim))
+    self.log_std = nn.Parameter(torch.full((action_dim,), -1.0))
 
   def forward(self, obs):
     loc = self.net(obs)
-    std = self.log_std.exp().expand_as(loc).clamp(min=1e-6)
+    std = self.log_std.exp().expand_as(loc).clamp(min=config.STD_MIN)
     return loc, std
 
   def squashed_dist(self, obs):
     loc, std = self.forward(obs)
     base = Normal(loc, std)
     return TransformedDistribution(base, TanhTransform())
-
-  @staticmethod
-  def squashed_entropy(loc: torch.Tensor, std: torch.Tensor, actions: torch.Tensor) -> torch.Tensor:
-    base_entropy = Normal(loc, std).entropy().sum(dim=-1)
-    jacobian = torch.log(1 - actions.pow(2) + 1e-6).sum(dim=-1)
-    return base_entropy + jacobian
 
 
 class Critic(nn.Module):
@@ -176,7 +170,10 @@ class AgentExp001A2C:
       mb_targets = targets[mb].detach()
 
       dist = self.actor.squashed_dist(mb_obs)
-      log_probs = dist.log_prob(mb_actions).sum(dim=-1)
+      log_probs = dist.log_prob(mb_actions).sum(dim=-1).clamp(
+        -config.LOG_PROB_CLIP,
+        config.LOG_PROB_CLIP,
+      )
       if not torch.isfinite(log_probs).all():
         continue
       policy_loss = -(log_probs * mb_adv).mean()
@@ -184,8 +181,7 @@ class AgentExp001A2C:
       new_values = self.critic(mb_obs)
       value_loss = nn.functional.mse_loss(new_values, mb_targets)
 
-      loc, std = self.actor(mb_obs)
-      entropy = self.actor.squashed_entropy(loc, std, mb_actions).mean()
+      entropy = dist.entropy().sum(dim=-1).mean()
 
       loss = policy_loss + config.VALUE_COEF * value_loss - config.ENTROPY_COEF * entropy
       if not torch.isfinite(loss):

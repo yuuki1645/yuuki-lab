@@ -84,8 +84,8 @@ LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 NUM_UPDATES = 100_000  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
 MAX_STEPS_PER_EPISODE = 3000  # これで打ち切り（truncated、termination とは別）
 LOG_EVERY = 20  # コンソール / wandb に train/* を出す更新間隔
-# ENABLE_VIEWER = False
-ENABLE_VIEWER = True  # MuJoCo パッシブビューア（学習を遅くする）
+ENABLE_VIEWER = True
+# ENABLE_VIEWER = True  # MuJoCo パッシブビューア（学習を遅くする）
 
 # --- wandb（wandb_logging.py）-----------------------------------------------
 # pip install wandb / WANDB_MODE=disabled でオフ

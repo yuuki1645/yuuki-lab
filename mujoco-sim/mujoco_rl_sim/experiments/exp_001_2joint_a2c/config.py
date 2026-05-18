@@ -97,7 +97,7 @@ CHECKPOINT_SAVE_FINAL = True  # 学習終了時に final.pt を保存
 
 # --- wandb（wandb_logging.py）-----------------------------------------------
 # pip install wandb / WANDB_MODE=disabled でオフ
-USE_WANDB = False
+USE_WANDB = True
 WANDB_PROJECT = "exp_001_2joint_a2c"
 WANDB_RUN_NAME = ""  # 空なら wandb が自動命名
 WANDB_ENTITY = ""  # 空ならログインアカウントのデフォルト

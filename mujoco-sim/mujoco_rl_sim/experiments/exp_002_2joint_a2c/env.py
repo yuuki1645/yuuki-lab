@@ -9,7 +9,7 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.episode_state import EpisodeSt
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.observation import Observation
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.reward import Reward
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import Termination
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.ctrl import action_to_ctrl
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.action import ActionBinding
 
 
 class EnvExp0022JointA2C:
@@ -34,10 +34,8 @@ class EnvExp0022JointA2C:
       self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
       apply_passive_viewer_options(self.viewer)
 
-    self._knee_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("knee_servo").id].copy()
-    self._ankle_ctrl_range = self.model.actuator_ctrlrange[self.model.actuator("ankle_servo").id].copy()
-
     self._episode = EpisodeState()
+    self._action = ActionBinding(self.model)
     self._observation = Observation(self.model)
     self._reward = Reward()
     self._termination = Termination(self.model)
@@ -56,15 +54,7 @@ class EnvExp0022JointA2C:
     return policy_obs.to_vector()
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
-    knee_a = max(-1.0, min(1.0, float(action[0])))
-    ankle_a = max(-1.0, min(1.0, float(action[1])))
-
-    knee_ctrl = action_to_ctrl(knee_a, self._knee_ctrl_range)
-    ankle_ctrl = action_to_ctrl(ankle_a, self._ankle_ctrl_range)
-    knee_act_id = self.model.actuator("knee_servo").id
-    ankle_act_id = self.model.actuator("ankle_servo").id
-    self.data.ctrl[knee_act_id] = knee_ctrl
-    self.data.ctrl[ankle_act_id] = ankle_ctrl
+    prev_action = self._action.apply(self.data, action)
 
     termination_reason = None
     for _ in range(config.FRAME_SKIP):
@@ -102,7 +92,7 @@ class EnvExp0022JointA2C:
     #   episode=self._episode,
     # )
 
-    self._episode.prev_action = (knee_a, ankle_a)
+    self._episode.prev_action = prev_action
 
     step_info = {
       "upright": step_physics.upright,

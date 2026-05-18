@@ -185,7 +185,6 @@ class Observation:
     episode_step: int,
     reward: float,
     knee_human_flex_bonus: float,
-    knee_wrong_penalty: float,
     raw: ObservationRaw,
     episode: EpisodeState,
   ) -> None:
@@ -198,7 +197,6 @@ class Observation:
       episode_step=float(episode_step),
       reward=reward,
       knee_human_flex_bonus=knee_human_flex_bonus,
-      knee_wrong_penalty=knee_wrong_penalty,
       foot_on_floor=raw.foot_on_floor,
       imu_gyro_x=raw.imu_gyro_x,
       imu_gyro_y=raw.imu_gyro_y,

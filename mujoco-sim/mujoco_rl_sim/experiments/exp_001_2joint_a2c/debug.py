@@ -12,7 +12,6 @@ def print_step_overlay(
   episode_step: float,
   reward: float,
   knee_human_flex_bonus: float,
-  knee_wrong_penalty: float,
   foot_on_floor: bool,
   imu_gyro_x: float,
   imu_gyro_y: float,
@@ -47,7 +46,6 @@ def print_step_overlay(
     f"\033[2K[Reward]\n"
     f"\033[2K  reward     : {reward: 8.3f}\n"
     f"\033[2K  knee_flex+ : {knee_human_flex_bonus: 8.3f}\n"
-    f"\033[2K  knee_wrong : {knee_wrong_penalty: 8.3f}\n"
     f"\033[2K\n"
     f"\033[2K[Foot on Floor]\n"
     f"\033[2K  flag       :    {int(foot_on_floor)}\n"

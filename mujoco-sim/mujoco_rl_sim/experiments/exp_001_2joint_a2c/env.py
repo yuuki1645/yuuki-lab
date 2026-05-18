@@ -90,7 +90,6 @@ class EnvExp0012JointA2C:
       episode_step=episode_step,
       reward=reward,
       knee_human_flex_bonus=reward_breakdown.knee_flex_bonus,
-      knee_wrong_penalty=reward_breakdown.knee_wrong_penalty,
       raw=raw,
       episode=self._episode,
     )

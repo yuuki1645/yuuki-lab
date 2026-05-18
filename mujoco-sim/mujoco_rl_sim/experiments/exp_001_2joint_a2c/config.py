@@ -40,10 +40,6 @@ MAX_FORWARD_LEAN = 0.40
 
 # 膝ヒンジ +Y: qpos/ctrl > 0 が後方屈曲（良い）
 
-KNEE_WRONG_THRESH_RAD = 0.05
-
-KNEE_WRONG_PENALTY_SCALE = 5.0
-
 KNEE_HUMAN_FLEX_MIN_RAD = 0.02
 
 KNEE_HUMAN_FLEX_MAX_RAD = 1.2
@@ -170,10 +166,6 @@ def training_config_dict() -> dict:
     "min_imu_upright": MIN_IMU_UPRIGHT,
 
     "max_forward_lean": MAX_FORWARD_LEAN,
-
-    "knee_wrong_thresh_rad": KNEE_WRONG_THRESH_RAD,
-
-    "knee_wrong_penalty_scale": KNEE_WRONG_PENALTY_SCALE,
 
     "knee_human_flex_min_rad": KNEE_HUMAN_FLEX_MIN_RAD,
 

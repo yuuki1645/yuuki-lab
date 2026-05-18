@@ -42,3 +42,6 @@ MJMODEL.TXT
 *.npy
 
 wandb/
+
+# exp_001 学習チェックポイント（torch.save）
+mujoco-sim/checkpoints/

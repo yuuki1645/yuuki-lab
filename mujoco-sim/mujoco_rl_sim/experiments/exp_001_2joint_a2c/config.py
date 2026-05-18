@@ -81,11 +81,19 @@ ACTION_LOG_PROB_EPS = 1e-6  # tanh 行動を ±1 内側に寄せて log_prob を
 LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 
 # --- 学習ループ（train.py）---------------------------------------------------
-NUM_UPDATES = 100_000  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
+# NUM_UPDATES = 100_000  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
+NUM_UPDATES = 10_100  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
 MAX_STEPS_PER_EPISODE = 3000  # これで打ち切り（truncated、termination とは別）
 LOG_EVERY = 20  # コンソール / wandb に train/* を出す更新間隔
 ENABLE_VIEWER = True
-# ENABLE_VIEWER = True  # MuJoCo パッシブビューア（学習を遅くする）
+# ENABLE_VIEWER = False  # MuJoCo パッシブビューア（学習を遅くする）
+
+# --- チェックポイント（checkpoint.py / train.py）-----------------------------
+SAVE_CHECKPOINTS = True
+CHECKPOINT_DIR = "checkpoints/exp_001_2joint_a2c"  # mujoco-sim 直下からの相対パス
+CHECKPOINT_EVERY = 1000  # この update 間隔で update_XXXXXX.pt を保存
+CHECKPOINT_SAVE_LATEST = True  # 保存のたびに latest.pt を上書き
+CHECKPOINT_SAVE_FINAL = True  # 学習終了時に final.pt を保存
 
 # --- wandb（wandb_logging.py）-----------------------------------------------
 # pip install wandb / WANDB_MODE=disabled でオフ
@@ -136,4 +144,7 @@ def training_config_dict() -> dict:
     "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
     "log_every": LOG_EVERY,
     "enable_viewer": ENABLE_VIEWER,
+    "save_checkpoints": SAVE_CHECKPOINTS,
+    "checkpoint_dir": CHECKPOINT_DIR,
+    "checkpoint_every": CHECKPOINT_EVERY,
   }

@@ -1,5 +1,9 @@
 """exp_001: 2 関節脚 A2C（squashed Gaussian 方策）。"""
 
+from __future__ import annotations
+
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -221,6 +225,27 @@ class AgentExp001A2C:
       "entropy": total_entropy / max(n_mb, 1),
       "mean_target": targets.mean().item(),
     }
+
+  @classmethod
+  def from_checkpoint(
+    cls,
+    path: str | Path,
+    *,
+    load_optimizer: bool = False,
+    map_location: str | torch.device = "cpu",
+  ) -> AgentExp001A2C:
+    """保存済みチェックポイントからエージェントを復元する。"""
+    from mujoco_rl_sim.experiments.exp_001_2joint_a2c import checkpoint
+
+    payload = checkpoint.load_checkpoint(path, map_location=map_location)
+    obs_dim = int(payload["obs_dim"])
+    action_dim = int(payload["action_dim"])
+    agent = cls(obs_dim=obs_dim, action_dim=action_dim)
+    agent.actor.load_state_dict(payload["actor"])
+    agent.critic.load_state_dict(payload["critic"])
+    if load_optimizer and "optimizer" in payload:
+      agent.optimizer.load_state_dict(payload["optimizer"])
+    return agent
 
 
 Agent010A2C = AgentExp001A2C

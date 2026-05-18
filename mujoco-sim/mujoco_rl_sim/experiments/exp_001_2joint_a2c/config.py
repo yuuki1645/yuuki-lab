@@ -32,7 +32,8 @@ IMU_HEIGHT_PENALTY_SCALE = 2.0
 TARGET_IMU_Z = 0.55  # この高さ [m] を下回るほど減点（imu_site のワールド Z）
 
 # 早期終了ステップに env.py が一度だけ加算（termination と併用）
-FALL_PENALTY = -30.0
+# FALL_PENALTY = -30.0
+FALL_PENALTY = -70.0
 
 # --- 早期終了（termination.py）-----------------------------------------------
 # imu_site のワールド Z [m]。これ未満で終了（しゃがみ／転倒の床近傍）

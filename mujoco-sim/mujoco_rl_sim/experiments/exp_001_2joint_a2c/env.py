@@ -102,7 +102,7 @@ class EnvExp0012JointA2C:
       "foot_on_floor": float(raw.foot_on_floor),
       "reward_forward": reward_breakdown.forward,
       "reward_upright": reward_breakdown.upright,
-      "reward_lean_penalty": reward_breakdown.lean_penalty,
+      "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
       "reward_height_penalty": reward_breakdown.height_penalty,
       "termination_reason": termination_reason,
     }

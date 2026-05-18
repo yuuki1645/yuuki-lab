@@ -9,12 +9,12 @@
   1. 前進報酬 … 直立かつ足接地など条件を満たすときだけ dx を加点
   2. 姿勢ボーナス … しっかり立っている時間に小さな加点
   3. 膝の形 … 人間らしい屈曲レンジに小ボーナス（XML で qpos >= 0 のみ可動）
-  4. 前傾・低姿勢ペナルティ … 倒れる直前の「前のめり」「しゃがみ」を早めに減点
+  4. 後傾・低姿勢ペナルティ … 後ろに倒れる／しゃがみ込みを早めに減点
   5. 転倒ペナルティ … env.py で終了ステップに一度だけ付与（本ファイル外）
 
 1 ステップの合計（env 適用前）::
 
-  total = forward + upright + knee_flex_bonus - lean_penalty - height_penalty
+  total = forward + upright + knee_flex_bonus - backward_lean_penalty - height_penalty
 
 係数は config.py。終了判定は termination.py。
 """
@@ -31,7 +31,7 @@ class RewardBreakdown:
   forward: float
   upright: float
   knee_flex_bonus: float
-  lean_penalty: float
+  backward_lean_penalty: float
   height_penalty: float
 
   @property
@@ -40,7 +40,7 @@ class RewardBreakdown:
       self.forward
       + self.upright
       + self.knee_flex_bonus
-      - self.lean_penalty
+      - self.backward_lean_penalty
       - self.height_penalty
     )
 
@@ -74,7 +74,7 @@ class Reward:
     imu_z : float
         IMU の高さ [m]。低いほどしゃがみ／倒れに近い。
     imu_zaxis_x : float
-        IMU z 軸ベクトルの x 成分。前のめりで負、直立で 0 付近。
+        IMU z 軸ベクトルの x 成分。後傾（−X）で負、直立で 0 付近。
     """
     # --- 膝: 人間的な屈曲レンジの小ボーナス -----------------------------------
     # 適度な後方屈曲のときだけ定数ボーナス（dx とは独立）。
@@ -108,12 +108,12 @@ class Reward:
       max(0.0, upright - config.UPRIGHT_BONUS_THRESH) * config.UPRIGHT_BONUS_SCALE
     )
 
-    # --- 前傾ペナルティ --------------------------------------------------------
-    # imu_zaxis_x が負 = 体が前に傾いている。LEAN_FORWARD_THRESH より先に倒れすぎを減点。
-    # 理由: 転倒終了（termination）より早い段階で「前のめり」を嫌わせる。
-    #       mean_upright だけでは前傾と区別しにくいため、別軸でペナルティ。
-    lean_excess = max(0.0, -float(imu_zaxis_x) - config.LEAN_FORWARD_THRESH)
-    lean_penalty = lean_excess * config.LEAN_FORWARD_PENALTY_SCALE
+    # --- 後傾ペナルティ --------------------------------------------------------
+    # imu_zaxis_x が負 = 体が後ろ（−X）に傾いている。LEAN_BACKWARD_THRESH を超えた分を減点。
+    # 理由: 転倒終了（termination）より早い段階で後ろ倒れを嫌わせる。
+    #       mean_upright だけでは後傾と区別しにくいため、別軸でペナルティ。
+    backward_lean_excess = max(0.0, -float(imu_zaxis_x) - config.LEAN_BACKWARD_THRESH)
+    backward_lean_penalty = backward_lean_excess * config.LEAN_BACKWARD_PENALTY_SCALE
 
     # --- 低姿勢ペナルティ ------------------------------------------------------
     # imu_z が TARGET_IMU_Z より低いほど減点（しゃがみ／倒れ込み）。
@@ -125,6 +125,6 @@ class Reward:
       forward=forward,
       upright=upright_bonus,
       knee_flex_bonus=knee_flex_bonus,
-      lean_penalty=lean_penalty,
+      backward_lean_penalty=backward_lean_penalty,
       height_penalty=height_penalty,
     )

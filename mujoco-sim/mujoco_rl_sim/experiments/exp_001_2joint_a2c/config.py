@@ -20,9 +20,9 @@ UPRIGHT_BONUS_SCALE = 2.0
 
 UPRIGHT_BONUS_THRESH = 0.65
 
-LEAN_FORWARD_PENALTY_SCALE = 3.0
+LEAN_BACKWARD_PENALTY_SCALE = 3.0
 
-LEAN_FORWARD_THRESH = 0.12
+LEAN_BACKWARD_THRESH = 0.12
 
 IMU_HEIGHT_PENALTY_SCALE = 2.0
 
@@ -34,7 +34,7 @@ MIN_IMU_Z = 0.42
 
 MIN_IMU_UPRIGHT = 0.55
 
-MAX_FORWARD_LEAN = 0.40
+MAX_BACKWARD_LEAN = 0.40
 
 
 
@@ -154,9 +154,9 @@ def training_config_dict() -> dict:
 
     "upright_bonus_thresh": UPRIGHT_BONUS_THRESH,
 
-    "lean_forward_penalty_scale": LEAN_FORWARD_PENALTY_SCALE,
+    "lean_backward_penalty_scale": LEAN_BACKWARD_PENALTY_SCALE,
 
-    "lean_forward_thresh": LEAN_FORWARD_THRESH,
+    "lean_backward_thresh": LEAN_BACKWARD_THRESH,
 
     "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
 
@@ -168,7 +168,7 @@ def training_config_dict() -> dict:
 
     "min_imu_upright": MIN_IMU_UPRIGHT,
 
-    "max_forward_lean": MAX_FORWARD_LEAN,
+    "max_backward_lean": MAX_BACKWARD_LEAN,
 
     "knee_human_flex_min_rad": KNEE_HUMAN_FLEX_MIN_RAD,
 

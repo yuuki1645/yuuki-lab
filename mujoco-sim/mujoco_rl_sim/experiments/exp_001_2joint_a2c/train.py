@@ -10,6 +10,8 @@ wandb を無効にする例:
   python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 """
 
+import time
+
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c import wandb_logging
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c.agent import AgentExp001A2C
@@ -29,9 +31,11 @@ def main() -> None:
   episode_foot_contact_steps = 0
   episode_index = 0
   total_env_steps = 0
+  update_time_sum_s = 0.0
 
   try:
     for u in range(config.NUM_UPDATES):
+      t_update_start = time.perf_counter()
       for _ in range(config.ROLLOUT_STEPS):
         action, value = agent.act(obs)
         obs_next, reward, terminated, step_info = env.step(
@@ -81,9 +85,12 @@ def main() -> None:
           episode_foot_contact_steps = 0
 
       stats = agent.update(obs)
+      update_time_sum_s += time.perf_counter() - t_update_start
+      avg_update_s = update_time_sum_s / (u + 1)
       if (u + 1) % config.LOG_EVERY == 0 or u == 0:
         print(
           f"update {u + 1: 5d}/{config.NUM_UPDATES} | "
+          f"avg_update_s: {avg_update_s:8.3f} | "
           f"mean_target: {stats['mean_target']:10.5f} | "
           f"policy_loss: {stats['policy_loss']:10.5f} | "
           f"value_loss: {stats['value_loss']:10.5f} | "

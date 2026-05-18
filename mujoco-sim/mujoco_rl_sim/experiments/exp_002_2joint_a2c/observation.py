@@ -38,8 +38,11 @@ class ObsExp002(NamedTuple):
 
 
 @dataclass(frozen=True)
-class ObservationRaw:
-  """デバッグ表示用の生値（正規化前）。"""
+class StepPhysics:
+  """1 制御ステップ時点の物理量（ポリシー観測の正規化前）。
+
+  報酬計算・デバッグ表示・step_info で共有する。
+  """
 
   imu_x: float
   rel_imu_x: float
@@ -98,7 +101,7 @@ class Observation:
     episode: EpisodeState,
     *,
     dx: float,
-  ) -> tuple[ObsExp002, ObservationRaw]:
+  ) -> tuple[ObsExp002, StepPhysics]:
     imu_x = self._imu_x(data)
     imu_z = self._imu_z(data)
     rel_imu_x = imu_x - episode.origin_imu_x
@@ -155,7 +158,7 @@ class Observation:
       float(episode.prev_action[1]),
     )
 
-    raw = ObservationRaw(
+    step_physics = StepPhysics(
       imu_x=imu_x,
       rel_imu_x=rel_imu_x,
       dx=dx,
@@ -177,7 +180,7 @@ class Observation:
       com_z=com_z,
       upright=upright,
     )
-    return obs, raw
+    return obs, step_physics
 
   def maybe_print_debug(
     self,
@@ -185,7 +188,7 @@ class Observation:
     episode_step: int,
     reward: float,
     knee_human_flex_bonus: float,
-    raw: ObservationRaw,
+    step_physics: StepPhysics,
     episode: EpisodeState,
   ) -> None:
     if self._debug_step_counter != 100:
@@ -197,25 +200,25 @@ class Observation:
       episode_step=float(episode_step),
       reward=reward,
       knee_human_flex_bonus=knee_human_flex_bonus,
-      foot_on_floor=raw.foot_on_floor,
-      imu_gyro_x=raw.imu_gyro_x,
-      imu_gyro_y=raw.imu_gyro_y,
-      imu_gyro_z=raw.imu_gyro_z,
-      imu_zaxis_x=raw.imu_zaxis_x,
-      imu_zaxis_y=raw.imu_zaxis_y,
-      imu_zaxis_z=raw.imu_zaxis_z,
-      imu_x=raw.imu_x,
-      rel_imu_x=raw.rel_imu_x,
-      dx=raw.dx,
-      imu_z=raw.imu_z,
-      foot_z=raw.foot_z,
-      foot_xaxis_z=raw.foot_xaxis_z,
-      knee_angle=raw.knee_angle,
-      ankle_angle=raw.ankle_angle,
-      knee_vel=raw.knee_vel,
-      ankle_vel=raw.ankle_vel,
-      com_x=raw.com_x,
-      com_z=raw.com_z,
+      foot_on_floor=step_physics.foot_on_floor,
+      imu_gyro_x=step_physics.imu_gyro_x,
+      imu_gyro_y=step_physics.imu_gyro_y,
+      imu_gyro_z=step_physics.imu_gyro_z,
+      imu_zaxis_x=step_physics.imu_zaxis_x,
+      imu_zaxis_y=step_physics.imu_zaxis_y,
+      imu_zaxis_z=step_physics.imu_zaxis_z,
+      imu_x=step_physics.imu_x,
+      rel_imu_x=step_physics.rel_imu_x,
+      dx=step_physics.dx,
+      imu_z=step_physics.imu_z,
+      foot_z=step_physics.foot_z,
+      foot_xaxis_z=step_physics.foot_xaxis_z,
+      knee_angle=step_physics.knee_angle,
+      ankle_angle=step_physics.ankle_angle,
+      knee_vel=step_physics.knee_vel,
+      ankle_vel=step_physics.ankle_vel,
+      com_x=step_physics.com_x,
+      com_z=step_physics.com_z,
       prev_knee_action=episode.prev_action[0],
       prev_ankle_action=episode.prev_action[1],
     )

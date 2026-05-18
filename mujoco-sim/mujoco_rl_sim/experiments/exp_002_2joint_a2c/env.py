@@ -52,8 +52,8 @@ class EnvExp0022JointA2C:
     self._episode.reset_imu_tracking(imu_x)
     self._episode.prev_action = (0.0, 0.0)
 
-    obs, _raw = self._observation.build(self.model, self.data, self._episode, dx=0.0)
-    return obs.to_vector()
+    policy_obs, _ = self._observation.build(self.model, self.data, self._episode, dx=0.0)
+    return policy_obs.to_vector()
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
     knee_a = max(-1.0, min(1.0, float(action[0])))
@@ -82,16 +82,11 @@ class EnvExp0022JointA2C:
     imu_x = float(self.data.site("imu_site").xpos[0])
     dx = self._episode.advance_imu_x(imu_x)
 
-    obs, raw = self._observation.build(self.model, self.data, self._episode, dx=dx)
-
-    reward_breakdown = self._reward.compute(
-      dx=dx,
-      upright=raw.upright,
-      knee_angle=raw.knee_angle,
-      foot_on_floor=raw.foot_on_floor,
-      imu_z=raw.imu_z,
-      imu_zaxis_x=raw.imu_zaxis_x,
+    policy_obs, step_physics = self._observation.build(
+      self.model, self.data, self._episode, dx=dx
     )
+
+    reward_breakdown = self._reward.compute(step_physics)
 
     terminated = termination_reason is not None
 
@@ -103,15 +98,15 @@ class EnvExp0022JointA2C:
     #   episode_step=episode_step,
     #   reward=reward,
     #   knee_human_flex_bonus=reward_breakdown.knee_flex_bonus,
-    #   raw=raw,
+    #   step_physics=step_physics,
     #   episode=self._episode,
     # )
 
     self._episode.prev_action = (knee_a, ankle_a)
 
     step_info = {
-      "upright": raw.upright,
-      "foot_on_floor": float(raw.foot_on_floor),
+      "upright": step_physics.upright,
+      "foot_on_floor": float(step_physics.foot_on_floor),
       "reward_forward": reward_breakdown.forward,
       "reward_upright": reward_breakdown.upright,
       "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
@@ -119,7 +114,7 @@ class EnvExp0022JointA2C:
       "termination_reason": termination_reason,
     }
 
-    return obs.to_vector(), reward, terminated, step_info
+    return policy_obs.to_vector(), reward, terminated, step_info
 
 
 Env010A2C = EnvExp0022JointA2C

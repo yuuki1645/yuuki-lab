@@ -22,6 +22,7 @@
 from dataclasses import dataclass
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.observation import StepPhysics
 
 
 @dataclass(frozen=True)
@@ -48,34 +49,19 @@ class RewardBreakdown:
 class Reward:
   """報酬のみ計算する（転倒・時間切れの終了判定は Termination / env）。"""
 
-  def compute(
-    self,
-    *,
-    dx: float,
-    upright: float,
-    knee_angle: float,
-    foot_on_floor: bool,
-    imu_z: float,
-    imu_zaxis_x: float,
-  ) -> RewardBreakdown:
+  def compute(self, step_physics: StepPhysics) -> RewardBreakdown:
     """1 環境ステップ分の報酬内訳を返す。
 
-    引数（observation.ObservationRaw から env が渡す）
-    -----------------------------------------------
-    dx : float
-        直前ステップからの imu_site ワールド X [m]。前進が +。
-        倒れ込みでもセンサが前に動けば + になりうるため、forward ではゲートする。
-    upright : float
-        IMU z 軸の z 成分（imu_zaxis_z）。1 に近いほど真っ直ぐ立っている。
-    knee_angle : float
-        膝関節 qpos [rad]。+Y ヒンジで **+ が後方屈曲（人間と同じ）**。
-    foot_on_floor : bool
-        足裏 geom と床の接触があるか。
-    imu_z : float
-        IMU の高さ [m]。低いほどしゃがみ／倒れに近い。
-    imu_zaxis_x : float
-        IMU z 軸ベクトルの x 成分。後傾（−X）で負、直立で 0 付近。
+    step_physics
+        observation.build が返す当ステップの物理量（正規化前）。
+        dx / upright / knee_angle / foot_on_floor / imu_z / imu_zaxis_x を参照する。
     """
+    dx = step_physics.dx
+    upright = step_physics.upright
+    knee_angle = step_physics.knee_angle
+    foot_on_floor = step_physics.foot_on_floor
+    imu_z = step_physics.imu_z
+    imu_zaxis_x = step_physics.imu_zaxis_x
     # --- 膝: 人間的な屈曲レンジの小ボーナス -----------------------------------
     # 適度な後方屈曲のときだけ定数ボーナス（dx とは独立）。
     # 理由: 完全に伸ばしたまま引きずる／棒立ちを避け、歩の形のヒントにする。

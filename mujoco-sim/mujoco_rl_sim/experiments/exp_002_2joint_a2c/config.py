@@ -2,19 +2,27 @@
 
 報酬・終了・観測の実装は reward.py / termination.py / observation.py。
 学習ループは train.py、方策は agent.py（連続 2 次元 → 膝・足首サーボ）。
+
+制御: 物理 500 Hz（MuJoCo 既定 timestep=0.002）、ポリシー 50 Hz（FRAME_SKIP=10）。
 """
 
 from pathlib import Path
 
-# --- MuJoCo -------------------------------------------------------------------
+# --- MuJoCo / 制御レート -------------------------------------------------------
 _EXP_DIR = Path(__file__).resolve().parent
 XML_RELATIVE = "model/main.xml"
 XML_PATH = str(_EXP_DIR / XML_RELATIVE)
 
+# 物理は XML 既定のまま（opt.timestep=0.002 s → 500 Hz）
+PHYSICS_TIMESTEP_S = 0.002
+CONTROL_HZ = 50
+FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))  # 10
+CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP  # 0.02 s
+
 # --- 報酬（reward.py）---------------------------------------------------------
 # 前進方向: imu_site のワールド +X。前進報酬は条件を満たすときだけ dx を加点。
 
-# 1 ステップ報酬 = max(0, dx_clipped) * SCALE。dx は IMU のワールド X 変位 [m/step]
+# 1 制御ステップ報酬 = max(0, dx_clipped) * SCALE。dx は 50 Hz ステップ間の IMU X 変位 [m]
 FORWARD_REWARD_SCALE = 80.0
 # 前進報酬を出す最低直立度（imu_zaxis_z）。低いと「倒れながらの前進」を抑止
 FORWARD_MIN_UPRIGHT = 0.72
@@ -55,7 +63,8 @@ KNEE_HUMAN_FLEX_BONUS_SCALE = 0.15
 # --- 観測正規化（observation.py）---------------------------------------------
 # clip_scale / height_to_norm のスケール。超えた値は ±1 にクリップ（おおよそ [-1, 1]）
 MAX_REL_IMU_X = 2.0  # エピソード開始からの IMU X 相対位置 [m]
-MAX_DX_PER_STEP = 0.05  # 1 ステップの IMU X 変位 [m]（報酬の dx クリップ上限と同値）
+# 500 Hz 時 0.05 m/step × FRAME_SKIP（制御ステップは 10 倍長い）
+MAX_DX_PER_STEP = 0.05 * FRAME_SKIP  # 0.5 [m] @ 50 Hz
 MAX_GYRO_RAD_S = 10.0  # imu_gyro 各軸 [rad/s]
 MAX_JOINT_VEL_RAD_S = 10.0  # 膝・足首 qvel [rad/s]
 MAX_COM_X_OFFSET = 0.6  # COM X − 趾 X [m]（前後の体重偏り）
@@ -67,7 +76,8 @@ OBS_DIM = 20
 ACTION_DIM = 2
 
 # --- A2C（agent.py）----------------------------------------------------------
-GAMMA = 0.99  # TD ターゲットの割引率
+# 実時間の割引を exp_001（500 Hz, γ=0.99）に合わせる: 0.99^FRAME_SKIP
+GAMMA = 0.99**FRAME_SKIP  # ≈ 0.904
 LR = 3e-4  # Actor / Critic 共通 Adam 学習率
 ROLLOUT_STEPS = 512  # 1 回の update 前に集める環境ステップ数
 VALUE_COEF = 0.5  # 総損失における value_loss の係数
@@ -86,7 +96,8 @@ LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 # --- 学習ループ（train.py）---------------------------------------------------
 # NUM_UPDATES = 100_000  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
 NUM_UPDATES = 10_100  # 方策更新回数（総環境ステップ ≒ NUM_UPDATES * ROLLOUT_STEPS）
-MAX_STEPS_PER_EPISODE = 3000  # これで打ち切り（truncated、termination とは別）
+# exp_001 の 3000 step @ 500 Hz と同じ実時間（約 6 s）
+MAX_STEPS_PER_EPISODE = 3000 // FRAME_SKIP  # 300 @ 50 Hz
 LOG_EVERY = 20  # コンソール / wandb に train/* を出す更新間隔
 ENABLE_VIEWER = True
 # ENABLE_VIEWER = False  # MuJoCo パッシブビューア（学習を遅くする）
@@ -113,6 +124,10 @@ def training_config_dict() -> dict:
   """wandb.init(config=...) 用のハイパーパラメータ辞書。"""
   return {
     "xml_path": XML_PATH,
+    "physics_timestep_s": PHYSICS_TIMESTEP_S,
+    "control_hz": CONTROL_HZ,
+    "frame_skip": FRAME_SKIP,
+    "control_timestep_s": CONTROL_TIMESTEP_S,
     "forward_reward_scale": FORWARD_REWARD_SCALE,
     "forward_min_upright": FORWARD_MIN_UPRIGHT,
     "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,

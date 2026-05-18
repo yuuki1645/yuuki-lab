@@ -13,12 +13,21 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.ctrl import action_to_ctrl
 
 
 class EnvExp0022JointA2C:
-  """exp_002 用 A2C 環境（model/main.xml）。"""
+  """exp_002 用 A2C 環境（model/main.xml）。
+
+  物理は MuJoCo 既定 500 Hz、ポリシーは 50 Hz（1 行動あたり FRAME_SKIP 回 mj_step）。
+  """
 
   def __init__(self, *, enable_viewer: bool = True):
     self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
     apply_model_visual_preset(self.model)
     self.data = mujoco.MjData(self.model)
+
+    physics_dt = float(self.model.opt.timestep)
+    if abs(physics_dt - config.PHYSICS_TIMESTEP_S) > 1e-9:
+      raise ValueError(
+        f"model.opt.timestep={physics_dt} != config.PHYSICS_TIMESTEP_S={config.PHYSICS_TIMESTEP_S}"
+      )
 
     self.viewer = None
     if enable_viewer:
@@ -50,15 +59,31 @@ class EnvExp0022JointA2C:
     knee_a = max(-1.0, min(1.0, float(action[0])))
     ankle_a = max(-1.0, min(1.0, float(action[1])))
 
-    self.data.ctrl[self.model.actuator("knee_servo").id] = action_to_ctrl(knee_a, self._knee_ctrl_range)
-    self.data.ctrl[self.model.actuator("ankle_servo").id] = action_to_ctrl(ankle_a, self._ankle_ctrl_range)
+    knee_ctrl = action_to_ctrl(knee_a, self._knee_ctrl_range)
+    ankle_ctrl = action_to_ctrl(ankle_a, self._ankle_ctrl_range)
+    knee_act_id = self.model.actuator("knee_servo").id
+    ankle_act_id = self.model.actuator("ankle_servo").id
+    self.data.ctrl[knee_act_id] = knee_ctrl
+    self.data.ctrl[ankle_act_id] = ankle_ctrl
 
-    mujoco.mj_step(self.model, self.data)
-    if self.viewer is not None:
-      self.viewer.sync()
+    termination_reason = None
+    for _ in range(config.FRAME_SKIP):
+      mujoco.mj_step(self.model, self.data)
+      if self.viewer is not None:
+        self.viewer.sync()
+
+      imu_z = float(self.data.site("imu_site").xpos[2])
+      imu_zaxis = self.data.sensor("imu_zaxis").data
+      termination_reason = self._termination.done_reason(
+        imu_z=imu_z,
+        upright=float(imu_zaxis[2]),
+        imu_zaxis_x=float(imu_zaxis[0]),
+      )
+      if termination_reason is not None:
+        break
 
     if visualize:
-      time.sleep(self.model.opt.timestep)
+      time.sleep(config.CONTROL_TIMESTEP_S)
 
     imu_x = float(self.data.site("imu_site").xpos[0])
     dx = self._episode.advance_imu_x(imu_x)
@@ -74,11 +99,6 @@ class EnvExp0022JointA2C:
       imu_zaxis_x=raw.imu_zaxis_x,
     )
 
-    termination_reason = self._termination.done_reason(
-      imu_z=raw.imu_z,
-      upright=raw.upright,
-      imu_zaxis_x=raw.imu_zaxis_x,
-    )
     terminated = termination_reason is not None
 
     reward = reward_breakdown.total

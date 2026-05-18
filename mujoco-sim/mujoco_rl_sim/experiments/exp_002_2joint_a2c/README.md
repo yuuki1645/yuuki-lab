@@ -1,13 +1,25 @@
 # exp_002: 2 関節脚 A2C
 
-`exp_001_2joint_a2c` をコピーした実験です。現時点の学習・報酬・観測は exp_001 と同一です。
+`exp_001_2joint_a2c` をコピーした実験です。**制御レートのみ exp_001 と異なります**（後述）。
 モデル・チェックポイント・ユーティリティはこのフォルダ内に閉じています（`mujoco_rl_sim/lib` 非依存）。
+
+## 制御レート（exp_001 との差分）
+
+| 項目 | exp_001 | exp_002 |
+|------|---------|---------|
+| 物理 (`mj_step`) | 500 Hz（`timestep=0.002`） | 同左 |
+| ポリシー（`env.step`） | 500 Hz（1 step = 1 `mj_step`） | **50 Hz**（1 step = 10 `mj_step`） |
+| `MAX_DX_PER_STEP` | 0.05 m | **0.5 m**（制御ステップ幅に合わせて ×10） |
+| `GAMMA` | 0.99 | **≈ 0.904**（`0.99^10`、実時間の割引を合わせる） |
+| `MAX_STEPS_PER_EPISODE` | 3000（約 6 s） | **300**（約 6 s） |
+
+設計メモ: [docs/control_timing_human_rl.md](../../../../docs/control_timing_human_rl.md)
 
 ## ファイル構成
 
 | ファイル | 役割 |
 |---------|------|
-| `config.py` | 報酬・観測スケール・A2C・学習ループの定数 |
+| `config.py` | 報酬・観測スケール・A2C・学習ループ・`FRAME_SKIP` の定数 |
 | `env.py` | MuJoCo 環境（`reset` / `step`、各コンポーネントの配線） |
 | `observation.py` | `ObsExp002` の組み立て（`Observation.build`） |
 | `reward.py` | 報酬項の計算（終了判定は含まない） |
@@ -48,7 +60,7 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 | # | 名前 | 内容 | 正規化 |
 |---|------|------|--------|
 | 0 | rel_imu_x | エピソード開始からの IMU X [m] | ÷ 2.0 |
-| 1 | dx | 1 ステップの IMU X 変位 [m] | ÷ 0.05 |
+| 1 | dx | **50 Hz ステップ間**の IMU X 変位 [m] | ÷ 0.5 |
 | 2 | foot_on_floor | 足裏−床接触 | -1 / +1 |
 | 3–5 | imu_gyro | 角速度 [rad/s] | ÷ 10 |
 | 6–8 | imu_zaxis | 姿勢（単位ベクトル） | そのまま |
@@ -72,9 +84,10 @@ reward = dx * FORWARD_REWARD_SCALE
        (+ FALL_PENALTY if terminated)
 ```
 
-係数は `config.py` を参照。
+`dx` は制御ステップ（0.02 s）間の変位。係数は `config.py` を参照。
 
 ## 関連ドキュメント
 
+- [docs/control_timing_human_rl.md](../../../../docs/control_timing_human_rl.md)
 - [docs/sim_human_comparison.md](../../../../docs/sim_human_comparison.md)
 - [docs/human_joint_kinematics.md](../../../../docs/human_joint_kinematics.md)

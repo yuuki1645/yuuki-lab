@@ -1,5 +1,6 @@
 import math
 
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.terminal_bar import terminal_bar
 
 
@@ -62,7 +63,7 @@ def print_step_overlay(
     f"\033[2K\n"
     f"\033[2K[IMU Position]\n"
     f"\033[2K  imu_x      : {imu_x: 8.3f} (rel {rel_imu_x: 8.3f}) {bar(-5.0, 5.0, imu_x)}\n"
-    f"\033[2K  dx         : {dx: 8.3f} {bar(-0.05, 0.05, dx)}\n"
+    f"\033[2K  dx         : {dx: 8.3f} {bar(-config.MAX_DX_PER_STEP, config.MAX_DX_PER_STEP, dx)}\n"
     f"\033[2K  imu_z      : {imu_z: 8.3f} {bar(0.0, 1.0, imu_z)}\n"
     f"\033[2K\n"
     f"\033[2Kfoot_z       : {foot_z: 8.3f} {bar(0.0, 1.0, foot_z)}\n"

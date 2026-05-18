@@ -87,13 +87,13 @@ class EnvExp0012JointA2C:
     if terminated:
       reward += config.FALL_PENALTY
 
-    self._observation.maybe_print_debug(
-      episode_step=episode_step,
-      reward=reward,
-      knee_human_flex_bonus=reward_breakdown.knee_flex_bonus,
-      raw=raw,
-      episode=self._episode,
-    )
+    # self._observation.maybe_print_debug(
+    #   episode_step=episode_step,
+    #   reward=reward,
+    #   knee_human_flex_bonus=reward_breakdown.knee_flex_bonus,
+    #   raw=raw,
+    #   episode=self._episode,
+    # )
 
     self._episode.prev_action = (knee_a, ankle_a)
 

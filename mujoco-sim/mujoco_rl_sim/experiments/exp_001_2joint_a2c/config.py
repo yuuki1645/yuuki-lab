@@ -1,12 +1,15 @@
-"""exp_001: 007_leg_2joint ・ 2 関節 A2C のハイパーパラメータ。
+"""exp_001: 2 関節脚 A2C のハイパーパラメータ。
 
 報酬・終了・観測の実装は reward.py / termination.py / observation.py。
 学習ループは train.py、方策は agent.py（連続 2 次元 → 膝・足首サーボ）。
 """
 
+from pathlib import Path
+
 # --- MuJoCo -------------------------------------------------------------------
-# mujoco_sim_asset_path から解決する相対パス（mujoco-sim 直下が基準）
-XML_PATH = "mujoco_sim_assets/xmls/007_leg_2joint/main.xml"
+_EXP_DIR = Path(__file__).resolve().parent
+XML_RELATIVE = "model/main.xml"
+XML_PATH = str(_EXP_DIR / XML_RELATIVE)
 
 # --- 報酬（reward.py）---------------------------------------------------------
 # 前進方向: imu_site のワールド +X。前進報酬は条件を満たすときだけ dx を加点。

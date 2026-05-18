@@ -10,15 +10,13 @@ from mujoco_rl_sim.experiments.exp_001_2joint_a2c.observation import Observation
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c.reward import Reward
 from mujoco_rl_sim.experiments.exp_001_2joint_a2c.termination import Termination
 from mujoco_rl_sim.lib.ctrl import action_to_ctrl
-from mujoco_rl_sim.lib.mujoco_paths import mujoco_sim_asset_path
 
 
 class EnvExp0012JointA2C:
-  """007_leg_2joint 用 A2C 環境（exp_001）。"""
+  """exp_001 用 A2C 環境（model/main.xml）。"""
 
   def __init__(self, *, enable_viewer: bool = True):
-    xml_path = mujoco_sim_asset_path(config.XML_PATH)
-    self.model = mujoco.MjModel.from_xml_path(xml_path)
+    self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
     apply_model_visual_preset(self.model)
     self.data = mujoco.MjData(self.model)
 

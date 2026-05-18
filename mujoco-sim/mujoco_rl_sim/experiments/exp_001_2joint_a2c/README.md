@@ -15,6 +15,7 @@
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
 | `debug.py` | ターミナル向けステップ表示 |
+| `model/main.xml` | 実験専用 MuJoCo モデル（`mujoco_sim_assets` 非依存） |
 
 共通処理は `mujoco_rl_sim/lib/` を参照。
 
@@ -28,7 +29,7 @@ python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 
 ## モデル
 
-- XML: `mujoco_sim_assets/xmls/007_leg_2joint/main.xml`
+- XML: `model/main.xml`（このフォルダ内。元は `mujoco_sim_assets/xmls/007_leg_2joint/main.xml`）
 - 行動: 膝・足首の目標角（`[-1,1]` → 各 actuator の `ctrlrange`）
 - 前進方向: `imu_site` のワールド **+X**
 

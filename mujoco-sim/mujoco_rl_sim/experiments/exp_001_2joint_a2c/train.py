@@ -55,18 +55,23 @@ def main() -> None:
         if done:
           ep_len = float(episode_step)
           if use_wandb:
-            wandb_logging.log(
-              {
-                "episode/return": episode_return,
-                "episode/length": ep_len,
-                "episode/terminated": float(terminated),
-                "episode/truncated": float(truncated and not terminated),
-                "episode/mean_upright": episode_upright_sum / ep_len,
-                "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
-                "episode/forward_reward_sum": episode_forward,
-              },
-              step=total_env_steps,
+            episode_metrics: dict[str, float] = {
+              "episode/return": episode_return,
+              "episode/length": ep_len,
+              "episode/terminated": float(terminated),
+              "episode/truncated": float(truncated and not terminated),
+              "episode/mean_upright": episode_upright_sum / ep_len,
+              "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
+              "episode/forward_reward_sum": episode_forward,
+            }
+            episode_metrics.update(
+              wandb_logging.episode_termination_metrics(
+                terminated=terminated,
+                truncated=truncated,
+                reason=step_info.get("termination_reason"),
+              )
             )
+            wandb_logging.log(episode_metrics, step=total_env_steps)
           episode_index += 1
           obs = env.reset()
           episode_step = 0

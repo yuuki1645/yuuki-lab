@@ -76,11 +76,12 @@ class EnvExp0012JointA2C:
       imu_zaxis_x=raw.imu_zaxis_x,
     )
 
-    terminated = self._termination.is_done(
+    termination_reason = self._termination.done_reason(
       imu_z=raw.imu_z,
       upright=raw.upright,
       imu_zaxis_x=raw.imu_zaxis_x,
     )
+    terminated = termination_reason is not None
 
     reward = reward_breakdown.total
     if terminated:
@@ -103,6 +104,7 @@ class EnvExp0012JointA2C:
       "reward_upright": reward_breakdown.upright,
       "reward_lean_penalty": reward_breakdown.lean_penalty,
       "reward_height_penalty": reward_breakdown.height_penalty,
+      "termination_reason": termination_reason,
     }
 
     return obs.to_vector(), reward, terminated, step_info

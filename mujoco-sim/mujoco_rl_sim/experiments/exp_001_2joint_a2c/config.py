@@ -129,6 +129,9 @@ WANDB_ENTITY = ""
 
 WANDB_TAGS = ("exp_001", "a2c", "2joint")
 
+# 終了理由の直近比率（termination/rolling_rate_*）のウィンドウ幅（エピソード数）
+WANDB_TERMINATION_ROLLING_WINDOW = 100
+
 
 
 

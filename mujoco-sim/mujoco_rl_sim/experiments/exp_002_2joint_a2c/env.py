@@ -40,7 +40,7 @@ class EnvExp0022JointA2C:
     self._episode = EpisodeState()
     self._observation = Observation(self.model)
     self._reward = Reward()
-    self._termination = Termination()
+    self._termination = Termination(self.model)
 
   def reset(self):
     mujoco.mj_resetData(self.model, self.data)
@@ -72,13 +72,7 @@ class EnvExp0022JointA2C:
       if self.viewer is not None:
         self.viewer.sync()
 
-      imu_z = float(self.data.site("imu_site").xpos[2])
-      imu_zaxis = self.data.sensor("imu_zaxis").data
-      termination_reason = self._termination.done_reason(
-        imu_z=imu_z,
-        upright=float(imu_zaxis[2]),
-        imu_zaxis_x=float(imu_zaxis[0]),
-      )
+      termination_reason = self._termination.done_reason(self.data)
       if termination_reason is not None:
         break
 

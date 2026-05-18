@@ -1,3 +1,5 @@
+import mujoco
+
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 
 # done_reason / wandb 用の終了理由ラベル
@@ -17,26 +19,27 @@ TERMINATION_REASONS = (
 class Termination:
   """エピソード早期終了（転倒・姿勢崩れ）の判定。
 
-  入力は observation.ObservationRaw と同じ物理量:
+  mj_step 後の MjData から次を読み、いずれかを満たしたら終了する:
     - imu_z       : imu_site のワールド Z 座標 [m]（低いほどしゃがみ／倒れ）
     - upright     : imu_zaxis の Z 成分（= imu_zaxis_z）。1 に近いほど直立
     - imu_zaxis_x : imu 体軸のワールド X 成分。負 = 後方向（−x）へ傾いている
 
-  下記のいずれかを満たしたステップで terminated=True（env.step）。
   最大ステップによる打ち切りは train.py 側（REASON_TRUNCATED）。
   """
 
-  def done_reason(
-    self,
-    *,
-    imu_z: float,
-    upright: float,
-    imu_zaxis_x: float,
-  ) -> str | None:
+  def __init__(self, model: mujoco.MjModel):
+    self._model = model
+
+  def done_reason(self, data: mujoco.MjData) -> str | None:
     """最初に満たした終了条件の識別子。終了しない場合は None。
 
     判定は上から順に評価し、複数条件を同時に満たしても先頭の理由のみ返す。
     """
+    imu_z = float(data.site("imu_site").xpos[2])
+    imu_zaxis = data.sensor("imu_zaxis").data
+    upright = float(imu_zaxis[2])
+    imu_zaxis_x = float(imu_zaxis[0])
+
     # (1) 高さ低下: IMU が地面近くまで落ちた → 転倒・しゃがみ込みとみなす
     if imu_z < config.MIN_IMU_Z:  # 既定 0.42 m
       return REASON_IMU_Z
@@ -51,15 +54,5 @@ class Termination:
 
     return None
 
-  def is_done(
-    self,
-    *,
-    imu_z: float,
-    upright: float,
-    imu_zaxis_x: float,
-  ) -> bool:
-    return self.done_reason(
-      imu_z=imu_z,
-      upright=upright,
-      imu_zaxis_x=imu_zaxis_x,
-    ) is not None
+  def is_done(self, data: mujoco.MjData) -> bool:
+    return self.done_reason(data) is not None

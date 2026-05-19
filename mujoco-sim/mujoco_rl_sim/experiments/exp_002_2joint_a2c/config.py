@@ -56,14 +56,6 @@ TERMINATION_PENALTIES: dict[str, float] = {
   "truncated": TERMINATION_PENALTY_TRUNCATED,
 }
 
-
-def termination_penalty(reason: str | None) -> float:
-  """終了理由に対応するペナルティ。reason が None または未登録なら 0。"""
-  if reason is None:
-    return 0.0
-  return TERMINATION_PENALTIES.get(reason, 0.0)
-
-
 # --- 早期終了（termination.py）-----------------------------------------------
 # imu_site のワールド Z [m]。これ未満で終了（しゃがみ／転倒の床近傍）
 MIN_IMU_Z = 0.42

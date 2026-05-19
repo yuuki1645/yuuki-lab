@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import mujoco
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
@@ -15,6 +17,20 @@ TERMINATION_REASONS = (
   REASON_TRUNCATED,
 )
 
+@dataclass(frozen=True)
+class TerminationOutcome:
+  """終了判定の結果。終了しないとき reason=None, penalty=0。"""
+
+  reason: str | None
+  penalty: float
+
+  @property
+  def terminated(self) -> bool:
+    return self.reason is not None
+
+
+NOT_TERMINATED = TerminationOutcome(None, 0.0)
+
 
 class Termination:
   """エピソード早期終了（転倒・姿勢崩れ）の判定。
@@ -25,16 +41,26 @@ class Termination:
     - imu_zaxis_x : imu 体軸のワールド X 成分。負 = 後方向（−x）へ傾いている
 
   最大ステップによる打ち切りは train.py 側（REASON_TRUNCATED）。
-  終了ステップのペナルティ係数は config.TERMINATION_PENALTIES（reason ラベルで参照）。
+  ペナルティ係数は config.TERMINATION_PENALTY_*。
   """
 
   def __init__(self, model: mujoco.MjModel):
     self._model = model
+    missing = [
+      reason for reason in TERMINATION_REASONS if reason not in config.TERMINATION_PENALTIES
+    ]
+    if missing:
+      raise ValueError(
+        "config.TERMINATION_PENALTIES missing keys for: " + ", ".join(missing)
+      )
 
-  def done_reason(self, data: mujoco.MjData) -> str | None:
-    """最初に満たした終了条件の識別子。終了しない場合は None。
+  def _outcome(self, reason: str) -> TerminationOutcome:
+    return TerminationOutcome(reason, config.TERMINATION_PENALTIES[reason])
 
-    判定は上から順に評価し、複数条件を同時に満たしても先頭の理由のみ返す。
+  def done_reason(self, data: mujoco.MjData) -> TerminationOutcome:
+    """最初に満たした終了条件。終了しない場合は reason=None, penalty=0。
+
+    判定は上から順に評価し、複数条件を同時に満たしても先頭のみ返す。
     """
     imu_z = float(data.site("imu_site").xpos[2])
     imu_zaxis = data.sensor("imu_zaxis").data
@@ -43,17 +69,17 @@ class Termination:
 
     # (1) 高さ低下: IMU が地面近くまで落ちた → 転倒・しゃがみ込みとみなす
     if imu_z < config.MIN_IMU_Z:  # 既定 0.42 m
-      return REASON_IMU_Z
+      return self._outcome(REASON_IMU_Z)
 
     # (2) 直立度不足: 体軸が鉛直から外れすぎ → 横倒し・大きな傾きなど
     if upright < config.MIN_IMU_UPRIGHT:  # 既定 0.55（1=完全直立）
-      return REASON_LOW_UPRIGHT
+      return self._outcome(REASON_LOW_UPRIGHT)
 
     # (3) 後傾過多: 体軸の X 成分が -MAX より小さい（より負）→ 後ろに倒れすぎ
     if imu_zaxis_x < -config.MAX_BACKWARD_LEAN:  # 既定 -0.40 未満で終了
-      return REASON_BACKWARD_LEAN
+      return self._outcome(REASON_BACKWARD_LEAN)
 
-    return None
+    return NOT_TERMINATED
 
   def is_done(self, data: mujoco.MjData) -> bool:
-    return self.done_reason(data) is not None
+    return self.done_reason(data).terminated

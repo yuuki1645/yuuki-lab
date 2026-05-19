@@ -47,7 +47,7 @@ class RewardBreakdown:
 
 
 class Reward:
-  """報酬のみ計算する（転倒・時間切れの終了判定は Termination / env）。"""
+  """報酬のみ計算する（早期終了・時間切れの判定は Termination / train）。"""
 
   def compute(self, step_physics: StepPhysics) -> RewardBreakdown:
     """1 環境ステップ分の報酬内訳を返す。
@@ -96,14 +96,13 @@ class Reward:
 
     # --- 後傾ペナルティ --------------------------------------------------------
     # imu_zaxis_x が負 = 体が後ろ（−X）に傾いている。LEAN_BACKWARD_THRESH を超えた分を減点。
-    # 理由: 転倒終了（termination）より早い段階で後ろ倒れを嫌わせる。
-    #       mean_upright だけでは後傾と区別しにくいため、別軸でペナルティ。
+    # 理由: mean_upright だけでは後傾と区別しにくいため、別軸でペナルティ。
     backward_lean_excess = max(0.0, -float(imu_zaxis_x) - config.LEAN_BACKWARD_THRESH)
     backward_lean_penalty = backward_lean_excess * config.LEAN_BACKWARD_PENALTY_SCALE
 
     # --- 低姿勢ペナルティ ------------------------------------------------------
     # imu_z が TARGET_IMU_Z より低いほど減点（しゃがみ／倒れ込み）。
-    # 理由: 高さが落ちる前に「低くなりすぎ」を抑え、転倒直前の姿勢を嫌わせる。
+    # 理由: 高さが落ちる前に「低くなりすぎ」を抑える。
     height_deficit = max(0.0, config.TARGET_IMU_Z - float(imu_z))
     height_penalty = height_deficit * config.IMU_HEIGHT_PENALTY_SCALE
 

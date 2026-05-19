@@ -70,7 +70,7 @@ class EnvExp0022JointA2C:
       if self.viewer is not None:
         self.viewer.sync()
 
-      # 転倒は物理ステップごとに判定し、満たした時点で残りの mj_step を打ち切る
+      # basket 接触は物理ステップごとに判定し、満たした時点で残りの mj_step を打ち切る
       termination = self._termination.done_reason(self.data)
       if termination.terminated:
         break
@@ -116,6 +116,8 @@ class EnvExp0022JointA2C:
       "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
       "reward_height_penalty": reward_breakdown.height_penalty,
       "reward_termination_penalty": termination.penalty,
+      "reward_contact_basket_penalty": termination.penalty,
+      # 旧キー名（wandb 互換）
       "reward_fall_penalty": termination.penalty,
       "termination_reason": termination_reason,
       "basket_contact_normal_force_n": termination.contact_normal_force_n,

@@ -23,7 +23,7 @@
 | `env.py` | MuJoCo 環境（`reset` / `step`、各コンポーネントの配線） |
 | `observation.py` | `ObsExp002` の組み立て（`Observation.build`） |
 | `reward.py` | 報酬項の計算（終了判定は含まない） |
-| `termination.py` | 転倒などの終了判定 |
+| `termination.py` | 早期終了判定（basket−floor 接触） |
 | `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
@@ -77,14 +77,28 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 ## 報酬
 
 ```
-reward = dx * FORWARD_REWARD_SCALE
-       + upright * UPRIGHT_BONUS_SCALE
-       + knee_human_flex_bonus
-       - knee_wrong_penalty
-       (+ FALL_PENALTY if terminated)
+reward = forward
+       + upright_bonus
+       + knee_flex_bonus
+       - backward_lean_penalty
+       - height_penalty
+       (+ contact_basket_penalty if terminated)
 ```
 
+- `forward` … 直立かつ（設定時）足接地のときだけ `max(0, dx) * FORWARD_REWARD_SCALE`
+- `backward_lean_penalty` / `height_penalty` … 姿勢の shaping（終了判定とは独立）
+- `contact_basket_penalty` … basket が床に触れた終了ステップのみ（法線力に比例、`config.py`）
+
 `dx` は制御ステップ（0.02 s）間の変位。係数は `config.py` を参照。
+
+## 早期終了
+
+| reason | 条件 | ペナルティ |
+|--------|------|------------|
+| `contact_basket` | basket geom が床に接触 | 法線力 [N] に比例（`CONTACT_BASKET_*`） |
+| `truncated` | `MAX_STEPS_PER_EPISODE` 到達（`train.py`） | なし |
+
+IMU 高さ・直立度・後傾による早期終了は使わない（姿勢 shaping は報酬側のみ）。
 
 ## 関連ドキュメント
 

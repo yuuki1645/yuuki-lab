@@ -42,20 +42,9 @@ LEAN_BACKWARD_THRESH = 0.12
 IMU_HEIGHT_PENALTY_SCALE = 2.0
 TARGET_IMU_Z = 0.55  # この高さ [m] を下回るほど減点（imu_site のワールド Z）
 
-# 早期終了ステップに env.py が一度だけ加算（固定ペナルティ reason）
-TERMINATION_PENALTY_IMU_Z = -30.0  # しゃがみ／倒れ込み（高さ低下）
-TERMINATION_PENALTY_LOW_UPRIGHT = -30.0  # 横倒し・大きな傾き
-TERMINATION_PENALTY_BACKWARD_LEAN = -30.0  # 後傾しすぎ
-TERMINATION_PENALTY_TRUNCATED = 0.0  # 最大ステップ打ち切り（train.py。env では未使用）
-
-TERMINATION_PENALTIES: dict[str, float] = {
-  "imu_z": TERMINATION_PENALTY_IMU_Z,
-  "low_upright": TERMINATION_PENALTY_LOW_UPRIGHT,
-  "backward_lean": TERMINATION_PENALTY_BACKWARD_LEAN,
-  "truncated": TERMINATION_PENALTY_TRUNCATED,
-}
-
+# --- 早期終了（termination.py）-----------------------------------------------
 # contact_basket（basket geom − floor）: 線形ペナルティ [N ベース]
+# env.py が終了ステップに一度だけ加算
 # penalty = base + per_n * clamp(force_n - min_force_n, 0, cap_n - min_force_n)
 # その後 max(penalty, penalty_min) で下限（より負側）を cap
 CONTACT_BASKET_PENALTY_BASE = -20.0
@@ -74,14 +63,6 @@ def contact_basket_termination_penalty(normal_force_n: float) -> float:
   )
   penalty = CONTACT_BASKET_PENALTY_BASE + CONTACT_BASKET_PENALTY_PER_N * excess_force_n
   return max(penalty, CONTACT_BASKET_PENALTY_MIN)
-
-# --- 早期終了（termination.py）-----------------------------------------------
-# imu_site のワールド Z [m]。これ未満で終了（しゃがみ／転倒の床近傍）
-MIN_IMU_Z = 0.42
-# imu_zaxis_z（直立度）。これ未満で終了（大きく傾いた横倒し・後傾など）
-MIN_IMU_UPRIGHT = 0.55
-# imu_zaxis_x < -MAX で終了（後傾が強すぎる。MAX=0.40 → x < -0.40）
-MAX_BACKWARD_LEAN = 0.40
 
 # --- 膝ボーナス（reward.py）--------------------------------------------------
 # +Y ヒンジ: qpos > 0 が後方屈曲。このレンジ内だけ小さな定数ボーナス
@@ -166,18 +147,11 @@ def training_config_dict() -> dict:
     "lean_backward_thresh": LEAN_BACKWARD_THRESH,
     "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
     "target_imu_z": TARGET_IMU_Z,
-    "termination_penalty_imu_z": TERMINATION_PENALTY_IMU_Z,
-    "termination_penalty_low_upright": TERMINATION_PENALTY_LOW_UPRIGHT,
-    "termination_penalty_backward_lean": TERMINATION_PENALTY_BACKWARD_LEAN,
-    "termination_penalty_truncated": TERMINATION_PENALTY_TRUNCATED,
     "contact_basket_penalty_base": CONTACT_BASKET_PENALTY_BASE,
     "contact_basket_penalty_per_n": CONTACT_BASKET_PENALTY_PER_N,
     "contact_basket_min_force_n": CONTACT_BASKET_MIN_FORCE_N,
     "contact_basket_force_cap_n": CONTACT_BASKET_FORCE_CAP_N,
     "contact_basket_penalty_min": CONTACT_BASKET_PENALTY_MIN,
-    "min_imu_z": MIN_IMU_Z,
-    "min_imu_upright": MIN_IMU_UPRIGHT,
-    "max_backward_lean": MAX_BACKWARD_LEAN,
     "knee_human_flex_min_rad": KNEE_HUMAN_FLEX_MIN_RAD,
     "knee_human_flex_max_rad": KNEE_HUMAN_FLEX_MAX_RAD,
     "knee_human_flex_bonus_scale": KNEE_HUMAN_FLEX_BONUS_SCALE,

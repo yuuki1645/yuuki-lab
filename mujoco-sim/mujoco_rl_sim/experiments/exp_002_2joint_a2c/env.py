@@ -8,7 +8,7 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.episode_state import EpisodeState
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.observation import Observation
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.reward import Reward
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import Termination
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import TERMINATION_REASONS, Termination
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.action import ActionBinding
 
 
@@ -40,6 +40,15 @@ class EnvExp0022JointA2C:
     self._observation = Observation(self.model)
     self._reward = Reward()
     self._termination = Termination(self.model)
+
+    missing_penalties = [
+      reason for reason in TERMINATION_REASONS if reason not in config.TERMINATION_PENALTIES
+    ]
+    if missing_penalties:
+      raise ValueError(
+        "config.TERMINATION_PENALTIES missing keys for: "
+        + ", ".join(missing_penalties)
+      )
 
   def reset(self):
     mujoco.mj_resetData(self.model, self.data)
@@ -90,8 +99,10 @@ class EnvExp0022JointA2C:
     terminated = termination_reason is not None
 
     reward = reward_breakdown.total
+    termination_penalty = 0.0
     if terminated:
-      reward += config.FALL_PENALTY  # 終了ステップに一度だけ（reward.py 外）
+      termination_penalty = config.termination_penalty(termination_reason)
+      reward += termination_penalty  # 終了ステップに一度だけ（reward.py 外）
 
     # self._observation.maybe_print_debug(
     #   episode_step=episode_step,
@@ -112,6 +123,8 @@ class EnvExp0022JointA2C:
       "reward_upright": reward_breakdown.upright,
       "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
       "reward_height_penalty": reward_breakdown.height_penalty,
+      "reward_termination_penalty": termination_penalty,
+      "reward_fall_penalty": termination_penalty,
       "termination_reason": termination_reason,
     }
 

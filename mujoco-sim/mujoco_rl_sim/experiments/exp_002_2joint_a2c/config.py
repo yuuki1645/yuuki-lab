@@ -42,9 +42,27 @@ LEAN_BACKWARD_THRESH = 0.12
 IMU_HEIGHT_PENALTY_SCALE = 2.0
 TARGET_IMU_Z = 0.55  # この高さ [m] を下回るほど減点（imu_site のワールド Z）
 
-# 早期終了ステップに env.py が一度だけ加算（termination と併用）
-FALL_PENALTY = -30.0
-# FALL_PENALTY = -70.0
+# 早期終了ステップに env.py が一度だけ加算（termination.py の reason ラベルと対応）
+# キーは termination.REASON_* と同一文字列であること
+TERMINATION_PENALTY_IMU_Z = -30.0  # しゃがみ／倒れ込み（高さ低下）
+TERMINATION_PENALTY_LOW_UPRIGHT = -30.0  # 横倒し・大きな傾き
+TERMINATION_PENALTY_BACKWARD_LEAN = -30.0  # 後傾しすぎ
+TERMINATION_PENALTY_TRUNCATED = 0.0  # 最大ステップ打ち切り（train.py。env では未使用）
+
+TERMINATION_PENALTIES: dict[str, float] = {
+  "imu_z": TERMINATION_PENALTY_IMU_Z,
+  "low_upright": TERMINATION_PENALTY_LOW_UPRIGHT,
+  "backward_lean": TERMINATION_PENALTY_BACKWARD_LEAN,
+  "truncated": TERMINATION_PENALTY_TRUNCATED,
+}
+
+
+def termination_penalty(reason: str | None) -> float:
+  """終了理由に対応するペナルティ。reason が None または未登録なら 0。"""
+  if reason is None:
+    return 0.0
+  return TERMINATION_PENALTIES.get(reason, 0.0)
+
 
 # --- 早期終了（termination.py）-----------------------------------------------
 # imu_site のワールド Z [m]。これ未満で終了（しゃがみ／転倒の床近傍）
@@ -137,7 +155,10 @@ def training_config_dict() -> dict:
     "lean_backward_thresh": LEAN_BACKWARD_THRESH,
     "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
     "target_imu_z": TARGET_IMU_Z,
-    "fall_penalty": FALL_PENALTY,
+    "termination_penalty_imu_z": TERMINATION_PENALTY_IMU_Z,
+    "termination_penalty_low_upright": TERMINATION_PENALTY_LOW_UPRIGHT,
+    "termination_penalty_backward_lean": TERMINATION_PENALTY_BACKWARD_LEAN,
+    "termination_penalty_truncated": TERMINATION_PENALTY_TRUNCATED,
     "min_imu_z": MIN_IMU_Z,
     "min_imu_upright": MIN_IMU_UPRIGHT,
     "max_backward_lean": MAX_BACKWARD_LEAN,

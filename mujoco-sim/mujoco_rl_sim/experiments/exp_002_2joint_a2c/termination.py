@@ -25,6 +25,7 @@ class Termination:
     - imu_zaxis_x : imu 体軸のワールド X 成分。負 = 後方向（−x）へ傾いている
 
   最大ステップによる打ち切りは train.py 側（REASON_TRUNCATED）。
+  終了ステップのペナルティ係数は config.TERMINATION_PENALTIES（reason ラベルで参照）。
   """
 
   def __init__(self, model: mujoco.MjModel):

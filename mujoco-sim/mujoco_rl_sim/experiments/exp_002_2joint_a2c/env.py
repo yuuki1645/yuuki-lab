@@ -7,6 +7,7 @@ from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, a
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.episode_state import EpisodeState
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.observation import Observation
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.effort import EffortTracker
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.reward import Reward
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import (
   NOT_TERMINATED,
@@ -43,6 +44,7 @@ class EnvExp0022JointA2C:
     self._action = ActionBinding(self.model)
     self._observation = Observation(self.model)
     self._reward = Reward()
+    self._effort = EffortTracker(self.model)
     self._termination = Termination(self.model)
 
   def reset(self):
@@ -65,8 +67,10 @@ class EnvExp0022JointA2C:
     prev_action = self._action.apply(self.data, action)
 
     termination = NOT_TERMINATED
+    self._effort.reset_control_step()
     for _ in range(config.FRAME_SKIP):
       mujoco.mj_step(self.model, self.data)
+      self._effort.record_physics_step(self.data)
       if self.viewer is not None:
         self.viewer.sync()
 
@@ -74,6 +78,8 @@ class EnvExp0022JointA2C:
       termination = self._termination.done_reason(self.data)
       if termination.terminated:
         break
+
+    effort = self._effort.control_step_breakdown()
 
     if visualize:
       time.sleep(config.CONTROL_TIMESTEP_S)
@@ -89,7 +95,7 @@ class EnvExp0022JointA2C:
       self.model, self.data, self._episode, dx=dx
     )
 
-    reward_breakdown = self._reward.compute(step_physics)
+    reward_breakdown = self._reward.compute(step_physics, effort=effort)
 
     terminated = termination.terminated
     termination_reason = termination.reason
@@ -111,6 +117,8 @@ class EnvExp0022JointA2C:
       "upright": step_physics.upright,
       "foot_on_floor": float(step_physics.foot_on_floor),
       "reward_forward": reward_breakdown.forward,
+      "reward_effort_penalty": reward_breakdown.effort_penalty,
+      "effort_power_cost": reward_breakdown.effort_power_cost,
       "reward_termination_penalty": termination.penalty,
       "reward_contact_basket_penalty": termination.penalty,
       # 旧キー名（wandb 互換）

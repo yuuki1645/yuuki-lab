@@ -29,6 +29,7 @@ def main() -> None:
   episode_step = 0
   episode_return = 0.0
   episode_forward = 0.0
+  episode_effort_penalty = 0.0
   episode_upright_sum = 0.0
   episode_foot_contact_steps = 0
   episode_index = 0
@@ -53,6 +54,7 @@ def main() -> None:
         episode_step += 1
         episode_return += reward
         episode_forward += step_info["reward_forward"]
+        episode_effort_penalty += step_info["reward_effort_penalty"]
         episode_upright_sum += step_info["upright"]
         episode_foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
         total_env_steps += 1
@@ -75,6 +77,7 @@ def main() -> None:
               "episode/mean_upright": episode_upright_sum / ep_len,
               "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
               "episode/forward_reward_sum": episode_forward,
+              "episode/effort_penalty_sum": episode_effort_penalty,
               "episode/contact_basket_penalty": contact_penalty,
               "episode/contact_basket_normal_force_n": (
                 float(contact_force_n) if contact_force_n is not None else 0.0
@@ -96,6 +99,7 @@ def main() -> None:
           episode_step = 0
           episode_return = 0.0
           episode_forward = 0.0
+          episode_effort_penalty = 0.0
           episode_upright_sum = 0.0
           episode_foot_contact_steps = 0
 

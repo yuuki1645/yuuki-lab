@@ -29,6 +29,10 @@ FORWARD_MIN_UPRIGHT = 0.72
 # True なら足裏−床接触時のみ前進報酬（接地していない滑り・跳ねを無報酬に）
 FORWARD_REQUIRE_FOOT_CONTACT = False
 
+# 筋負荷ペナルティ = EFFORT_PENALTY_SCALE * Σ_physics Σ_act |τ·q̇|·dt / τ_max
+# τ_max は main.xml の forcerange から（膝 168、足首 98 N·m）
+EFFORT_PENALTY_SCALE = 5.0
+
 # --- 早期終了（termination.py）-----------------------------------------------
 # contact_basket（basket geom − floor）: 線形ペナルティ [N ベース]
 # env.py が終了ステップに一度だけ加算
@@ -122,6 +126,7 @@ def training_config_dict() -> dict:
     "forward_reward_scale": FORWARD_REWARD_SCALE,
     "forward_min_upright": FORWARD_MIN_UPRIGHT,
     "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,
+    "effort_penalty_scale": EFFORT_PENALTY_SCALE,
     "contact_basket_penalty_base": CONTACT_BASKET_PENALTY_BASE,
     "contact_basket_penalty_per_n": CONTACT_BASKET_PENALTY_PER_N,
     "contact_basket_min_force_n": CONTACT_BASKET_MIN_FORCE_N,

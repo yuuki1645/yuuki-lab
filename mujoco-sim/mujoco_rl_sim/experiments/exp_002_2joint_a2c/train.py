@@ -17,6 +17,7 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import wandb_logging
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import REASON_CONTACT_BASKET
 
 
 def main() -> None:
@@ -63,6 +64,8 @@ def main() -> None:
         obs = obs_next
         if done:
           ep_len = float(episode_step)
+          contact_penalty = float(step_info["reward_contact_basket_penalty"])
+          contact_force_n = step_info.get("basket_contact_normal_force_n")
           if use_wandb:
             episode_metrics: dict[str, float] = {
               "episode/return": episode_return,
@@ -72,6 +75,13 @@ def main() -> None:
               "episode/mean_upright": episode_upright_sum / ep_len,
               "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
               "episode/forward_reward_sum": episode_forward,
+              "episode/contact_basket_penalty": contact_penalty,
+              "episode/contact_basket_normal_force_n": (
+                float(contact_force_n) if contact_force_n is not None else 0.0
+              ),
+              "episode/contact_basket_terminated": float(
+                step_info.get("termination_reason") == REASON_CONTACT_BASKET
+              ),
             }
             episode_metrics.update(
               wandb_logging.episode_termination_metrics(

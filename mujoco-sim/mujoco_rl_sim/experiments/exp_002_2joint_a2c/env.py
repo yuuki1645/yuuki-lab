@@ -99,7 +99,6 @@ class EnvExp0022JointA2C:
     # self._observation.maybe_print_debug(
     #   episode_step=episode_step,
     #   reward=reward,
-    #   knee_human_flex_bonus=reward_breakdown.knee_flex_bonus,
     #   step_physics=step_physics,
     #   episode=self._episode,
     # )
@@ -112,9 +111,6 @@ class EnvExp0022JointA2C:
       "upright": step_physics.upright,
       "foot_on_floor": float(step_physics.foot_on_floor),
       "reward_forward": reward_breakdown.forward,
-      "reward_upright": reward_breakdown.upright,
-      "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
-      "reward_height_penalty": reward_breakdown.height_penalty,
       "reward_termination_penalty": termination.penalty,
       "reward_contact_basket_penalty": termination.penalty,
       # 旧キー名（wandb 互換）

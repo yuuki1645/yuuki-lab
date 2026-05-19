@@ -28,7 +28,6 @@ def main() -> None:
   episode_step = 0
   episode_return = 0.0
   episode_forward = 0.0
-  episode_upright_reward = 0.0
   episode_upright_sum = 0.0
   episode_foot_contact_steps = 0
   episode_index = 0
@@ -53,7 +52,6 @@ def main() -> None:
         episode_step += 1
         episode_return += reward
         episode_forward += step_info["reward_forward"]
-        episode_upright_reward += step_info["reward_upright"]
         episode_upright_sum += step_info["upright"]
         episode_foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
         total_env_steps += 1
@@ -74,7 +72,6 @@ def main() -> None:
               "episode/mean_upright": episode_upright_sum / ep_len,
               "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
               "episode/forward_reward_sum": episode_forward,
-              "episode/upright_reward_sum": episode_upright_reward,
             }
             episode_metrics.update(
               wandb_logging.episode_termination_metrics(
@@ -89,7 +86,6 @@ def main() -> None:
           episode_step = 0
           episode_return = 0.0
           episode_forward = 0.0
-          episode_upright_reward = 0.0
           episode_upright_sum = 0.0
           episode_foot_contact_steps = 0
 

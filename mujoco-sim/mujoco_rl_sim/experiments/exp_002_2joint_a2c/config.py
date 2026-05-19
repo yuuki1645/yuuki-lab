@@ -29,19 +29,6 @@ FORWARD_MIN_UPRIGHT = 0.72
 # True なら足裏−床接触時のみ前進報酬（接地していない滑り・跳ねを無報酬に）
 FORWARD_REQUIRE_FOOT_CONTACT = False
 
-# 直立ボーナス = max(0, upright - THRESH) * SCALE（前進ゲートより緩い姿勢報酬）
-UPRIGHT_BONUS_SCALE = 2.0
-UPRIGHT_BONUS_THRESH = 0.65
-
-# 後傾ペナルティ = max(0, -imu_zaxis_x - THRESH) * SCALE
-# imu_zaxis_x が負 = 体軸が −X（後ろ）へ傾いている
-LEAN_BACKWARD_PENALTY_SCALE = 3.0
-LEAN_BACKWARD_THRESH = 0.12
-
-# 低姿勢ペナルティ = max(0, TARGET_IMU_Z - imu_z) * SCALE（しゃがみ・倒れ込みの予兆）
-IMU_HEIGHT_PENALTY_SCALE = 2.0
-TARGET_IMU_Z = 0.55  # この高さ [m] を下回るほど減点（imu_site のワールド Z）
-
 # --- 早期終了（termination.py）-----------------------------------------------
 # contact_basket（basket geom − floor）: 線形ペナルティ [N ベース]
 # env.py が終了ステップに一度だけ加算
@@ -63,12 +50,6 @@ def contact_basket_termination_penalty(normal_force_n: float) -> float:
   )
   penalty = CONTACT_BASKET_PENALTY_BASE + CONTACT_BASKET_PENALTY_PER_N * excess_force_n
   return max(penalty, CONTACT_BASKET_PENALTY_MIN)
-
-# --- 膝ボーナス（reward.py）--------------------------------------------------
-# +Y ヒンジ: qpos > 0 が後方屈曲。このレンジ内だけ小さな定数ボーナス
-KNEE_HUMAN_FLEX_MIN_RAD = 0.02
-KNEE_HUMAN_FLEX_MAX_RAD = 1.2
-KNEE_HUMAN_FLEX_BONUS_SCALE = 0.15
 
 # --- 観測正規化（observation.py）---------------------------------------------
 # clip_scale / height_to_norm のスケール。超えた値は ±1 にクリップ（おおよそ [-1, 1]）
@@ -141,20 +122,11 @@ def training_config_dict() -> dict:
     "forward_reward_scale": FORWARD_REWARD_SCALE,
     "forward_min_upright": FORWARD_MIN_UPRIGHT,
     "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,
-    "upright_bonus_scale": UPRIGHT_BONUS_SCALE,
-    "upright_bonus_thresh": UPRIGHT_BONUS_THRESH,
-    "lean_backward_penalty_scale": LEAN_BACKWARD_PENALTY_SCALE,
-    "lean_backward_thresh": LEAN_BACKWARD_THRESH,
-    "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
-    "target_imu_z": TARGET_IMU_Z,
     "contact_basket_penalty_base": CONTACT_BASKET_PENALTY_BASE,
     "contact_basket_penalty_per_n": CONTACT_BASKET_PENALTY_PER_N,
     "contact_basket_min_force_n": CONTACT_BASKET_MIN_FORCE_N,
     "contact_basket_force_cap_n": CONTACT_BASKET_FORCE_CAP_N,
     "contact_basket_penalty_min": CONTACT_BASKET_PENALTY_MIN,
-    "knee_human_flex_min_rad": KNEE_HUMAN_FLEX_MIN_RAD,
-    "knee_human_flex_max_rad": KNEE_HUMAN_FLEX_MAX_RAD,
-    "knee_human_flex_bonus_scale": KNEE_HUMAN_FLEX_BONUS_SCALE,
     "obs_dim": OBS_DIM,
     "action_dim": ACTION_DIM,
     "gamma": GAMMA,

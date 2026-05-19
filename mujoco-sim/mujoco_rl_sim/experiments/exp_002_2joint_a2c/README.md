@@ -78,15 +78,10 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 
 ```
 reward = forward
-       + upright_bonus
-       + knee_flex_bonus
-       - backward_lean_penalty
-       - height_penalty
        (+ contact_basket_penalty if terminated)
 ```
 
 - `forward` … 直立かつ（設定時）足接地のときだけ `max(0, dx) * FORWARD_REWARD_SCALE`
-- `backward_lean_penalty` / `height_penalty` … 姿勢の shaping（終了判定とは独立）
 - `contact_basket_penalty` … basket が床に触れた終了ステップのみ（法線力に比例、`config.py`）
 
 `dx` は制御ステップ（0.02 s）間の変位。係数は `config.py` を参照。
@@ -98,7 +93,7 @@ reward = forward
 | `contact_basket` | basket geom が床に接触 | 法線力 [N] に比例（`CONTACT_BASKET_*`） |
 | `truncated` | `MAX_STEPS_PER_EPISODE` 到達（`train.py`） | なし |
 
-IMU 高さ・直立度・後傾による早期終了は使わない（姿勢 shaping は報酬側のみ）。
+IMU 高さ・直立度・後傾による早期終了は使わない。
 
 ## 関連ドキュメント
 

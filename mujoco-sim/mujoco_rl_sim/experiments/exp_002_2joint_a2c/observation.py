@@ -187,7 +187,6 @@ class Observation:
     *,
     episode_step: int,
     reward: float,
-    knee_human_flex_bonus: float,
     step_physics: StepPhysics,
     episode: EpisodeState,
   ) -> None:
@@ -199,7 +198,6 @@ class Observation:
     print_step_overlay(
       episode_step=float(episode_step),
       reward=reward,
-      knee_human_flex_bonus=knee_human_flex_bonus,
       foot_on_floor=step_physics.foot_on_floor,
       imu_gyro_x=step_physics.imu_gyro_x,
       imu_gyro_y=step_physics.imu_gyro_y,

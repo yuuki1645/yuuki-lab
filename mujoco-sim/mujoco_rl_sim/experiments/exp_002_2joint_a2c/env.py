@@ -118,6 +118,7 @@ class EnvExp0022JointA2C:
       "reward_termination_penalty": termination.penalty,
       "reward_fall_penalty": termination.penalty,
       "termination_reason": termination_reason,
+      "basket_contact_normal_force_n": termination.contact_normal_force_n,
     }
 
     return policy_obs.to_vector(), reward, terminated, step_info  # 第1戻り値のみポリシー向け

@@ -1,4 +1,7 @@
-"""exp_002 実験内の小さなユーティリティ（mujoco_rl_sim.lib 非依存）。"""
+"""exp_002 実験内の小さなユーティリティ（mujoco_rl_sim.lib 非依存）。
+
+行動の ctrl 変換・観測正規化・接触読み取り・ターミナル表示など。
+"""
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.action import ActionBinding
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.ctrl import action_to_ctrl, clip_policy_action

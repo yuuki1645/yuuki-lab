@@ -13,6 +13,7 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 if TYPE_CHECKING:
   from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 
+# 将来のスキーマ変更時に load 側で分岐できるよう識別子を保存
 CHECKPOINT_FORMAT = "exp_002_a2c_v1"
 
 
@@ -31,6 +32,7 @@ def build_payload(
   total_env_steps: int,
   episodes_finished: int,
 ) -> dict[str, Any]:
+  """torch.save 用の辞書。actor / critic / optimizer の state_dict を含む。"""
   return {
     "format": CHECKPOINT_FORMAT,
     "update": update,
@@ -79,4 +81,5 @@ def save_agent_checkpoint(
 
 
 def load_checkpoint(path: str | Path, *, map_location: str | torch.device = "cpu") -> dict[str, Any]:
+  """.pt を読み込む。AgentExp002A2C.from_checkpoint が利用。"""
   return torch.load(path, map_location=map_location, weights_only=False)

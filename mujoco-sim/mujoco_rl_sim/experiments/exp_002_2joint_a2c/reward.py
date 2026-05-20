@@ -8,6 +8,7 @@
 
   1. 前進報酬 … 直立かつ足接地など条件を満たすときだけ dx を加点
   2. 筋負荷ペナルティ … |τ·q̇| を正規化して積分（effort.py / env の mj_step ループ）
+     config.APPLY_EFFORT_PENALTY=False のときは報酬に反映しない（計測のみ）
   3. 終了ペナルティ … env.py で termination.done_reason の penalty を一度だけ加算
 
 1 ステップの合計（env 適用前）::
@@ -75,6 +76,7 @@ class Reward:
       if not config.FORWARD_REQUIRE_FOOT_CONTACT or foot_on_floor:
         forward = max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE
 
+    # effort.penalty は常に計算されるが、フラグで学習への反映を切り替え可能
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
 
     return RewardBreakdown(

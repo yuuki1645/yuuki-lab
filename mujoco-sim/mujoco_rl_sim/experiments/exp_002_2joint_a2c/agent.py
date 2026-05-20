@@ -1,4 +1,8 @@
-"""exp_002: 2 関節脚 A2C（squashed Gaussian 方策）。"""
+"""exp_002: 2 関節脚 A2C（squashed Gaussian 方策）。
+
+方策は Normal → tanh で [-1, 1]²（膝・足首サーボ目標）。
+1 update = ROLLOUT_STEPS 分を store し、GAE 風の advantage 正規化後にミニバッチで勾配更新。
+"""
 
 from __future__ import annotations
 
@@ -61,6 +65,8 @@ class Critic(nn.Module):
 
 
 class AgentExp002A2C:
+  """on-policy A2C。Actor-Critic を同一 Adam で更新する。"""
+
   def __init__(self, obs_dim: int = config.OBS_DIM, action_dim: int = config.ACTION_DIM):
     self.obs_dim = obs_dim
     self.action_dim = action_dim
@@ -90,6 +96,7 @@ class AgentExp002A2C:
     return float(a[0].item()), float(a[1].item())
 
   def act(self, obs):
+    """学習用: 確率的に行動をサンプルし、同時に V(s) を返す。"""
     o = self._obs_tensor(obs)
     dist = self.actor.squashed_dist(o)
     action = dist.rsample()
@@ -97,6 +104,7 @@ class AgentExp002A2C:
     return self._action_tuple(action), value.squeeze(0)
 
   def act_eval(self, obs):
+    """評価用: 平均行動 tanh(loc)（ノイズなし）。"""
     self.actor.eval()
     self.critic.eval()
     with torch.no_grad():
@@ -108,6 +116,7 @@ class AgentExp002A2C:
     return self._action_tuple(action)
 
   def store(self, obs, action, reward, value, done):
+    """ロールアウト 1 ステップ分をバッファへ追加（update 後にクリア）。"""
     self._obs.append(obs)
     self._actions.append(action)
     self._rewards.append(float(reward))
@@ -115,6 +124,10 @@ class AgentExp002A2C:
     self._dones.append(float(done))
 
   def update(self, last_obs):
+    """ロールアウトバッファを消費して 1 回分の方策・価値更新を行う。
+
+    last_obs: ロールアウト末尾の次状態（ブートストラップ V(s_{T+1}) 用）。
+    """
     with torch.no_grad():
       last_v = self.critic(self._obs_tensor(last_obs)).squeeze(0)
 
@@ -136,6 +149,7 @@ class AgentExp002A2C:
     values = torch.stack(self._values).squeeze(-1)
     dones = torch.tensor(self._dones, dtype=torch.float32)
 
+    # 1 ステップ TD ターゲット（done=1 の次価値は打ち切り）
     vals_next = torch.cat([values[1:], last_v.view(1)], dim=0)
     targets = rewards + config.GAMMA * vals_next * (1.0 - dones)
     advantages = targets - values
@@ -171,6 +185,7 @@ class AgentExp002A2C:
       mb_obs = obs_batch[mb]
       if not torch.isfinite(mb_obs).all():
         continue
+      # tanh の端で log_prob が発散するのを避ける
       mb_actions = actions_batch[mb].clamp(
         -1.0 + config.ACTION_LOG_PROB_EPS,
         1.0 - config.ACTION_LOG_PROB_EPS,
@@ -248,6 +263,7 @@ class AgentExp002A2C:
     return agent
 
 
+# 旧実験名との互換
 Agent010A2C = AgentExp002A2C
 OBS_DIM = config.OBS_DIM
 ROLLOUT_STEPS = config.ROLLOUT_STEPS

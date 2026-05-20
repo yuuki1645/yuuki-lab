@@ -29,6 +29,7 @@ class TerminationTracker:
     truncated: bool,
     reason: str | None,
   ) -> dict[str, float]:
+    # truncated は env が reason を返さないため train 側のフラグから補完
     if truncated and not terminated:
       key = "truncated"
     elif reason in TERMINATION_REASONS:

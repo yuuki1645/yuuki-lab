@@ -3,6 +3,7 @@
 import mujoco
 import numpy as np
 
+# mj_contactForce の出力先（ループ内で再利用）
 _CONTACT_WRENCH = np.zeros(6)
 
 
@@ -36,6 +37,7 @@ def has_contact_between_geoms(
 
 
 def _is_geom_pair(contact: mujoco.MjContact, geom_a_id: int, geom_b_id: int) -> bool:
+  """geom1/geom2 の順序は MuJoCo が入れ替えることがある。"""
   return (contact.geom1 == geom_a_id and contact.geom2 == geom_b_id) or (
     contact.geom1 == geom_b_id and contact.geom2 == geom_a_id
   )

@@ -118,7 +118,10 @@ WANDB_TERMINATION_ROLLING_WINDOW = 100
 
 
 def training_config_dict() -> dict:
-  """wandb.init(config=...) 用のハイパーパラメータ辞書。"""
+  """wandb.init(config=...) 用のハイパーパラメータ辞書。
+
+  キーはスネークケース。実験再現時はこの dict と config 定数を照合する。
+  """
   return {
     "xml_path": XML_PATH,
     "physics_timestep_s": PHYSICS_TIMESTEP_S,

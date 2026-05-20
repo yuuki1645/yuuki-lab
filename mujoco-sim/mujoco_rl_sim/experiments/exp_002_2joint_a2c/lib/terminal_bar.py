@@ -1,3 +1,6 @@
+"""ターミナル用の簡易 ASCII バー（debug.print_step_overlay）。"""
+
+
 def terminal_bar(min_value: float, max_value: float, value: float) -> str:
   rate = (value - min_value) / (max_value - min_value)
   bar_length = 20

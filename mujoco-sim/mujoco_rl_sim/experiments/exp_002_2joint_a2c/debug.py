@@ -1,3 +1,9 @@
+"""学習中のターミナル向けデバッグ表示。
+
+ANSI エスケープで行を上書きし、IMU・関節・報酬などをバー付きで一覧する。
+observation.maybe_print_debug から呼ばれる（通常は env 側でコメントアウト）。
+"""
+
 import math
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
@@ -34,10 +40,12 @@ def print_step_overlay(
   prev_knee_action: float,
   prev_ankle_action: float,
 ) -> None:
+  """StepPhysics / EpisodeState の生値をターミナルにバー付きで表示する。"""
   bar = terminal_bar
   knee_deg = _deg(knee_angle)
   ankle_deg = _deg(ankle_angle)
 
+  # \033[2K で行クリア、\033[43A でカーソルを上に戻して同じ領域を上書き
   print(
     f"\033[2K\n"
     f"\033[2K[Episode Step]\n"

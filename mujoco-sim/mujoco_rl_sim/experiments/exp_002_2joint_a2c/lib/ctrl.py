@@ -1,3 +1,6 @@
+"""ポリシー出力と MuJoCo ctrl の変換。"""
+
+
 def clip_policy_action(action_val: float) -> float:
   """ポリシー出力を [-1, 1] にクリップする。"""
   return max(-1.0, min(1.0, float(action_val)))

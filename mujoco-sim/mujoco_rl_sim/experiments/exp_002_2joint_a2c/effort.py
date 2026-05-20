@@ -28,6 +28,7 @@ class EffortTracker:
 
   def __init__(self, model: mujoco.MjModel):
     self._dt = float(model.opt.timestep)
+    # 膝・足首サーボと、それが駆動する関節 DOF を起動時に解決
     actuators = (
       model.actuator("knee_servo"),
       model.actuator("ankle_servo"),
@@ -54,5 +55,6 @@ class EffortTracker:
       self._power_cost += abs(tau * qvel) / tau_max * self._dt
 
   def control_step_breakdown(self) -> EffortBreakdown:
+    """制御ステップ末に積算結果を返す。報酬への反映は reward.py / APPLY_EFFORT_PENALTY。"""
     penalty = self._power_cost * config.EFFORT_PENALTY_SCALE
     return EffortBreakdown(power_cost=self._power_cost, penalty=penalty)

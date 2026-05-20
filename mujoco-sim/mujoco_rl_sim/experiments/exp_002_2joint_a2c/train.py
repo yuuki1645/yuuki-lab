@@ -25,6 +25,7 @@ def main() -> None:
   env = EnvExp0022JointA2C(enable_viewer=config.ENABLE_VIEWER)
   agent = AgentExp002A2C(obs_dim=config.OBS_DIM)
 
+  # --- エピソード横断の集計（wandb の episode/* 用）----------------------------
   obs = env.reset()
   episode_step = 0
   episode_return = 0.0
@@ -41,8 +42,10 @@ def main() -> None:
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
 
   try:
+    # 外側: 方策更新（1 update = ROLLOUT_STEPS 環境ステップ分の on-policy データ）
     for u in range(config.NUM_UPDATES):
       t_update_start = time.perf_counter()
+      # 内側: ロールアウト収集 → agent.store。エピソードは env 側で区切らず連続
       for _ in range(config.ROLLOUT_STEPS):
         action, value = agent.act(obs)
         obs_next, reward, terminated, step_info = env.step(
@@ -58,6 +61,7 @@ def main() -> None:
         episode_upright_sum += step_info["upright"]
         episode_foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
         total_env_steps += 1
+        # truncated は env から来ない。最大ステップ到達は train 側で done に含める
         truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
         done = terminated or truncated
 
@@ -103,6 +107,7 @@ def main() -> None:
           episode_upright_sum = 0.0
           episode_foot_contact_steps = 0
 
+      # ブートストラップ用にロールアウト直後の obs で V(s') を計算
       stats = agent.update(obs)
       last_update = u + 1
       update_time_sum_s += time.perf_counter() - t_update_start

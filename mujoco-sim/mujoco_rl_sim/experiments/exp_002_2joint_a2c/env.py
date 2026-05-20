@@ -1,3 +1,9 @@
+"""exp_002 の Gym 風環境ラッパー。
+
+reset / step のインタフェースで MuJoCo を回し、観測・報酬・終了を各モジュールに委譲する。
+1 step = FRAME_SKIP 回の mj_step（ポリシー 50 Hz / 物理 500 Hz）。
+"""
+
 import time
 
 import mujoco
@@ -40,11 +46,12 @@ class EnvExp0022JointA2C:
       self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
       apply_passive_viewer_options(self.viewer)
 
+    # エピソード状態・行動・観測・報酬・負荷・終了は責務ごとに分割
     self._episode = EpisodeState()
     self._action = ActionBinding(self.model)
     self._observation = Observation(self.model)
     self._reward = Reward()
-    self._effort = EffortTracker(self.model)
+    self._effort = EffortTracker(self.model)  # 計測は常時。報酬への反映は config.APPLY_EFFORT_PENALTY
     self._termination = Termination(self.model)
 
   def reset(self):
@@ -130,4 +137,5 @@ class EnvExp0022JointA2C:
     return policy_obs.to_vector(), reward, terminated, step_info  # 第1戻り値のみポリシー向け
 
 
+# 旧実験名との互換エイリアス
 Env010A2C = EnvExp0022JointA2C

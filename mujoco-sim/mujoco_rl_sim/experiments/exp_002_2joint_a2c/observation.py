@@ -1,3 +1,11 @@
+"""exp_002 の観測ベクトル組み立て。
+
+MuJoCo の site / sensor / joint から
+  - ObsExp002 … ポリシー入力（正規化・クリップ済み、20 次元）
+  - StepPhysics … 報酬・ログ用の生物理量
+を同一タイミングで生成する。
+"""
+
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -12,13 +20,13 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.obs_norm import clip_scale
 class ObsExp002(NamedTuple):
   """正規化済み観測（おおよそ [-1, 1]）。フィールド順 = ポリシー入力順。"""
 
-  rel_imu_x: float
-  dx: float
-  foot_on_floor: float
+  rel_imu_x: float  # エピソード開始 IMU X からの相対 [m]、clip_scale
+  dx: float  # 直前制御ステップからの IMU X 変位 [m]
+  foot_on_floor: float  # 接地 1.0 / 非接地 -1.0
   imu_gyro_x: float
   imu_gyro_y: float
   imu_gyro_z: float
-  imu_zaxis_x: float
+  imu_zaxis_x: float  # IMU 上向き単位ベクトル（直立時 z≈1）
   imu_zaxis_y: float
   imu_zaxis_z: float
   imu_z: float
@@ -28,9 +36,9 @@ class ObsExp002(NamedTuple):
   ankle: float
   knee_vel: float
   ankle_vel: float
-  com_x: float
+  com_x: float  # COM X − 趾 X（前後の体重偏り）
   com_z: float
-  prev_knee_action: float
+  prev_knee_action: float  # 直前ステップのポリシー出力 [-1, 1]
   prev_ankle_action: float
 
   def to_vector(self) -> tuple[float, ...]:
@@ -63,7 +71,7 @@ class StepPhysics:
   ankle_vel: float
   com_x: float
   com_z: float
-  upright: float
+  upright: float  # imu_zaxis_z。前進報酬の直立条件に使用（reward.py）
 
 
 class Observation:
@@ -86,6 +94,7 @@ class Observation:
     return float(data.site("imu_site").xpos[2])
 
   def _foot_on_floor(self, data: mujoco.MjData) -> bool:
+    """foot_plate geom と floor の接触の有無。"""
     for i in range(data.ncon):
       c = data.contact[i]
       if (c.geom1 == self._foot_id and c.geom2 == self._floor_id) or (
@@ -102,12 +111,14 @@ class Observation:
     *,
     dx: float,
   ) -> tuple[ObsExp002, StepPhysics]:
+    """制御ステップ末の MjData から観測ペアを構築する。dx は EpisodeState が計算済み。"""
     imu_x = self._imu_x(data)
     imu_z = self._imu_z(data)
     rel_imu_x = imu_x - episode.origin_imu_x
 
     foot_on_floor = self._foot_on_floor(data)
 
+    # --- 生物理量の読み取り ---------------------------------------------------
     imu_gyro = data.sensor("imu_gyro").data
     imu_gyro_x = float(imu_gyro[0])
     imu_gyro_y = float(imu_gyro[1])
@@ -135,6 +146,7 @@ class Observation:
     z_min = config.MIN_IMU_Z_NORM
     z_max = config.MAX_IMU_Z
 
+    # --- ポリシー観測（正規化）とログ用生値の組み立て -------------------------
     obs = ObsExp002(
       clip_scale(rel_imu_x, config.MAX_REL_IMU_X),
       clip_scale(dx, config.MAX_DX_PER_STEP),
@@ -190,6 +202,7 @@ class Observation:
     step_physics: StepPhysics,
     episode: EpisodeState,
   ) -> None:
+    """100 制御ステップごとにターミナルへ物理量オーバーレイを表示（env から呼ぶ）。"""
     if self._debug_step_counter != 100:
       self._debug_step_counter += 1
       return

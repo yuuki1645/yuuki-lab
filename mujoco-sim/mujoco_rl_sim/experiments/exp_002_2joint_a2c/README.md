@@ -160,7 +160,7 @@ reward = forward - effort_penalty
        (+ contact_floor_penalty if terminated)
 ```
 
-- `forward` … 直立かつ（設定時）足接地のときだけ `max(0, dx) * FORWARD_REWARD_SCALE`
+- `forward` … 直立かつ（設定時）足接地のときだけ `max(0, dx) * SCALE + max(0, foot_dx) * SCALE`（imu_site と foot_site の合計）
 - `effort_penalty` … `EFFORT_PENALTY_SCALE * Σ |τ·q̇|·dt / τ_max`（50 Hz ステップ内の物理ステップ合計）
 - `contact_*_penalty` … basket / thigh_link / shank_link が床に触れた終了ステップのみ（法線力に比例、`config.py`）。リンクは basket の `CONTACT_LINK_PENALTY_SCALE` 倍（既定 0.5）
 

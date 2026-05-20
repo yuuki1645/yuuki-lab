@@ -55,6 +55,8 @@ class StepPhysics:
   imu_x: float
   rel_imu_x: float
   dx: float
+  foot_x: float
+  foot_dx: float
   imu_z: float
   foot_z: float
   foot_on_floor: bool
@@ -90,6 +92,10 @@ class Observation:
     return float(data.site("imu_site").xpos[0])
 
   @staticmethod
+  def _foot_x(data: mujoco.MjData) -> float:
+    return float(data.site("foot_site").xpos[0])
+
+  @staticmethod
   def _imu_z(data: mujoco.MjData) -> float:
     return float(data.site("imu_site").xpos[2])
 
@@ -110,9 +116,11 @@ class Observation:
     episode: EpisodeState,
     *,
     dx: float,
+    foot_dx: float = 0.0,
   ) -> tuple[ObsExp002, StepPhysics]:
-    """制御ステップ末の MjData から観測ペアを構築する。dx は EpisodeState が計算済み。"""
+    """制御ステップ末の MjData から観測ペアを構築する。dx / foot_dx は EpisodeState が計算済み。"""
     imu_x = self._imu_x(data)
+    foot_x = self._foot_x(data)
     imu_z = self._imu_z(data)
     rel_imu_x = imu_x - episode.origin_imu_x
 
@@ -174,6 +182,8 @@ class Observation:
       imu_x=imu_x,
       rel_imu_x=rel_imu_x,
       dx=dx,
+      foot_x=foot_x,
+      foot_dx=foot_dx,
       imu_z=imu_z,
       foot_z=foot_z,
       foot_on_floor=foot_on_floor,

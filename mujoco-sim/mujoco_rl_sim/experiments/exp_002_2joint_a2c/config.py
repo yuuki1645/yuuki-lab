@@ -20,9 +20,11 @@ FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))  # 10
 CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP  # 0.02 s
 
 # --- 報酬（reward.py）---------------------------------------------------------
-# 前進方向: imu_site のワールド +X。前進報酬は条件を満たすときだけ dx を加点。
+# 前進方向: ワールド +X。前進報酬は条件を満たすときだけ加点。
+#   imu_site … dx（観測・従来どおり）
+#   foot_site … foot_dx（報酬のみ。同 SCALE・同条件）
 
-# 1 制御ステップ報酬 = max(0, dx_clipped) * SCALE。dx は 50 Hz ステップ間の IMU X 変位 [m]
+# 1 制御ステップ報酬 = max(0, dx_clipped) * SCALE（imu + foot の合計）
 FORWARD_REWARD_SCALE = 80.0
 # 前進報酬を出す最低直立度（imu_zaxis_z）。低いと「倒れながらの前進」を抑止
 FORWARD_MIN_UPRIGHT = 0.72

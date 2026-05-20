@@ -27,6 +27,8 @@ class EpisodeMetricsCollector:
   def reset(self) -> None:
     self._return = 0.0
     self._forward = 0.0
+    self._forward_imu = 0.0
+    self._forward_foot = 0.0
     self._effort_penalty = 0.0
     self._upright_sum = 0.0
     self._foot_contact_steps = 0
@@ -36,6 +38,8 @@ class EpisodeMetricsCollector:
       return
     self._return += reward
     self._forward += step_info["reward_forward"]
+    self._forward_imu += step_info.get("reward_forward_imu", 0.0)
+    self._forward_foot += step_info.get("reward_forward_foot", 0.0)
     self._effort_penalty += step_info["reward_effort_penalty"]
     self._upright_sum += step_info["upright"]
     self._foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
@@ -66,6 +70,8 @@ class EpisodeMetricsCollector:
       "episode/mean_upright": self._upright_sum / ep_len,
       "episode/foot_contact_ratio": self._foot_contact_steps / ep_len,
       "episode/forward_reward_sum": self._forward,
+      "episode/forward_imu_reward_sum": self._forward_imu,
+      "episode/forward_foot_reward_sum": self._forward_foot,
       "episode/effort_penalty_sum": self._effort_penalty,
       "episode/contact_basket_penalty": float(
         step_info["reward_contact_basket_penalty"]

@@ -63,13 +63,16 @@ class EnvExp0022JointA2C:
     if self.viewer is not None:
       self.viewer.sync()
 
-    # エピソード内の前進量 dx は IMU の X 変位差分。原点をここで記録する
+    # 前進量 dx / foot_dx は各 site の X 変位差分。原点をここで記録する
     imu_x = float(self.data.site("imu_site").xpos[0])
-    self._episode.reset_imu_tracking(imu_x)
+    foot_x = float(self.data.site("foot_site").xpos[0])
+    self._episode.reset_forward_tracking(imu_x=imu_x, foot_x=foot_x)
     self._episode.prev_action = (0.0, 0.0)
 
     # policy_obs: 正規化済み観測（ObsExp002）→ ポリシー入力。step_physics は reset では不要
-    policy_obs, _ = self._observation.build(self.model, self.data, self._episode, dx=0.0)
+    policy_obs, _ = self._observation.build(
+      self.model, self.data, self._episode, dx=0.0, foot_dx=0.0
+    )
     return policy_obs.to_vector()
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
@@ -96,13 +99,15 @@ class EnvExp0022JointA2C:
 
     # 観測・報酬は制御レートで一度だけ（ループ後の最終姿勢を使う）
     imu_x = float(self.data.site("imu_site").xpos[0])
+    foot_x = float(self.data.site("foot_site").xpos[0])
     dx = self._episode.advance_imu_x(imu_x)
+    foot_dx = self._episode.advance_foot_x(foot_x)
 
     # observation.build は同じ MuJoCo 状態から二種類を返す:
     #   policy_obs   … ObsExp002。clip/正規化済み（おおよそ [-1, 1]）。train のニューラルネット入力
     #   step_physics … StepPhysics。生の物理量（m, rad, bool など）。報酬・wandb・デバッグ用
     policy_obs, step_physics = self._observation.build(
-      self.model, self.data, self._episode, dx=dx
+      self.model, self.data, self._episode, dx=dx, foot_dx=foot_dx
     )
 
     reward_breakdown = self._reward.compute(step_physics, effort=effort)
@@ -127,6 +132,9 @@ class EnvExp0022JointA2C:
       "upright": step_physics.upright,
       "foot_on_floor": float(step_physics.foot_on_floor),
       "reward_forward": reward_breakdown.forward,
+      "reward_forward_imu": reward_breakdown.forward_imu,
+      "reward_forward_foot": reward_breakdown.forward_foot,
+      "foot_dx": step_physics.foot_dx,
       "reward_effort_penalty": reward_breakdown.effort_penalty,
       "effort_power_cost": reward_breakdown.effort_power_cost,
       "reward_termination_penalty": termination.penalty,

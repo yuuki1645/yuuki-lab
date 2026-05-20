@@ -2,7 +2,7 @@
 
 実行例（mujoco-sim ディレクトリから）:
 
-  # 実験 XML のみ（方策なし、中立 ctrl）
+  # 実験 XML のみ（方策なし、ctrl 無操作）
   python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
 
   # チェックポイントで方策を再生
@@ -15,9 +15,12 @@
 from __future__ import annotations
 
 import argparse
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+
+import mujoco
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
@@ -25,7 +28,6 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
 
 _EXP_DIR = Path(__file__).resolve().parent
-NEUTRAL_ACTION = (0.0, 0.0)
 ActionFn = Callable[[Any], tuple[float, float]]
 
 
@@ -35,7 +37,7 @@ def _parse_args() -> argparse.Namespace:
     "--checkpoint",
     type=str,
     default=None,
-    help="再生する .pt。省略時は model/main.xml のみを中立 ctrl で再生",
+    help="再生する .pt。省略時は model/main.xml のみ（ctrl 無操作）",
   )
   p.add_argument(
     "--stochastic",
@@ -84,12 +86,11 @@ def _print_checkpoint_info(path: Path, payload: dict) -> None:
   )
 
 
-def _make_action_fn(args: argparse.Namespace) -> ActionFn:
+def _make_action_fn(args: argparse.Namespace) -> ActionFn | None:
   if args.checkpoint is None:
-    print(f"[visualize] mode: xml only (no policy)")
+    print("[visualize] mode: xml only (no policy, ctrl untouched)")
     print(f"[visualize] xml: {config.XML_PATH}")
-    print(f"[visualize] action: neutral {NEUTRAL_ACTION}")
-    return lambda _obs: NEUTRAL_ACTION
+    return None
 
   ckpt_path = _resolve_checkpoint(args.checkpoint)
   payload = checkpoint.load_checkpoint(ckpt_path, map_location=args.device)
@@ -99,6 +100,35 @@ def _make_action_fn(args: argparse.Namespace) -> ActionFn:
   if args.stochastic:
     return lambda obs: agent.act(obs)[0]
   return agent.act_eval
+
+
+def _step_physics_only(env: EnvExp0022JointA2C) -> None:
+  """ctrl を書き換えず、物理ステップのみ進める（reset 後の ctrl=0 を維持）。"""
+  for _ in range(config.FRAME_SKIP):
+    mujoco.mj_step(env.model, env.data)
+    if env.viewer is not None:
+      env.viewer.sync()
+  time.sleep(config.CONTROL_TIMESTEP_S)
+
+
+def _run_physics_only(
+  env: EnvExp0022JointA2C,
+  *,
+  print_every: int,
+) -> None:
+  env.reset()
+  step = 0
+
+  while env.viewer.is_running():
+    _step_physics_only(env)
+    step += 1
+
+    if print_every > 0 and step % print_every == 0:
+      imu_z = float(env.data.site("imu_site").xpos[2])
+      print(
+        f"[visualize] step={step} imu_z={imu_z:.3f} "
+        f"ctrl={env.data.ctrl.copy()}"
+      )
 
 
 def _run_episodes(
@@ -167,16 +197,18 @@ def main() -> None:
     f"({config.CONTROL_TIMESTEP_S:.3f} s/step)"
   )
 
-  episode_index = 0
-  try:
-    episode_index = _run_episodes(
-      env,
-      action_fn,
-      max_episodes=args.episodes,
-      print_every=args.print_every,
-    )
-  finally:
-    print(f"[visualize] finished ({episode_index} episode(s) played)")
+  if action_fn is None:
+    _run_physics_only(env, print_every=args.print_every)
+    print("[visualize] finished")
+    return
+
+  episode_index = _run_episodes(
+    env,
+    action_fn,
+    max_episodes=args.episodes,
+    print_every=args.print_every,
+  )
+  print(f"[visualize] finished ({episode_index} episode(s) played)")
 
 
 if __name__ == "__main__":

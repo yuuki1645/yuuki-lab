@@ -85,7 +85,7 @@ def warmup_action_from_deg(knee_deg: float, ankle_deg: float) -> tuple[float, fl
 def default_warmup_action(ctx: WarmupContext) -> tuple[float, float]:
   """既定: 膝真下 0°・足首真横 0°（main.xml の関節 0° 定義）。"""
   _ = ctx
-  return warmup_action_from_deg(0.0, 0.0)
+  return warmup_action_from_deg(0.0, -3.0)
 
 
 def clip_warmup_action(action: tuple[float, float]) -> tuple[float, float]:

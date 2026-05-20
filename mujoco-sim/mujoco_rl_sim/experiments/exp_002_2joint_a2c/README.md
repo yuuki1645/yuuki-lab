@@ -29,6 +29,7 @@
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
 | `visualize.py` | チェックポイントを MuJoCo ビューアで実時間再生 |
+| `preview_warmup.py` | `WARMUP_ACTION_FN` をビューアで実時間プレビュー（方策不要） |
 | `debug.py` | ターミナル向けステップ表示 |
 | `model/main.xml` | 実験専用 MuJoCo モデル |
 | `lib/` | 行動マッピング・観測正規化・デバッグ表示（実験内コピー） |
@@ -43,6 +44,24 @@
 ```bash
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 ```
+
+## ウォームアップ行動のプレビュー
+
+`config.py` の `WARMUP_ACTION_FN` / `WARMUP_DURATION_S` を、学習なしで MuJoCo ビューアに **50 Hz 実時間** で再生する。`warmup.py` を編集したあとの確認用。
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.preview_warmup
+
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.preview_warmup --episodes 5 --print-every 10
+```
+
+| オプション | 説明 |
+|-----------|------|
+| `--episodes N` | N エピソードのウォームアップ区間だけ再生して終了（省略時 `0` = ビューアを閉じるまでループ） |
+| `--print-every N` | N 制御ステップごとに行動・報酬を表示（省略時 `0` = 無効） |
+
+- 各エピソードは `WARMUP_DURATION_S` 分だけ再生し、自動で `reset` する（方策フェーズには入らない）
+- `WARMUP_ENABLED=False` でもプレビューは `WARMUP_ACTION_FN` を再生する（学習側のフラグとは独立）
 
 ## チェックポイントの可視化
 

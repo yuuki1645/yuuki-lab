@@ -1,6 +1,7 @@
-"""各エピソード開始直後のウォームアップ行動（実時間ベース）。
+"""各エピソード開始直後のウォームアップ行動（シミュレーション時間ベース）。
 
-train.py がエピソード開始から WARMUP_DURATION_S 未満のあいだ、方策の代わりに WARMUP_ACTION_FN を呼ぶ。
+train.py がエピソード開始から WARMUP_DURATION_S（50 Hz 制御ステップ換算）未満のあいだ、
+方策の代わりに WARMUP_ACTION_FN を呼ぶ。
 行動は [-1, 1]²（膝・足首）で返す。範囲外は clip される。
 
 カスタム例（config.py で差し替え）::
@@ -20,6 +21,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.ctrl import clip_policy_action
 
 WarmupActionFn = Callable[["WarmupContext"], tuple[float, float]]
@@ -36,10 +38,22 @@ class WarmupContext:
   """ウォームアップ行動関数へ渡すコンテキスト。"""
 
   obs: Sequence[float]
-  elapsed_s: float  # 当該エピソード開始からの実時間 [s]
+  elapsed_s: float  # 当該エピソード開始からのシミュレーション経過時間 [s]
   total_env_steps: int
   episode_step: int
   episode_index: int
+
+
+def episode_sim_elapsed_s(episode_step: int) -> float:
+  """当該エピソード開始からのシミュレーション経過時間 [s]（制御ステップ × CONTROL_TIMESTEP_S）。"""
+  return episode_step * config.CONTROL_TIMESTEP_S
+
+
+def in_episode_warmup(episode_step: int) -> bool:
+  """エピソード内でウォームアップ行動を使うべきか。"""
+  if not config.WARMUP_ENABLED:
+    return False
+  return episode_sim_elapsed_s(episode_step) < config.WARMUP_DURATION_S
 
 
 def _ctrl_rad_to_action(ctrl_rad: float, lo: float, hi: float) -> float:

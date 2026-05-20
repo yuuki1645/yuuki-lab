@@ -17,7 +17,12 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import wandb_logging
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import WarmupContext, resolve_warmup_action
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import (
+  WarmupContext,
+  episode_sim_elapsed_s,
+  in_episode_warmup,
+  resolve_warmup_action,
+)
 
 
 def main() -> None:
@@ -27,7 +32,6 @@ def main() -> None:
   agent = AgentExp002A2C(obs_dim=config.OBS_DIM)
 
   obs = env.reset()
-  t_episode_start = time.perf_counter()
   episode_step = 0
   episode_index = 0
   total_env_steps = 0
@@ -37,15 +41,12 @@ def main() -> None:
   if checkpoint_run_dir is not None:
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
   if config.WARMUP_ENABLED:
+    warmup_steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S)
     print(
-      f"[warmup] enabled: first {config.WARMUP_DURATION_S:.3f}s wall-clock per episode, "
+      f"[warmup] enabled: first {config.WARMUP_DURATION_S:.3f}s sim-time per episode "
+      f"({warmup_steps} control steps @ {config.CONTROL_HZ} Hz), "
       f"action_fn={config.WARMUP_ACTION_FN.__name__}"
     )
-
-  def in_warmup() -> bool:
-    if not config.WARMUP_ENABLED:
-      return False
-    return (time.perf_counter() - t_episode_start) < config.WARMUP_DURATION_S
 
   try:
     # 外側: 方策更新（1 update = ROLLOUT_STEPS 環境ステップ分の on-policy データ）
@@ -53,8 +54,8 @@ def main() -> None:
       t_update_start = time.perf_counter()
       # 内側: ロールアウト収集 → agent.store。エピソードは env 側で区切らず連続
       for _ in range(config.ROLLOUT_STEPS):
-        if in_warmup():
-          elapsed_s = time.perf_counter() - t_episode_start
+        if in_episode_warmup(episode_step):
+          elapsed_s = episode_sim_elapsed_s(episode_step)
           action = resolve_warmup_action(
             config.WARMUP_ACTION_FN,
             WarmupContext(
@@ -95,7 +96,6 @@ def main() -> None:
           episode_index += 1
           obs = env.reset()
           episode_step = 0
-          t_episode_start = time.perf_counter()
 
       # ブートストラップ用にロールアウト直後の obs で V(s') を計算
       stats = agent.update(obs)

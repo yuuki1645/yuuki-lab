@@ -27,6 +27,7 @@ def main() -> None:
   agent = AgentExp002A2C(obs_dim=config.OBS_DIM)
 
   obs = env.reset()
+  t_episode_start = time.perf_counter()
   episode_step = 0
   episode_index = 0
   total_env_steps = 0
@@ -35,19 +36,16 @@ def main() -> None:
   checkpoint_run_dir = checkpoint.make_run_dir() if config.SAVE_CHECKPOINTS else None
   if checkpoint_run_dir is not None:
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
-
-  t_train_start = time.perf_counter()
-  warmup_logged_end = False
   if config.WARMUP_ENABLED:
     print(
-      f"[warmup] enabled: {config.WARMUP_DURATION_S:.3f}s wall-clock, "
+      f"[warmup] enabled: first {config.WARMUP_DURATION_S:.3f}s wall-clock per episode, "
       f"action_fn={config.WARMUP_ACTION_FN.__name__}"
     )
 
   def in_warmup() -> bool:
     if not config.WARMUP_ENABLED:
       return False
-    return (time.perf_counter() - t_train_start) < config.WARMUP_DURATION_S
+    return (time.perf_counter() - t_episode_start) < config.WARMUP_DURATION_S
 
   try:
     # 外側: 方策更新（1 update = ROLLOUT_STEPS 環境ステップ分の on-policy データ）
@@ -56,7 +54,7 @@ def main() -> None:
       # 内側: ロールアウト収集 → agent.store。エピソードは env 側で区切らず連続
       for _ in range(config.ROLLOUT_STEPS):
         if in_warmup():
-          elapsed_s = time.perf_counter() - t_train_start
+          elapsed_s = time.perf_counter() - t_episode_start
           action = resolve_warmup_action(
             config.WARMUP_ACTION_FN,
             WarmupContext(
@@ -69,13 +67,6 @@ def main() -> None:
           )
           value = agent.value_at(obs)
         else:
-          if config.WARMUP_ENABLED and not warmup_logged_end:
-            elapsed_end_s = time.perf_counter() - t_train_start
-            print(
-              f"[warmup] ended at wall-clock {elapsed_end_s:.3f}s, "
-              f"env_steps={total_env_steps}"
-            )
-            warmup_logged_end = True
           action, value = agent.act(obs)
         obs_next, reward, terminated, step_info = env.step(
           action,
@@ -104,6 +95,7 @@ def main() -> None:
           episode_index += 1
           obs = env.reset()
           episode_step = 0
+          t_episode_start = time.perf_counter()
 
       # ブートストラップ用にロールアウト直後の obs で V(s') を計算
       stats = agent.update(obs)

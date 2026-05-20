@@ -1,6 +1,6 @@
-"""学習開始直後のウォームアップ行動（実時間ベース）。
+"""各エピソード開始直後のウォームアップ行動（実時間ベース）。
 
-train.py が WARMUP_DURATION_S 未満のあいだ、方策の代わりに WARMUP_ACTION_FN を呼ぶ。
+train.py がエピソード開始から WARMUP_DURATION_S 未満のあいだ、方策の代わりに WARMUP_ACTION_FN を呼ぶ。
 行動は [-1, 1]²（膝・足首）で返す。範囲外は clip される。
 
 カスタム例（config.py で差し替え）::
@@ -36,7 +36,7 @@ class WarmupContext:
   """ウォームアップ行動関数へ渡すコンテキスト。"""
 
   obs: Sequence[float]
-  elapsed_s: float
+  elapsed_s: float  # 当該エピソード開始からの実時間 [s]
   total_env_steps: int
   episode_step: int
   episode_index: int

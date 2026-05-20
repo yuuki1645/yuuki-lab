@@ -91,7 +91,7 @@ ACTION_LOG_PROB_EPS = 1e-6  # tanh 行動を ±1 内側に寄せて log_prob を
 LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 
 # --- 学習ウォームアップ（train.py / warmup.py）----------------------------------
-# 学習開始から実時間 WARMUP_DURATION_S のあいだ、方策の代わりに WARMUP_ACTION_FN を使用。
+# 各エピソード開始から実時間 WARMUP_DURATION_S のあいだ、方策の代わりに WARMUP_ACTION_FN を使用。
 # データは方針 A: agent.store する（行動は off-policy 寄りだがロールアウト長は一定）。
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import default_warmup_action
 

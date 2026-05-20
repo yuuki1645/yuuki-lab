@@ -1,7 +1,11 @@
-"""exp_002: チェックポイントを MuJoCo ビューアで実時間再生する。
+"""exp_002: MuJoCo モデルまたはチェックポイントをビューアで実時間再生する。
 
 実行例（mujoco-sim ディレクトリから）:
 
+  # 実験 XML のみ（方策なし、中立 ctrl）
+  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
+
+  # チェックポイントで方策を再生
   python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \\
     --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/final.pt
 
@@ -11,7 +15,9 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
@@ -19,6 +25,8 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
 
 _EXP_DIR = Path(__file__).resolve().parent
+NEUTRAL_ACTION = (0.0, 0.0)
+ActionFn = Callable[[Any], tuple[float, float]]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -26,13 +34,13 @@ def _parse_args() -> argparse.Namespace:
   p.add_argument(
     "--checkpoint",
     type=str,
-    required=True,
-    help="再生する .pt（例: checkpoints/run_YYYYMMDD_HHMMSS/final.pt）",
+    default=None,
+    help="再生する .pt。省略時は model/main.xml のみを中立 ctrl で再生",
   )
   p.add_argument(
     "--stochastic",
     action="store_true",
-    help="評価時も確率的に行動（既定は act_eval = 平均行動）",
+    help="評価時も確率的に行動（--checkpoint 指定時のみ。既定は act_eval）",
   )
   p.add_argument(
     "--episodes",
@@ -50,7 +58,7 @@ def _parse_args() -> argparse.Namespace:
     "--device",
     type=str,
     default="cpu",
-    help="torch.load の map_location（例: cpu, cuda:0）",
+    help="torch.load の map_location（--checkpoint 指定時のみ）",
   )
   return p.parse_args()
 
@@ -76,13 +84,79 @@ def _print_checkpoint_info(path: Path, payload: dict) -> None:
   )
 
 
-def main() -> None:
-  args = _parse_args()
+def _make_action_fn(args: argparse.Namespace) -> ActionFn:
+  if args.checkpoint is None:
+    print(f"[visualize] mode: xml only (no policy)")
+    print(f"[visualize] xml: {config.XML_PATH}")
+    print(f"[visualize] action: neutral {NEUTRAL_ACTION}")
+    return lambda _obs: NEUTRAL_ACTION
+
   ckpt_path = _resolve_checkpoint(args.checkpoint)
   payload = checkpoint.load_checkpoint(ckpt_path, map_location=args.device)
   _print_checkpoint_info(ckpt_path, payload)
 
   agent = AgentExp002A2C.from_checkpoint(ckpt_path, map_location=args.device)
+  if args.stochastic:
+    return lambda obs: agent.act(obs)[0]
+  return agent.act_eval
+
+
+def _run_episodes(
+  env: EnvExp0022JointA2C,
+  action_fn: ActionFn,
+  *,
+  max_episodes: int,
+  print_every: int,
+) -> int:
+  obs = env.reset()
+  episode_step = 0
+  episode_index = 0
+  episode_return = 0.0
+
+  while env.viewer.is_running():
+    action = action_fn(obs)
+    obs, reward, terminated, step_info = env.step(
+      action,
+      visualize=True,
+      episode_step=episode_step,
+    )
+
+    episode_step += 1
+    episode_return += float(reward)
+
+    if print_every > 0 and episode_step % print_every == 0:
+      print(
+        f"[visualize] ep={episode_index + 1} step={episode_step} "
+        f"reward={reward:8.4f} return={episode_return:8.3f} "
+        f"upright={step_info['upright']:.3f} "
+        f"reason={step_info['termination_reason']!r}"
+      )
+
+    truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+    done = terminated or truncated
+    if not done:
+      continue
+
+    print(
+      f"[visualize] episode {episode_index + 1} end | "
+      f"return={episode_return:.3f} | steps={episode_step} | "
+      f"terminated={terminated} | truncated={truncated} | "
+      f"reason={step_info['termination_reason']!r}"
+    )
+    episode_index += 1
+    if max_episodes > 0 and episode_index >= max_episodes:
+      break
+
+    obs = env.reset()
+    episode_step = 0
+    episode_return = 0.0
+
+  return episode_index
+
+
+def main() -> None:
+  args = _parse_args()
+  action_fn = _make_action_fn(args)
   env = EnvExp0022JointA2C(enable_viewer=True)
   if env.viewer is None:
     raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
@@ -93,53 +167,14 @@ def main() -> None:
     f"({config.CONTROL_TIMESTEP_S:.3f} s/step)"
   )
 
-  obs = env.reset()
-  episode_step = 0
   episode_index = 0
-  episode_return = 0.0
-
   try:
-    while env.viewer.is_running():
-      if args.stochastic:
-        action, _ = agent.act(obs)
-      else:
-        action = agent.act_eval(obs)
-
-      obs, reward, terminated, step_info = env.step(
-        action,
-        visualize=True,
-        episode_step=episode_step,
-      )
-
-      episode_step += 1
-      episode_return += float(reward)
-
-      if args.print_every > 0 and episode_step % args.print_every == 0:
-        print(
-          f"[visualize] ep={episode_index + 1} step={episode_step} "
-          f"reward={reward:8.4f} return={episode_return:8.3f} "
-          f"upright={step_info['upright']:.3f} "
-          f"reason={step_info['termination_reason']!r}"
-        )
-
-      truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
-      done = terminated or truncated
-      if not done:
-        continue
-
-      print(
-        f"[visualize] episode {episode_index + 1} end | "
-        f"return={episode_return:.3f} | steps={episode_step} | "
-        f"terminated={terminated} | truncated={truncated} | "
-        f"reason={step_info['termination_reason']!r}"
-      )
-      episode_index += 1
-      if args.episodes > 0 and episode_index >= args.episodes:
-        break
-
-      obs = env.reset()
-      episode_step = 0
-      episode_return = 0.0
+    episode_index = _run_episodes(
+      env,
+      action_fn,
+      max_episodes=args.episodes,
+      print_every=args.print_every,
+    )
   finally:
     print(f"[visualize] finished ({episode_index} episode(s) played)")
 

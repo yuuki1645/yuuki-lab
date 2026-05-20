@@ -46,11 +46,15 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 
 ## チェックポイントの可視化
 
-学習で保存した `.pt` を MuJoCo パッシブビューアで **50 Hz（制御レート）の実時間** に再生する。
+MuJoCo パッシブビューアで **50 Hz（制御レート）の実時間** に再生する。
 
 `mujoco-sim` ディレクトリで:
 
 ```bash
+# 方策なし: 実験 XML（model/main.xml）のみ、中立 ctrl
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
+
+# チェックポイントで方策を再生
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
   --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_YYYYMMDD_HHMMSS/final.pt
 ```
@@ -67,14 +71,16 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
 
 | オプション | 説明 |
 |-----------|------|
-| `--checkpoint` | 再生する `.pt` のパス（必須）。実験フォルダからの相対パスも可 |
-| `--stochastic` | 確率的に行動（省略時は `act_eval` = 平均行動） |
+| `--checkpoint` | 再生する `.pt`。省略時は `model/main.xml` のみ（方策なし） |
+| `--stochastic` | 確率的に行動（`--checkpoint` 指定時のみ。省略時は `act_eval`） |
 | `--episodes N` | N エピソードで終了（省略時 `0` = ビューアを閉じるまで） |
 | `--print-every N` | N 制御ステップごとに報酬などを表示（省略時 `0` = 無効） |
-| `--device` | `torch.load` のデバイス（省略時 `cpu`） |
+| `--device` | `torch.load` のデバイス（`--checkpoint` 指定時のみ。省略時 `cpu`） |
 
 ### 動作
 
+- `--checkpoint` 省略時: `env.py` が `model/main.xml` を読み込み、行動 `(0, 0)`（中立 ctrl）で物理を進める
+- `--checkpoint` 指定時: 保存済み方策で行動を決定
 - エピソード終了（basket 接触 or `MAX_STEPS_PER_EPISODE` 到達）後は自動で `reset` し、再生を続ける
 - ビューアウィンドウを閉じると終了
 - 学習時と同じ `env.py` / 終了条件を使う
@@ -82,6 +88,9 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
 例:
 
 ```bash
+# XML のみ（モデル確認用）
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
+
 # final.pt を再生
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
   --checkpoint checkpoints/run_20260520_160244/final.pt

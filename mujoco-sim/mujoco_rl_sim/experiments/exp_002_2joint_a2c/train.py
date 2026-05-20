@@ -17,6 +17,7 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import wandb_logging
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import WarmupContext, resolve_warmup_action
 
 
 def main() -> None:
@@ -35,13 +36,47 @@ def main() -> None:
   if checkpoint_run_dir is not None:
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
 
+  t_train_start = time.perf_counter()
+  warmup_logged_end = False
+  if config.WARMUP_ENABLED:
+    print(
+      f"[warmup] enabled: {config.WARMUP_DURATION_S:.3f}s wall-clock, "
+      f"action_fn={config.WARMUP_ACTION_FN.__name__}"
+    )
+
+  def in_warmup() -> bool:
+    if not config.WARMUP_ENABLED:
+      return False
+    return (time.perf_counter() - t_train_start) < config.WARMUP_DURATION_S
+
   try:
     # 外側: 方策更新（1 update = ROLLOUT_STEPS 環境ステップ分の on-policy データ）
     for u in range(config.NUM_UPDATES):
       t_update_start = time.perf_counter()
       # 内側: ロールアウト収集 → agent.store。エピソードは env 側で区切らず連続
       for _ in range(config.ROLLOUT_STEPS):
-        action, value = agent.act(obs)
+        if in_warmup():
+          elapsed_s = time.perf_counter() - t_train_start
+          action = resolve_warmup_action(
+            config.WARMUP_ACTION_FN,
+            WarmupContext(
+              obs=obs,
+              elapsed_s=elapsed_s,
+              total_env_steps=total_env_steps,
+              episode_step=episode_step,
+              episode_index=episode_index,
+            ),
+          )
+          value = agent.value_at(obs)
+        else:
+          if config.WARMUP_ENABLED and not warmup_logged_end:
+            elapsed_end_s = time.perf_counter() - t_train_start
+            print(
+              f"[warmup] ended at wall-clock {elapsed_end_s:.3f}s, "
+              f"env_steps={total_env_steps}"
+            )
+            warmup_logged_end = True
+          action, value = agent.act(obs)
         obs_next, reward, terminated, step_info = env.step(
           action,
           visualize=False,

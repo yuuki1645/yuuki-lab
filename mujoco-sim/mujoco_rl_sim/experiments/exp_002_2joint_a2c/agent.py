@@ -95,6 +95,11 @@ class AgentExp002A2C:
     a = action_tensor.detach().squeeze(0)
     return float(a[0].item()), float(a[1].item())
 
+  def value_at(self, obs):
+    """現在の Critic による V(s)（ウォームアップ時の store 用）。"""
+    o = self._obs_tensor(obs)
+    return self.critic(o).squeeze(0)
+
   def act(self, obs):
     """学習用: 確率的に行動をサンプルし、同時に V(s) を返す。"""
     o = self._obs_tensor(obs)

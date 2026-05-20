@@ -28,6 +28,7 @@
 | `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
+| `visualize.py` | チェックポイントを MuJoCo ビューアで実時間再生 |
 | `debug.py` | ターミナル向けステップ表示 |
 | `model/main.xml` | 実験専用 MuJoCo モデル |
 | `lib/` | 行動マッピング・観測正規化・デバッグ表示（実験内コピー） |
@@ -41,6 +42,55 @@
 
 ```bash
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
+```
+
+## チェックポイントの可視化
+
+学習で保存した `.pt` を MuJoCo パッシブビューアで **50 Hz（制御レート）の実時間** に再生する。
+
+`mujoco-sim` ディレクトリで:
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
+  --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_YYYYMMDD_HHMMSS/final.pt
+```
+
+チェックポイントは `checkpoints/run_YYYYMMDD_HHMMSS/` 以下に保存される。
+
+| ファイル | 内容 |
+|---------|------|
+| `update_XXXXXX.pt` | 指定 update 時点の重み |
+| `latest.pt` | 直近保存分 |
+| `final.pt` | 学習終了時 |
+
+### オプション
+
+| オプション | 説明 |
+|-----------|------|
+| `--checkpoint` | 再生する `.pt` のパス（必須）。実験フォルダからの相対パスも可 |
+| `--stochastic` | 確率的に行動（省略時は `act_eval` = 平均行動） |
+| `--episodes N` | N エピソードで終了（省略時 `0` = ビューアを閉じるまで） |
+| `--print-every N` | N 制御ステップごとに報酬などを表示（省略時 `0` = 無効） |
+| `--device` | `torch.load` のデバイス（省略時 `cpu`） |
+
+### 動作
+
+- エピソード終了（basket 接触 or `MAX_STEPS_PER_EPISODE` 到達）後は自動で `reset` し、再生を続ける
+- ビューアウィンドウを閉じると終了
+- 学習時と同じ `env.py` / 終了条件を使う
+
+例:
+
+```bash
+# final.pt を再生
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
+  --checkpoint checkpoints/run_20260520_160244/final.pt
+
+# 3 エピソードだけ、50 ステップごとにログ
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
+  --checkpoint checkpoints/run_20260520_160244/update_003000.pt \
+  --episodes 3 \
+  --print-every 50
 ```
 
 ## モデル

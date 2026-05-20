@@ -17,22 +17,16 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import wandb_logging
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import REASON_CONTACT_BASKET
 
 
 def main() -> None:
-  use_wandb = wandb_logging.init()
+  wandb_logging.init()
+  episode_metrics = wandb_logging.episode_collector()
   env = EnvExp0022JointA2C(enable_viewer=config.ENABLE_VIEWER)
   agent = AgentExp002A2C(obs_dim=config.OBS_DIM)
 
-  # --- エピソード横断の集計（wandb の episode/* 用）----------------------------
   obs = env.reset()
   episode_step = 0
-  episode_return = 0.0
-  episode_forward = 0.0
-  episode_effort_penalty = 0.0
-  episode_upright_sum = 0.0
-  episode_foot_contact_steps = 0
   episode_index = 0
   total_env_steps = 0
   update_time_sum_s = 0.0
@@ -55,12 +49,8 @@ def main() -> None:
         )
 
         episode_step += 1
-        episode_return += reward
-        episode_forward += step_info["reward_forward"]
-        episode_effort_penalty += step_info["reward_effort_penalty"]
-        episode_upright_sum += step_info["upright"]
-        episode_foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
         total_env_steps += 1
+        episode_metrics.on_step(reward, step_info)
         # truncated は env から来ない。最大ステップ到達は train 側で done に含める
         truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
         done = terminated or truncated
@@ -69,43 +59,16 @@ def main() -> None:
 
         obs = obs_next
         if done:
-          ep_len = float(episode_step)
-          contact_penalty = float(step_info["reward_contact_basket_penalty"])
-          contact_force_n = step_info.get("basket_contact_normal_force_n")
-          if use_wandb:
-            episode_metrics: dict[str, float] = {
-              "episode/return": episode_return,
-              "episode/length": ep_len,
-              "episode/terminated": float(terminated),
-              "episode/truncated": float(truncated and not terminated),
-              "episode/mean_upright": episode_upright_sum / ep_len,
-              "episode/foot_contact_ratio": episode_foot_contact_steps / ep_len,
-              "episode/forward_reward_sum": episode_forward,
-              "episode/effort_penalty_sum": episode_effort_penalty,
-              "episode/contact_basket_penalty": contact_penalty,
-              "episode/contact_basket_normal_force_n": (
-                float(contact_force_n) if contact_force_n is not None else 0.0
-              ),
-              "episode/contact_basket_terminated": float(
-                step_info.get("termination_reason") == REASON_CONTACT_BASKET
-              ),
-            }
-            episode_metrics.update(
-              wandb_logging.episode_termination_metrics(
-                terminated=terminated,
-                truncated=truncated,
-                reason=step_info.get("termination_reason"),
-              )
-            )
-            wandb_logging.log(episode_metrics, step=total_env_steps)
+          episode_metrics.on_episode_end(
+            episode_step=episode_step,
+            terminated=terminated,
+            truncated=truncated,
+            step_info=step_info,
+            env_step=total_env_steps,
+          )
           episode_index += 1
           obs = env.reset()
           episode_step = 0
-          episode_return = 0.0
-          episode_forward = 0.0
-          episode_effort_penalty = 0.0
-          episode_upright_sum = 0.0
-          episode_foot_contact_steps = 0
 
       # ブートストラップ用にロールアウト直後の obs で V(s') を計算
       stats = agent.update(obs)
@@ -139,18 +102,12 @@ def main() -> None:
           f"entropy: {stats['entropy']:10.5f} | "
           f"episodes: {episode_index}"
         )
-        if use_wandb:
-          wandb_logging.log(
-            {
-              "train/mean_target": stats["mean_target"],
-              "train/policy_loss": stats["policy_loss"],
-              "train/value_loss": stats["value_loss"],
-              "train/entropy": stats["entropy"],
-              "train/update": float(last_update),
-              "train/episodes_finished": float(episode_index),
-            },
-            step=total_env_steps,
-          )
+        wandb_logging.log_train_update(
+          stats,
+          update=last_update,
+          episodes_finished=episode_index,
+          step=total_env_steps,
+        )
   finally:
     if (
       checkpoint_run_dir is not None

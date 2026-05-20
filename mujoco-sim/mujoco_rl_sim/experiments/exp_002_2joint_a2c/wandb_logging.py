@@ -7,10 +7,80 @@ from collections import Counter, deque
 from typing import Any
 
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import TERMINATION_REASONS
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import (
+  REASON_CONTACT_BASKET,
+  TERMINATION_REASONS,
+)
 
 _active = False
 _termination_tracker: TerminationTracker | None = None
+
+
+class EpisodeMetricsCollector:
+  """エピソード横断の wandb メトリクスを集計し、終了時に log する。"""
+
+  def __init__(self) -> None:
+    self.reset()
+
+  def reset(self) -> None:
+    self._return = 0.0
+    self._forward = 0.0
+    self._effort_penalty = 0.0
+    self._upright_sum = 0.0
+    self._foot_contact_steps = 0
+
+  def on_step(self, reward: float, step_info: dict[str, Any]) -> None:
+    if not _active:
+      return
+    self._return += reward
+    self._forward += step_info["reward_forward"]
+    self._effort_penalty += step_info["reward_effort_penalty"]
+    self._upright_sum += step_info["upright"]
+    self._foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
+
+  def on_episode_end(
+    self,
+    *,
+    episode_step: int,
+    terminated: bool,
+    truncated: bool,
+    step_info: dict[str, Any],
+    env_step: int,
+  ) -> None:
+    if not _active:
+      return
+
+    ep_len = float(episode_step)
+    contact_penalty = float(step_info["reward_contact_basket_penalty"])
+    contact_force_n = step_info.get("basket_contact_normal_force_n")
+    termination_reason = step_info.get("termination_reason")
+
+    metrics: dict[str, float] = {
+      "episode/return": self._return,
+      "episode/length": ep_len,
+      "episode/terminated": float(terminated),
+      "episode/truncated": float(truncated and not terminated),
+      "episode/mean_upright": self._upright_sum / ep_len,
+      "episode/foot_contact_ratio": self._foot_contact_steps / ep_len,
+      "episode/forward_reward_sum": self._forward,
+      "episode/effort_penalty_sum": self._effort_penalty,
+      "episode/contact_basket_penalty": contact_penalty,
+      "episode/contact_basket_normal_force_n": (
+        float(contact_force_n) if contact_force_n is not None else 0.0
+      ),
+      "episode/contact_basket_terminated": float(
+        termination_reason == REASON_CONTACT_BASKET
+      ),
+    }
+    metrics.update(
+      episode_termination_metrics(
+        terminated=terminated,
+        truncated=truncated,
+        reason=termination_reason,
+      )
+    )
+    log(metrics, step=env_step)
+    self.reset()
 
 
 class TerminationTracker:
@@ -102,6 +172,11 @@ def init() -> bool:
   return True
 
 
+def episode_collector() -> EpisodeMetricsCollector:
+  """エピソード集計用 collector。wandb 無効時は on_step / on_episode_end が no-op。"""
+  return EpisodeMetricsCollector()
+
+
 def episode_termination_metrics(
   *,
   terminated: bool,
@@ -115,6 +190,27 @@ def episode_termination_metrics(
     terminated=terminated,
     truncated=truncated,
     reason=reason,
+  )
+
+
+def log_train_update(
+  stats: dict[str, float],
+  *,
+  update: int,
+  episodes_finished: int,
+  step: int,
+) -> None:
+  """方策更新ごとの train/* メトリクスを log する。"""
+  log(
+    {
+      "train/mean_target": stats["mean_target"],
+      "train/policy_loss": stats["policy_loss"],
+      "train/value_loss": stats["value_loss"],
+      "train/entropy": stats["entropy"],
+      "train/update": float(update),
+      "train/episodes_finished": float(episodes_finished),
+    },
+    step=step,
   )
 
 

@@ -75,8 +75,10 @@ class Reward:
       if not config.FORWARD_REQUIRE_FOOT_CONTACT or foot_on_floor:
         forward = max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE
 
+    effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
+
     return RewardBreakdown(
       forward=forward,
-      effort_penalty=effort.penalty,
+      effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
     )

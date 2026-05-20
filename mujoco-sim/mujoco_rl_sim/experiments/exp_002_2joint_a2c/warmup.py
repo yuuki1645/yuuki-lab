@@ -102,9 +102,9 @@ def default_warmup_action(ctx: WarmupContext) -> tuple[float, float]:
   if ctx.elapsed_s < 0.5:
     return warmup_action_from_deg(0.0, -5.0)
   elif ctx.elapsed_s < 1.0:
-    return warmup_action_from_deg(5.0, -5.0)
+    return warmup_action_from_deg(0.0, -10.0)
   else:
-    return warmup_action_from_deg(0.0, 10.0)
+    return warmup_action_from_deg(3.0, 13.0)
 
 
 def clip_warmup_action(action: tuple[float, float]) -> tuple[float, float]:

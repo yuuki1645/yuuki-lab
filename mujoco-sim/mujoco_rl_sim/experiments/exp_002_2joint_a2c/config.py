@@ -97,7 +97,7 @@ LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import default_warmup_action
 
 WARMUP_ENABLED = True
-WARMUP_DURATION_S = 1.5  # シミュレーション内の秒（壁時計ではない）
+WARMUP_DURATION_S = 1.2  # シミュレーション内の秒（壁時計ではない）
 WARMUP_ACTION_FN = default_warmup_action  # (WarmupContext) -> (knee, ankle) in [-1, 1]
 
 # --- 学習ループ（train.py）---------------------------------------------------

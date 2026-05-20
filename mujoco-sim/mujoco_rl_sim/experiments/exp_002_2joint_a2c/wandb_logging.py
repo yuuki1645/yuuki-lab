@@ -9,6 +9,8 @@ from typing import Any
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import (
   REASON_CONTACT_BASKET,
+  REASON_CONTACT_SHANK,
+  REASON_CONTACT_THIGH,
   TERMINATION_REASONS,
 )
 
@@ -51,9 +53,10 @@ class EpisodeMetricsCollector:
       return
 
     ep_len = float(episode_step)
-    contact_penalty = float(step_info["reward_contact_basket_penalty"])
-    contact_force_n = step_info.get("basket_contact_normal_force_n")
     termination_reason = step_info.get("termination_reason")
+    basket_force_n = step_info.get("basket_contact_normal_force_n")
+    thigh_force_n = step_info.get("thigh_contact_normal_force_n")
+    shank_force_n = step_info.get("shank_contact_normal_force_n")
 
     metrics: dict[str, float] = {
       "episode/return": self._return,
@@ -64,12 +67,32 @@ class EpisodeMetricsCollector:
       "episode/foot_contact_ratio": self._foot_contact_steps / ep_len,
       "episode/forward_reward_sum": self._forward,
       "episode/effort_penalty_sum": self._effort_penalty,
-      "episode/contact_basket_penalty": contact_penalty,
+      "episode/contact_basket_penalty": float(
+        step_info["reward_contact_basket_penalty"]
+      ),
       "episode/contact_basket_normal_force_n": (
-        float(contact_force_n) if contact_force_n is not None else 0.0
+        float(basket_force_n) if basket_force_n is not None else 0.0
       ),
       "episode/contact_basket_terminated": float(
         termination_reason == REASON_CONTACT_BASKET
+      ),
+      "episode/contact_thigh_penalty": float(
+        step_info["reward_contact_thigh_penalty"]
+      ),
+      "episode/contact_thigh_normal_force_n": (
+        float(thigh_force_n) if thigh_force_n is not None else 0.0
+      ),
+      "episode/contact_thigh_terminated": float(
+        termination_reason == REASON_CONTACT_THIGH
+      ),
+      "episode/contact_shank_penalty": float(
+        step_info["reward_contact_shank_penalty"]
+      ),
+      "episode/contact_shank_normal_force_n": (
+        float(shank_force_n) if shank_force_n is not None else 0.0
+      ),
+      "episode/contact_shank_terminated": float(
+        termination_reason == REASON_CONTACT_SHANK
       ),
     }
     metrics.update(

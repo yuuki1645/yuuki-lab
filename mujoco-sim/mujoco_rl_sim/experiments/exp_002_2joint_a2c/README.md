@@ -24,7 +24,7 @@
 | `observation.py` | `ObsExp002` の組み立て（`Observation.build`） |
 | `reward.py` | 報酬項の計算（終了判定は含まない） |
 | `effort.py` | 関節トルク×角速度から筋負荷ペナルティを積算 |
-| `termination.py` | 早期終了判定（basket−floor 接触） |
+| `termination.py` | 早期終了判定（basket / thigh / shank − floor 接触） |
 | `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
 | `agent.py` | Squashed Gaussian A2C |
 | `train.py` | 学習ループ |
@@ -157,12 +157,12 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
 
 ```
 reward = forward - effort_penalty
-       (+ contact_basket_penalty if terminated)
+       (+ contact_floor_penalty if terminated)
 ```
 
 - `forward` … 直立かつ（設定時）足接地のときだけ `max(0, dx) * FORWARD_REWARD_SCALE`
 - `effort_penalty` … `EFFORT_PENALTY_SCALE * Σ |τ·q̇|·dt / τ_max`（50 Hz ステップ内の物理ステップ合計）
-- `contact_basket_penalty` … basket が床に触れた終了ステップのみ（法線力に比例、`config.py`）
+- `contact_*_penalty` … basket / thigh_link / shank_link が床に触れた終了ステップのみ（法線力に比例、`config.py`）。リンクは basket の `CONTACT_LINK_PENALTY_SCALE` 倍（既定 0.5）
 
 `dx` は制御ステップ（0.02 s）間の変位。係数は `config.py` を参照。
 
@@ -170,7 +170,9 @@ reward = forward - effort_penalty
 
 | reason | 条件 | ペナルティ |
 |--------|------|------------|
-| `contact_basket` | basket geom が床に接触 | 法線力 [N] に比例（`CONTACT_BASKET_*`） |
+| `contact_basket` | basket geom が床に接触 | 法線力 [N] に比例（`CONTACT_FLOOR_*`、フルスケール） |
+| `contact_thigh` | thigh_link geom が床に接触 | 同上 × `CONTACT_LINK_PENALTY_SCALE`（既定 0.5） |
+| `contact_shank` | shank_link geom が床に接触 | 同上 × `CONTACT_LINK_PENALTY_SCALE`（既定 0.5） |
 | `truncated` | `MAX_STEPS_PER_EPISODE` 到達（`train.py`） | なし |
 
 IMU 高さ・直立度・後傾による早期終了は使わない。

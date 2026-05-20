@@ -17,6 +17,9 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.effort import EffortTracker
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.reward import Reward
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import (
   NOT_TERMINATED,
+  REASON_CONTACT_BASKET,
+  REASON_CONTACT_SHANK,
+  REASON_CONTACT_THIGH,
   Termination,
   TerminationOutcome,
 )
@@ -81,7 +84,7 @@ class EnvExp0022JointA2C:
       if self.viewer is not None:
         self.viewer.sync()
 
-      # basket 接触は物理ステップごとに判定し、満たした時点で残りの mj_step を打ち切る
+      # basket / thigh / shank の床接触は物理ステップごとに判定し、満たした時点で打ち切る
       termination = self._termination.done_reason(self.data)
       if termination.terminated:
         break
@@ -119,7 +122,7 @@ class EnvExp0022JointA2C:
     # 次ステップの観測に載る「直前のポリシー出力」（クリップ済み [-1, 1]）
     self._episode.prev_action = prev_action
 
-    # ログ用メトリクスは解釈しやすい生値（step_physics）を使う
+    contact_force_n = termination.contact_normal_force_n
     step_info = {
       "upright": step_physics.upright,
       "foot_on_floor": float(step_physics.foot_on_floor),
@@ -127,11 +130,28 @@ class EnvExp0022JointA2C:
       "reward_effort_penalty": reward_breakdown.effort_penalty,
       "effort_power_cost": reward_breakdown.effort_power_cost,
       "reward_termination_penalty": termination.penalty,
-      "reward_contact_basket_penalty": termination.penalty,
+      "reward_contact_basket_penalty": (
+        termination.penalty if termination_reason == REASON_CONTACT_BASKET else 0.0
+      ),
+      "reward_contact_thigh_penalty": (
+        termination.penalty if termination_reason == REASON_CONTACT_THIGH else 0.0
+      ),
+      "reward_contact_shank_penalty": (
+        termination.penalty if termination_reason == REASON_CONTACT_SHANK else 0.0
+      ),
       # 旧キー名（wandb 互換）
       "reward_fall_penalty": termination.penalty,
       "termination_reason": termination_reason,
-      "basket_contact_normal_force_n": termination.contact_normal_force_n,
+      "contact_normal_force_n": contact_force_n,
+      "basket_contact_normal_force_n": (
+        contact_force_n if termination_reason == REASON_CONTACT_BASKET else None
+      ),
+      "thigh_contact_normal_force_n": (
+        contact_force_n if termination_reason == REASON_CONTACT_THIGH else None
+      ),
+      "shank_contact_normal_force_n": (
+        contact_force_n if termination_reason == REASON_CONTACT_SHANK else None
+      ),
     }
 
     return policy_obs.to_vector(), reward, terminated, step_info  # 第1戻り値のみポリシー向け

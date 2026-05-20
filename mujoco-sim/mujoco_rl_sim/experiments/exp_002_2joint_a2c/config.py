@@ -36,26 +36,53 @@ EFFORT_PENALTY_SCALE = 5.0
 APPLY_EFFORT_PENALTY = False
 
 # --- 早期終了（termination.py）-----------------------------------------------
-# contact_basket（basket geom − floor）: 線形ペナルティ [N ベース]
-# env.py が終了ステップに一度だけ加算
-# penalty = base + per_n * clamp(force_n - min_force_n, 0, cap_n - min_force_n)
-# その後 max(penalty, penalty_min) で下限（より負側）を cap
-CONTACT_BASKET_PENALTY_BASE = -20.0
-CONTACT_BASKET_PENALTY_PER_N = -0.016  # 5000 N 超過分で約 -80 → 合計約 -100
-CONTACT_BASKET_MIN_FORCE_N = 0.0  # この値までは base のみ
-CONTACT_BASKET_FORCE_CAP_N = 10_000.0  # ペナルティ計算に使う力の上限
-CONTACT_BASKET_PENALTY_MIN = -200.0  # これより大きな減点にはしない（例: -200）
+# geom−floor 接触: 線形ペナルティ [N ベース]。env.py が終了ステップに一度だけ加算
+# penalty = scale * (base + per_n * clamp(force_n - min_force_n, 0, cap_n - min_force_n))
+# その後 max(penalty, scale * penalty_min) で下限（より負側）を cap
+CONTACT_FLOOR_PENALTY_BASE = -20.0
+CONTACT_FLOOR_PENALTY_PER_N = -0.016  # 5000 N 超過分で約 -80 → 合計約 -100
+CONTACT_FLOOR_MIN_FORCE_N = 0.0  # この値までは base のみ
+CONTACT_FLOOR_FORCE_CAP_N = 10_000.0  # ペナルティ計算に使う力の上限
+CONTACT_FLOOR_PENALTY_MIN = -200.0  # これより大きな減点にはしない（例: -200）
+# thigh_link / shank_link は basket と同式で CONTACT_LINK_PENALTY_SCALE 倍
+CONTACT_LINK_PENALTY_SCALE = 0.5
+
+# wandb 互換の別名（basket 用パラメータ名）
+CONTACT_BASKET_PENALTY_BASE = CONTACT_FLOOR_PENALTY_BASE
+CONTACT_BASKET_PENALTY_PER_N = CONTACT_FLOOR_PENALTY_PER_N
+CONTACT_BASKET_MIN_FORCE_N = CONTACT_FLOOR_MIN_FORCE_N
+CONTACT_BASKET_FORCE_CAP_N = CONTACT_FLOOR_FORCE_CAP_N
+CONTACT_BASKET_PENALTY_MIN = CONTACT_FLOOR_PENALTY_MIN
+
+
+def contact_floor_termination_penalty(
+  normal_force_n: float,
+  *,
+  penalty_scale: float = 1.0,
+) -> float:
+  """geom−floor 接触の法線力 [N] から終了ペナルティを計算する。"""
+  scale = float(penalty_scale)
+  capped_span = max(0.0, CONTACT_FLOOR_FORCE_CAP_N - CONTACT_FLOOR_MIN_FORCE_N)
+  excess_force_n = min(
+    max(0.0, float(normal_force_n) - CONTACT_FLOOR_MIN_FORCE_N),
+    capped_span,
+  )
+  penalty = scale * (
+    CONTACT_FLOOR_PENALTY_BASE + CONTACT_FLOOR_PENALTY_PER_N * excess_force_n
+  )
+  return max(penalty, scale * CONTACT_FLOOR_PENALTY_MIN)
 
 
 def contact_basket_termination_penalty(normal_force_n: float) -> float:
-  """basket−floor 接触の法線力 [N] から終了ペナルティを計算する。"""
-  capped_span = max(0.0, CONTACT_BASKET_FORCE_CAP_N - CONTACT_BASKET_MIN_FORCE_N)
-  excess_force_n = min(
-    max(0.0, float(normal_force_n) - CONTACT_BASKET_MIN_FORCE_N),
-    capped_span,
+  """basket−floor 接触の終了ペナルティ（フルスケール）。"""
+  return contact_floor_termination_penalty(normal_force_n, penalty_scale=1.0)
+
+
+def contact_link_termination_penalty(normal_force_n: float) -> float:
+  """thigh_link / shank_link−floor 接触の終了ペナルティ（basket の半分）。"""
+  return contact_floor_termination_penalty(
+    normal_force_n, penalty_scale=CONTACT_LINK_PENALTY_SCALE
   )
-  penalty = CONTACT_BASKET_PENALTY_BASE + CONTACT_BASKET_PENALTY_PER_N * excess_force_n
-  return max(penalty, CONTACT_BASKET_PENALTY_MIN)
 
 # --- 観測正規化（observation.py）---------------------------------------------
 # clip_scale / height_to_norm のスケール。超えた値は ±1 にクリップ（おおよそ [-1, 1]）
@@ -143,6 +170,12 @@ def training_config_dict() -> dict:
     "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,
     "effort_penalty_scale": EFFORT_PENALTY_SCALE,
     "apply_effort_penalty": APPLY_EFFORT_PENALTY,
+    "contact_floor_penalty_base": CONTACT_FLOOR_PENALTY_BASE,
+    "contact_floor_penalty_per_n": CONTACT_FLOOR_PENALTY_PER_N,
+    "contact_floor_min_force_n": CONTACT_FLOOR_MIN_FORCE_N,
+    "contact_floor_force_cap_n": CONTACT_FLOOR_FORCE_CAP_N,
+    "contact_floor_penalty_min": CONTACT_FLOOR_PENALTY_MIN,
+    "contact_link_penalty_scale": CONTACT_LINK_PENALTY_SCALE,
     "contact_basket_penalty_base": CONTACT_BASKET_PENALTY_BASE,
     "contact_basket_penalty_per_n": CONTACT_BASKET_PENALTY_PER_N,
     "contact_basket_min_force_n": CONTACT_BASKET_MIN_FORCE_N,

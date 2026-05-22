@@ -43,17 +43,18 @@ def main() -> None:
   if config.WARMUP_ENABLED:
     warmup_steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S)
     print(
-      f"[warmup] enabled: first {config.WARMUP_DURATION_S:.3f}s sim-time per episode "
-      f"({warmup_steps} control steps @ {config.CONTROL_HZ} Hz), "
+      f"[warmup] enabled (policy B: not stored): first {config.WARMUP_DURATION_S:.3f}s "
+      f"sim-time per episode ({warmup_steps} control steps @ {config.CONTROL_HZ} Hz), "
       f"action_fn={config.WARMUP_ACTION_FN.__name__}"
     )
 
   try:
-    # 外側: 方策更新（1 update = ROLLOUT_STEPS 環境ステップ分の on-policy データ）
+    # 外側: 方策更新（1 update = ROLLOUT_STEPS 方策ステップ分の on-policy データ）
     for u in range(config.NUM_UPDATES):
       t_update_start = time.perf_counter()
-      # 内側: ロールアウト収集 → agent.store。エピソードは env 側で区切らず連続
-      for _ in range(config.ROLLOUT_STEPS):
+      # 内側: 方策分だけ store。warmup は env.step のみ（方針 B）。エピソードは train 側で区切る
+      policy_steps = 0
+      while policy_steps < config.ROLLOUT_STEPS:
         if in_episode_warmup(episode_step):
           elapsed_s = episode_sim_elapsed_s(episode_step)
           action = resolve_warmup_action(
@@ -66,9 +67,30 @@ def main() -> None:
               episode_index=episode_index,
             ),
           )
-          value = agent.value_at(obs)
-        else:
-          action, value = agent.act(obs)
+          obs_next, reward, terminated, step_info = env.step(
+            action,
+            visualize=False,
+            episode_step=episode_step,
+          )
+          episode_step += 1
+          total_env_steps += 1
+          truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+          done = terminated or truncated
+          obs = obs_next
+          if done:
+            episode_metrics.on_episode_end(
+              episode_step=episode_step,
+              terminated=terminated,
+              truncated=truncated,
+              step_info=step_info,
+              env_step=total_env_steps,
+            )
+            episode_index += 1
+            obs = env.reset()
+            episode_step = 0
+          continue
+
+        action, value = agent.act(obs)
         obs_next, reward, terminated, step_info = env.step(
           action,
           visualize=False,
@@ -83,6 +105,7 @@ def main() -> None:
         done = terminated or truncated
 
         agent.store(obs, action, reward, value, done)
+        policy_steps += 1
 
         obs = obs_next
         if done:

@@ -1,7 +1,7 @@
 """各エピソード開始直後のウォームアップ行動（シミュレーション時間ベース）。
 
 train.py がエピソード開始から WARMUP_DURATION_S（50 Hz 制御ステップ換算）未満のあいだ、
-方策の代わりに WARMUP_ACTION_FN を呼ぶ。
+方策の代わりに WARMUP_ACTION_FN を呼ぶ（方針 B: env.step のみ、agent.store はしない）。
 行動は [-1, 1]²（膝・足首）で返す。範囲外は clip される。
 
 カスタム例（config.py で差し替え）::

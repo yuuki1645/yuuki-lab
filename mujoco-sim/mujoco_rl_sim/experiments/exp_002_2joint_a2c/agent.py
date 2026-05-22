@@ -96,7 +96,7 @@ class AgentExp002A2C:
     return float(a[0].item()), float(a[1].item())
 
   def value_at(self, obs):
-    """現在の Critic による V(s)（ウォームアップ時の store 用）。"""
+    """現在の Critic による V(s)（推論・デバッグ用）。"""
     o = self._obs_tensor(obs)
     return self.critic(o).squeeze(0)
 

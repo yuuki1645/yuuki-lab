@@ -45,4 +45,5 @@ wandb/
 
 # 学習チェックポイント（torch.save）
 mujoco-sim/checkpoints/
+mujoco-sim/runs/
 mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/

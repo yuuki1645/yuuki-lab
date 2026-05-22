@@ -80,6 +80,11 @@ class AgentExp002A2C:
     )
     self._reset_rollout_storage()
 
+  def set_learning_rate(self, lr: float) -> None:
+    """全 param_group の学習率を更新する（再開時の微調整用）。"""
+    for group in self.optimizer.param_groups:
+      group["lr"] = float(lr)
+
   def _reset_rollout_storage(self):
     self._obs = []
     self._actions = []
@@ -251,10 +256,14 @@ class AgentExp002A2C:
     cls,
     path: str | Path,
     *,
-    load_optimizer: bool = False,
+    lr: float | None = None,
+    load_optimizer: bool = True,
     map_location: str | torch.device = "cpu",
   ) -> AgentExp002A2C:
-    """保存済みチェックポイントからエージェントを復元する。"""
+    """保存済みチェックポイントからエージェントを復元する。
+
+    lr を指定した場合は optimizer を読み込まず、新しい学習率だけを設定する。
+    """
     from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
 
     payload = checkpoint.load_checkpoint(path, map_location=map_location)
@@ -263,7 +272,9 @@ class AgentExp002A2C:
     agent = cls(obs_dim=obs_dim, action_dim=action_dim)
     agent.actor.load_state_dict(payload["actor"])
     agent.critic.load_state_dict(payload["critic"])
-    if load_optimizer and "optimizer" in payload:
+    if lr is not None:
+      agent.set_learning_rate(lr)
+    elif load_optimizer and "optimizer" in payload:
       agent.optimizer.load_state_dict(payload["optimizer"])
     return agent
 

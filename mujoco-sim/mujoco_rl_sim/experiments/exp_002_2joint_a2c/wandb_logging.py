@@ -171,8 +171,16 @@ def is_enabled() -> bool:
   return True
 
 
-def init() -> bool:
-  """wandb.run を開始する。無効・未インストール時は False。"""
+def init(
+  *,
+  extra_config: dict[str, Any] | None = None,
+  extra_tags: tuple[str, ...] | None = None,
+  run_name: str | None = None,
+) -> bool:
+  """wandb.run を開始する。無効・未インストール時は False。
+
+  extra_config / extra_tags / run_name は再開学習など別 run 用の上書き。
+  """
   global _active, _termination_tracker
   if not is_enabled():
     return False
@@ -183,13 +191,22 @@ def init() -> bool:
     print("[wandb] 未インストールです: pip install wandb  または USE_WANDB=False")
     return False
 
+  run_config = config.training_config_dict()
+  if extra_config:
+    run_config.update(extra_config)
+
+  tags = list(config.WANDB_TAGS)
+  if extra_tags:
+    tags.extend(extra_tags)
+
   init_kwargs: dict[str, Any] = {
     "project": config.WANDB_PROJECT,
-    "config": config.training_config_dict(),
-    "tags": list(config.WANDB_TAGS),
+    "config": run_config,
+    "tags": tags,
   }
-  if config.WANDB_RUN_NAME:
-    init_kwargs["name"] = config.WANDB_RUN_NAME
+  name = run_name if run_name is not None else config.WANDB_RUN_NAME
+  if name:
+    init_kwargs["name"] = name
   if config.WANDB_ENTITY:
     init_kwargs["entity"] = config.WANDB_ENTITY
 

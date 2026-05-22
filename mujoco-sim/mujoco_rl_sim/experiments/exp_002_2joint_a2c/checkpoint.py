@@ -17,6 +17,21 @@ if TYPE_CHECKING:
 CHECKPOINT_FORMAT = "exp_002_a2c_v1"
 
 
+_EXP_DIR = Path(__file__).resolve().parent
+
+
+def resolve_checkpoint_path(path_str: str) -> Path:
+  """チェックポイント .pt のパスを解決する（相対パスは exp_002 ディレクトリ基準）。"""
+  path = Path(path_str).expanduser()
+  if not path.is_absolute():
+    path = (_EXP_DIR / path).resolve()
+  else:
+    path = path.resolve()
+  if not path.is_file():
+    raise FileNotFoundError(f"checkpoint not found: {path}")
+  return path
+
+
 def make_run_dir() -> Path:
   """1 回の train 実行用ディレクトリを作成して返す（実験フォルダ内・CWD 非依存）。"""
   base = Path(config.CHECKPOINT_DIR)

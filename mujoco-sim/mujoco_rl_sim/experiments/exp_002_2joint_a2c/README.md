@@ -27,7 +27,10 @@
 | `termination.py` | 早期終了判定（basket / thigh / shank − floor 接触） |
 | `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
 | `agent.py` | Squashed Gaussian A2C |
-| `train.py` | 学習ループ |
+| `train.py` | 学習ループ（CLI: 再開・LR・update 数） |
+| `checkpoint.py` | チェックポイント保存・読み込み |
+| `wandb_logging.py` | 任意 Weights & Biases ロギング |
+| `warmup.py` | エピソード開始時の固定ウォームアップ行動 |
 | `visualize.py` | チェックポイントを MuJoCo ビューアで実時間再生 |
 | `preview_warmup.py` | `WARMUP_ACTION_FN` をビューアで実時間プレビュー（方策不要） |
 | `debug.py` | ターミナル向けステップ表示 |
@@ -37,13 +40,77 @@
 
 外部依存: MuJoCo / PyTorch / `mujoco_sim_common`（ビューア表示のみ）。
 
-## 実行方法
+## 学習（train）
 
-`mujoco-sim` ディレクトリで:
+`mujoco-sim` ディレクトリで実行する。ハイパーパラメータの本体は `config.py`（`NUM_UPDATES`, `LR`, 報酬係数など）。
+
+### ゼロから学習
 
 ```bash
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
 ```
+
+- 1 回の実行ごとに `checkpoints/run_YYYYMMDD_HHMMSS/` が新規作成される
+- `CHECKPOINT_EVERY`（既定 1000）ごとに `update_XXXXXX.pt` を保存
+- 終了時に `final.pt`（`CHECKPOINT_SAVE_FINAL=True` のとき）
+
+### チェックポイントから再開（微調整）
+
+**新しい checkpoint ディレクトリ**と**新しい wandb run**を作る。update 番号・`total_env_steps`・`episodes_finished` は ckpt から継続する。
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train \
+  --resume mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/update_005000.pt \
+  --lr 1e-4 \
+  --num-updates 1500
+```
+
+上記の例: ckpt が `update=5000` なら、**5001 から 6500 まで** 1500 回更新し、新 run に `update_006500.pt` などが保存される。
+
+| オプション | 説明 |
+|-----------|------|
+| `--resume PATH` | 再開元 `.pt`。相対パスは **この実験フォルダ（exp_002）基準** |
+| `--lr FLOAT` | 学習率（`config.LR` の上書き）。指定時は **optimizer state は読み込まない**（新しい Adam） |
+| `--num-updates N` | **この run だけ**行う方策更新回数（省略時は `config.NUM_UPDATES`） |
+| `--load-optimizer` | `--resume` 時に optimizer も復元（`--lr` 指定時は無効） |
+| `--wandb-run-name NAME` | wandb run 名（省略時、再開時は `resume_u005000_lr1e-4` など自動） |
+
+**再開時の既定**: 重みのみ復元 + 新しい optimizer（`config.LR`）。以前の Adam の momentum を引き継ぐ場合は `--load-optimizer`（`--lr` なし）。
+
+**学習率（LR）**: `config.LR`（既定 `3e-4`）。Actor / Critic 共通の Adam 学習率。微調整では `1e-4` などに下げることが多い。
+
+**速度**: `config.ENABLE_VIEWER = False` にすると MuJoCo ビューアを使わず学習が速くなる（本番学習向け）。
+
+### wandb
+
+- `config.USE_WANDB = True` で有効（`pip install wandb`）
+- 無効化: `set WANDB_MODE=disabled`（Windows）または環境変数 `WANDB_MODE=disabled`
+- プロジェクト名: `config.WANDB_PROJECT`（`exp_002_2joint_a2c`）
+- 再開 run にはタグ `finetune`, `resume` と config に `resume_checkpoint`, `resume_base_update`, `end_update_target` などを記録
+- エピソード指標: `episode/return`, `episode/length`, `episode/forward_*`, `termination/rolling_rate_*` など
+
+### ウォームアップ（学習時）
+
+各エピソードの先頭 `WARMUP_DURATION_S`（既定 1.2 s ≒ 50 制御ステップ @ 50 Hz）は `WARMUP_ACTION_FN` の固定行動。方策の `store` には入れない（方針 B）。`config.WARMUP_ENABLED` で on/off。
+
+### 推奨ワークフロー（長時間学習後）
+
+1. wandb で `episode/return`・`episode/length`・`termination/rolling_rate_*` を確認し、ピーク付近の `update_XXXXXX.pt` を選ぶ  
+2. `visualize --checkpoint ... --stochastic` で挙動を確認（学習時は確率行動のため）  
+3. 微調整する場合は `--resume` + `--lr` + 短い `--num-updates` で **新 run** を開始  
+4. 悪化したらその run を止め、直前の良い ckpt に戻す（`final.pt` 一択にしない）
+
+### 主な `config.py` 定数（学習）
+
+| 定数 | 既定（目安） | 意味 |
+|------|-------------|------|
+| `NUM_UPDATES` | 10100 | 1 run の方策更新回数（`--num-updates` で CLI 上書き可） |
+| `ROLLOUT_STEPS` | 512 | 1 update あたりの on-policy ステップ数 |
+| `LR` | 3e-4 | Adam 学習率（`--lr` で上書き可） |
+| `ENTROPY_COEF` | 0.04 | 探索（エントロピー bonus） |
+| `FORWARD_REWARD_SCALE` | 80 | 前進報酬スケール |
+| `FORWARD_MIN_UPRIGHT` | 0.72 | 前進報酬を出す最低直立度 |
+| `CHECKPOINT_EVERY` | 1000 | 何 update ごとに numbered ckpt を保存するか |
 
 ## ウォームアップ行動のプレビュー
 
@@ -78,13 +145,17 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
   --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_YYYYMMDD_HHMMSS/final.pt
 ```
 
-チェックポイントは `checkpoints/run_YYYYMMDD_HHMMSS/` 以下に保存される。
+チェックポイントは `checkpoints/run_YYYYMMDD_HHMMSS/` 以下に保存される（**train のたびに新しい `run_*` ディレクトリ**）。
 
 | ファイル | 内容 |
 |---------|------|
-| `update_XXXXXX.pt` | 指定 update 時点の重み |
-| `latest.pt` | 直近保存分 |
-| `final.pt` | 学習終了時 |
+| `update_XXXXXX.pt` | その update 時点の actor / critic / optimizer とメタデータ |
+| `latest.pt` | 直近の定期保存（`CHECKPOINT_SAVE_LATEST`） |
+| `final.pt` | その run の学習終了時 |
+
+`.pt` の主なフィールド: `update`, `total_env_steps`, `episodes_finished`, `obs_dim`, `action_dim`, `actor`, `critic`, `optimizer`。
+
+**可視化の目安**: 長時間学習では `final.pt` より **`update_XXXXXX.pt` のピーク付近**（例: 5000）を `--stochastic` で確認するとよい。崩壊後の `final` は性能が落ちていることがある。
 
 ### オプション
 
@@ -110,16 +181,19 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
 # XML のみ（モデル確認用）
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
 
-# final.pt を再生
+# ピーク付近の ckpt（学習時の挙動確認: --stochastic 推奨）
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
-  --checkpoint checkpoints/run_20260520_160244/final.pt
+  --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/update_005000.pt \
+  --stochastic
 
 # 3 エピソードだけ、50 ステップごとにログ
 python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
-  --checkpoint checkpoints/run_20260520_160244/update_003000.pt \
+  --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/update_003000.pt \
   --episodes 3 \
   --print-every 50
 ```
+
+`--checkpoint` 省略時の相対パスも、カレントが `mujoco-sim` なら `mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/...` のように **実験ルートからのパス**を推奨する。
 
 ## モデル
 

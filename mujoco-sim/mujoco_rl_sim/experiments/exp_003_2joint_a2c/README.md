@@ -38,7 +38,7 @@
 | `model/main.xml` | 実験専用モデル |
 | `lib/` | 実験内ユーティリティ |
 
-チェックポイントは **`mujoco-sim/runs/<実験フォルダ名>/run_YYYYMMDD_HHMMSS/`** に保存（git 対象外）。
+チェックポイントは **`mujoco_rl_sim/runs/<実験フォルダ名>/run_YYYYMMDD_HHMMSS/`** に保存（git 対象外）。
 
 ## 学習（train）
 
@@ -52,14 +52,14 @@ python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train
 
 ```bash
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train \
-  --resume runs/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/update_005000.pt \
+  --resume run_YYYYMMDD_HHMMSS/update_005000.pt \
   --lr 1e-4 \
   --num-updates 1500
 ```
 
 | オプション | 説明 |
 |-----------|------|
-| `--resume PATH` | 相対パスは **`runs/<実験フォルダ名>/` 基準** |
+| `--resume PATH` | 相対パスは **`mujoco_rl_sim/runs/<実験フォルダ名>/` 基準**（例: `run_.../update_005000.pt`） |
 | `--lr` / `--num-updates` / `--load-optimizer` | exp_002 と同様 |
 
 wandb プロジェクト名は `config.WANDB_PROJECT`（= フォルダ名 `exp_003_2joint_a2c`）。
@@ -69,7 +69,7 @@ wandb プロジェクト名は `config.WANDB_PROJECT`（= フォルダ名 `exp_0
 ```bash
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize \
-  --checkpoint runs/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/final.pt --stochastic
+  --checkpoint run_YYYYMMDD_HHMMSS/final.pt --stochastic
 
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.preview_warmup
 ```

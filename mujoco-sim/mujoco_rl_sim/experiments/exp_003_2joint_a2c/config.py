@@ -140,7 +140,7 @@ ENABLE_VIEWER = True
 # ENABLE_VIEWER = False  # MuJoCo パッシブビューア（学習を遅くする）
 
 # --- チェックポイント（checkpoint.py / train.py）-----------------------------
-# 保存先: mujoco-sim/runs/<実験フォルダ名>/（実験パッケージ外・コピー時に混ざらない）
+# 保存先: mujoco_rl_sim/runs/<実験フォルダ名>/（実験パッケージ外・コピー時に混ざらない）
 SAVE_CHECKPOINTS = True
 CHECKPOINT_DIR = str(CHECKPOINT_ROOT)
 CHECKPOINT_EVERY = 1000  # この update 間隔で update_XXXXXX.pt を保存

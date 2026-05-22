@@ -12,7 +12,7 @@ from . import checkpoint
 from . import config
 from .agent import AgentA2C
 from .env import Env2JointA2C
-from .package_meta import EXP_NAME, PACKAGE
+from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
 from .warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
@@ -25,7 +25,8 @@ __doc__ = f"""MuJoCo モデルまたはチェックポイントをビューア�
 実行例（mujoco-sim ディレクトリから）:
 
   python -m {PACKAGE}.visualize
-  python -m {PACKAGE}.visualize --checkpoint runs/{EXP_NAME}/run_YYYYMMDD_HHMMSS/final.pt
+  python -m {PACKAGE}.visualize --checkpoint run_YYYYMMDD_HHMMSS/final.pt
+  # または mujoco-sim から: {CHECKPOINT_REL_FROM_MUJOCO_SIM}/run_.../final.pt
 """
 
 _EXP_DIR = Path(__file__).resolve().parent

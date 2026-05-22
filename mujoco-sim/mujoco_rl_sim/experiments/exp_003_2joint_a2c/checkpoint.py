@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 def resolve_checkpoint_path(path_str: str) -> Path:
   """チェックポイント .pt のパスを解決する。
 
-  相対パスは mujoco-sim/runs/<実験フォルダ名>/ 基準（config.CHECKPOINT_DIR と同じ）。
+  相対パスは config.CHECKPOINT_DIR（mujoco_rl_sim/runs/<実験名>/）基準。
+  例: run_YYYYMMDD_HHMMSS/update_005000.pt
   """
   path = Path(path_str).expanduser()
   if not path.is_absolute():

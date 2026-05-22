@@ -11,7 +11,7 @@ from . import config
 from . import wandb_logging
 from .agent import AgentA2C
 from .env import Env2JointA2C
-from .package_meta import CHECKPOINT_ROOT, EXP_NAME, PACKAGE
+from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, EXP_NAME, PACKAGE
 from .warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
@@ -28,7 +28,7 @@ __doc__ = f"""2 関節脚 A2C 学習ループ。
 チェックポイントから再開（新 run ディレクトリ・新 wandb run、学習率指定）:
 
   python -m {PACKAGE}.train \\
-    --resume runs/{EXP_NAME}/run_YYYYMMDD_HHMMSS/update_005000.pt \\
+    --resume run_YYYYMMDD_HHMMSS/update_005000.pt \\
     --lr 1e-4 \\
     --num-updates 1500
 
@@ -56,7 +56,10 @@ def _parse_args() -> TrainRunConfig:
     "--resume",
     type=str,
     default=None,
-    help=f"再開する .pt（相対パスは runs/{EXP_NAME}/ 基準）。新 checkpoint / wandb run を作成",
+    help=(
+      f"再開する .pt（相対パスは {CHECKPOINT_REL_FROM_MUJOCO_SIM}/ 基準、"
+      "例: run_YYYYMMDD_HHMMSS/update_005000.pt）"
+    ),
   )
   p.add_argument(
     "--lr",

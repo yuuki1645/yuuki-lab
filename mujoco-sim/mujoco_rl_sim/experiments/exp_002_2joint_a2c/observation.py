@@ -1,7 +1,7 @@
 """exp_002 の観測ベクトル組み立て。
 
 MuJoCo の site / sensor / joint から
-  - ObsExp002 … ポリシー入力（正規化・クリップ済み、20 次元）
+  - ObsExp002 … ポリシー入力（正規化・クリップ済み、19 次元）
   - StepPhysics … 報酬・ログ用の生物理量
 を同一タイミングで生成する。
 """
@@ -18,9 +18,12 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.obs_norm import clip_scale
 
 
 class ObsExp002(NamedTuple):
-  """正規化済み観測（おおよそ [-1, 1]）。フィールド順 = ポリシー入力順。"""
+  """正規化済み観測（おおよそ [-1, 1]）。フィールド順 = ポリシー入力順。
 
-  rel_imu_x: float  # エピソード開始 IMU X からの相対 [m]、clip_scale
+  累積前進 rel_imu_x は固定スポーンでは世界 X に近いためポリシー入力から除外。
+  前進は dx のみ。デバッグ用の rel_imu_x は StepPhysics に残す。
+  """
+
   dx: float  # 直前制御ステップからの IMU X 変位 [m]
   foot_on_floor: float  # 接地 1.0 / 非接地 -1.0
   imu_gyro_x: float
@@ -156,7 +159,6 @@ class Observation:
 
     # --- ポリシー観測（正規化）とログ用生値の組み立て -------------------------
     obs = ObsExp002(
-      clip_scale(rel_imu_x, config.MAX_REL_IMU_X),
       clip_scale(dx, config.MAX_DX_PER_STEP),
       1.0 if foot_on_floor else -1.0,
       clip_scale(imu_gyro_x, config.MAX_GYRO_RAD_S),

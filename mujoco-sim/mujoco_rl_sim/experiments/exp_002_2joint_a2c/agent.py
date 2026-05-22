@@ -269,6 +269,11 @@ class AgentExp002A2C:
     payload = checkpoint.load_checkpoint(path, map_location=map_location)
     obs_dim = int(payload["obs_dim"])
     action_dim = int(payload["action_dim"])
+    if obs_dim != config.OBS_DIM:
+      raise ValueError(
+        f"checkpoint obs_dim={obs_dim} does not match config.OBS_DIM={config.OBS_DIM} "
+        f"(e.g. rel_imu_x removed: retrain or use a matching checkpoint)"
+      )
     agent = cls(obs_dim=obs_dim, action_dim=action_dim)
     agent.actor.load_state_dict(payload["actor"])
     agent.critic.load_state_dict(payload["critic"])

@@ -88,7 +88,6 @@ def contact_link_termination_penalty(normal_force_n: float) -> float:
 
 # --- 観測正規化（observation.py）---------------------------------------------
 # clip_scale / height_to_norm のスケール。超えた値は ±1 にクリップ（おおよそ [-1, 1]）
-MAX_REL_IMU_X = 2.0  # エピソード開始からの IMU X 相対位置 [m]
 # 500 Hz 時 0.05 m/step × FRAME_SKIP（制御ステップは 10 倍長い）
 MAX_DX_PER_STEP = 0.05 * FRAME_SKIP  # 0.5 [m] @ 50 Hz
 MAX_GYRO_RAD_S = 10.0  # imu_gyro 各軸 [rad/s]
@@ -98,7 +97,7 @@ MAX_IMU_Z = 1.2  # imu_z / foot_z / com_z の正規化上限 [m]
 MIN_IMU_Z_NORM = 0.0  # 上記高さ正規化の下限 [m]
 
 # ポリシー入出力次元（ObsExp002 のフィールド数、膝+足首の連続行動）
-OBS_DIM = 20
+OBS_DIM = 19
 ACTION_DIM = 2
 
 # --- A2C（agent.py）----------------------------------------------------------

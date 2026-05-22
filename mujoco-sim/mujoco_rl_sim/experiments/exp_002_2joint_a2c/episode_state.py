@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class EpisodeState:
   """エピソードをまたいで保持する観測・報酬用の状態。"""
 
-  origin_imu_x: float = 0.0  # reset 時の IMU X。rel_imu_x の基準
+  origin_imu_x: float = 0.0  # reset 時の IMU X。StepPhysics.rel_imu_x（デバッグ）の基準
   prev_imu_x: float = 0.0  # 直前制御ステップの IMU X。dx = imu_x - prev
   prev_foot_x: float = 0.0  # 直前制御ステップの foot_site X。foot_dx = foot_x - prev
   prev_action: tuple[float, float] = (0.0, 0.0)  # 観測の prev_*_action 用

@@ -208,24 +208,27 @@ python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
 | 膝（+Y ヒンジ） | 後方屈曲（人間と同じ） |
 | 足首（+Y ヒンジ） | 底屈（地面を蹴る） |
 
-## 観測（20 次元、おおよそ [-1, 1]）
+## 観測（19 次元、おおよそ [-1, 1]）
+
+固定スポーンでは累積 `rel_imu_x` が世界 X の進行距離に近く、`dx` と冗長なため **ポリシー入力からは除外**（デバッグ表示用に `StepPhysics.rel_imu_x` は残す）。
 
 | # | 名前 | 内容 | 正規化 |
 |---|------|------|--------|
-| 0 | rel_imu_x | エピソード開始からの IMU X [m] | ÷ 2.0 |
-| 1 | dx | **50 Hz ステップ間**の IMU X 変位 [m] | ÷ 0.5 |
-| 2 | foot_on_floor | 足裏−床接触 | -1 / +1 |
-| 3–5 | imu_gyro | 角速度 [rad/s] | ÷ 10 |
-| 6–8 | imu_zaxis | 姿勢（単位ベクトル） | そのまま |
-| 9 | imu_z | IMU 高さ [m] | 0〜1.2 m → [-1,1] |
-| 10 | foot_z | 足先高さ [m] | 同上 |
-| 11 | foot_xaxis_z | `framexaxis` の z 成分 | そのまま |
-| 12 | knee | 膝 qpos [rad] | `jnt_range` → [-1,1] |
-| 13 | ankle | 足首 qpos [rad] | 同上 |
-| 14–15 | knee/ankle vel | 角速度 [rad/s] | ÷ 10 |
-| 16 | com_x | COM X − 趾 [m] | ÷ 0.6 |
-| 17 | com_z | COM 高さ [m] | 0〜1.2 m → [-1,1] |
-| 18–19 | prev_action | 直前指令 | [-1, 1] |
+| 0 | dx | **50 Hz ステップ間**の IMU X 変位 [m] | ÷ 0.5 |
+| 1 | foot_on_floor | 足裏−床接触 | -1 / +1 |
+| 2–4 | imu_gyro | 角速度 [rad/s] | ÷ 10 |
+| 5–7 | imu_zaxis | 姿勢（単位ベクトル） | そのまま |
+| 8 | imu_z | IMU 高さ [m] | 0〜1.2 m → [-1,1] |
+| 9 | foot_z | 足先高さ [m] | 同上 |
+| 10 | foot_xaxis_z | `framexaxis` の z 成分 | そのまま |
+| 11 | knee | 膝 qpos [rad] | `jnt_range` → [-1,1] |
+| 12 | ankle | 足首 qpos [rad] | 同上 |
+| 13–14 | knee/ankle vel | 角速度 [rad/s] | ÷ 10 |
+| 15 | com_x | COM X − 趾 [m] | ÷ 0.6 |
+| 16 | com_z | COM 高さ [m] | 0〜1.2 m → [-1,1] |
+| 17–18 | prev_action | 直前指令 | [-1, 1] |
+
+**注意**: `obs_dim=20` の旧チェックポイントはそのまま読み込めない。再学習または `obs_dim=19` で新規学習する。
 
 ## 報酬
 

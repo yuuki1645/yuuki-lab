@@ -5,7 +5,7 @@
   # 実験 XML のみ（方策なし、ctrl 無操作）
   python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
 
-  # チェックポイントで方策を再生
+  # チェックポイントで方策を再生（config.WARMUP_ENABLED 時は train と同様に warmup 後に方策）
   python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \\
     --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/final.pt
 
@@ -26,6 +26,12 @@ from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
 from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
+from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import (
+  WarmupContext,
+  episode_sim_elapsed_s,
+  in_episode_warmup,
+  resolve_warmup_action,
+)
 
 _EXP_DIR = Path(__file__).resolve().parent
 ActionFn = Callable[[Any], tuple[float, float]]
@@ -86,6 +92,15 @@ def _print_checkpoint_info(path: Path, payload: dict) -> None:
   )
 
 
+def _print_warmup_config() -> None:
+  steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S)
+  print(
+    f"[visualize] warmup: {config.WARMUP_DURATION_S:.3f}s sim-time "
+    f"({steps} steps @ {config.CONTROL_HZ} Hz), "
+    f"action_fn={config.WARMUP_ACTION_FN.__name__}"
+  )
+
+
 def _make_action_fn(args: argparse.Namespace) -> ActionFn | None:
   if args.checkpoint is None:
     print("[visualize] mode: xml only (no policy, ctrl untouched)")
@@ -142,8 +157,67 @@ def _run_episodes(
   episode_step = 0
   episode_index = 0
   episode_return = 0.0
+  total_env_steps = 0
+  use_warmup = config.WARMUP_ENABLED
+  warmup_announced = False
 
   while env.viewer.is_running():
+    if use_warmup and in_episode_warmup(episode_step):
+      elapsed_s = episode_sim_elapsed_s(episode_step)
+      action = resolve_warmup_action(
+        config.WARMUP_ACTION_FN,
+        WarmupContext(
+          obs=obs,
+          elapsed_s=elapsed_s,
+          total_env_steps=total_env_steps,
+          episode_step=episode_step,
+          episode_index=episode_index,
+        ),
+      )
+      obs, reward, terminated, step_info = env.step(
+        action,
+        visualize=True,
+        episode_step=episode_step,
+      )
+      episode_step += 1
+      total_env_steps += 1
+      episode_return += float(reward)
+
+      if print_every > 0 and episode_step % print_every == 0:
+        print(
+          f"[visualize] ep={episode_index + 1} step={episode_step} phase=warmup "
+          f"elapsed_s={elapsed_s:.3f} action=({action[0]:+.3f}, {action[1]:+.3f}) "
+          f"reward={reward:8.4f} return={episode_return:8.3f} "
+          f"upright={step_info['upright']:.3f}"
+        )
+
+      truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+      done = terminated or truncated
+      if not done:
+        continue
+
+      print(
+        f"[visualize] episode {episode_index + 1} end (during warmup) | "
+        f"return={episode_return:.3f} | steps={episode_step} | "
+        f"terminated={terminated} | truncated={truncated} | "
+        f"reason={step_info['termination_reason']!r}"
+      )
+      episode_index += 1
+      if max_episodes > 0 and episode_index >= max_episodes:
+        break
+      obs = env.reset()
+      episode_step = 0
+      episode_return = 0.0
+      warmup_announced = False
+      continue
+
+    if use_warmup and not warmup_announced and episode_step > 0:
+      print(
+        f"[visualize] ep={episode_index + 1} warmup done at step={episode_step}, "
+        "policy phase"
+      )
+      warmup_announced = True
+
     action = action_fn(obs)
     obs, reward, terminated, step_info = env.step(
       action,
@@ -152,11 +226,12 @@ def _run_episodes(
     )
 
     episode_step += 1
+    total_env_steps += 1
     episode_return += float(reward)
 
     if print_every > 0 and episode_step % print_every == 0:
       print(
-        f"[visualize] ep={episode_index + 1} step={episode_step} "
+        f"[visualize] ep={episode_index + 1} step={episode_step} phase=policy "
         f"reward={reward:8.4f} return={episode_return:8.3f} "
         f"upright={step_info['upright']:.3f} "
         f"reason={step_info['termination_reason']!r}"
@@ -180,6 +255,7 @@ def _run_episodes(
     obs = env.reset()
     episode_step = 0
     episode_return = 0.0
+    warmup_announced = False
 
   return episode_index
 
@@ -201,6 +277,11 @@ def main() -> None:
     _run_physics_only(env, print_every=args.print_every)
     print("[visualize] finished")
     return
+
+  if config.WARMUP_ENABLED:
+    _print_warmup_config()
+  else:
+    print("[visualize] warmup: disabled (config.WARMUP_ENABLED=False)")
 
   episode_index = _run_episodes(
     env,

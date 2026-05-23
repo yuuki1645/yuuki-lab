@@ -1,4 +1,4 @@
-"""exp_003 用の任意 Weights & Biases ロギング。"""
+"""exp_004 用の任意 Weights & Biases ロギング。"""
 
 from __future__ import annotations
 
@@ -8,9 +8,12 @@ from typing import Any
 
 from . import config
 from .termination import (
+  REASON_BACKWARD_LEAN,
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,
   REASON_CONTACT_THIGH,
+  REASON_IMU_Z,
+  REASON_LOW_UPRIGHT,
   TERMINATION_REASONS,
 )
 
@@ -30,6 +33,11 @@ class EpisodeMetricsCollector:
     self._forward_imu = 0.0
     self._forward_foot = 0.0
     self._effort_penalty = 0.0
+    self._shaping = 0.0
+    self._upright_bonus = 0.0
+    self._knee_flex_bonus = 0.0
+    self._backward_lean_penalty = 0.0
+    self._height_penalty = 0.0
     self._upright_sum = 0.0
     self._foot_contact_steps = 0
 
@@ -41,6 +49,11 @@ class EpisodeMetricsCollector:
     self._forward_imu += step_info.get("reward_forward_imu", 0.0)
     self._forward_foot += step_info.get("reward_forward_foot", 0.0)
     self._effort_penalty += step_info["reward_effort_penalty"]
+    self._shaping += step_info.get("reward_shaping", 0.0)
+    self._upright_bonus += step_info.get("reward_upright", 0.0)
+    self._knee_flex_bonus += step_info.get("reward_knee_flex", 0.0)
+    self._backward_lean_penalty += step_info.get("reward_backward_lean_penalty", 0.0)
+    self._height_penalty += step_info.get("reward_height_penalty", 0.0)
     self._upright_sum += step_info["upright"]
     self._foot_contact_steps += int(step_info["foot_on_floor"] > 0.5)
 
@@ -73,6 +86,23 @@ class EpisodeMetricsCollector:
       "episode/forward_imu_reward_sum": self._forward_imu,
       "episode/forward_foot_reward_sum": self._forward_foot,
       "episode/effort_penalty_sum": self._effort_penalty,
+      "episode/shaping_sum": self._shaping,
+      "episode/upright_bonus_sum": self._upright_bonus,
+      "episode/knee_flex_bonus_sum": self._knee_flex_bonus,
+      "episode/backward_lean_penalty_sum": self._backward_lean_penalty,
+      "episode/height_penalty_sum": self._height_penalty,
+      "episode/pose_penalty": float(step_info.get("reward_pose_penalty", 0.0)),
+      "episode/pose_terminated": float(
+        termination_reason
+        in (REASON_IMU_Z, REASON_LOW_UPRIGHT, REASON_BACKWARD_LEAN)
+      ),
+      "episode/terminate_imu_z": float(termination_reason == REASON_IMU_Z),
+      "episode/terminate_low_upright": float(
+        termination_reason == REASON_LOW_UPRIGHT
+      ),
+      "episode/terminate_backward_lean": float(
+        termination_reason == REASON_BACKWARD_LEAN
+      ),
       "episode/contact_basket_penalty": float(
         step_info["reward_contact_basket_penalty"]
       ),

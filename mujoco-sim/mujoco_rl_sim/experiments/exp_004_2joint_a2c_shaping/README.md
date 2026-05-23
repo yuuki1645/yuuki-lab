@@ -1,88 +1,34 @@
-# exp_003: 2 関節脚 A2C
+# exp_004: 2 関節脚 A2C + reward shaping
 
-`exp_002_2joint_a2c` と同機能（制御 50 Hz・報酬・A2C）。実験フォルダの **コピー＋リネーム** で次実験を作りやすい構成。
+`exp_003_2joint_a2c` をベースに、`exp_001_2joint_a2c` の **reward shaping** と **姿勢ベース早期終了** を追加した実験。
 
-## 新しい実験を作る（コピー手順）
+## exp_003 との主な差分
 
-1. `exp_003_2joint_a2c` フォルダを丸ごとコピーし、`exp_004_...` など **Python モジュール名として有効な名前** にリネームする。
-2. **`runs/` はコピーしない**（チェックポイントは実験フォルダ外）。
-3. **`package_meta.py` は編集不要**（フォルダ名から wandb プロジェクト・チェックポイント保存先・モジュールパスを自動決定）。
-4. 仮説に応じて `config.py` / `reward.py` / `observation.py` などを編集する。
-5. `README.md` の先頭タイトルと仮説メモだけ更新する。
+| 項目 | exp_003 | exp_004 |
+|------|---------|---------|
+| 毎ステップ shaping | なし | 直立・膝・後傾・低姿勢 |
+| 前進 `FORWARD_MIN_UPRIGHT` | 0.72 | **0.65**（到達可能域に緩和） |
+| 早期終了 | 接触のみ | **姿勢 + 接触** |
+| 膝ボーナス | — | 直立度ゲート付き（倒れハック抑制） |
 
-コード内の import はすべて **相対 import**（`from . import config`）。クラス名に実験連番は入れない（`AgentA2C`, `Env2JointA2C`, `PolicyObs`）。
-
-## 制御レート（exp_001 との差分）
-
-| 項目 | exp_001 | exp_003（= exp_002 系） |
-|------|---------|-------------------------|
-| 物理 (`mj_step`) | 500 Hz | 同左 |
-| ポリシー（`env.step`） | 500 Hz | **50 Hz**（`FRAME_SKIP=10`） |
-| `MAX_DX_PER_STEP` | 0.05 m | **0.5 m** |
-| `GAMMA` | 0.99 | **≈ 0.904**（`0.99^10`） |
-| `MAX_STEPS_PER_EPISODE` | 3000 | **300** |
-
-設計メモ: [docs/control_timing_human_rl.md](../../../../docs/control_timing_human_rl.md)
-
-## ファイル構成
-
-| ファイル | 役割 |
-|---------|------|
-| `package_meta.py` | フォルダ名から導出するパス・モジュール名（コピー時は触らない） |
-| `config.py` | 報酬・観測・A2C・学習の定数（`WANDB_PROJECT` = フォルダ名） |
-| `env.py` | MuJoCo 環境（`Env2JointA2C`） |
-| `observation.py` | `PolicyObs` の組み立て |
-| `reward.py` / `termination.py` / `effort.py` | MDP |
-| `agent.py` | Squashed Gaussian A2C（`AgentA2C`） |
-| `train.py` / `checkpoint.py` / `wandb_logging.py` | 学習・保存・ログ |
-| `warmup.py` / `preview_warmup.py` | エピソード開始ウォームアップ行動とプレビュー |
-| `visualize.py` / `debug.py` | チェックポイント再生・ターミナル表示 |
-| `model/main.xml` | 実験専用モデル |
-| `lib/` | 実験内ユーティリティ（行動マッピング・観測正規化など） |
-
-チェックポイントは **`mujoco_rl_sim/runs/<実験フォルダ名>/run_YYYYMMDD_HHMMSS/`** に保存（git 対象外）。`--resume` の相対パスもこのルート基準。
-
-## 学習（train）
+## 学習
 
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train
+python -m mujoco_rl_sim.experiments.exp_004_2joint_a2c_shaping.train
 ```
 
-再開例:
+チェックポイント: `mujoco_rl_sim/runs/exp_004_2joint_a2c_shaping/run_YYYYMMDD_HHMMSS/`
 
-```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train \
-  --resume run_YYYYMMDD_HHMMSS/update_005000.pt \
-  --lr 1e-4 \
-  --num-updates 1500
-```
+## wandb で見る指標（shaping）
 
-| オプション | 説明 |
-|-----------|------|
-| `--resume PATH` | 相対パスは **`mujoco_rl_sim/runs/<実験フォルダ名>/` 基準**（例: `run_.../update_005000.pt`） |
-| `--lr` / `--num-updates` / `--load-optimizer` | exp_002 と同様 |
+- `episode/shaping_sum`
+- `episode/upright_bonus_sum`
+- `episode/backward_lean_penalty_sum` / `episode/height_penalty_sum`
+- `termination/rate_imu_z` など姿勢終了率
 
-wandb プロジェクト名は `config.WANDB_PROJECT`（= フォルダ名 `exp_003_2joint_a2c`）。
+## 関連
 
-## 可視化・ウォームアッププレビュー
-
-```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize
-# visualize の --checkpoint 相対パスは実験フォルダ基準（ckpt は runs/ 配下）
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize \
-  --checkpoint ../runs/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/final.pt --stochastic
-
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.preview_warmup
-```
-
-`train --resume` の相対パスは **`mujoco_rl_sim/runs/<実験名>/` 基準**（`run_.../update_....pt`）。`visualize --checkpoint` は **`checkpoint.resolve_checkpoint_path` を使わず**実験フォルダ基準で解決するため、上記の `../runs/...` 形式か絶対パスを使う。
-
-## 報酬・終了・観測
-
-exp_002 と同じ設計（前進報酬の直立条件、接触終了ペナルティ、`PolicyObs` 19 次元）。筋負荷ペナルティは **既定 `APPLY_EFFORT_PENALTY = False`（計測のみ）**。詳細は [exp_002 の README](../exp_002_2joint_a2c/README.md) または各 `*.py` の docstring を参照。
-
-## 関連ドキュメント
-
-- [docs/control_timing_human_rl.md](../../../../docs/control_timing_human_rl.md)
+- [exp_003 README](../exp_003_2joint_a2c/README.md)
+- [exp_001 reward.py](../exp_001_2joint_a2c/reward.py)（shaping の参照元）

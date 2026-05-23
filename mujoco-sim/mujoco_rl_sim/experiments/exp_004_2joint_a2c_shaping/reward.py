@@ -1,21 +1,11 @@
-"""exp_003 のステップ報酬。
-
-設計の狙い
----------
-2 関節脚で「前に進む」ことを学習させるが、単純に IMU のワールド +X 変位 (dx) だけを
-与えると、体を前に倒して IMU が進むだけでも高報酬になる（前倒れハック）。
-そのため次を組み合わせる。
-
-  1. 前進報酬 … 直立かつ足接地など条件を満たすときだけ dx / foot_dx を加点
-  2. 筋負荷ペナルティ … |τ·q̇| を正規化して積分（effort.py / env の mj_step ループ）
-     config.APPLY_EFFORT_PENALTY=False のときは報酬に反映しない（計測のみ）
-  3. 終了ペナルティ … env.py で termination.done_reason の penalty を一度だけ加算
+"""exp_004 のステップ報酬（exp_003 前進 + exp_001 shaping）。
 
 1 ステップの合計（env 適用前）::
 
-  total = forward - effort_penalty
+  total = forward - effort_penalty + upright + knee_flex
+          - backward_lean_penalty - height_penalty
 
-係数は config.py。終了判定は termination.py。
+終了ペナルティ（姿勢・接触）は termination.py → env.py で加算。
 """
 
 from dataclasses import dataclass
@@ -27,10 +17,14 @@ from .observation import StepPhysics
 
 @dataclass(frozen=True)
 class RewardBreakdown:
-  """1 ステップ分の報酬の内訳。wandb の episode/forward_reward_sum などの元になる。"""
+  """1 ステップ分の報酬の内訳。"""
 
   forward_imu: float
   forward_foot: float
+  upright_bonus: float
+  knee_flex_bonus: float
+  backward_lean_penalty: float
+  height_penalty: float
   effort_penalty: float
   effort_power_cost: float
 
@@ -39,8 +33,18 @@ class RewardBreakdown:
     return self.forward_imu + self.forward_foot
 
   @property
+  def shaping(self) -> float:
+    """前進以外の shaping 合計（wandb 用）。"""
+    return (
+      self.upright_bonus
+      + self.knee_flex_bonus
+      - self.backward_lean_penalty
+      - self.height_penalty
+    )
+
+  @property
   def total(self) -> float:
-    return self.forward - self.effort_penalty
+    return self.forward + self.shaping - self.effort_penalty
 
 
 class Reward:
@@ -53,7 +57,6 @@ class Reward:
     upright: float,
     foot_on_floor: bool,
   ) -> float:
-    """条件付き前進報酬の 1 成分（imu dx または foot_site dx）。"""
     dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, float(dx)))
     if upright < config.FORWARD_MIN_UPRIGHT:
       return 0.0
@@ -61,25 +64,40 @@ class Reward:
       return 0.0
     return max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE
 
+  @staticmethod
+  def _upright_bonus(upright: float) -> float:
+    return (
+      max(0.0, float(upright) - config.UPRIGHT_BONUS_THRESH)
+      * config.UPRIGHT_BONUS_SCALE
+    )
+
+  @staticmethod
+  def _knee_flex_bonus(knee_angle: float, *, upright: float) -> float:
+    if upright < config.KNEE_FLEX_MIN_UPRIGHT:
+      return 0.0
+    if config.KNEE_HUMAN_FLEX_MIN_RAD <= knee_angle <= config.KNEE_HUMAN_FLEX_MAX_RAD:
+      return config.KNEE_HUMAN_FLEX_BONUS_SCALE
+    return 0.0
+
+  @staticmethod
+  def _backward_lean_penalty(imu_zaxis_x: float) -> float:
+    excess = max(0.0, -float(imu_zaxis_x) - config.LEAN_BACKWARD_THRESH)
+    return excess * config.LEAN_BACKWARD_PENALTY_SCALE
+
+  @staticmethod
+  def _height_penalty(imu_z: float) -> float:
+    deficit = max(0.0, config.TARGET_IMU_Z - float(imu_z))
+    return deficit * config.IMU_HEIGHT_PENALTY_SCALE
+
   def compute(
     self,
     step_physics: StepPhysics,
     *,
     effort: EffortBreakdown,
   ) -> RewardBreakdown:
-    """1 環境ステップ分の報酬内訳を返す。
-
-    step_physics
-        observation.build が返す当ステップの物理量（正規化前）。
-        dx / foot_dx / upright / foot_on_floor を参照する。
-    effort
-        EffortTracker が FRAME_SKIP 物理ステップで積算した負荷。
-    """
     upright = step_physics.upright
     foot_on_floor = step_physics.foot_on_floor
 
-    # --- 前進報酬（条件付き）--------------------------------------------------
-    # imu_site の dx と foot_site の foot_dx を同条件・同スケールで加点し合計する。
     forward_imu = self._forward_component(
       step_physics.dx, upright=upright, foot_on_floor=foot_on_floor
     )
@@ -87,12 +105,17 @@ class Reward:
       step_physics.foot_dx, upright=upright, foot_on_floor=foot_on_floor
     )
 
-    # effort.penalty は常に計算されるが、フラグで学習への反映を切り替え可能
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
 
     return RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
+      upright_bonus=self._upright_bonus(upright),
+      knee_flex_bonus=self._knee_flex_bonus(
+        step_physics.knee_angle, upright=upright
+      ),
+      backward_lean_penalty=self._backward_lean_penalty(step_physics.imu_zaxis_x),
+      height_penalty=self._height_penalty(step_physics.imu_z),
       effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
     )

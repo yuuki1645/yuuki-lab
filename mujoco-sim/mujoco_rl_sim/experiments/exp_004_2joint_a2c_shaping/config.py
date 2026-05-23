@@ -1,9 +1,7 @@
-"""exp_003: 2 関節脚 A2C のハイパーパラメータ。
+"""exp_004: 2 関節脚 A2C + exp_001 型 reward shaping（50 Hz 制御）。
 
 報酬・終了・観測の実装は reward.py / termination.py / observation.py。
-学習ループは train.py、方策は agent.py（連続 2 次元 → 膝・足首サーボ）。
-
-制御: 物理 500 Hz（MuJoCo 既定 timestep=0.002）、ポリシー 50 Hz（FRAME_SKIP=10）。
+ベースは exp_003（foot_dx・接触終了）。shaping・姿勢終了は exp_001 を参考に追加。
 """
 
 from pathlib import Path
@@ -15,43 +13,53 @@ _EXP_DIR = EXP_DIR
 XML_RELATIVE = "model/main.xml"
 XML_PATH = str(_EXP_DIR / XML_RELATIVE)
 
-# 物理は XML 既定のまま（opt.timestep=0.002 s → 500 Hz）
 PHYSICS_TIMESTEP_S = 0.002
 CONTROL_HZ = 50
 FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))  # 10
 CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP  # 0.02 s
 
-# --- 報酬（reward.py）---------------------------------------------------------
-# 前進方向: ワールド +X。前進報酬は条件を満たすときだけ加点。
-#   imu_site … dx（観測・従来どおり）
-#   foot_site … foot_dx（報酬のみ。同 SCALE・同条件）
-
-# 1 制御ステップ報酬 = max(0, dx_clipped) * SCALE（imu + foot の合計）
+# --- 本丸: 前進報酬（reward.py）-----------------------------------------------
 FORWARD_REWARD_SCALE = 80.0
-# 前進報酬を出す最低直立度（imu_zaxis_z）。低いと「倒れながらの前進」を抑止
-FORWARD_MIN_UPRIGHT = 0.72
-# True なら足裏−床接触時のみ前進報酬（接地していない滑り・跳ねを無報酬に）
+# exp_001 は 0.72。exp_003 では mean_upright≈0.3 で前進がほぼ出なかったため 0.65 に緩和
+FORWARD_MIN_UPRIGHT = 0.65
 FORWARD_REQUIRE_FOOT_CONTACT = False
 
-# 筋負荷ペナルティ = EFFORT_PENALTY_SCALE * Σ_physics Σ_act |τ·q̇|·dt / τ_max
-# τ_max は main.xml の forcerange から（膝 168、足首 98 N·m）
+# --- shaping: 直立ボーナス（exp_001）------------------------------------------
+# max(0, upright - THRESH) * SCALE。前進ゲートより緩く毎ステップで立ち方を誘導
+UPRIGHT_BONUS_SCALE = 2.0
+UPRIGHT_BONUS_THRESH = 0.55
+
+# --- shaping: 後傾・低姿勢ペナルティ（exp_001）--------------------------------
+LEAN_BACKWARD_PENALTY_SCALE = 3.0
+LEAN_BACKWARD_THRESH = 0.12
+IMU_HEIGHT_PENALTY_SCALE = 2.0
+TARGET_IMU_Z = 0.55
+
+# --- shaping: 膝屈曲ボーナス（exp_001 + 修正）----------------------------------
+# exp_001 は無条件定数ボーナス → 倒れた姿勢でも曲げれば得点。直立ゲートを追加
+KNEE_HUMAN_FLEX_MIN_RAD = 0.02
+KNEE_HUMAN_FLEX_MAX_RAD = 1.2
+KNEE_HUMAN_FLEX_BONUS_SCALE = 0.15
+KNEE_FLEX_MIN_UPRIGHT = 0.55  # これ未満では膝ボーナスなし
+
+# --- 筋負荷（exp_003、既定オフ）-----------------------------------------------
 EFFORT_PENALTY_SCALE = 5.0
-# False のとき報酬・学習に effort_penalty を反映しない（effort.py の計測は継続）
 APPLY_EFFORT_PENALTY = False
 
-# --- 早期終了（termination.py）-----------------------------------------------
-# geom−floor 接触: 線形ペナルティ [N ベース]。env.py が終了ステップに一度だけ加算
-# penalty = scale * (base + per_n * clamp(force_n - min_force_n, 0, cap_n - min_force_n))
-# その後 max(penalty, scale * penalty_min) で下限（より負側）を cap
+# --- 姿勢ベース早期終了（exp_001）---------------------------------------------
+MIN_IMU_Z = 0.42
+MIN_IMU_UPRIGHT = 0.55
+MAX_BACKWARD_LEAN = 0.40
+POSE_TERMINATION_PENALTY = -30.0
+
+# --- 接触ベース早期終了（exp_003）---------------------------------------------
 CONTACT_FLOOR_PENALTY_BASE = -20.0
-CONTACT_FLOOR_PENALTY_PER_N = -0.016  # 5000 N 超過分で約 -80 → 合計約 -100
-CONTACT_FLOOR_MIN_FORCE_N = 0.0  # この値までは base のみ
-CONTACT_FLOOR_FORCE_CAP_N = 10_000.0  # ペナルティ計算に使う力の上限
-CONTACT_FLOOR_PENALTY_MIN = -200.0  # これより大きな減点にはしない（例: -200）
-# thigh_link / shank_link は basket と同式で CONTACT_LINK_PENALTY_SCALE 倍
+CONTACT_FLOOR_PENALTY_PER_N = -0.016
+CONTACT_FLOOR_MIN_FORCE_N = 0.0
+CONTACT_FLOOR_FORCE_CAP_N = 10_000.0
+CONTACT_FLOOR_PENALTY_MIN = -200.0
 CONTACT_LINK_PENALTY_SCALE = 0.5
 
-# wandb 互換の別名（basket 用パラメータ名）
 CONTACT_BASKET_PENALTY_BASE = CONTACT_FLOOR_PENALTY_BASE
 CONTACT_BASKET_PENALTY_PER_N = CONTACT_FLOOR_PENALTY_PER_N
 CONTACT_BASKET_MIN_FORCE_N = CONTACT_FLOOR_MIN_FORCE_N
@@ -78,91 +86,68 @@ def contact_floor_termination_penalty(
 
 
 def contact_basket_termination_penalty(normal_force_n: float) -> float:
-  """basket−floor 接触の終了ペナルティ（フルスケール）。"""
   return contact_floor_termination_penalty(normal_force_n, penalty_scale=1.0)
 
 
 def contact_link_termination_penalty(normal_force_n: float) -> float:
-  """thigh_link / shank_link−floor 接触の終了ペナルティ（basket の半分）。"""
   return contact_floor_termination_penalty(
     normal_force_n, penalty_scale=CONTACT_LINK_PENALTY_SCALE
   )
 
 # --- 観測正規化（observation.py）---------------------------------------------
-# clip_scale / height_to_norm のスケール。超えた値は ±1 にクリップ（おおよそ [-1, 1]）
-# 500 Hz 時 0.05 m/step × FRAME_SKIP（制御ステップは 10 倍長い）
 MAX_DX_PER_STEP = 0.05 * FRAME_SKIP  # 0.5 [m] @ 50 Hz
-MAX_GYRO_RAD_S = 10.0  # imu_gyro 各軸 [rad/s]
-MAX_JOINT_VEL_RAD_S = 10.0  # 膝・足首 qvel [rad/s]
-MAX_COM_X_OFFSET = 0.6  # COM X − 趾 X [m]（前後の体重偏り）
-MAX_IMU_Z = 1.2  # imu_z / foot_z / com_z の正規化上限 [m]
-MIN_IMU_Z_NORM = 0.0  # 上記高さ正規化の下限 [m]
+MAX_GYRO_RAD_S = 10.0
+MAX_JOINT_VEL_RAD_S = 10.0
+MAX_COM_X_OFFSET = 0.6
+MAX_IMU_Z = 1.2
+MIN_IMU_Z_NORM = 0.0
 
-# ポリシー入出力次元（PolicyObs のフィールド数、膝+足首の連続行動）
 OBS_DIM = 19
 ACTION_DIM = 2
 
 # --- A2C（agent.py）----------------------------------------------------------
-# 実時間の割引を exp_001（500 Hz, γ=0.99）に合わせる: 0.99^FRAME_SKIP
-GAMMA = 0.99**FRAME_SKIP  # ≈ 0.904
-LR = 3e-4  # Actor / Critic 共通 Adam 学習率
-ROLLOUT_STEPS = 512  # 1 回の update 前に集める方策ステップ数（on-policy）
-VALUE_COEF = 0.5  # 総損失における value_loss の係数
-ENTROPY_COEF = 0.04  # 探索維持（大きいほどランダム寄り）
-MAX_GRAD_NORM = 0.5  # 勾配ノルムクリップ（爆発抑制）
-MINIBATCH_SIZE = 256  # ロールアウト内のミニバッチ（末尾は端数）
-STD_MIN = 0.08  # 方策ガウス分布の下限標準偏差（探索の下限）
+GAMMA = 0.99**FRAME_SKIP
+LR = 3e-4
+ROLLOUT_STEPS = 512
+VALUE_COEF = 0.5
+ENTROPY_COEF = 0.04
+MAX_GRAD_NORM = 0.5
+MINIBATCH_SIZE = 256
+STD_MIN = 0.08
 
-# 学習安定化（agent.update 内）
-REWARD_CLIP = 20.0  # TD 用報酬のクリップ幅（スパイク抑制）
-ADV_CLIP = 10.0  # 正規化後 advantage のクリップ
-ADV_STD_MIN = 0.1  # advantage 標準化の分母下限（全ステップ同値時の除算回避）
-ACTION_LOG_PROB_EPS = 1e-6  # tanh 行動を ±1 内側に寄せて log_prob を計算
-LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
+REWARD_CLIP = 20.0
+ADV_CLIP = 10.0
+ADV_STD_MIN = 0.1
+ACTION_LOG_PROB_EPS = 1e-6
+LOG_PROB_CLIP = 20.0
 
-# --- 学習ウォームアップ（train.py / warmup.py）----------------------------------
-# 各エピソード開始からシミュレーション時間 WARMUP_DURATION_S のあいだ、方策の代わりに WARMUP_ACTION_FN。
-# 判定は 50 Hz 制御ステップ（CONTROL_TIMESTEP_S）基準。1.0 s ≒ 50 ステップ。
-# 方針 B: warmup 中は env.step のみ（agent.store しない）。update ごとに ROLLOUT_STEPS 分の方策データを集める。
 from .warmup import default_warmup_action
 
 WARMUP_ENABLED = True
-WARMUP_DURATION_S = 1.2  # シミュレーション内の秒（壁時計ではない）
-WARMUP_ACTION_FN = default_warmup_action  # (WarmupContext) -> (knee, ankle) in [-1, 1]
+WARMUP_DURATION_S = 1.2
+WARMUP_ACTION_FN = default_warmup_action
 
-# --- 学習ループ（train.py）---------------------------------------------------
-# NUM_UPDATES = 100_000  # 方策更新回数（総環境ステップ ≳ NUM_UPDATES * ROLLOUT_STEPS、warmup 分が上乗せ）
-NUM_UPDATES = 10_100  # 方策更新回数（総環境ステップ ≳ NUM_UPDATES * ROLLOUT_STEPS、warmup 分が上乗せ）
-# exp_001 の 3000 step @ 500 Hz と同じ実時間（約 6 s）
-MAX_STEPS_PER_EPISODE = 3000 // FRAME_SKIP  # 300 @ 50 Hz
-LOG_EVERY = 20  # コンソール / wandb に train/* を出す更新間隔
+NUM_UPDATES = 10_100
+MAX_STEPS_PER_EPISODE = 3000 // FRAME_SKIP
+LOG_EVERY = 20
 ENABLE_VIEWER = True
-# ENABLE_VIEWER = False  # MuJoCo パッシブビューア（学習を遅くする）
 
-# --- チェックポイント（checkpoint.py / train.py）-----------------------------
-# 保存先: mujoco_rl_sim/runs/<実験フォルダ名>/（実験パッケージ外・コピー時に混ざらない）
 SAVE_CHECKPOINTS = True
 CHECKPOINT_DIR = str(CHECKPOINT_ROOT)
-CHECKPOINT_EVERY = 1000  # この update 間隔で update_XXXXXX.pt を保存
-CHECKPOINT_SAVE_LATEST = True  # 保存のたびに latest.pt を上書き
-CHECKPOINT_SAVE_FINAL = True  # 学習終了時に final.pt を保存
+CHECKPOINT_EVERY = 1000
+CHECKPOINT_SAVE_LATEST = True
+CHECKPOINT_SAVE_FINAL = True
 
-# --- wandb（wandb_logging.py）-----------------------------------------------
-# pip install wandb / WANDB_MODE=disabled でオフ
 USE_WANDB = True
 WANDB_PROJECT = EXP_NAME
-WANDB_RUN_NAME = ""  # 空なら wandb が自動命名
-WANDB_ENTITY = ""  # 空ならログインアカウントのデフォルト
-WANDB_TAGS = ("a2c", "2joint")
-# termination/rolling_rate_* の直近エピソード数
+WANDB_RUN_NAME = ""
+WANDB_ENTITY = ""
+WANDB_TAGS = ("a2c", "2joint", "shaping")
 WANDB_TERMINATION_ROLLING_WINDOW = 100
 
 
 def training_config_dict() -> dict:
-  """wandb.init(config=...) 用のハイパーパラメータ辞書。
-
-  キーはスネークケース。実験再現時はこの dict と config 定数を照合する。
-  """
+  """wandb.init(config=...) 用のハイパーパラメータ辞書。"""
   return {
     "exp_name": EXP_NAME,
     "xml_path": XML_PATH,
@@ -173,6 +158,20 @@ def training_config_dict() -> dict:
     "forward_reward_scale": FORWARD_REWARD_SCALE,
     "forward_min_upright": FORWARD_MIN_UPRIGHT,
     "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,
+    "upright_bonus_scale": UPRIGHT_BONUS_SCALE,
+    "upright_bonus_thresh": UPRIGHT_BONUS_THRESH,
+    "lean_backward_penalty_scale": LEAN_BACKWARD_PENALTY_SCALE,
+    "lean_backward_thresh": LEAN_BACKWARD_THRESH,
+    "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
+    "target_imu_z": TARGET_IMU_Z,
+    "knee_human_flex_min_rad": KNEE_HUMAN_FLEX_MIN_RAD,
+    "knee_human_flex_max_rad": KNEE_HUMAN_FLEX_MAX_RAD,
+    "knee_human_flex_bonus_scale": KNEE_HUMAN_FLEX_BONUS_SCALE,
+    "knee_flex_min_upright": KNEE_FLEX_MIN_UPRIGHT,
+    "pose_termination_penalty": POSE_TERMINATION_PENALTY,
+    "min_imu_z": MIN_IMU_Z,
+    "min_imu_upright": MIN_IMU_UPRIGHT,
+    "max_backward_lean": MAX_BACKWARD_LEAN,
     "effort_penalty_scale": EFFORT_PENALTY_SCALE,
     "apply_effort_penalty": APPLY_EFFORT_PENALTY,
     "contact_floor_penalty_base": CONTACT_FLOOR_PENALTY_BASE,
@@ -181,11 +180,6 @@ def training_config_dict() -> dict:
     "contact_floor_force_cap_n": CONTACT_FLOOR_FORCE_CAP_N,
     "contact_floor_penalty_min": CONTACT_FLOOR_PENALTY_MIN,
     "contact_link_penalty_scale": CONTACT_LINK_PENALTY_SCALE,
-    "contact_basket_penalty_base": CONTACT_BASKET_PENALTY_BASE,
-    "contact_basket_penalty_per_n": CONTACT_BASKET_PENALTY_PER_N,
-    "contact_basket_min_force_n": CONTACT_BASKET_MIN_FORCE_N,
-    "contact_basket_force_cap_n": CONTACT_BASKET_FORCE_CAP_N,
-    "contact_basket_penalty_min": CONTACT_BASKET_PENALTY_MIN,
     "obs_dim": OBS_DIM,
     "action_dim": ACTION_DIM,
     "gamma": GAMMA,

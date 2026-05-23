@@ -1,4 +1,4 @@
-"""exp_003 の観測ベクトル組み立て。
+"""exp_004 の観測ベクトル組み立て。
 
 MuJoCo の site / sensor / joint から
   - PolicyObs … ポリシー入力（正規化・クリップ済み、19 次元）

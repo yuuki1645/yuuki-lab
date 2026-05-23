@@ -1,4 +1,4 @@
-"""exp_003 の Gym 風環境ラッパー。
+"""exp_004 の Gym 風環境ラッパー（exp_003 制御 + exp_001 shaping / 姿勢終了）。
 
 reset / step のインタフェースで MuJoCo を回し、観測・報酬・終了を各モジュールに委譲する。
 1 step = FRAME_SKIP 回の mj_step（ポリシー 50 Hz / 物理 500 Hz）。
@@ -20,6 +20,9 @@ from .termination import (
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,
   REASON_CONTACT_THIGH,
+  REASON_IMU_Z,
+  REASON_LOW_UPRIGHT,
+  REASON_BACKWARD_LEAN,
   Termination,
   TerminationOutcome,
 )
@@ -27,7 +30,7 @@ from .lib.action import ActionBinding
 
 
 class Env2JointA2C:
-  """exp_003 用 A2C 環境（model/main.xml）。
+  """exp_004 用 A2C 環境（model/main.xml）。
 
   物理は MuJoCo 既定 500 Hz、ポリシーは 50 Hz（1 行動あたり FRAME_SKIP 回 mj_step）。
   """
@@ -88,7 +91,7 @@ class Env2JointA2C:
         self.viewer.sync()
 
       # basket / thigh / shank の床接触は物理ステップごとに判定し、満たした時点で打ち切る
-      termination = self._termination.done_reason(self.data)
+      termination = self._termination.done_reason_contact(self.data)
       if termination.terminated:
         break
 
@@ -112,10 +115,14 @@ class Env2JointA2C:
 
     reward_breakdown = self._reward.compute(step_physics, effort=effort)
 
+    # 接触で終了していなければ姿勢崩れを制御ステップ末に判定（exp_001）
+    if not termination.terminated:
+      termination = self._termination.done_reason_pose(step_physics)
+
     terminated = termination.terminated
     termination_reason = termination.reason
 
-    reward = reward_breakdown.total + termination.penalty  # ペナルティは終了ステップのみ非ゼロ
+    reward = reward_breakdown.total + termination.penalty
 
     # self._observation.maybe_print_debug(
     #   episode_step=episode_step,
@@ -134,6 +141,11 @@ class Env2JointA2C:
       "reward_forward": reward_breakdown.forward,
       "reward_forward_imu": reward_breakdown.forward_imu,
       "reward_forward_foot": reward_breakdown.forward_foot,
+      "reward_shaping": reward_breakdown.shaping,
+      "reward_upright": reward_breakdown.upright_bonus,
+      "reward_knee_flex": reward_breakdown.knee_flex_bonus,
+      "reward_backward_lean_penalty": reward_breakdown.backward_lean_penalty,
+      "reward_height_penalty": reward_breakdown.height_penalty,
       "foot_dx": step_physics.foot_dx,
       "reward_effort_penalty": reward_breakdown.effort_penalty,
       "effort_power_cost": reward_breakdown.effort_power_cost,
@@ -147,8 +159,18 @@ class Env2JointA2C:
       "reward_contact_shank_penalty": (
         termination.penalty if termination_reason == REASON_CONTACT_SHANK else 0.0
       ),
-      # 旧キー名（wandb 互換）
-      "reward_fall_penalty": termination.penalty,
+      "reward_pose_penalty": (
+        termination.penalty
+        if termination_reason
+        in (REASON_IMU_Z, REASON_LOW_UPRIGHT, REASON_BACKWARD_LEAN)
+        else 0.0
+      ),
+      "reward_fall_penalty": (
+        termination.penalty
+        if termination_reason
+        in (REASON_IMU_Z, REASON_LOW_UPRIGHT, REASON_BACKWARD_LEAN)
+        else 0.0
+      ),
       "termination_reason": termination_reason,
       "contact_normal_force_n": contact_force_n,
       "basket_contact_normal_force_n": (

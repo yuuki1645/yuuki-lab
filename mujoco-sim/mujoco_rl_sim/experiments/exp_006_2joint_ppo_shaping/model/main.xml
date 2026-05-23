@@ -11,6 +11,11 @@
     <site size="0.03" rgba="1 1 0 1"/>
   </default>
 
+  <visual>
+    <!-- analyze_rollout / オフスクリーン描画用（既定 640 より広いバッファ） -->
+    <global offwidth="1280" offheight="960"/>
+  </visual>
+
   <asset>
     <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2=".6 .8 1" width="256" height="256"/>
     <!-- <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" /> -->
@@ -22,7 +27,8 @@
   </asset>
 
   <worldbody>
-    <camera pos="0 -1 1" xyaxes="0 1 0 0 0 1"/>
+    <!-- basket_thigh を追従（+X 前進しても画角内に収める） -->
+    <camera name="track_robot" mode="track" target="basket_thigh" pos="0 -2.4 1.15" fovy="48"/>
     <light pos="0 0 10" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
     <geom name="floor" type="plane" size="25 25 0.1" material="floor_mat"/>
 

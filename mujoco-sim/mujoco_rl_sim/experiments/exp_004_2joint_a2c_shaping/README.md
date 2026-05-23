@@ -30,5 +30,6 @@ python -m mujoco_rl_sim.experiments.exp_004_2joint_a2c_shaping.train
 
 ## 関連
 
+- [exp_005 PPO 比較](../exp_005_2joint_ppo_shaping/README.md)（観測・報酬同一、アルゴリズムのみ PPO）
 - [exp_003 README](../exp_003_2joint_a2c/README.md)
 - [exp_001 reward.py](../exp_001_2joint_a2c/reward.py)（shaping の参照元）

@@ -29,16 +29,18 @@
 | ファイル | 役割 |
 |---------|------|
 | `package_meta.py` | フォルダ名から導出するパス・モジュール名（コピー時は触らない） |
-| `config.py` | 報酬・観測・A2C・学習の定数 |
-| `env.py` | MuJoCo 環境 |
+| `config.py` | 報酬・観測・A2C・学習の定数（`WANDB_PROJECT` = フォルダ名） |
+| `env.py` | MuJoCo 環境（`Env2JointA2C`） |
 | `observation.py` | `PolicyObs` の組み立て |
 | `reward.py` / `termination.py` / `effort.py` | MDP |
 | `agent.py` | Squashed Gaussian A2C（`AgentA2C`） |
 | `train.py` / `checkpoint.py` / `wandb_logging.py` | 学習・保存・ログ |
+| `warmup.py` / `preview_warmup.py` | エピソード開始ウォームアップ行動とプレビュー |
+| `visualize.py` / `debug.py` | チェックポイント再生・ターミナル表示 |
 | `model/main.xml` | 実験専用モデル |
-| `lib/` | 実験内ユーティリティ |
+| `lib/` | 実験内ユーティリティ（行動マッピング・観測正規化など） |
 
-チェックポイントは **`mujoco_rl_sim/runs/<実験フォルダ名>/run_YYYYMMDD_HHMMSS/`** に保存（git 対象外）。
+チェックポイントは **`mujoco_rl_sim/runs/<実験フォルダ名>/run_YYYYMMDD_HHMMSS/`** に保存（git 対象外）。`--resume` の相対パスもこのルート基準。
 
 ## 学習（train）
 
@@ -68,15 +70,18 @@ wandb プロジェクト名は `config.WANDB_PROJECT`（= フォルダ名 `exp_0
 
 ```bash
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize
+# visualize の --checkpoint 相対パスは実験フォルダ基準（ckpt は runs/ 配下）
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize \
-  --checkpoint run_YYYYMMDD_HHMMSS/final.pt --stochastic
+  --checkpoint ../runs/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/final.pt --stochastic
 
 python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.preview_warmup
 ```
 
+`train --resume` の相対パスは **`mujoco_rl_sim/runs/<実験名>/` 基準**（`run_.../update_....pt`）。`visualize --checkpoint` は **`checkpoint.resolve_checkpoint_path` を使わず**実験フォルダ基準で解決するため、上記の `../runs/...` 形式か絶対パスを使う。
+
 ## 報酬・終了・観測
 
-exp_002 と同じ設計（前進報酬の直立条件、接触終了ペナルティ、`PolicyObs` 19 次元）。詳細は exp_002 の README または各 `*.py` の docstring を参照。
+exp_002 と同じ設計（前進報酬の直立条件、接触終了ペナルティ、`PolicyObs` 19 次元）。筋負荷ペナルティは **既定 `APPLY_EFFORT_PENALTY = False`（計測のみ）**。詳細は [exp_002 の README](../exp_002_2joint_a2c/README.md) または各 `*.py` の docstring を参照。
 
 ## 関連ドキュメント
 

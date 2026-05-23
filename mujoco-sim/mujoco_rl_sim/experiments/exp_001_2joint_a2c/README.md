@@ -1,31 +1,40 @@
 # exp_001: 2 関節脚 A2C
 
-旧 `010` 系（`env_010_a2c` / `agent_010_a2c`）をこのフォルダに集約した実験です。
+旧 `010` 系（`env_010_a2c` / `agent_010_a2c`）をこのフォルダに集約した実験です。**ポリシーは 500 Hz**（1 `env.step` = 1 `mj_step`）。
 
 ## ファイル構成
 
 | ファイル | 役割 |
 |---------|------|
 | `config.py` | 報酬・観測スケール・A2C・学習ループの定数 |
-| `env.py` | MuJoCo 環境（`reset` / `step`、各コンポーネントの配線） |
+| `env.py` | MuJoCo 環境（`EnvExp0012JointA2C`） |
 | `observation.py` | `ObsExp001` の組み立て（`Observation.build`） |
 | `reward.py` | 報酬項の計算（終了判定は含まない） |
-| `termination.py` | 転倒などの終了判定 |
+| `termination.py` | 転倒・姿勢崩れの早期終了判定 |
 | `episode_state.py` | エピソード内の `prev_x` / `prev_action` など |
-| `agent.py` | Squashed Gaussian A2C |
+| `agent.py` | Squashed Gaussian A2C（`AgentExp001A2C`） |
 | `train.py` | 学習ループ |
+| `checkpoint.py` | チェックポイント保存・読み込み |
+| `wandb_logging.py` | 任意 Weights & Biases ロギング |
 | `debug.py` | ターミナル向けステップ表示 |
 | `model/main.xml` | 実験専用 MuJoCo モデル（`mujoco_sim_assets` 非依存） |
 
-共通処理は `mujoco_rl_sim/lib/` を参照。
+共通処理は `mujoco_rl_sim/lib/`（`obs_norm` など）を参照。
 
 ## 実行方法
 
 `mujoco-sim` ディレクトリで:
 
 ```bash
+pip install torch   # 未導入の場合
 python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 ```
+
+- 1 回の実行ごとに **`checkpoints/exp_001_2joint_a2c/run_YYYYMMDD_HHMMSS/`** が新規作成される（`mujoco-sim` 直下・CWD 非依存）
+- `CHECKPOINT_EVERY`（既定 1000）ごとに `update_XXXXXX.pt`、終了時に `final.pt`（`CHECKPOINT_SAVE_FINAL=True` のとき）
+- wandb: `config.USE_WANDB = True`（`pip install -e ".[rl]"` で `wandb` を入れる）。無効化は `WANDB_MODE=disabled`
+
+再開用 CLI（`--resume` など）は **未実装**（exp_002 / exp_003 を参照）。
 
 ## モデル
 
@@ -62,14 +71,22 @@ python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
 ## 報酬
 
 ```
-reward = dx * FORWARD_REWARD_SCALE
-       + upright * UPRIGHT_BONUS_SCALE
-       + knee_human_flex_bonus
-       - knee_wrong_penalty
+reward = forward + upright + knee_flex_bonus
+       - backward_lean_penalty - height_penalty
        (+ FALL_PENALTY if terminated)
 ```
 
-係数は `config.py` を参照。
+- `forward` … 直立・（設定時）足接地のときだけ `dx` を加点（`FORWARD_REWARD_SCALE`）
+- `upright` / `knee_flex_bonus` / 各ペナルティ … `config.py` と `reward.py` の docstring 参照
+
+## 早期終了
+
+| reason | 条件 | ペナルティ |
+|--------|------|------------|
+| `imu_z` | IMU 高さ < `MIN_IMU_Z` | `FALL_PENALTY`（終了ステップに一度） |
+| `low_upright` | 直立度 < `MIN_IMU_UPRIGHT` | 同上 |
+| `backward_lean` | 後傾が `MAX_BACKWARD_LEAN` を超過 | 同上 |
+| `truncated` | `MAX_STEPS_PER_EPISODE` 到達（`train.py`） | なし |
 
 ## 関連ドキュメント
 

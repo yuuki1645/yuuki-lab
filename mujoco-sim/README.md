@@ -1,10 +1,11 @@
 # mujoco-sim
 
-このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **3 つの Python パッケージ**があります。
+このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **4 つの Python パッケージ**があります。
 
-- **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも RL もここを参照します。
+- **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも試用スクリプトもここを参照します。
+- **`mujoco_sim_common`** — 論理角 kinematics、Hub 向け Socket.IO テレメトリ、ビュワー補助 HTTP などの共有部品。
 - **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。
-- **`mujoco_rl_sim`** — **強化学習用の Gymnasium 環境**など（HTTP サーバとは別経路）。利用時は **`pip install -e ".[rl]"`** で `gymnasium` と学習ライブラリを追加。
+- **`mujoco_rl_sim`** — **A2C 実験**（`experiments/`）と共有 `lib/`（HTTP サーバとは別経路）。wandb や SB3 サンプル利用時は **`pip install -e ".[rl]"`**。実験の学習には **PyTorch** を別途インストール。
 
 サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新** を主に担当します。
 
@@ -123,78 +124,34 @@ python mujoco_test_005.py --dataset YuukiLab004 --steps 3000 --subsample 8
 
 ## 強化学習（`mujoco_rl_sim`）
 
-例: 同梱 MJCF を使う膝トラッキング環境（MJCF に **`freejoint` の `root` が無い**場合は胴高・転倒終了を簡略化します）。
+本番の RL は **`mujoco_rl_sim/experiments/`** 配下の実験パッケージ（2 関節脚 A2C など）で行います。各実験は **実験専用 MJCF**（`model/main.xml`）と **PyTorch 実装の A2C** を持ち、HTTP 実時間シミュ（`8787`）とは別プロセスです。
 
-```python
-from mujoco_rl_sim import KneeTrackEnv
-from mujoco_rl_sim.envs.env_002_full_actuators import Env002FullActuators
-
-env = KneeTrackEnv()  # xml_path 省略時は各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML``
-all_ctrl = Env002FullActuators()  # 全アクチュエータを同時に指令
-```
-
-別 MJCF を使う場合は `KneeTrackEnv(xml_path="...")` のように渡すか、各 env ファイル先頭の ``DEFAULT_ENV_MODEL_XML`` を書き換えてください（HTTP 実時間シミュの既定は引き続き環境変数 ``MUJOCO_REALTIME_SIM_XML`` / ``MUJOCO_SIM_XML`` です）。
-
-`Env002FullActuators`（`env_002_full_actuators.py`）は **position アクチュエータがヒンジ関節のみ**であることを前提にしています。観測は ``imu_acc``（各 3、**観測ベクトルでは g** … MJCF 加速度計の m/s² を ``|opt.gravity|`` で除算）/``imu_gyro``（各 3, rad/s）と直前の ``ctrl``（`nu`）の **``6 + nu``** 次元です（MJCF に `imu_acc` / `imu_gyro` が必要）。以前の観測スケール（加速度 m/s²）で学習したチェックポイントはそのままでは使えません。**`step_wall_sleep_sec`**（既定 `0`）を正にすると、各 `step` で `mj_step` の直後にその秒数だけ **壁時計で待機**し、テレメトリ確認や再生を遅くできます（MDP の定義は変わりません）。
-
-環境実装ファイルは **`env_001_knee_track.py`** のように `env_<連番>_` プレフィックスで並べます（新規追加時は次番号のファイルを `envs/__init__.py` に登録）。
-
-### CLI（膝トラックの PPO サンプル）
-
-`pip install -e ".[rl]"` 後、コンソールから:
-
-| コマンド | 内容 |
-|----------|------|
-| `mujoco-rl-train-knee` | `KneeTrackEnv` を PPO で学習（既定でライブ Viewer 用子プロセスも起動） |
-| `mujoco-rl-watch-knee` | チェックポイント更新に追随して Viewer 表示 |
-| `mujoco-rl-play-knee` | 学習済み `ppo_knee_track` を Viewer で再生 |
-
-`python -m` でも同じです。
+**依存:**
 
 ```bash
-python -m mujoco_rl_sim.scripts.train_001_knee_track --help
-python -m mujoco_rl_sim.scripts.train_001_knee_track --no-viewer
-python -m mujoco_rl_sim.scripts.watch_training_live
-python -m mujoco_rl_sim.scripts.play_knee_track --model-base ppo_knee_track
+pip install -e ".[rl]"   # gymnasium, stable-baselines3, wandb（実験の wandb ログ用）
+pip install torch        # 実験の A2C 学習に必須（pyproject には含めていない）
 ```
 
-### CLI（全アクチュエータ `Env002FullActuators`）
+| 実験 | 概要 | 詳細 |
+|------|------|------|
+| `exp_001_2joint_a2c` | 500 Hz 制御・観測 20 次元・姿勢ベース終了 | [README](mujoco_rl_sim/experiments/exp_001_2joint_a2c/README.md) |
+| `exp_002_2joint_a2c` | 50 Hz 制御・観測 19 次元・接触終了。ckpt は実験フォルダ内 | [README](mujoco_rl_sim/experiments/exp_002_2joint_a2c/README.md) |
+| `exp_003_2joint_a2c` | exp_002 系。ckpt は `mujoco_rl_sim/runs/<実験名>/`（コピー向け） | [README](mujoco_rl_sim/experiments/exp_003_2joint_a2c/README.md) |
 
-| コマンド | 内容 |
-|----------|------|
-| `mujoco-rl-train-full` | 全 `ctrl` を PPO で学習（既定チェックポイント `ppo_full_actuators_live`） |
-| `mujoco-rl-watch-full` | ライブ学習の Viewer（既定は `ppo_full_actuators_live` を監視） |
-| `mujoco-rl-play-full` | 学習済み `ppo_full_actuators` を Viewer で再生 |
+**実行例**（いずれも `mujoco-sim` をカレントに）:
 
 ```bash
-python -m mujoco_rl_sim.scripts.train_002_full_actuators --help
-python -m mujoco_rl_sim.scripts.train_002_full_actuators --no-viewer
-python -m mujoco_rl_sim.scripts.train_002_full_actuators --training-viewer --step-wall-sleep 0.2
-python -m mujoco_rl_sim.scripts.watch_full_actuators
-python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuators
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
+python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
+  --checkpoint checkpoints/run_YYYYMMDD_HHMMSS/final.pt
 ```
 
-### `train_002_full_actuators` の追加オプション（要約）
+新規実験は **`exp_003_2joint_a2c` をコピーしてリネーム**する手順が README にあります（`package_meta.py` で wandb 名・チェックポイント先を自動決定）。
 
-| オプション | 説明 |
-|------------|------|
-| `--no-telemetry` | Robotics Hub 向け **Socket.IO テレメトリ**を起動しない |
-| `--telemetry-host` | テレメトリのバインド（既定 **`0.0.0.0`**。LAN の IP から Hub を開くときに接続できるようにする） |
-| `--telemetry-port` | テレメトリポート（既定 **`8791`**） |
-| `--telemetry-max-hz` | 送信イベントの最大レート（既定 `60`。`0` で無制限） |
-| `--step-wall-sleep` | 各環境ステップの `mj_step` 後に待つ秒数（既定 `0`。例: `0.05` で壁時計ベースを遅くする） |
-| `--training-viewer` | **学習中**に、テレメトリと同一の `MjData` を MuJoCo passive Viewer で表示（各ステップで同期）。指定時は **`watch_full_actuators` 子プロセスは起動しない**（別シミュのライブ Viewer と混ぜない） |
+**SB3 の最小サンプル**（Gymnasium + PPO）は `programs/mujoco_test_006.py` / `007.py` を参照（`pip install -e ".[rl]"`）。
 
-`--training-viewer` を付けない場合でも、`--no-viewer` でない限り **`watch_full_actuators`** 子プロセスが起動します（チェックポイント追随の **別シミュ**）。**Hub のテレメトリと画面を一致させたいときは `--training-viewer`** を使ってください。
-
-`watch_full_actuators` / `play_full_actuators` 単体でも **`--step-wall-sleep`** を指定できます（環境の `Env002FullActuators(step_wall_sleep_sec=...)` に相当）。
-
-### 学習テレメトリ（Robotics Hub）
-
-学習中（`--no-telemetry` を付けない限り）**別スレッド**で Flask-SocketIO が起動し、環境の各 `step` / `reset` から **`rl_telemetry/step`** などで観測・行動をブロードキャストします（Socket.IO サーバは共有モジュール **`mujoco_sim_common/telemetry/`** の `HubTelemetrySocketIoServer`。Gym からの送出は **`mujoco_rl_sim/telemetry/`** のラッパ）。Hub の **「テレメトリ」**ページ（`/telemetry`）がこの Socket.IO に接続します。
-
-- 配信されるモータ関連の角は **ラジアン**（環境の `ctrl` / 観測の prev ctrl と同じ）。Hub 側で **度（°）** に換算して表示します。
-- 実時間 HTTP シム（`8787`）とは **別ポート**です。ファイアウォールで **8791**（または変更した `--telemetry-port`）を許可してください。
+**共有コード:** `mujoco_rl_sim/lib/`（パス解決・観測正規化など）。`mujoco_rl_sim/telemetry/` には Gymnasium 用 `RlTelemetryWrapper` があります（`mujoco_sim_common.telemetry.HubTelemetrySocketIoServer` へ送出。試用スクリプト `programs/mujoco_test_004.py` などで利用）。
 
 ## HTTP API（要約）
 
@@ -211,7 +168,7 @@ python -m mujoco_rl_sim.scripts.play_full_actuators --model-base ppo_full_actuat
 | PUT | `/api/ctrl` | ctrl 一括 |
 | POST | `/api/pause` / `/api/resume` | 実時間ステッパの一時停止・再開 |
 
-`mode` は `"rad"`（既定）・`"deg"`・`"logical"`。論理角は **`mujoco_sim_common/kinematics.py`** の `KINEMATICS` で MuJoCo 関節角に写像します（互換のため `mujoco_realtime_sim/kinematics.py` からも参照できます）。
+`mode` は `"rad"`（既定）・`"deg"`・`"logical"`。論理角は **`mujoco_sim_common/kinematics.py`** の `KINEMATICS` で MuJoCo 関節角に写像します（`mujoco_realtime_sim/app.py` から利用）。
 
 ## ディレクトリ構成（概要）
 
@@ -224,19 +181,21 @@ mujoco-sim/
       002_leg_freejoint/ # 001 と同構成 + root に freejoint
   mujoco_realtime_sim/
     __main__.py        # HTTP + オプション Viewer
-    app.py             # Flask create_app()
+    app.py             # Flask create_app()（ログ名 mujoco_realtime_sim.api）
     core.py            # Simulation（MjModel / MjData）
     realtime.py        # 実時間 mj_step スレッド
     passive_viewer.py
-    kinematics.py  # ← 共通部品（論理角⇄MuJoCo角）
     viewer_cmd.py
   mujoco_sim_common/
     kinematics.py      # 論理角⇄MuJoCo 角（実時間・RL で共有）
     telemetry/         # Hub 向け Socket.IO（HubTelemetrySocketIoServer）
+    viewer_aux_bridge.py  # ビュワー補助 HTTP（programs/mujoco_test_009.py）
   mujoco_rl_sim/
-    envs/              # Gymnasium 環境（env_001_*.py の連番命名）
-    telemetry/         # Gym ラッパ（RlTelemetryWrapper）— 送出先は上記 Socket.IO
-    scripts/           # 学習・ライブ Viewer・再生 CLI
+    experiments/       # A2C 実験（exp_001_*, exp_002_*, exp_003_* …）
+    lib/               # 実験間共有ユーティリティ
+    runs/              # exp_003 以降のチェックポイント（git 対象外）
+    telemetry/         # Gym ラッパ（RlTelemetryWrapper）
+    scripts/           # 試用（test.py など）
   pyproject.toml
   requirements.txt
 ```

@@ -104,8 +104,10 @@ ACTION_DIM = 2
 
 # --- PPO（agent.py）— ネット構造・γ・探索は exp_004 A2C に合わせた出発点 ------
 GAMMA = 0.99**FRAME_SKIP
+# GAE: advantage の平滑化。1 に近いほど長い将来報酬を見る（0.95 がよく使われる）
 GAE_LAMBDA = 0.95
 LR = 3e-4
+# 1 回の update 前に環境で集めるステップ数（このバッファを PPO で何度も学習）
 ROLLOUT_STEPS = 512
 VALUE_COEF = 0.5
 ENTROPY_COEF = 0.04
@@ -113,9 +115,12 @@ MAX_GRAD_NORM = 0.5
 MINIBATCH_SIZE = 256
 STD_MIN = 0.08
 
+# 方策比 r を [1-ε, 1+ε] に収める幅（0.2 が Schulman らの既定に近い）
 CLIP_EPS = 0.2
+# 同一ロールアウトを何周学習するか（多いほどデータ効率↑・方策変化↑）
 PPO_EPOCHS = 8
-TARGET_KL = 0.02  # 0 で KL 早期打ち切り無効
+# 1 epoch 平均の近似 KL がこれを超えたら残り epoch をスキップ（0 で無効）
+TARGET_KL = 0.02
 
 REWARD_CLIP = 20.0
 ADV_CLIP = 10.0

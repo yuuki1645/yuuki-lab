@@ -1,4 +1,6 @@
-"""exp_008: 片脚ホッパ向け PPO + 足底幾何観測（exp_006 ベース）。
+"""exp_009: exp_008 + 飛翔前傾で前進報酬を減衰・長飛翔ペナルティ・長エピソード。
+
+exp_008 分析: 前傾ダイブ（imu_zaxis_x>0.7）で IMU 高さ低下 → imu_z 終了が主因。
 
 【重要】ロボット形態
   - 片脚（モノポッド）1 本 + freejoint。両脚歩行（バイペッド）ではない。
@@ -43,9 +45,19 @@ UPRIGHT_BONUS_MIN_DX = 0.0
 LEAN_BACKWARD_PENALTY_SCALE = 3.0
 LEAN_BACKWARD_THRESH = 0.12
 
-LEAN_FORWARD_PENALTY_SCALE = 4.0
-LEAN_FORWARD_THRESH = 0.18
-LEAN_FORWARD_MIN_FLIGHT_STEPS = 3  # 連続非接地がこれ以上で前傾ペナルティ
+LEAN_FORWARD_PENALTY_SCALE = 6.0
+LEAN_FORWARD_THRESH = 0.14
+LEAN_FORWARD_MIN_FLIGHT_STEPS = 2  # 連続非接地がこれ以上で前傾ペナルティ
+
+# 飛翔中の前進 IMU 報酬を前傾で減衰（ダイブハック抑制、dx は殺さない）
+FORWARD_IMU_LEAN_GATE = True
+FORWARD_IMU_LEAN_GATE_THRESH = 0.10  # imu_zaxis_x がこれを超えると減衰開始
+FORWARD_IMU_LEAN_GATE_SCALE = 4.0  # excess * scale を 1 から引く
+FORWARD_IMU_LEAN_GATE_MIN_MULT = 0.15
+
+# 長い非接地（着地しない飛翔）のステップペナルティ
+FLIGHT_DURATION_PENALTY_SCALE = 0.08
+FLIGHT_DURATION_PENALTY_AFTER_STEPS = 18  # 50 Hz で約 360 ms
 
 IMU_HEIGHT_PENALTY_SCALE = 2.0
 TARGET_IMU_Z = 0.55
@@ -62,7 +74,7 @@ PUSH_OFF_MIN_FOOT_DX = 0.002
 PUSH_OFF_MIN_IMU_DZ = 0.004
 PUSH_OFF_MIN_KNEE_EXT_VEL = 0.15  # 膝 qvel<0 = 伸展（+Y ヒンジ・屈曲が +）
 
-LANDING_BONUS_SCALE = 0.4
+LANDING_BONUS_SCALE = 0.55
 LANDING_MAX_TOE_Z = 0.06
 LANDING_MAX_HEEL_Z = 0.06
 LANDING_MAX_FORWARD_LEAN = 0.28
@@ -168,8 +180,8 @@ WARMUP_ENABLED = True
 WARMUP_DURATION_S = 1.2
 WARMUP_ACTION_FN = default_warmup_action
 
-NUM_UPDATES = 10_100
-MAX_STEPS_PER_EPISODE = 3000 // FRAME_SKIP
+NUM_UPDATES = 8_000
+MAX_STEPS_PER_EPISODE = 15_000 // FRAME_SKIP  # 30 s @ 50 Hz（10 m 評価用）
 LOG_EVERY = 20
 ENABLE_VIEWER = False  # 学習速度優先（可視化は analyze_rollout / visualize）
 
@@ -191,10 +203,12 @@ WANDB_TAGS = (
   "single_leg",
   "NOT_biped",
   "hop_shaping",
+  "lean_gate",
+  "long_episode",
 )
 WANDB_TERMINATION_ROLLING_WINDOW = 100
 
-COMPARE_BASELINE_EXP = "exp_006_2joint_ppo_shaping"
+COMPARE_BASELINE_EXP = "exp_008_2joint_ppo_hop_shaping"
 
 
 def training_config_dict() -> dict:
@@ -221,6 +235,10 @@ def training_config_dict() -> dict:
     "lean_forward_penalty_scale": LEAN_FORWARD_PENALTY_SCALE,
     "lean_forward_thresh": LEAN_FORWARD_THRESH,
     "lean_forward_min_flight_steps": LEAN_FORWARD_MIN_FLIGHT_STEPS,
+    "forward_imu_lean_gate": FORWARD_IMU_LEAN_GATE,
+    "forward_imu_lean_gate_thresh": FORWARD_IMU_LEAN_GATE_THRESH,
+    "flight_duration_penalty_scale": FLIGHT_DURATION_PENALTY_SCALE,
+    "flight_duration_penalty_after_steps": FLIGHT_DURATION_PENALTY_AFTER_STEPS,
     "lean_backward_penalty_scale": LEAN_BACKWARD_PENALTY_SCALE,
     "lean_backward_thresh": LEAN_BACKWARD_THRESH,
     "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,

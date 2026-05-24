@@ -1,0 +1,30 @@
+---
+description: MuJoCo RL experiments use a single-leg hopper, NOT bipedal walking
+globs:
+  - mujoco-sim/mujoco_rl_sim/**
+  - mujoco-sim/**/exp_*_2joint*/**
+---
+
+# 片脚ホッパ（モノポッド）— 両脚ではない
+
+## ロボット
+
+- **1 本脚** + `freejoint`（`basket_thigh` → 大腿 → 下腿 → 足底）
+- **「2joint」= 膝 + 足首の 2 自由度**。脚が 2 本という意味ではない
+- **バイペッド / 両脚歩行の実装は存在しない**
+
+## タスク
+
+- 目標は **ホッピング**: 立脚 → 押し出し → **飛翔中も IMU 前進報酬** → 足底着地
+- `FORWARD_REQUIRE_FOOT_CONTACT=True` をホッパの主線にしない（exp_007a は ablation のみ）
+
+## 報酬（exp_008 基準）
+
+- 飛翔の `dx` は維持。`foot_dx` は接地時が主
+- 歩行向けの常時「曲げ膝ボーナス」は使わない
+- `contact_shank` は学習継続のため即終了ではなくペナルティ化（exp_008）
+
+## 作業前に読む
+
+- `mujoco_rl_sim/experiments/AGENTS.md`
+- 作業中の実験 `README.md` / `AGENTS.md`（例: `exp_008_2joint_ppo_hop_shaping/AGENTS.md`）

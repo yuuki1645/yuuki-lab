@@ -1,5 +1,8 @@
 # exp_006: 2 関節脚 PPO + 足底幾何観測（exp_005 比較用）
 
+> **ロボット形態**: 片脚モノポッド 1 本（`freejoint`）。「2joint」= 膝・足首 2 自由度で、**両脚ではない**。  
+> ホッパ向け shaping は **[exp_008](../exp_008_2joint_ppo_hop_shaping/README.md)** を参照。
+
 `exp_005_2joint_ppo_shaping` をベースに、**観測のみ**拡張した実験。
 報酬・終了・PPO ハイパーパラメータ・制御レート（50 Hz）は exp_005 と同一。
 
@@ -40,5 +43,7 @@ python -m mujoco_rl_sim.experiments.exp_006_2joint_ppo_shaping.visualize \
 
 ## 関連
 
+- [exp_008 片脚ホッパ shaping](../exp_008_2joint_ppo_hop_shaping/README.md)
 - [exp_005 README](../exp_005_2joint_ppo_shaping/README.md)
 - [exp_004 README](../exp_004_2joint_a2c_shaping/README.md)
+- [experiments 共通 AGENTS.md](../AGENTS.md)

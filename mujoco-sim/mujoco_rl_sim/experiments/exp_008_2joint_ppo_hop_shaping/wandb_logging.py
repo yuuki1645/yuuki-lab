@@ -6,6 +6,8 @@ import os
 from collections import Counter, deque
 from typing import Any
 
+from mujoco_rl_sim.lib.wandb_fav import with_fav_metrics
+
 from . import config
 from .termination import (
   REASON_BACKWARD_LEAN,
@@ -297,7 +299,7 @@ def log(metrics: dict[str, float], *, step: int) -> None:
     return
   import wandb
 
-  wandb.log(metrics, step=step)
+  wandb.log(with_fav_metrics(metrics), step=step)
 
 
 def finish() -> None:

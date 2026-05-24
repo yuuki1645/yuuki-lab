@@ -64,6 +64,7 @@ class Env2JointPPO:
     self._episode.reset_forward_tracking(imu_x=imu_x, foot_x=foot_x, imu_z=imu_z)
     self._episode.prev_action = (0.0, 0.0)
 
+    # policy_obs: 正規化済み 25 次元（ポリシー入力）。reset 時は報酬用 step_physics は不要。
     policy_obs, _ = self._observation.build(
       self.model, self.data, self._episode, dx=0.0, foot_dx=0.0
     )
@@ -98,6 +99,8 @@ class Env2JointPPO:
     dx = self._episode.advance_imu_x(imu_x)
     foot_dx = self._episode.advance_foot_x(foot_x)
 
+    # policy_obs … 正規化済み観測（エージェントへ返す）
+    # step_physics … 生の物理量（報酬・終了判定・step_info 用）
     policy_obs, step_physics = self._observation.build(
       self.model, self.data, self._episode, dx=dx, foot_dx=foot_dx
     )

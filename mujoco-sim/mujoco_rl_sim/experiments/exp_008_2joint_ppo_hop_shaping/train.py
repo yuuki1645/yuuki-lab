@@ -50,6 +50,7 @@ class TrainRunConfig:
   num_updates: int
   load_optimizer: bool
   wandb_run_name: str | None
+  viewer: bool
 
 
 def _parse_args() -> TrainRunConfig:
@@ -86,6 +87,11 @@ def _parse_args() -> TrainRunConfig:
     default=None,
     help="wandb run 名（省略時は config または再開時の自動名）",
   )
+  p.add_argument(
+    "--viewer",
+    action="store_true",
+    help="学習中に MuJoCo パッシブビューアを表示（省略時は config.ENABLE_VIEWER）",
+  )
   args = p.parse_args()
 
   resume_path = None
@@ -106,6 +112,7 @@ def _parse_args() -> TrainRunConfig:
     num_updates=num_updates,
     load_optimizer=load_optimizer,
     wandb_run_name=args.wandb_run_name,
+    viewer=args.viewer,
   )
 
 
@@ -201,7 +208,7 @@ def main() -> None:
   _wandb_init(run, payload)
 
   episode_metrics = wandb_logging.episode_collector()
-  env = Env2JointPPO(enable_viewer=config.ENABLE_VIEWER)
+  env = Env2JointPPO(enable_viewer=run.viewer or config.ENABLE_VIEWER)
 
   start_update = int(payload["update"]) if payload is not None else 0
   total_env_steps = int(payload.get("total_env_steps", 0)) if payload is not None else 0

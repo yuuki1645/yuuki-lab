@@ -7,6 +7,10 @@ from pathlib import Path
 from typing import Any
 
 import mujoco
+from mujoco_sim_common.viewer_visual_presets import (
+  apply_model_visual_preset,
+  apply_passive_viewer_options,
+)
 
 from . import checkpoint
 from . import config
@@ -99,21 +103,78 @@ def _print_warmup_config() -> None:
 
 def _make_action_fn(args: argparse.Namespace) -> ActionFn | None:
   if args.checkpoint is None:
-    print("[visualize] mode: xml only (no policy, ctrl untouched)")
+    print("[visualize] mode: xml only (biped model, keyframe stand, ctrl from keyframe)")
     print(f"[visualize] xml: {config.XML_PATH}")
     return None
 
-  ckpt_path = _resolve_checkpoint(args.checkpoint)
-  payload = checkpoint.load_checkpoint(ckpt_path, map_location=args.device)
-  _print_checkpoint_info(ckpt_path, payload)
-
-  agent = AgentPPO.from_checkpoint(ckpt_path, map_location=args.device)
-  if args.stochastic:
-    return lambda obs: agent.act(obs)[0]
-  return agent.act_eval
+  raise SystemExit(
+    "[visualize] --checkpoint は両脚 10-DOF 未対応です。"
+    " XML のみで確認: python -m "
+    f"{PACKAGE}.visualize"
+  )
 
 
-def _step_physics_only(env: Env2JointPPO) -> None:
+def _reset_biped_stand(model: mujoco.MjModel, data: mujoco.MjData) -> None:
+  """keyframe stand があれば適用。無ければ mj_resetData。"""
+  key_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "stand")
+  if key_id >= 0:
+    mujoco.mj_resetDataKeyframe(model, data, key_id)
+  else:
+    mujoco.mj_resetData(model, data)
+  mujoco.mj_forward(model, data)
+
+
+def _launch_biped_viewer() -> tuple[mujoco.MjModel, mujoco.MjData, mujoco.viewer.Handle]:
+  model = mujoco.MjModel.from_xml_path(config.XML_PATH)
+  apply_model_visual_preset(model)
+  physics_dt = float(model.opt.timestep)
+  if abs(physics_dt - config.PHYSICS_TIMESTEP_S) > 1e-9:
+    raise ValueError(
+      f"model.opt.timestep={physics_dt} != config.PHYSICS_TIMESTEP_S="
+      f"{config.PHYSICS_TIMESTEP_S}"
+    )
+  data = mujoco.MjData(model)
+  viewer = mujoco.viewer.launch_passive(model, data)
+  apply_passive_viewer_options(viewer)
+  return model, data, viewer
+
+
+def _step_physics_only(
+  model: mujoco.MjModel,
+  data: mujoco.MjData,
+  viewer: mujoco.viewer.Handle,
+) -> None:
+  for _ in range(config.FRAME_SKIP):
+    mujoco.mj_step(model, data)
+    viewer.sync()
+  time.sleep(config.CONTROL_TIMESTEP_S)
+
+
+def _run_biped_xml_only(*, print_every: int) -> None:
+  model, data, viewer = _launch_biped_viewer()
+  _reset_biped_stand(model, data)
+  viewer.sync()
+  print(
+    f"[visualize] actuators: {model.nu} | "
+    f"feet z: L={data.site('foot_site').xpos[2]:.3f} "
+    f"R={data.site('right_foot_site').xpos[2]:.3f}"
+  )
+  step = 0
+  try:
+    while viewer.is_running():
+      _step_physics_only(model, data, viewer)
+      step += 1
+      if print_every > 0 and step % print_every == 0:
+        imu_z = float(data.site("imu_site").xpos[2])
+        print(
+          f"[visualize] step={step} imu_z={imu_z:.3f} "
+          f"ctrl={data.ctrl.copy()}"
+        )
+  finally:
+    viewer.close()
+
+
+def _step_physics_only_env(env: Env2JointPPO) -> None:
   """ctrl を書き換えず、物理ステップのみ進める（reset 後の ctrl=0 を維持）。"""
   for _ in range(config.FRAME_SKIP):
     mujoco.mj_step(env.model, env.data)
@@ -131,7 +192,7 @@ def _run_physics_only(
   step = 0
 
   while env.viewer.is_running():
-    _step_physics_only(env)
+    _step_physics_only_env(env)
     step += 1
 
     if print_every > 0 and step % print_every == 0:
@@ -259,9 +320,6 @@ def _run_episodes(
 def main() -> None:
   args = _parse_args()
   action_fn = _make_action_fn(args)
-  env = Env2JointPPO(enable_viewer=True)
-  if env.viewer is None:
-    raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
 
   print("[visualize] ビューアを閉じると終了します。")
   print(
@@ -270,9 +328,13 @@ def main() -> None:
   )
 
   if action_fn is None:
-    _run_physics_only(env, print_every=args.print_every)
+    _run_biped_xml_only(print_every=args.print_every)
     print("[visualize] finished")
     return
+
+  env = Env2JointPPO(enable_viewer=True)
+  if env.viewer is None:
+    raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
 
   if config.WARMUP_ENABLED:
     _print_warmup_config()

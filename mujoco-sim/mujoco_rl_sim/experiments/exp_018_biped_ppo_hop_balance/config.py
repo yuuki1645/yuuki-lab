@@ -13,10 +13,9 @@ from pathlib import Path
 from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 # ロボット形態（wandb・ドキュメント用の明示フラグ）
-# NOTE: model/main.xml は exp_017 由来のまま。ユーザーが両脚 XML に差し替えるまで実体と不一致。
-ROBOT_MORPHOLOGY = "biped_legs_only"  # target; NOT monoped hopper
+ROBOT_MORPHOLOGY = "biped_legs_only"
 ROBOT_LEG_COUNT = 2
-ROBOT_ACTUATED_DOF = 2  # TODO: 両脚 XML 確定後に更新（現状は exp_017 コピー値）
+ROBOT_ACTUATED_DOF = 10  # 脚あたり hip_roll/pitch, knee, ankle_pitch/roll
 
 # --- MuJoCo / 制御レート -------------------------------------------------------
 _EXP_DIR = EXP_DIR

@@ -50,6 +50,12 @@
 | 厚さ | 2 mm |
 | 重量 | 271 g |
 
+## 設計図
+
+<img src="images/leg_servo_layout.jpg" alt="ロボット設計図" width="300">
+
+<img src="images/biped_lower_body_structure.jpg" alt="ロボット設計図寸法付き" width="300">
+
 ## 使用しているサーボ
 
 <img src="images/150kg_servo.jpg" alt="150kg サーボ" width="300">

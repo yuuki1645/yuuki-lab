@@ -52,9 +52,9 @@
 
 ## 設計図
 
-<img src="images/leg_servo_layout.jpg" alt="ロボット設計図" width="300">
+<img src="images/leg_servo_layout.jpg" alt="ロボット設計図" width="600">
 
-<img src="images/biped_lower_body_structure.jpg" alt="ロボット設計図寸法付き" width="300">
+<img src="images/biped_lower_body_structure.jpg" alt="ロボット設計図寸法付き" width="600">
 
 ## 使用しているサーボ
 

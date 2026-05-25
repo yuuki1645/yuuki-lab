@@ -1,26 +1,27 @@
 import mujoco
 
+from .actuators import ACTUATOR_NAMES
 from .ctrl import action_to_ctrl, clip_policy_action
 
 
 class ActionBinding:
-  """ポリシー出力 [-1, 1]² を knee / ankle の ctrl に書き込む。
-
-  actuator ID と ctrlrange は model 構築時に一度だけ解決する。
-  """
+  """ポリシー出力 [-1, 1]^N を全 position アクチュエータの ctrl に書き込む。"""
 
   def __init__(self, model: mujoco.MjModel):
-    knee = model.actuator("knee_servo")
-    ankle = model.actuator("ankle_servo")
-    self._knee_act_id = knee.id
-    self._ankle_act_id = ankle.id
-    self._knee_ctrl_range = model.actuator_ctrlrange[knee.id].copy()
-    self._ankle_ctrl_range = model.actuator_ctrlrange[ankle.id].copy()
+    self._act_ids: list[int] = []
+    self._ctrl_ranges: list[tuple[float, float]] = []
+    for name in ACTUATOR_NAMES:
+      act = model.actuator(name)
+      self._act_ids.append(act.id)
+      lo, hi = model.actuator_ctrlrange[act.id]
+      self._ctrl_ranges.append((float(lo), float(hi)))
 
-  def apply(self, data: mujoco.MjData, action) -> tuple[float, float]:
-    """action をクリップして data.ctrl に反映し、クリップ後の (knee, ankle) を返す。"""
-    knee_a = clip_policy_action(action[0])
-    ankle_a = clip_policy_action(action[1])
-    data.ctrl[self._knee_act_id] = action_to_ctrl(knee_a, self._knee_ctrl_range)
-    data.ctrl[self._ankle_act_id] = action_to_ctrl(ankle_a, self._ankle_ctrl_range)
-    return knee_a, ankle_a
+  def apply(self, data: mujoco.MjData, action) -> tuple[float, ...]:
+    clipped: list[float] = []
+    for act_id, (lo, hi), raw in zip(
+      self._act_ids, self._ctrl_ranges, action, strict=True
+    ):
+      a = clip_policy_action(raw)
+      data.ctrl[act_id] = action_to_ctrl(a, (lo, hi))
+      clipped.append(a)
+    return tuple(clipped)

@@ -15,7 +15,7 @@ from mujoco_sim_common.viewer_visual_presets import (
 from . import checkpoint
 from . import config
 from .agent import AgentPPO
-from .env import Env2JointPPO
+from .env import EnvBipedPPO
 from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
 from .warmup import (
   WarmupContext,
@@ -34,7 +34,7 @@ __doc__ = f"""MuJoCo モデルまたはチェックポイントをビューア�
 """
 
 _EXP_DIR = Path(__file__).resolve().parent
-ActionFn = Callable[[Any], tuple[float, float]]
+ActionFn = Callable[[Any], tuple[float, ...]]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -107,11 +107,15 @@ def _make_action_fn(args: argparse.Namespace) -> ActionFn | None:
     print(f"[visualize] xml: {config.XML_PATH}")
     return None
 
-  raise SystemExit(
-    "[visualize] --checkpoint は両脚 10-DOF 未対応です。"
-    " XML のみで確認: python -m "
-    f"{PACKAGE}.visualize"
-  )
+  ckpt_path = _resolve_checkpoint(args.checkpoint)
+  agent = AgentPPO.from_checkpoint(ckpt_path, map_location=args.device)
+  payload = getattr(agent, "checkpoint_payload", None) or {}
+  _print_checkpoint_info(ckpt_path, payload)
+  if args.stochastic:
+    print("[visualize] policy: stochastic (act)")
+    return lambda obs: agent.act(obs)[0]
+  print("[visualize] policy: deterministic (act_eval)")
+  return agent.act_eval
 
 
 def _reset_biped_stand(model: mujoco.MjModel, data: mujoco.MjData) -> None:
@@ -174,7 +178,7 @@ def _run_biped_xml_only(*, print_every: int) -> None:
     viewer.close()
 
 
-def _step_physics_only_env(env: Env2JointPPO) -> None:
+def _step_physics_only_env(env: EnvBipedPPO) -> None:
   """ctrl を書き換えず、物理ステップのみ進める（reset 後の ctrl=0 を維持）。"""
   for _ in range(config.FRAME_SKIP):
     mujoco.mj_step(env.model, env.data)
@@ -184,7 +188,7 @@ def _step_physics_only_env(env: Env2JointPPO) -> None:
 
 
 def _run_physics_only(
-  env: Env2JointPPO,
+  env: EnvBipedPPO,
   *,
   print_every: int,
 ) -> None:
@@ -204,7 +208,7 @@ def _run_physics_only(
 
 
 def _run_episodes(
-  env: Env2JointPPO,
+  env: EnvBipedPPO,
   action_fn: ActionFn,
   *,
   max_episodes: int,
@@ -243,7 +247,7 @@ def _run_episodes(
       if print_every > 0 and episode_step % print_every == 0:
         print(
           f"[visualize] ep={episode_index + 1} step={episode_step} phase=warmup "
-          f"elapsed_s={elapsed_s:.3f} action=({action[0]:+.3f}, {action[1]:+.3f}) "
+          f"elapsed_s={elapsed_s:.3f} action_dim={len(action)} "
           f"reward={reward:8.4f} return={episode_return:8.3f} "
           f"upright={step_info['upright']:.3f}"
         )
@@ -332,7 +336,7 @@ def main() -> None:
     print("[visualize] finished")
     return
 
-  env = Env2JointPPO(enable_viewer=True)
+  env = EnvBipedPPO(enable_viewer=True)
   if env.viewer is None:
     raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
 

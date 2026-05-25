@@ -1,11 +1,4 @@
-"""exp_008 の早期終了（片脚ホッパ向け）。
-
-接触:
-  - basket / thigh … 即終了（従来どおり）
-  - shank … 終了せずステップペナルティのみ（config.CONTACT_SHANK_TERMINATES=False）
-
-姿勢: 立脚中は MIN_IMU_Z を緩和（押し込み許容）。
-"""
+"""両脚バイペッド向け早期終了。"""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -13,6 +6,7 @@ from dataclasses import dataclass
 import mujoco
 
 from . import config
+from .lib.actuators import SHANK_GEOM_IDS, THIGH_GEOM_IDS
 from .lib.contact import (
   has_contact_between_geoms,
   max_normal_force_between_geoms,
@@ -53,14 +47,12 @@ NOT_TERMINATED = TerminationOutcome(None, 0.0, None)
 
 
 class Termination:
-  """MuJoCo 状態から早期終了を判定する。"""
-
   def __init__(self, model: mujoco.MjModel):
     self._model = model
     self._floor_geom_id = model.geom("floor").id
     self._basket_geom_id = model.geom("basket").id
-    self._thigh_geom_id = model.geom("thigh_link").id
-    self._shank_geom_id = model.geom("shank_link").id
+    self._thigh_geom_ids = tuple(model.geom(name).id for name in THIGH_GEOM_IDS)
+    self._shank_geom_ids = tuple(model.geom(name).id for name in SHANK_GEOM_IDS)
 
   def _floor_contact_outcome(
     self,
@@ -72,7 +64,6 @@ class Termination:
   ) -> TerminationOutcome | None:
     if not has_contact_between_geoms(data, geom_id, self._floor_geom_id):
       return None
-
     normal_force_n = max_normal_force_between_geoms(
       self._model, data, geom_id, self._floor_geom_id
     )
@@ -80,52 +71,63 @@ class Termination:
     return TerminationOutcome(reason, penalty, normal_force_n)
 
   def done_reason_contact(self, data: mujoco.MjData) -> TerminationOutcome:
-    """物理ステップごとの終了判定（basket / thigh のみ即終了）。"""
-    for geom_id, reason, penalty_fn in (
-      (self._basket_geom_id, REASON_CONTACT_BASKET, config.contact_basket_termination_penalty),
-      (self._thigh_geom_id, REASON_CONTACT_THIGH, config.contact_link_termination_penalty),
-    ):
-      outcome = self._floor_contact_outcome(
-        data, geom_id=geom_id, reason=reason, penalty_fn=penalty_fn
-      )
-      if outcome is not None:
-        return outcome
+    outcome = self._floor_contact_outcome(
+      data,
+      geom_id=self._basket_geom_id,
+      reason=REASON_CONTACT_BASKET,
+      penalty_fn=config.contact_basket_termination_penalty,
+    )
+    if outcome is not None:
+      return outcome
 
-    if config.CONTACT_SHANK_TERMINATES:
+    for thigh_id in self._thigh_geom_ids:
       outcome = self._floor_contact_outcome(
         data,
-        geom_id=self._shank_geom_id,
-        reason=REASON_CONTACT_SHANK,
+        geom_id=thigh_id,
+        reason=REASON_CONTACT_THIGH,
         penalty_fn=config.contact_link_termination_penalty,
       )
       if outcome is not None:
         return outcome
 
+    if config.CONTACT_SHANK_TERMINATES:
+      for shank_id in self._shank_geom_ids:
+        outcome = self._floor_contact_outcome(
+          data,
+          geom_id=shank_id,
+          reason=REASON_CONTACT_SHANK,
+          penalty_fn=config.contact_link_termination_penalty,
+        )
+        if outcome is not None:
+          return outcome
+
     return NOT_TERMINATED
 
   def shank_contact_step_penalty(self, data: mujoco.MjData) -> float:
-    """下腿−床接触時のステップペナルティ（終了しない）。"""
     if config.CONTACT_SHANK_TERMINATES:
       return 0.0
-    if not has_contact_between_geoms(
-      data, self._shank_geom_id, self._floor_geom_id
-    ):
-      return 0.0
-    normal_force_n = max_normal_force_between_geoms(
-      self._model, data, self._shank_geom_id, self._floor_geom_id
-    )
-    return config.contact_shank_step_penalty(normal_force_n)
+    total = 0.0
+    for shank_id in self._shank_geom_ids:
+      if not has_contact_between_geoms(
+        data, shank_id, self._floor_geom_id
+      ):
+        continue
+      normal_force_n = max_normal_force_between_geoms(
+        self._model, data, shank_id, self._floor_geom_id
+      )
+      total += config.contact_shank_step_penalty(normal_force_n)
+    return total
 
   @staticmethod
   def done_reason_pose(
-    step_physics: StepPhysics, *, foot_on_floor: bool
+    step_physics: StepPhysics, *, any_foot_on_floor: bool
   ) -> TerminationOutcome:
     imu_z = step_physics.imu_z
     upright = step_physics.upright
     imu_zaxis_x = step_physics.imu_zaxis_x
 
     min_imu_z = (
-      config.MIN_IMU_Z_STANCE if foot_on_floor else config.MIN_IMU_Z
+      config.MIN_IMU_Z_STANCE if any_foot_on_floor else config.MIN_IMU_Z
     )
     if imu_z < min_imu_z:
       return TerminationOutcome(REASON_IMU_Z, config.POSE_TERMINATION_PENALTY, None)

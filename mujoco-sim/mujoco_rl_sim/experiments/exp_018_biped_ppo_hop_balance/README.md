@@ -1,24 +1,13 @@
-# exp_018: 両脚ロボット向け PPO（exp_017 fork）
+# exp_018: 両脚バイペッド前進 PPO（10 DOF）
 
 ## 概要
 
-[docs/images/robot_front.jpg](../../../../docs/images/robot_front.jpg) に近い、**現実の両脚のみのバイペッド**を MuJoCo でシミュレートし、強化学習を行う実験。
+**両脚・全 10 サーボ**を最初から操作し、**+X 前進**を学習する PPO 実験。
 
-- **片脚ホッパ系（exp_017 以前）とは別系統**
-- コード・報酬・観測は **exp_017 のコピー**（両脚 XML 確定後に合わせて調整予定）
-- **`model/main.xml`** — `docs/robot_spec.md` と設計図に基づく両脚モデル（10 DOF）
-
-## 仮説（初期）
-
-exp_017 と同様、報酬バランス（前進↓・進捗/押し出し/着地↑）を出発点とする。両脚 XML 確定後、観測次元・関節数・報酬項をバイペッド向けに更新する。
-
-## 変更（exp_017 比）
-
-| 項目 | exp_017 | exp_018 |
-|------|---------|---------|
-| ロボット | 片脚ホッパ | **両脚バイペッド（目標）** |
-| 報酬係数 | 同左 | **同左（コピー）** |
-| XML | 片脚 main.xml | **両脚 10-DOF（docs/robot_spec 準拠）** |
+- **観測 42 次元**: IMU（dx, gyro, zaxis, 高さ）+ 左右足接地・足元 dx + 10 関節 q/qvel + 直前 action
+- **行動 10 次元**: `left/right` ×（hip_roll, hip_pitch, knee_pitch, ankle_pitch, ankle_roll）
+- **報酬**: IMU/足元前進・進捗・直立・前後傾ペナルティ・遊脚（両足非接地）継続ペナルティ・膝過屈曲など（ホップ特化の push_off/landing は無効）
+- **`model/main.xml`**: `docs/robot_spec.md` 準拠の両脚モデル
 
 ## 学習
 
@@ -27,17 +16,28 @@ cd mujoco-sim
 python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.train
 ```
 
-※ 観測・行動は exp_017（2-DOF）のまま。**学習前に両脚向けの Python 更新が必要**。
-
-## モデル確認
+## 可視化
 
 ```bash
-cd mujoco-sim
-python -c "import mujoco; m=mujoco.MjModel.from_xml_path('mujoco_rl_sim/experiments/exp_018_biped_ppo_hop_balance/model/main.xml'); print('nu', m.nu)"
+# XML のみ（keyframe stand）
+python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.visualize
+
+# 学習済みチェックポイント
+python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.visualize --checkpoint runs/.../latest.pt
 ```
+
+## exp_017 との違い
+
+| 項目 | exp_017 | exp_018 |
+|------|---------|---------|
+| 形態 | 片脚ホッパ | 両脚バイペッド |
+| 操作 DOF | 2（膝・足首） | **10（全サーボ）** |
+| 観測 | 25 | **42** |
+| タスク | ホッピング | **+X 前進歩行** |
+| ckpt 転用 | — | **不可**（次元不一致） |
 
 ## 結果
 
-| checkpoint | dx_pol | 備考 |
-|------------|--------|------|
-| （学習後に記入） | | |
+| checkpoint | 備考 |
+|------------|------|
+| （学習後に記入） | |

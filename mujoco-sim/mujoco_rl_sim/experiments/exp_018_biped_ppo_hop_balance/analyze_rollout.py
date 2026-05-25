@@ -12,7 +12,8 @@ import numpy as np
 
 from . import config
 from .agent import AgentPPO
-from .env import Env2JointPPO
+from .env import EnvBipedPPO
+from .lib.actuators import JOINT_NAMES
 from .warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
 
 
@@ -30,13 +31,11 @@ class StepRecord:
   dx: float
   foot_on_floor: float
   foot_dx: float
-  knee_deg: float
-  ankle_deg: float
-  toe_z: float
-  heel_z: float
-  knee_heel_dx: float
-  action_knee: float
-  action_ankle: float
+  left_knee_deg: float
+  right_knee_deg: float
+  left_foot_on_floor: float
+  right_foot_on_floor: float
+  action_norm: float
   termination_reason: str | None
 
 
@@ -60,11 +59,8 @@ def _resolve_checkpoint(path_str: str) -> Path:
   return path
 
 
-def _read_step_metrics(env: Env2JointPPO, step_info: dict, *, dx: float) -> dict:
+def _read_step_metrics(env: EnvBipedPPO, step_info: dict, *, dx: float) -> dict:
   data = env.data
-  knee_id = env.model.joint("knee").id
-  anchor = data.xanchor[knee_id]
-  heel = data.site("heel_bottom_site").xpos
   return {
     "upright": float(step_info["upright"]),
     "imu_z": float(data.site("imu_site").xpos[2]),
@@ -73,11 +69,10 @@ def _read_step_metrics(env: Env2JointPPO, step_info: dict, *, dx: float) -> dict
     "dx": dx,
     "foot_on_floor": float(step_info["foot_on_floor"]),
     "foot_dx": float(step_info.get("foot_dx", 0.0)),
-    "knee_deg": float(np.degrees(data.joint("knee").qpos[0])),
-    "ankle_deg": float(np.degrees(data.joint("ankle").qpos[0])),
-    "toe_z": float(data.site("toe_bottom_site").xpos[2]),
-    "heel_z": float(heel[2]),
-    "knee_heel_dx": float(anchor[0] - heel[0]),
+    "left_knee_deg": float(np.degrees(data.joint("left_knee_pitch").qpos[0])),
+    "right_knee_deg": float(np.degrees(data.joint("right_knee_pitch").qpos[0])),
+    "left_foot_on_floor": float(step_info.get("left_foot_on_floor", 0.0)),
+    "right_foot_on_floor": float(step_info.get("right_foot_on_floor", 0.0)),
   }
 
 
@@ -95,7 +90,7 @@ def _make_track_camera(model: mujoco.MjModel) -> mujoco.MjvCamera:
 
 def _render_frame(
   renderer: mujoco.Renderer,
-  env: Env2JointPPO,
+  env: EnvBipedPPO,
   path: Path,
   *,
   camera: mujoco.MjvCamera,
@@ -123,7 +118,7 @@ def main() -> None:
   agent = AgentPPO.from_checkpoint(ckpt, map_location=args.device)
   act = (lambda obs: agent.act(obs)[0]) if args.stochastic else agent.act_eval
 
-  env = Env2JointPPO(enable_viewer=False)
+  env = EnvBipedPPO(enable_viewer=False)
   renderer = mujoco.Renderer(env.model, height=args.height, width=args.width)
   track_camera = _make_track_camera(env.model)
   warmup_steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S) if config.WARMUP_ENABLED else 0
@@ -134,7 +129,7 @@ def main() -> None:
     obs = env.reset()
     ep_return = 0.0
     ep_records: list[StepRecord] = []
-    last_action = (0.0, 0.0)
+    last_action = tuple(0.0 for _ in JOINT_NAMES)
     saved_tags: set[str] = set()
     first_low_upright_step: int | None = None
     prev_foot_on_floor = 1.0
@@ -156,7 +151,7 @@ def main() -> None:
         )
       else:
         action = act(obs)
-        last_action = (float(action[0]), float(action[1]))
+        last_action = tuple(float(a) for a in action)
 
       obs, reward, terminated, step_info = env.step(action, episode_step=step)
       imu_x_after = float(env.data.site("imu_site").xpos[0])
@@ -170,8 +165,7 @@ def main() -> None:
         phase=phase,
         reward=float(reward),
         return_cum=ep_return,
-        action_knee=last_action[0],
-        action_ankle=last_action[1],
+        action_norm=float(np.linalg.norm(last_action)),
         termination_reason=step_info.get("termination_reason"),
         **m,
       )
@@ -230,7 +224,8 @@ def main() -> None:
         "max_upright": max((r.upright for r in ep_records), default=0.0),
         "min_upright_policy": min((r.upright for r in policy_recs), default=0.0),
         "min_imu_z": min((r.imu_z for r in ep_records), default=0.0),
-        "max_knee_deg": max((r.knee_deg for r in ep_records), default=0.0),
+        "max_left_knee_deg": max((r.left_knee_deg for r in ep_records), default=0.0),
+        "max_right_knee_deg": max((r.right_knee_deg for r in ep_records), default=0.0),
         "foot_contact_ratio": float(np.mean([r.foot_on_floor > 0.5 for r in ep_records])),
         "mean_dx_policy": float(np.mean([r.dx for r in policy_recs])) if policy_recs else 0.0,
         "total_dx_policy": float(sum(r.dx for r in policy_recs)),

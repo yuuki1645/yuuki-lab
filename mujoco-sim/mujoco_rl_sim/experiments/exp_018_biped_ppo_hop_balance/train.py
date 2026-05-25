@@ -19,9 +19,9 @@ from .warmup import (
   resolve_warmup_action,
 )
 
-__doc__ = f"""片脚ホッパ PPO 学習ループ（exp_008: exp_006 観測 + ホップ向け shaping）。
+__doc__ = f"""両脚バイペッド前進 PPO 学習ループ（10 DOF 全サーボ・観測 42 次元）。
 
-ロボットはモノポッド 1 脚（両脚ではない）。「2joint」= 膝・足首 2 自由度。
+タスク: +X 前進。reset は keyframe `stand`。
 
 実行例（mujoco-sim ディレクトリから）:
 

@@ -1,105 +1,81 @@
-"""exp_018: 両脚ロボット向け PPO（exp_017 から fork）。
+"""exp_018: 両脚バイペッド前進 PPO（10 DOF 全サーボ）。
 
-【重要】ロボット形態
-  - 目標: docs/images/robot_front.jpg に近い、現実の両脚のみのバイペッド。
-  - 片脚ホッパ（exp_017）とは別系統。MuJoCo XML（model/main.xml）はユーザーが差し替え予定。
-  - 現時点のコード・報酬・観測は exp_017 のコピー（XML 更新後に合わせて調整する）。
-
-報酬・終了の詳細は README.md / AGENTS.md を参照。
++X 前進を主目標。観測・報酬は片脚ホッパ（exp_017）から両脚歩行向けに再設計。
 """
 
 from pathlib import Path
 
 from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
-# ロボット形態（wandb・ドキュメント用の明示フラグ）
 ROBOT_MORPHOLOGY = "biped_legs_only"
 ROBOT_LEG_COUNT = 2
-ROBOT_ACTUATED_DOF = 10  # 脚あたり hip_roll/pitch, knee, ankle_pitch/roll
+ROBOT_ACTUATED_DOF = 10
 
-# --- MuJoCo / 制御レート -------------------------------------------------------
 _EXP_DIR = EXP_DIR
 XML_RELATIVE = "model/main.xml"
 XML_PATH = str(_EXP_DIR / XML_RELATIVE)
 
 PHYSICS_TIMESTEP_S = 0.002
 CONTROL_HZ = 50
-FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))  # 10
-CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP  # 0.02 s
+FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))
+CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP
 
-# --- 前進報酬（reward.py）-----------------------------------------------------
-FORWARD_REWARD_SCALE = 55.0
-FORWARD_MIN_UPRIGHT = 0.65
-FORWARD_REQUIRE_FOOT_CONTACT = False  # 飛翔中の IMU dx は主報酬のまま
-FORWARD_FOOT_ONLY_WHEN_CONTACT = True  # foot_dx は足底接地時のみ
+# --- 前進報酬 -------------------------------------------------------------------
+FORWARD_REWARD_SCALE = 50.0
+FORWARD_MIN_UPRIGHT = 0.62
+FORWARD_REQUIRE_FOOT_CONTACT = False
+FORWARD_FOOT_ONLY_WHEN_CONTACT = True
 
-# --- shaping: 飛翔時の直立ボーナス（常時直立ボーナスは廃止）----------------------
-UPRIGHT_BONUS_SCALE = 1.0
+UPRIGHT_BONUS_SCALE = 0.8
 UPRIGHT_BONUS_THRESH = 0.60
-UPRIGHT_BONUS_REQUIRE_FLIGHT = True
+UPRIGHT_BONUS_REQUIRE_FLIGHT = False
 UPRIGHT_BONUS_MIN_DX = 0.0
 
-# --- shaping: 後傾・前傾・低姿勢 -----------------------------------------------
 LEAN_BACKWARD_PENALTY_SCALE = 3.0
 LEAN_BACKWARD_THRESH = 0.12
 
-LEAN_FORWARD_PENALTY_SCALE = 6.0
+LEAN_FORWARD_PENALTY_SCALE = 4.0
 LEAN_FORWARD_THRESH = 0.14
-LEAN_FORWARD_MIN_FLIGHT_STEPS = 2  # 連続非接地がこれ以上で前傾ペナルティ
+LEAN_FORWARD_MIN_AERIAL_STEPS = 2
 
-# 飛翔中の前進 IMU 報酬を前傾で減衰（ダイブハック抑制、dx は殺さない）
 FORWARD_IMU_LEAN_GATE = True
-FORWARD_IMU_LEAN_GATE_THRESH = 0.10  # imu_zaxis_x がこれを超えると減衰開始
-FORWARD_IMU_LEAN_GATE_SCALE = 4.0  # excess * scale を 1 から引く
+FORWARD_IMU_LEAN_GATE_THRESH = 0.10
+FORWARD_IMU_LEAN_GATE_SCALE = 4.0
 FORWARD_IMU_LEAN_GATE_MIN_MULT = 0.15
 
-# 長い非接地（着地しない飛翔）のステップペナルティ
-FLIGHT_DURATION_PENALTY_SCALE = 0.08
-FLIGHT_DURATION_PENALTY_AFTER_STEPS = 18  # 50 Hz で約 360 ms
+# 両脚とも非接地（遊脚期）
+AERIAL_DURATION_PENALTY_SCALE = 0.12
+AERIAL_DURATION_PENALTY_AFTER_STEPS = 8
 
-# --- shaping: エピソード内の前進マイルストーン（exp_010）-----------------------
-PROGRESS_REWARD_SCALE = 18.0
-PROGRESS_MIN_UPRIGHT = 0.62
+PROGRESS_REWARD_SCALE = 20.0
+PROGRESS_MIN_UPRIGHT = 0.60
 
-# --- shaping: 飛翔中の膝過屈曲（ダイブ・縮み姿勢抑制）--------------------------
-KNEE_HYPERFLEX_MAX_RAD = 0.95  # 約 54°、分析で 80°+ が墜落と相関
-KNEE_HYPERFLEX_PENALTY_SCALE = 3.2
-KNEE_HYPERFLEX_FLIGHT_ONLY = True
+KNEE_HYPERFLEX_MAX_RAD = 0.95
+KNEE_HYPERFLEX_PENALTY_SCALE = 2.5
+KNEE_HYPERFLEX_AERIAL_ONLY = True
 
 IMU_HEIGHT_PENALTY_SCALE = 2.0
 TARGET_IMU_Z = 0.55
-TARGET_IMU_Z_STANCE = 0.48  # 立脚中はこの高さまで許容（押し込み）
+TARGET_IMU_Z_STANCE = 0.46
 HEIGHT_PENALTY_SKIP_WHEN_STANCE = True
-HEIGHT_PENALTY_FLIGHT_CRASH_Z = 0.45  # 非接地でこれ未満は強くペナルティ
+HEIGHT_PENALTY_AERIAL_CRASH_Z = 0.42
 
-# --- shaping: 膝屈曲ボーナス — 廃止（歩行向け）---------------------------------
+# 片脚ホッパ向け（両脚では無効）
+PUSH_OFF_BONUS_SCALE = 0.0
+LANDING_BONUS_SCALE = 0.0
 KNEE_HUMAN_FLEX_BONUS_SCALE = 0.0
 
-# --- shaping: 立脚押し出し・着地 -----------------------------------------------
-PUSH_OFF_BONUS_SCALE = 0.45
-PUSH_OFF_MIN_FOOT_DX = 0.002
-PUSH_OFF_MIN_IMU_DZ = 0.004
-PUSH_OFF_MIN_KNEE_EXT_VEL = 0.15  # 膝 qvel<0 = 伸展（+Y ヒンジ・屈曲が +）
-
-LANDING_BONUS_SCALE = 0.75
-LANDING_MAX_TOE_Z = 0.06
-LANDING_MAX_HEEL_Z = 0.06
-LANDING_MAX_FORWARD_LEAN = 0.28
-
-# --- 筋負荷 --------------------------------------------------------------------
-EFFORT_PENALTY_SCALE = 5.0
+EFFORT_PENALTY_SCALE = 3.0
 APPLY_EFFORT_PENALTY = False
 
-# --- 姿勢ベース早期終了 --------------------------------------------------------
-MIN_IMU_Z = 0.42
-MIN_IMU_Z_STANCE = 0.36  # 立脚中のみ緩和
-MIN_IMU_UPRIGHT = 0.55
-MAX_BACKWARD_LEAN = 0.40
+MIN_IMU_Z = 0.40
+MIN_IMU_Z_STANCE = 0.34
+MIN_IMU_UPRIGHT = 0.52
+MAX_BACKWARD_LEAN = 0.38
 POSE_TERMINATION_PENALTY = -30.0
 
-# --- 接触: basket/thigh は即終了、shank はステップペナルティのみ ---------------
 CONTACT_SHANK_TERMINATES = False
-CONTACT_SHANK_STEP_PENALTY_SCALE = 1.0  # contact_link_termination_penalty に掛ける
+CONTACT_SHANK_STEP_PENALTY_SCALE = 1.0
 
 CONTACT_FLOOR_PENALTY_BASE = -20.0
 CONTACT_FLOOR_PENALTY_PER_N = -0.016
@@ -120,7 +96,6 @@ def contact_floor_termination_penalty(
   *,
   penalty_scale: float = 1.0,
 ) -> float:
-  """geom−floor 接触の法線力 [N] から終了ペナルティを計算する。"""
   scale = float(penalty_scale)
   capped_span = max(0.0, CONTACT_FLOOR_FORCE_CAP_N - CONTACT_FLOOR_MIN_FORCE_N)
   excess_force_n = min(
@@ -144,30 +119,27 @@ def contact_link_termination_penalty(normal_force_n: float) -> float:
 
 
 def contact_shank_step_penalty(normal_force_n: float) -> float:
-  """下腿−床接触の制御ステップペナルティ（エピソードは継続）。"""
   return CONTACT_SHANK_STEP_PENALTY_SCALE * contact_link_termination_penalty(
     normal_force_n
   )
 
-# --- 観測正規化（exp_006 と同一）----------------------------------------------
+# --- 観測: dx(1)+gyro(3)+zaxis(3)+imu_z(1)+feet(4)+joint_q(10)+joint_qvel(10)+prev_a(10) = 42
 MAX_DX_PER_STEP = 0.05 * FRAME_SKIP
 MAX_GYRO_RAD_S = 10.0
 MAX_JOINT_VEL_RAD_S = 10.0
-MAX_COM_X_OFFSET = 0.6
+MAX_FOOT_DX_PER_STEP = 0.04 * FRAME_SKIP
 MAX_IMU_Z = 1.2
 MIN_IMU_Z_NORM = 0.0
-MAX_REL_HEEL_OFFSET = 1.0
 
-OBS_DIM = 25
-ACTION_DIM = 2
+ACTION_DIM = 10
+OBS_DIM = 42
 
-# --- PPO（exp_006 と同一）------------------------------------------------------
 GAMMA = 0.99**FRAME_SKIP
 GAE_LAMBDA = 0.95
 LR = 3e-4
 ROLLOUT_STEPS = 512
 VALUE_COEF = 0.5
-ENTROPY_COEF = 0.04
+ENTROPY_COEF = 0.05
 MAX_GRAD_NORM = 0.5
 MINIBATCH_SIZE = 256
 STD_MIN = 0.08
@@ -184,13 +156,13 @@ LOG_PROB_CLIP = 20.0
 from .warmup import default_warmup_action
 
 WARMUP_ENABLED = True
-WARMUP_DURATION_S = 1.2
+WARMUP_DURATION_S = 1.0
 WARMUP_ACTION_FN = default_warmup_action
 
 NUM_UPDATES = 6_000
-MAX_STEPS_PER_EPISODE = 15_000 // FRAME_SKIP  # 30 s @ 50 Hz（10 m 評価用）
+MAX_STEPS_PER_EPISODE = 15_000 // FRAME_SKIP
 LOG_EVERY = 20
-ENABLE_VIEWER = False  # 学習速度優先（可視化は analyze_rollout / visualize）
+ENABLE_VIEWER = False
 
 SAVE_CHECKPOINTS = True
 CHECKPOINT_DIR = str(CHECKPOINT_ROOT)
@@ -205,12 +177,10 @@ WANDB_ENTITY = ""
 WANDB_TAGS = (
   "ppo",
   "biped",
-  "legs_only",
-  "hop_shaping",
-  "lean_gate",
-  "long_episode",
+  "biped_walk",
+  "10dof",
+  "forward",
   "progress_reward",
-  "knee_hyperflex",
 )
 WANDB_TERMINATION_ROLLING_WINDOW = 100
 
@@ -218,7 +188,6 @@ COMPARE_BASELINE_EXP = "exp_017_2joint_ppo_hop_balance"
 
 
 def training_config_dict() -> dict:
-  """wandb.init(config=...) 用のハイパーパラメータ辞書。"""
   return {
     "exp_name": EXP_NAME,
     "robot_morphology": ROBOT_MORPHOLOGY,
@@ -233,58 +202,18 @@ def training_config_dict() -> dict:
     "control_timestep_s": CONTROL_TIMESTEP_S,
     "forward_reward_scale": FORWARD_REWARD_SCALE,
     "forward_min_upright": FORWARD_MIN_UPRIGHT,
-    "forward_require_foot_contact": FORWARD_REQUIRE_FOOT_CONTACT,
-    "forward_foot_only_when_contact": FORWARD_FOOT_ONLY_WHEN_CONTACT,
-    "upright_bonus_scale": UPRIGHT_BONUS_SCALE,
-    "upright_bonus_thresh": UPRIGHT_BONUS_THRESH,
-    "upright_bonus_require_flight": UPRIGHT_BONUS_REQUIRE_FLIGHT,
-    "lean_forward_penalty_scale": LEAN_FORWARD_PENALTY_SCALE,
-    "lean_forward_thresh": LEAN_FORWARD_THRESH,
-    "lean_forward_min_flight_steps": LEAN_FORWARD_MIN_FLIGHT_STEPS,
-    "forward_imu_lean_gate": FORWARD_IMU_LEAN_GATE,
-    "forward_imu_lean_gate_thresh": FORWARD_IMU_LEAN_GATE_THRESH,
-    "flight_duration_penalty_scale": FLIGHT_DURATION_PENALTY_SCALE,
-    "flight_duration_penalty_after_steps": FLIGHT_DURATION_PENALTY_AFTER_STEPS,
     "progress_reward_scale": PROGRESS_REWARD_SCALE,
-    "knee_hyperflex_max_rad": KNEE_HYPERFLEX_MAX_RAD,
-    "lean_backward_penalty_scale": LEAN_BACKWARD_PENALTY_SCALE,
-    "lean_backward_thresh": LEAN_BACKWARD_THRESH,
-    "imu_height_penalty_scale": IMU_HEIGHT_PENALTY_SCALE,
-    "target_imu_z": TARGET_IMU_Z,
-    "target_imu_z_stance": TARGET_IMU_Z_STANCE,
-    "height_penalty_skip_when_stance": HEIGHT_PENALTY_SKIP_WHEN_STANCE,
-    "knee_human_flex_bonus_scale": KNEE_HUMAN_FLEX_BONUS_SCALE,
-    "push_off_bonus_scale": PUSH_OFF_BONUS_SCALE,
-    "landing_bonus_scale": LANDING_BONUS_SCALE,
-    "contact_shank_terminates": CONTACT_SHANK_TERMINATES,
-    "contact_shank_step_penalty_scale": CONTACT_SHANK_STEP_PENALTY_SCALE,
-    "pose_termination_penalty": POSE_TERMINATION_PENALTY,
-    "min_imu_z": MIN_IMU_Z,
-    "min_imu_z_stance": MIN_IMU_Z_STANCE,
-    "min_imu_upright": MIN_IMU_UPRIGHT,
-    "max_backward_lean": MAX_BACKWARD_LEAN,
-    "effort_penalty_scale": EFFORT_PENALTY_SCALE,
-    "apply_effort_penalty": APPLY_EFFORT_PENALTY,
+    "aerial_duration_penalty_scale": AERIAL_DURATION_PENALTY_SCALE,
     "obs_dim": OBS_DIM,
     "action_dim": ACTION_DIM,
     "gamma": GAMMA,
     "gae_lambda": GAE_LAMBDA,
     "lr": LR,
     "rollout_steps": ROLLOUT_STEPS,
-    "value_coef": VALUE_COEF,
     "entropy_coef": ENTROPY_COEF,
-    "max_grad_norm": MAX_GRAD_NORM,
-    "std_min": STD_MIN,
-    "clip_eps": CLIP_EPS,
-    "ppo_epochs": PPO_EPOCHS,
-    "target_kl": TARGET_KL,
-    "reward_clip": REWARD_CLIP,
-    "adv_clip": ADV_CLIP,
-    "adv_std_min": ADV_STD_MIN,
     "num_updates": NUM_UPDATES,
     "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
     "warmup_enabled": WARMUP_ENABLED,
-    "warmup_duration_s": WARMUP_DURATION_S,
     "save_checkpoints": SAVE_CHECKPOINTS,
     "checkpoint_dir": CHECKPOINT_DIR,
     "checkpoint_every": CHECKPOINT_EVERY,

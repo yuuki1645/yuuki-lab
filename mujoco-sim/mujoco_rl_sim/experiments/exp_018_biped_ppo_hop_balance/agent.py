@@ -159,13 +159,13 @@ class AgentPPO:
     return torch.tensor([list(obs)], dtype=torch.float32)
 
   @staticmethod
-  def _action_tuple(action_tensor: torch.Tensor) -> tuple[float, float]:
-    a = action_tensor.detach().squeeze(0)
-    return float(a[0].item()), float(a[1].item())
+  def _action_tuple(action_tensor: torch.Tensor) -> tuple[float, ...]:
+    a = action_tensor.detach().reshape(-1)
+    return tuple(float(x.item()) for x in a)
 
   @staticmethod
   def _squashed_log_prob(dist, action: torch.Tensor) -> torch.Tensor:
-    """log π(a|s)。膝・足首 2 次元なので次元ごとの log_prob を足し合わせる。"""
+    """log π(a|s)。各次元の log_prob を足し合わせる。"""
     return dist.log_prob(action).sum(dim=-1).clamp(
       -config.LOG_PROB_CLIP,
       config.LOG_PROB_CLIP,

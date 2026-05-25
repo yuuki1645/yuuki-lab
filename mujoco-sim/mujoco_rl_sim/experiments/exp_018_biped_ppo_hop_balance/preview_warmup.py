@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from . import config
-from .env import Env2JointPPO
+from .env import EnvBipedPPO
 from .package_meta import PACKAGE
 from .warmup import (
   WarmupContext,
@@ -56,7 +56,7 @@ def _print_warmup_config() -> None:
 
 
 def _run_warmup_preview(
-  env: Env2JointPPO,
+  env: EnvBipedPPO,
   *,
   max_episodes: int,
   print_every: int,
@@ -127,7 +127,7 @@ def main() -> None:
   args = _parse_args()
   _print_warmup_config()
 
-  env = Env2JointPPO(enable_viewer=True)
+  env = EnvBipedPPO(enable_viewer=True)
   if env.viewer is None:
     raise SystemExit("[preview_warmup] MuJoCo ビューアを起動できませんでした。")
 

@@ -1,7 +1,4 @@
-"""exp_008: 片脚ホッパ向け Gym 風環境ラッパー。
-
-ロボットは model/main.xml のモノポッド 1 脚（freejoint）。両脚歩行ではない。
-"""
+"""exp_018: 両脚バイペッド前進 PPO 環境（10 DOF 全サーボ）。"""
 
 import time
 
@@ -11,6 +8,8 @@ from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, a
 
 from . import config
 from .episode_state import EpisodeState
+from .lib.action import ActionBinding
+from .lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
 from .observation import Observation
 from .effort import EffortTracker
 from .reward import Reward
@@ -23,11 +22,10 @@ from .termination import (
   REASON_BACKWARD_LEAN,
   Termination,
 )
-from .lib.action import ActionBinding
 
 
-class Env2JointPPO:
-  """exp_008 用環境（片脚ホッパ・足底幾何観測 25 次元）。"""
+class EnvBipedPPO:
+  """両脚 10 DOF・観測 42 次元・+X 前進タスク。"""
 
   def __init__(self, *, enable_viewer: bool = True):
     self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
@@ -51,26 +49,41 @@ class Env2JointPPO:
     self._reward = Reward()
     self._effort = EffortTracker(self.model)
     self._termination = Termination(self.model)
+    self._stand_key_id = mujoco.mj_name2id(
+      self.model, mujoco.mjtObj.mjOBJ_KEY, "stand"
+    )
+
+  def _apply_stand_keyframe(self) -> None:
+    if self._stand_key_id >= 0:
+      mujoco.mj_resetDataKeyframe(self.model, self.data, self._stand_key_id)
+    else:
+      mujoco.mj_resetData(self.model, self.data)
+    mujoco.mj_forward(self.model, self.data)
 
   def reset(self):
-    mujoco.mj_resetData(self.model, self.data)
-    mujoco.mj_forward(self.model, self.data)
+    self._apply_stand_keyframe()
     if self.viewer is not None:
       self.viewer.sync()
 
     imu_x = float(self.data.site("imu_site").xpos[0])
     imu_z = float(self.data.site("imu_site").xpos[2])
-    foot_x = float(self.data.site("foot_site").xpos[0])
-    self._episode.reset_forward_tracking(imu_x=imu_x, foot_x=foot_x, imu_z=imu_z)
-    self._episode.prev_action = (0.0, 0.0)
+    left_foot_x = float(self.data.site(LEFT_FOOT_SITE).xpos[0])
+    right_foot_x = float(self.data.site(RIGHT_FOOT_SITE).xpos[0])
+    self._episode.reset_forward_tracking(
+      imu_x=imu_x,
+      left_foot_x=left_foot_x,
+      right_foot_x=right_foot_x,
+      imu_z=imu_z,
+      n_action=config.ACTION_DIM,
+    )
 
-    # policy_obs: 正規化済み 25 次元（ポリシー入力）。reset 時は報酬用 step_physics は不要。
     policy_obs, _ = self._observation.build(
-      self.model, self.data, self._episode, dx=0.0, foot_dx=0.0
+      self.model, self.data, self._episode, dx=0.0
     )
     return policy_obs.to_vector()
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
+    _ = episode_step
     prev_action = self._action.apply(self.data, action)
 
     termination = NOT_TERMINATED
@@ -95,30 +108,38 @@ class Env2JointPPO:
 
     imu_x = float(self.data.site("imu_site").xpos[0])
     imu_z = float(self.data.site("imu_site").xpos[2])
-    foot_x = float(self.data.site("foot_site").xpos[0])
+    left_foot_x = float(self.data.site(LEFT_FOOT_SITE).xpos[0])
+    right_foot_x = float(self.data.site(RIGHT_FOOT_SITE).xpos[0])
     dx = self._episode.advance_imu_x(imu_x)
-    foot_dx = self._episode.advance_foot_x(foot_x)
-
-    # policy_obs … 正規化済み観測（エージェントへ返す）
-    # step_physics … 生の物理量（報酬・終了判定・step_info 用）
-    policy_obs, step_physics = self._observation.build(
-      self.model, self.data, self._episode, dx=dx, foot_dx=foot_dx
+    left_foot_dx, right_foot_dx = self._episode.advance_foot_dx(
+      left_foot_x, right_foot_x
     )
 
-    hop = self._episode.advance_hop_context(
-      foot_on_floor=step_physics.foot_on_floor, imu_z=imu_z
+    policy_obs, step_physics = self._observation.build(
+      self.model,
+      self.data,
+      self._episode,
+      dx=dx,
+      left_foot_dx=left_foot_dx,
+      right_foot_dx=right_foot_dx,
+    )
+
+    biped = self._episode.advance_biped_context(
+      left_on_floor=step_physics.left_foot_on_floor,
+      right_on_floor=step_physics.right_foot_on_floor,
+      imu_z=imu_z,
     )
     progress_m = self._episode.advance_progress(
       imu_x, upright=step_physics.upright
     )
 
     reward_breakdown = self._reward.compute(
-      step_physics, hop=hop, effort=effort, progress_m=progress_m
+      step_physics, biped=biped, effort=effort, progress_m=progress_m
     )
 
     if not termination.terminated:
       termination = self._termination.done_reason_pose(
-        step_physics, foot_on_floor=step_physics.foot_on_floor
+        step_physics, any_foot_on_floor=step_physics.any_foot_on_floor
       )
 
     terminated = termination.terminated
@@ -135,9 +156,13 @@ class Env2JointPPO:
     contact_force_n = termination.contact_normal_force_n
     step_info = {
       "upright": step_physics.upright,
-      "foot_on_floor": float(step_physics.foot_on_floor),
-      "flight_steps": float(hop.flight_steps),
-      "landed": float(hop.landed),
+      "foot_on_floor": float(step_physics.any_foot_on_floor),
+      "left_foot_on_floor": float(step_physics.left_foot_on_floor),
+      "right_foot_on_floor": float(step_physics.right_foot_on_floor),
+      "both_feet_on_floor": float(biped.both_feet_on_floor),
+      "flight_steps": float(biped.aerial_steps),
+      "aerial_steps": float(biped.aerial_steps),
+      "landed": float(biped.left_landed or biped.right_landed),
       "reward_forward": reward_breakdown.forward,
       "reward_forward_imu": reward_breakdown.forward_imu,
       "reward_forward_foot": reward_breakdown.forward_foot,
@@ -152,6 +177,8 @@ class Env2JointPPO:
       "reward_progress": reward_breakdown.progress_bonus,
       "reward_knee_hyperflex_penalty": reward_breakdown.knee_hyperflex_penalty,
       "foot_dx": step_physics.foot_dx,
+      "left_foot_dx": step_physics.left_foot_dx,
+      "right_foot_dx": step_physics.right_foot_dx,
       "reward_effort_penalty": reward_breakdown.effort_penalty,
       "effort_power_cost": reward_breakdown.effort_power_cost,
       "reward_shank_step_penalty": shank_penalty_sum,
@@ -186,3 +213,7 @@ class Env2JointPPO:
     }
 
     return policy_obs.to_vector(), reward, terminated, step_info
+
+
+# 後方互換（import 名）
+Env2JointPPO = EnvBipedPPO

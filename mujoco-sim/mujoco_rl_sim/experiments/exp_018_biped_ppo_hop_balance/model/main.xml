@@ -140,18 +140,18 @@
   </worldbody>
 
   <actuator>
-    <!-- ctrlrange はラジアン（joint range の度と対応）。exp_017 膝・足首と同値 -->
-    <position name="left_hip_roll_motor" joint="left_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-42 42"/>
-    <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-42 42"/>
-    <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-60 60"/>
-    <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-35 35"/>
-    <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-22 22"/>
+    <!-- ctrlrange はラジアン。forcerange は RDS51150（150 kg·cm ≈ 14.7 N·m）飽和、全軸共通 -->
+    <position name="left_hip_roll_motor" joint="left_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-14.7 14.7"/>
 
-    <position name="right_hip_roll_motor" joint="right_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-42 42"/>
-    <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-42 42"/>
-    <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-60 60"/>
-    <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-35 35"/>
-    <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-22 22"/>
+    <position name="right_hip_roll_motor" joint="right_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-14.7 14.7"/>
+    <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-14.7 14.7"/>
   </actuator>
 
   <sensor>

@@ -10,6 +10,9 @@
     寸法 [m]: カゴ 0.28×0.145×0.18, 腿/脛セグメント各 0.20, サーボ 0.065 高,
     足裏板 0.30×0.17×0.002, リポ 0.13×0.04×0.024（各腿セグメント内）。
     腿/脛フレーム: 単一 geom ではなく左右 3mm アルミ板 2 枚（4cm×20cm、各 63g）で挟み込み。
+
+    関節 range 属性は度（exp_017 同様）。論理角は docs/human_joint_kinematics.md 参照。
+    股ピッチは実機 kinematics（論理 60° = MuJoCo 0°）に合わせ MuJoCo -110°〜30°。
   -->
 
   <default>
@@ -48,19 +51,22 @@
       <!-- ========== 左脚 (+Y) ========== -->
       <body name="left_hip" pos="0 0.12 0">
         <!-- 軸: ロール (X) — 背面図は点、側面図は線 -->
-        <joint name="left_hip_roll" type="hinge" axis="1 0 0" range="-0.524 1.571" damping="2"/>
+        <!-- 股ロール: 実機 LOGICAL_RANGE_HIP1（-30°〜90°） -->
+        <joint name="left_hip_roll" type="hinge" axis="1 0 0" range="-30 90" damping="2"/>
         <geom name="left_hip_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
         <body name="left_thigh" pos="0 0 -0.065">
           <!-- 軸: ピッチ (Y) -->
-          <joint name="left_hip_pitch" type="hinge" axis="0 1 0" range="-2.094 0.524" damping="2"/>
+          <!-- 股ピッチ論理角 -20°〜120° → MuJoCo（論理-90°）-110°〜30° -->
+          <joint name="left_hip_pitch" type="hinge" axis="0 1 0" range="-110 30" damping="2"/>
           <!-- 腿板×2: 板面は X-Z、厚み 3mm は Y。サーボ幅 48mm の両脇に配置 -->
           <geom name="left_thigh_plate_outer" type="box" pos="0 0.0255 -0.10" size="0.02 0.0015 0.10" material="metal" mass="0.063"/>
           <geom name="thigh_link" type="box" pos="0 -0.0255 -0.10" size="0.02 0.0015 0.10" material="metal" mass="0.063"/>
           <geom name="left_thigh_lipo" type="box" pos="0 0 -0.10" size="0.012 0.02 0.065" material="lipo" mass="0.302" contype="0" conaffinity="0"/>
 
           <body name="left_knee" pos="0 0 -0.20">
-            <joint name="left_knee_pitch" type="hinge" axis="0 1 0" range="0 1.745" damping="2"/>
+            <!-- 膝: 真下 0°、後方屈曲 +（論理 0°〜100°） -->
+            <joint name="left_knee_pitch" type="hinge" axis="0 1 0" range="0 100" damping="2"/>
             <geom name="left_knee_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
             <body name="left_shin" pos="0 0 -0.065">
@@ -69,11 +75,12 @@
               <geom name="left_shin_lipo" type="box" pos="0 0 -0.10" size="0.012 0.02 0.065" material="lipo" mass="0.302" contype="0" conaffinity="0"/>
 
               <body name="left_ankle_pitch" pos="0 0 -0.20">
-                <joint name="left_ankle_pitch" type="hinge" axis="0 1 0" range="-0.873 1.571" damping="2"/>
+                <!-- 足首ピッチ: 背屈 -20°、底屈 +90°（論理角） -->
+                <joint name="left_ankle_pitch" type="hinge" axis="0 1 0" range="-20 90" damping="2"/>
                 <geom name="left_ankle_pitch_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                 <body name="left_ankle_roll" pos="0 0 -0.065">
-                  <joint name="left_ankle_roll" type="hinge" axis="1 0 0" range="-0.349 0.349" damping="2"/>
+                  <joint name="left_ankle_roll" type="hinge" axis="1 0 0" range="-20 20" damping="2"/>
                   <geom name="left_ankle_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                   <body name="left_sole" pos="0 0 -0.065">
@@ -91,17 +98,17 @@
 
       <!-- ========== 右脚 (-Y) ========== -->
       <body name="right_hip" pos="0 -0.12 0">
-        <joint name="right_hip_roll" type="hinge" axis="1 0 0" range="-0.524 1.571" damping="2"/>
+        <joint name="right_hip_roll" type="hinge" axis="1 0 0" range="-30 90" damping="2"/>
         <geom name="right_hip_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
         <body name="right_thigh" pos="0 0 -0.065">
-          <joint name="right_hip_pitch" type="hinge" axis="0 1 0" range="-2.094 0.524" damping="2"/>
+          <joint name="right_hip_pitch" type="hinge" axis="0 1 0" range="-110 30" damping="2"/>
           <geom name="right_thigh_plate_outer" type="box" pos="0 -0.0255 -0.10" size="0.02 0.0015 0.10" material="metal" mass="0.063"/>
           <geom name="right_thigh_link" type="box" pos="0 0.0255 -0.10" size="0.02 0.0015 0.10" material="metal" mass="0.063"/>
           <geom name="right_thigh_lipo" type="box" pos="0 0 -0.10" size="0.012 0.02 0.065" material="lipo" mass="0.302" contype="0" conaffinity="0"/>
 
           <body name="right_knee" pos="0 0 -0.20">
-            <joint name="right_knee_pitch" type="hinge" axis="0 1 0" range="0 1.745" damping="2"/>
+            <joint name="right_knee_pitch" type="hinge" axis="0 1 0" range="0 100" damping="2"/>
             <geom name="right_knee_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
             <body name="right_shin" pos="0 0 -0.065">
@@ -110,11 +117,11 @@
               <geom name="right_shin_lipo" type="box" pos="0 0 -0.10" size="0.012 0.02 0.065" material="lipo" mass="0.302" contype="0" conaffinity="0"/>
 
               <body name="right_ankle_pitch" pos="0 0 -0.20">
-                <joint name="right_ankle_pitch" type="hinge" axis="0 1 0" range="-0.873 1.571" damping="2"/>
+                <joint name="right_ankle_pitch" type="hinge" axis="0 1 0" range="-20 90" damping="2"/>
                 <geom name="right_ankle_pitch_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                 <body name="right_ankle_roll" pos="0 0 -0.065">
-                  <joint name="right_ankle_roll" type="hinge" axis="1 0 0" range="-0.349 0.349" damping="2"/>
+                  <joint name="right_ankle_roll" type="hinge" axis="1 0 0" range="-20 20" damping="2"/>
                   <geom name="right_ankle_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                   <body name="right_sole" pos="0 0 -0.065">
@@ -133,18 +140,18 @@
   </worldbody>
 
   <actuator>
-    <!-- RDS51150 (150kg) 相当: 002_leg_freejoint の PD ゲインをベースに全 10 軸 -->
-    <position name="left_hip_roll_motor" joint="left_hip_roll" kp="85" kv="12" forcelimited="true" forcerange="-42 42"/>
-    <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="85" kv="12" forcelimited="true" forcerange="-42 42"/>
-    <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="120" kv="14" forcelimited="true" forcerange="-60 60"/>
-    <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="70" kv="10" forcelimited="true" forcerange="-35 35"/>
-    <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="50" kv="8" forcelimited="true" forcerange="-22 22"/>
+    <!-- ctrlrange はラジアン（joint range の度と対応）。exp_017 膝・足首と同値 -->
+    <position name="left_hip_roll_motor" joint="left_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-42 42"/>
+    <position name="left_hip_pitch_motor" joint="left_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-42 42"/>
+    <position name="left_knee_pitch_motor" joint="left_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-60 60"/>
+    <position name="left_ankle_pitch_motor" joint="left_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-35 35"/>
+    <position name="left_ankle_roll_motor" joint="left_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-22 22"/>
 
-    <position name="right_hip_roll_motor" joint="right_hip_roll" kp="85" kv="12" forcelimited="true" forcerange="-42 42"/>
-    <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="85" kv="12" forcelimited="true" forcerange="-42 42"/>
-    <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="120" kv="14" forcelimited="true" forcerange="-60 60"/>
-    <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="70" kv="10" forcelimited="true" forcerange="-35 35"/>
-    <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="50" kv="8" forcelimited="true" forcerange="-22 22"/>
+    <position name="right_hip_roll_motor" joint="right_hip_roll" kp="85" kv="12" ctrlrange="-0.524 1.571" forcelimited="true" forcerange="-42 42"/>
+    <position name="right_hip_pitch_motor" joint="right_hip_pitch" kp="85" kv="12" ctrlrange="-1.919 0.524" forcelimited="true" forcerange="-42 42"/>
+    <position name="right_knee_pitch_motor" joint="right_knee_pitch" kp="120" kv="14" ctrlrange="0 1.745" forcelimited="true" forcerange="-60 60"/>
+    <position name="right_ankle_pitch_motor" joint="right_ankle_pitch" kp="70" kv="10" ctrlrange="-0.349 1.571" forcelimited="true" forcerange="-35 35"/>
+    <position name="right_ankle_roll_motor" joint="right_ankle_roll" kp="50" kv="8" ctrlrange="-0.349 0.349" forcelimited="true" forcerange="-22 22"/>
   </actuator>
 
   <sensor>
@@ -155,7 +162,7 @@
     <framepos name="toe_pos" objtype="site" objname="toe_bottom_site"/>
   </sensor>
 
-  <!-- 立位: 全関節 0 rad ≒ 実機デフォルト論理角（hip2=60°, knee=30°, heel=-30°） -->
+  <!-- 立位: 全関節 MuJoCo 0° ≒ 論理角 hip2=60°, knee=30°, heel=-30° -->
   <keyframe>
     <key name="stand"
       qpos="0 0 0.66 1 0 0 0  0 0 0 0 0  0 0 0 0 0"

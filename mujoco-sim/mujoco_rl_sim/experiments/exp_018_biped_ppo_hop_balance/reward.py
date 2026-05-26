@@ -2,10 +2,37 @@
 
 from dataclasses import dataclass
 
+import mujoco
+
 from . import config
 from .effort import EffortBreakdown
-from .episode_state import BipedStepContext
-from .observation import StepPhysics
+from .episode_state import BipedStepContext, EpisodeState
+from .lib.actuators import (
+  LEFT_FOOT_GEOM,
+  LEFT_FOOT_SITE,
+  RIGHT_FOOT_GEOM,
+  RIGHT_FOOT_SITE,
+)
+
+
+@dataclass(frozen=True)
+class RewardPhysicsSnapshot:
+  """報酬計算に使う 1 ステップ分の物理量。
+
+  dx / left_foot_dx / right_foot_dx は episode の prev_* との差分（advance 前）。
+  """
+
+  dx: float
+  left_foot_dx: float
+  right_foot_dx: float
+  imu_z: float
+  upright: float
+  imu_zaxis_x: float
+  left_foot_on_floor: bool
+  right_foot_on_floor: bool
+  any_foot_on_floor: bool
+  left_knee_angle: float
+  right_knee_angle: float
 
 
 @dataclass(frozen=True)
@@ -48,6 +75,57 @@ class RewardBreakdown:
 
 
 class Reward:
+  def __init__(self, model: mujoco.MjModel):
+    self._imu_site_id = model.site("imu_site").id
+    self._left_foot_site_id = model.site(LEFT_FOOT_SITE).id
+    self._right_foot_site_id = model.site(RIGHT_FOOT_SITE).id
+    self._floor_geom_id = model.geom("floor").id
+    self._left_foot_geom_id = model.geom(LEFT_FOOT_GEOM).id
+    self._right_foot_geom_id = model.geom(RIGHT_FOOT_GEOM).id
+    self._left_knee_joint_id = model.joint("left_knee_pitch").id
+    self._right_knee_joint_id = model.joint("right_knee_pitch").id
+
+  def _geom_on_floor(self, data: mujoco.MjData, geom_id: int) -> bool:
+    for i in range(data.ncon):
+      c = data.contact[i]
+      if (c.geom1 == geom_id and c.geom2 == self._floor_geom_id) or (
+        c.geom2 == geom_id and c.geom1 == self._floor_geom_id
+      ):
+        return True
+    return False
+
+  def _build_snapshot(
+    self, data: mujoco.MjData, episode: EpisodeState
+  ) -> RewardPhysicsSnapshot:
+    imu_x = float(data.site_xpos[self._imu_site_id, 0])
+    left_foot_x = float(data.site_xpos[self._left_foot_site_id, 0])
+    right_foot_x = float(data.site_xpos[self._right_foot_site_id, 0])
+    imu_z = float(data.site_xpos[self._imu_site_id, 2])
+
+    dx = imu_x - episode.prev_imu_x
+    left_foot_dx = left_foot_x - episode.prev_left_foot_x
+    right_foot_dx = right_foot_x - episode.prev_right_foot_x
+
+    left_on = self._geom_on_floor(data, self._left_foot_geom_id)
+    right_on = self._geom_on_floor(data, self._right_foot_geom_id)
+
+    imu_zaxis = data.sensor("imu_zaxis").data
+    upright = float(imu_zaxis[2])
+
+    return RewardPhysicsSnapshot(
+      dx=dx,
+      left_foot_dx=left_foot_dx,
+      right_foot_dx=right_foot_dx,
+      imu_z=imu_z,
+      upright=upright,
+      imu_zaxis_x=float(imu_zaxis[0]),
+      left_foot_on_floor=left_on,
+      right_foot_on_floor=right_on,
+      any_foot_on_floor=left_on or right_on,
+      left_knee_angle=float(data.joint(self._left_knee_joint_id).qpos[0]),
+      right_knee_angle=float(data.joint(self._right_knee_joint_id).qpos[0]),
+    )
+
   @staticmethod
   def _forward_imu_lean_multiplier(
     imu_zaxis_x: float, *, any_foot_on_floor: bool
@@ -74,12 +152,10 @@ class Reward:
     return float(progress_m) * config.PROGRESS_REWARD_SCALE
 
   @staticmethod
-  def _knee_hyperflex_penalty(step_physics: StepPhysics) -> float:
-    if config.KNEE_HYPERFLEX_AERIAL_ONLY and step_physics.any_foot_on_floor:
+  def _knee_hyperflex_penalty(phys: RewardPhysicsSnapshot) -> float:
+    if config.KNEE_HYPERFLEX_AERIAL_ONLY and phys.any_foot_on_floor:
       return 0.0
-    knee = max(
-      step_physics.left_knee_angle, step_physics.right_knee_angle
-    )
+    knee = max(phys.left_knee_angle, phys.right_knee_angle)
     excess = max(0.0, float(knee) - config.KNEE_HYPERFLEX_MAX_RAD)
     return excess * config.KNEE_HYPERFLEX_PENALTY_SCALE
 
@@ -102,12 +178,12 @@ class Reward:
     return max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE * max(0.0, float(scale))
 
   @staticmethod
-  def _forward_foot_sum(step_physics: StepPhysics) -> float:
+  def _forward_foot_sum(phys: RewardPhysicsSnapshot) -> float:
     total = 0.0
-    if step_physics.left_foot_on_floor:
-      total += max(0.0, step_physics.left_foot_dx)
-    if step_physics.right_foot_on_floor:
-      total += max(0.0, step_physics.right_foot_dx)
+    if phys.left_foot_on_floor:
+      total += max(0.0, phys.left_foot_dx)
+    if phys.right_foot_on_floor:
+      total += max(0.0, phys.right_foot_dx)
     return total
 
   @staticmethod
@@ -149,27 +225,29 @@ class Reward:
 
   def compute(
     self,
-    step_physics: StepPhysics,
+    data: mujoco.MjData,
+    episode: EpisodeState,
     *,
     biped: BipedStepContext,
     effort: EffortBreakdown,
     progress_m: float = 0.0,
   ) -> RewardBreakdown:
-    upright = step_physics.upright
-    any_foot = step_physics.any_foot_on_floor
+    phys = self._build_snapshot(data, episode)
+    upright = phys.upright
+    any_foot = phys.any_foot_on_floor
 
     imu_forward_scale = self._forward_imu_lean_multiplier(
-      step_physics.imu_zaxis_x, any_foot_on_floor=any_foot
+      phys.imu_zaxis_x, any_foot_on_floor=any_foot
     )
     forward_imu = self._forward_component(
-      step_physics.dx,
+      phys.dx,
       upright=upright,
       allow_without_contact=True,
       contact_ok=any_foot,
       scale=imu_forward_scale,
     )
 
-    foot_dx = self._forward_foot_sum(step_physics)
+    foot_dx = self._forward_foot_sum(phys)
     foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot
     forward_foot = self._forward_component(
       foot_dx,
@@ -183,23 +261,23 @@ class Reward:
     return RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
-      upright_bonus=self._upright_bonus(upright, dx=step_physics.dx),
+      upright_bonus=self._upright_bonus(upright, dx=phys.dx),
       push_off_bonus=0.0,
       landing_bonus=0.0,
-      backward_lean_penalty=self._backward_lean_penalty(step_physics.imu_zaxis_x),
+      backward_lean_penalty=self._backward_lean_penalty(phys.imu_zaxis_x),
       forward_lean_penalty=self._forward_lean_penalty(
-        step_physics.imu_zaxis_x,
+        phys.imu_zaxis_x,
         any_foot_on_floor=any_foot,
         aerial_steps=biped.aerial_steps,
       ),
       height_penalty=self._height_penalty(
-        step_physics.imu_z, any_foot_on_floor=any_foot
+        phys.imu_z, any_foot_on_floor=any_foot
       ),
       flight_duration_penalty=self._aerial_duration_penalty(
         any_foot_on_floor=any_foot, aerial_steps=biped.aerial_steps
       ),
       progress_bonus=self._progress_bonus(progress_m),
-      knee_hyperflex_penalty=self._knee_hyperflex_penalty(step_physics),
+      knee_hyperflex_penalty=self._knee_hyperflex_penalty(phys),
       effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
     )

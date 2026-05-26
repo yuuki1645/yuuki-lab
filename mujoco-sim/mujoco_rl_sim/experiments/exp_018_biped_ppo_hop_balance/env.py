@@ -46,7 +46,7 @@ class EnvBipedPPO:
     self._episode = EpisodeState()
     self._action = ActionBinding(self.model)
     self._observation = Observation(self.model)
-    self._reward = Reward()
+    self._reward = Reward(self.model)
     self._effort = EffortTracker(self.model)
     self._termination = Termination(self.model)
     self._stand_key_id = mujoco.mj_name2id(
@@ -110,10 +110,9 @@ class EnvBipedPPO:
     imu_z = float(self.data.site("imu_site").xpos[2])
     left_foot_x = float(self.data.site(LEFT_FOOT_SITE).xpos[0])
     right_foot_x = float(self.data.site(RIGHT_FOOT_SITE).xpos[0])
-    dx = self._episode.advance_imu_x(imu_x)
-    left_foot_dx, right_foot_dx = self._episode.advance_foot_dx(
-      left_foot_x, right_foot_x
-    )
+    dx = imu_x - self._episode.prev_imu_x
+    left_foot_dx = left_foot_x - self._episode.prev_left_foot_x
+    right_foot_dx = right_foot_x - self._episode.prev_right_foot_x
 
     policy_obs, step_physics = self._observation.build(
       self.model,
@@ -134,8 +133,15 @@ class EnvBipedPPO:
     )
 
     reward_breakdown = self._reward.compute(
-      step_physics, biped=biped, effort=effort, progress_m=progress_m
+      self.data,
+      self._episode,
+      biped=biped,
+      effort=effort,
+      progress_m=progress_m,
     )
+
+    self._episode.advance_imu_x(imu_x)
+    self._episode.advance_foot_dx(left_foot_x, right_foot_x)
 
     if not termination.terminated:
       termination = self._termination.done_reason_pose(

@@ -20,12 +20,7 @@ CONTROL_HZ = 50
 FRAME_SKIP = int(round(1.0 / (PHYSICS_TIMESTEP_S * CONTROL_HZ)))
 CONTROL_TIMESTEP_S = PHYSICS_TIMESTEP_S * FRAME_SKIP
 
-# --- 前進報酬 -------------------------------------------------------------------
-FORWARD_REWARD_SCALE = 50.0
-FORWARD_MIN_UPRIGHT = 0.62
-FORWARD_REQUIRE_FOOT_CONTACT = False
-FORWARD_FOOT_ONLY_WHEN_CONTACT = True
-
+# --- 報酬 shaping（前進スケール等は reward.py compute 内）---------------------------
 UPRIGHT_BONUS_SCALE = 0.8
 UPRIGHT_BONUS_THRESH = 0.60
 UPRIGHT_BONUS_REQUIRE_FLIGHT = False
@@ -37,11 +32,6 @@ LEAN_BACKWARD_THRESH = 0.12
 LEAN_FORWARD_PENALTY_SCALE = 4.0
 LEAN_FORWARD_THRESH = 0.14
 LEAN_FORWARD_MIN_AERIAL_STEPS = 2
-
-FORWARD_IMU_LEAN_GATE = True
-FORWARD_IMU_LEAN_GATE_THRESH = 0.10
-FORWARD_IMU_LEAN_GATE_SCALE = 4.0
-FORWARD_IMU_LEAN_GATE_MIN_MULT = 0.15
 
 # 両脚とも非接地（遊脚期）
 AERIAL_DURATION_PENALTY_SCALE = 0.12
@@ -66,7 +56,6 @@ LANDING_BONUS_SCALE = 0.0
 KNEE_HUMAN_FLEX_BONUS_SCALE = 0.0
 
 EFFORT_PENALTY_SCALE = 3.0
-APPLY_EFFORT_PENALTY = False
 
 MIN_IMU_Z = 0.40
 MIN_IMU_Z_STANCE = 0.34
@@ -202,8 +191,8 @@ def training_config_dict() -> dict:
     "control_hz": CONTROL_HZ,
     "frame_skip": FRAME_SKIP,
     "control_timestep_s": CONTROL_TIMESTEP_S,
-    "forward_reward_scale": FORWARD_REWARD_SCALE,
-    "forward_min_upright": FORWARD_MIN_UPRIGHT,
+    "forward_reward_scale": 50.0,
+    "forward_min_upright": 0.62,
     "progress_reward_scale": PROGRESS_REWARD_SCALE,
     "aerial_duration_penalty_scale": AERIAL_DURATION_PENALTY_SCALE,
     "obs_dim": OBS_DIM,

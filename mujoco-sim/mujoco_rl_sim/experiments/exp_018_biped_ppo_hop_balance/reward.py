@@ -145,6 +145,18 @@ class Reward:
     # NOTE(AI): この関数の実装は上記理由であえて冗長に実装している。
     # そのため、この関数内の処理については、関数などを使って簡略化・リファクタリングしないでください。
 
+    # config（この関数内でのみ使用。hover で値を確認できるようリテラルで置く）
+    # ！！！ float の定数が hover で値を確認できない・・・
+    FORWARD_IMU_LEAN_GATE = True
+    FORWARD_IMU_LEAN_GATE_THRESH = 0.10
+    FORWARD_IMU_LEAN_GATE_SCALE = 4.0
+    FORWARD_IMU_LEAN_GATE_MIN_MULT = 0.15
+    MAX_DX_PER_STEP = 0.5  # 0.05 * FRAME_SKIP（FRAME_SKIP=10）
+    FORWARD_MIN_UPRIGHT = 0.62
+    FORWARD_REQUIRE_FOOT_CONTACT = False
+    FORWARD_REWARD_SCALE = 50.0
+    FORWARD_FOOT_ONLY_WHEN_CONTACT = True
+    APPLY_EFFORT_PENALTY = False
 
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
@@ -168,23 +180,23 @@ class Reward:
     right_knee_angle = float(data.joint(self._right_knee_joint_id).qpos[0])
 
     # 飛翔中の前傾が強いほど IMU 前進報酬を減衰（接地中は 1.0）
-    if not config.FORWARD_IMU_LEAN_GATE or any_foot_on_floor:
+    if not FORWARD_IMU_LEAN_GATE or any_foot_on_floor:
       imu_forward_scale = 1.0
     else:
-      lean_excess = max(0.0, imu_zaxis_x - config.FORWARD_IMU_LEAN_GATE_THRESH)
+      lean_excess = max(0.0, imu_zaxis_x - FORWARD_IMU_LEAN_GATE_THRESH)
       imu_forward_scale = max(
-        config.FORWARD_IMU_LEAN_GATE_MIN_MULT,
-        1.0 - config.FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
+        FORWARD_IMU_LEAN_GATE_MIN_MULT,
+        1.0 - FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
       )
 
     # IMU の +X 移動量 dx に前進報酬（後方移動・過大 dx はクリップ）
-    dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, dx))
+    dx_clipped = max(-MAX_DX_PER_STEP, min(MAX_DX_PER_STEP, dx))
     forward_imu = 0.0
-    if upright >= config.FORWARD_MIN_UPRIGHT:
-      if not config.FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
+    if upright >= FORWARD_MIN_UPRIGHT:
+      if not FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
         forward_imu = (
           max(0.0, dx_clipped)
-          * config.FORWARD_REWARD_SCALE
+          * FORWARD_REWARD_SCALE
           * max(0.0, imu_forward_scale)
         )
 
@@ -194,15 +206,15 @@ class Reward:
       foot_dx += max(0.0, left_foot_dx)
     if right_foot_on_floor:
       foot_dx += max(0.0, right_foot_dx)
-    foot_dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, foot_dx))
-    foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot_on_floor
+    foot_dx_clipped = max(-MAX_DX_PER_STEP, min(MAX_DX_PER_STEP, foot_dx))
+    foot_allowed = not FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot_on_floor
     forward_foot = 0.0
-    if upright >= config.FORWARD_MIN_UPRIGHT:
-      if not config.FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
+    if upright >= FORWARD_MIN_UPRIGHT:
+      if not FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
         if foot_allowed or any_foot_on_floor:
-          forward_foot = max(0.0, foot_dx_clipped) * config.FORWARD_REWARD_SCALE
+          forward_foot = max(0.0, foot_dx_clipped) * FORWARD_REWARD_SCALE
 
-    effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
+    effort_penalty = effort.penalty if APPLY_EFFORT_PENALTY else 0.0
 
     # shaping 各項（ボーナス・ペナルティ）
     upright_bonus = self._upright_bonus(upright, dx=dx)

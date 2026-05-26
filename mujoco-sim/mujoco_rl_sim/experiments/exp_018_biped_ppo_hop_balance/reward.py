@@ -233,27 +233,25 @@ class Reward:
     progress_m: float = 0.0,
   ) -> RewardBreakdown:
     phys = self._build_snapshot(data, episode)
-    upright = phys.upright
-    any_foot = phys.any_foot_on_floor
 
     imu_forward_scale = self._forward_imu_lean_multiplier(
-      phys.imu_zaxis_x, any_foot_on_floor=any_foot
+      phys.imu_zaxis_x, any_foot_on_floor=phys.any_foot_on_floor
     )
     forward_imu = self._forward_component(
       phys.dx,
-      upright=upright,
+      upright=phys.upright,
       allow_without_contact=True,
-      contact_ok=any_foot,
+      contact_ok=phys.any_foot_on_floor,
       scale=imu_forward_scale,
     )
 
     foot_dx = self._forward_foot_sum(phys)
-    foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot
+    foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or phys.any_foot_on_floor
     forward_foot = self._forward_component(
       foot_dx,
-      upright=upright,
+      upright=phys.upright,
       allow_without_contact=foot_allowed,
-      contact_ok=any_foot,
+      contact_ok=phys.any_foot_on_floor,
     )
 
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
@@ -261,20 +259,20 @@ class Reward:
     return RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
-      upright_bonus=self._upright_bonus(upright, dx=phys.dx),
+      upright_bonus=self._upright_bonus(phys.upright, dx=phys.dx),
       push_off_bonus=0.0,
       landing_bonus=0.0,
       backward_lean_penalty=self._backward_lean_penalty(phys.imu_zaxis_x),
       forward_lean_penalty=self._forward_lean_penalty(
         phys.imu_zaxis_x,
-        any_foot_on_floor=any_foot,
+        any_foot_on_floor=phys.any_foot_on_floor,
         aerial_steps=biped.aerial_steps,
       ),
       height_penalty=self._height_penalty(
-        phys.imu_z, any_foot_on_floor=any_foot
+        phys.imu_z, any_foot_on_floor=phys.any_foot_on_floor
       ),
       flight_duration_penalty=self._aerial_duration_penalty(
-        any_foot_on_floor=any_foot, aerial_steps=biped.aerial_steps
+        any_foot_on_floor=phys.any_foot_on_floor, aerial_steps=biped.aerial_steps
       ),
       progress_bonus=self._progress_bonus(progress_m),
       knee_hyperflex_penalty=self._knee_hyperflex_penalty(phys),

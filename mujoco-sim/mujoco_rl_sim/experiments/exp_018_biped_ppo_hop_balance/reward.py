@@ -145,6 +145,7 @@ class Reward:
     # NOTE(AI): この関数の実装は上記理由であえて冗長に実装している。
     # そのため、この関数内の処理については、関数などを使って簡略化・リファクタリングしないでください。
 
+
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
     imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
@@ -153,6 +154,7 @@ class Reward:
     dx = imu_x - episode.prev_imu_x
     left_foot_dx = left_foot_x - episode.prev_left_foot_x
     right_foot_dx = right_foot_x - episode.prev_right_foot_x
+
 
     left_foot_on_floor = self._geom_on_floor(data, self._left_foot_geom_id)
     right_foot_on_floor = self._geom_on_floor(data, self._right_foot_geom_id)

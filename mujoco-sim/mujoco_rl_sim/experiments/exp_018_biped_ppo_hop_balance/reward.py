@@ -36,27 +36,15 @@ class RewardBreakdown:
   effort_penalty: float
   effort_power_cost: float
 
-  @property
-  def forward(self) -> float:
-    return self.forward_imu + self.forward_foot
 
-  @property
-  def shaping(self) -> float:
-    return (
-      self.upright_bonus
-      + self.push_off_bonus
-      + self.landing_bonus
-      + self.progress_bonus
-      - self.backward_lean_penalty
-      - self.forward_lean_penalty
-      - self.height_penalty
-      - self.flight_duration_penalty
-      - self.knee_hyperflex_penalty
-    )
+@dataclass(frozen=True)
+class RewardResult:
+  """報酬の合計と内訳。total / forward / shaping は compute 内で明示的に計算する。"""
 
-  @property
-  def total(self) -> float:
-    return self.forward + self.shaping - self.effort_penalty
+  total: float
+  forward: float
+  shaping: float
+  breakdown: RewardBreakdown
 
 
 class Reward:
@@ -150,7 +138,7 @@ class Reward:
     biped: BipedStepContext,
     effort: EffortBreakdown,
     progress_m: float = 0.0,
-  ) -> RewardBreakdown:
+  ) -> RewardResult:
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
     imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
@@ -208,30 +196,63 @@ class Reward:
 
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
 
-    return RewardBreakdown(
+    # shaping 各項（ボーナス・ペナルティ）
+    upright_bonus = self._upright_bonus(upright, dx=dx)
+    push_off_bonus = 0.0
+    landing_bonus = 0.0
+    backward_lean_penalty = self._backward_lean_penalty(imu_zaxis_x)
+    forward_lean_penalty = self._forward_lean_penalty(
+      imu_zaxis_x,
+      any_foot_on_floor=any_foot_on_floor,
+      aerial_steps=biped.aerial_steps,
+    )
+    height_penalty = self._height_penalty(
+      imu_z, any_foot_on_floor=any_foot_on_floor
+    )
+    flight_duration_penalty = self._aerial_duration_penalty(
+      any_foot_on_floor=any_foot_on_floor, aerial_steps=biped.aerial_steps
+    )
+    progress_bonus = self._progress_bonus(progress_m)
+    knee_hyperflex_penalty = self._knee_hyperflex_penalty(
+      left_knee_angle,
+      right_knee_angle,
+      any_foot_on_floor=any_foot_on_floor,
+    )
+
+    breakdown = RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
-      upright_bonus=self._upright_bonus(upright, dx=dx),
-      push_off_bonus=0.0,
-      landing_bonus=0.0,
-      backward_lean_penalty=self._backward_lean_penalty(imu_zaxis_x),
-      forward_lean_penalty=self._forward_lean_penalty(
-        imu_zaxis_x,
-        any_foot_on_floor=any_foot_on_floor,
-        aerial_steps=biped.aerial_steps,
-      ),
-      height_penalty=self._height_penalty(
-        imu_z, any_foot_on_floor=any_foot_on_floor
-      ),
-      flight_duration_penalty=self._aerial_duration_penalty(
-        any_foot_on_floor=any_foot_on_floor, aerial_steps=biped.aerial_steps
-      ),
-      progress_bonus=self._progress_bonus(progress_m),
-      knee_hyperflex_penalty=self._knee_hyperflex_penalty(
-        left_knee_angle,
-        right_knee_angle,
-        any_foot_on_floor=any_foot_on_floor,
-      ),
+      upright_bonus=upright_bonus,
+      push_off_bonus=push_off_bonus,
+      landing_bonus=landing_bonus,
+      backward_lean_penalty=backward_lean_penalty,
+      forward_lean_penalty=forward_lean_penalty,
+      height_penalty=height_penalty,
+      flight_duration_penalty=flight_duration_penalty,
+      progress_bonus=progress_bonus,
+      knee_hyperflex_penalty=knee_hyperflex_penalty,
       effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
+    )
+
+    # ステップ報酬の合計（termination / shank ペナルティは env 側で加算）
+    forward = forward_imu + forward_foot
+    shaping = (
+      upright_bonus
+      + push_off_bonus
+      + landing_bonus
+      + progress_bonus
+      - backward_lean_penalty
+      - forward_lean_penalty
+      - height_penalty
+      - flight_duration_penalty
+      - knee_hyperflex_penalty
+    )
+    total = forward + shaping - effort_penalty
+
+    return RewardResult(
+      total=total,
+      forward=forward,
+      shaping=shaping,
+      breakdown=breakdown,
     )

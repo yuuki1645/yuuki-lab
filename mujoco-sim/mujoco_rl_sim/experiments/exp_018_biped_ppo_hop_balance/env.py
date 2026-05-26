@@ -132,13 +132,14 @@ class EnvBipedPPO:
       imu_x, upright=step_physics.upright
     )
 
-    reward_breakdown = self._reward.compute(
+    reward_result = self._reward.compute(
       self.data,
       self._episode,
       biped=biped,
       effort=effort,
       progress_m=progress_m,
     )
+    reward_breakdown = reward_result.breakdown
 
     self._episode.advance_imu_x(imu_x)
     self._episode.advance_foot_dx(left_foot_x, right_foot_x)
@@ -152,7 +153,7 @@ class EnvBipedPPO:
     termination_reason = termination.reason
 
     reward = (
-      reward_breakdown.total
+      reward_result.total
       + termination.penalty
       + shank_penalty_sum
     )
@@ -171,10 +172,10 @@ class EnvBipedPPO:
       "flight_steps": float(biped.aerial_steps),
       "aerial_steps": float(biped.aerial_steps),
       "landed": float(biped.left_landed or biped.right_landed),
-      "reward_forward": reward_breakdown.forward,
+      "reward_forward": reward_result.forward,
       "reward_forward_imu": reward_breakdown.forward_imu,
       "reward_forward_foot": reward_breakdown.forward_foot,
-      "reward_shaping": reward_breakdown.shaping,
+      "reward_shaping": reward_result.shaping,
       "reward_upright": reward_breakdown.upright_bonus,
       "reward_push_off": reward_breakdown.push_off_bonus,
       "reward_landing": reward_breakdown.landing_bonus,

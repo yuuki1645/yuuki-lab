@@ -80,18 +80,6 @@ class Reward:
     return False
 
   @staticmethod
-  def _forward_imu_lean_multiplier(
-    imu_zaxis_x: float, *, any_foot_on_floor: bool
-  ) -> float:
-    if not config.FORWARD_IMU_LEAN_GATE or any_foot_on_floor:
-      return 1.0
-    excess = max(
-      0.0, float(imu_zaxis_x) - config.FORWARD_IMU_LEAN_GATE_THRESH
-    )
-    mult = 1.0 - config.FORWARD_IMU_LEAN_GATE_SCALE * excess
-    return max(config.FORWARD_IMU_LEAN_GATE_MIN_MULT, mult)
-
-  @staticmethod
   def _aerial_duration_penalty(*, any_foot_on_floor: bool, aerial_steps: int) -> float:
     if any_foot_on_floor:
       return 0.0
@@ -116,24 +104,6 @@ class Reward:
     knee = max(left_knee_angle, right_knee_angle)
     excess = max(0.0, float(knee) - config.KNEE_HYPERFLEX_MAX_RAD)
     return excess * config.KNEE_HYPERFLEX_PENALTY_SCALE
-
-  @staticmethod
-  def _forward_component(
-    dx: float,
-    *,
-    upright: float,
-    allow_without_contact: bool,
-    contact_ok: bool,
-    scale: float = 1.0,
-  ) -> float:
-    dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, float(dx)))
-    if upright < config.FORWARD_MIN_UPRIGHT:
-      return 0.0
-    if config.FORWARD_REQUIRE_FOOT_CONTACT and not contact_ok:
-      return 0.0
-    if not allow_without_contact and not contact_ok:
-      return 0.0
-    return max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE * max(0.0, float(scale))
 
   @staticmethod
   def _upright_bonus(upright: float, *, dx: float) -> float:
@@ -201,29 +171,40 @@ class Reward:
     left_knee_angle = float(data.joint(self._left_knee_joint_id).qpos[0])
     right_knee_angle = float(data.joint(self._right_knee_joint_id).qpos[0])
 
-    imu_forward_scale = self._forward_imu_lean_multiplier(
-      imu_zaxis_x, any_foot_on_floor=any_foot_on_floor
-    )
-    forward_imu = self._forward_component(
-      dx,
-      upright=upright,
-      allow_without_contact=True,
-      contact_ok=any_foot_on_floor,
-      scale=imu_forward_scale,
-    )
+    # 飛翔中の前傾が強いほど IMU 前進報酬を減衰（接地中は 1.0）
+    if not config.FORWARD_IMU_LEAN_GATE or any_foot_on_floor:
+      imu_forward_scale = 1.0
+    else:
+      lean_excess = max(0.0, imu_zaxis_x - config.FORWARD_IMU_LEAN_GATE_THRESH)
+      imu_forward_scale = max(
+        config.FORWARD_IMU_LEAN_GATE_MIN_MULT,
+        1.0 - config.FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
+      )
 
+    # IMU の +X 移動量 dx に前進報酬（後方移動・過大 dx はクリップ）
+    dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, dx))
+    forward_imu = 0.0
+    if upright >= config.FORWARD_MIN_UPRIGHT:
+      if not config.FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
+        forward_imu = (
+          max(0.0, dx_clipped)
+          * config.FORWARD_REWARD_SCALE
+          * max(0.0, imu_forward_scale)
+        )
+
+    # 接地足の +X 移動量の合計に前進報酬
     foot_dx = 0.0
     if left_foot_on_floor:
       foot_dx += max(0.0, left_foot_dx)
     if right_foot_on_floor:
       foot_dx += max(0.0, right_foot_dx)
+    foot_dx_clipped = max(-config.MAX_DX_PER_STEP, min(config.MAX_DX_PER_STEP, foot_dx))
     foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot_on_floor
-    forward_foot = self._forward_component(
-      foot_dx,
-      upright=upright,
-      allow_without_contact=foot_allowed,
-      contact_ok=any_foot_on_floor,
-    )
+    forward_foot = 0.0
+    if upright >= config.FORWARD_MIN_UPRIGHT:
+      if not config.FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
+        if foot_allowed or any_foot_on_floor:
+          forward_foot = max(0.0, foot_dx_clipped) * config.FORWARD_REWARD_SCALE
 
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
 

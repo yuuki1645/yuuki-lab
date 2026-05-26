@@ -14,6 +14,11 @@ from .lib.actuators import (
   RIGHT_FOOT_SITE,
 )
 
+# MuJoCo site_xpos / 3D ベクトルの成分（ワールド座標: +X 前, +Y 左, +Z 上）
+WORLD_X = 0
+WORLD_Y = 1
+WORLD_Z = 2
+
 
 @dataclass(frozen=True)
 class RewardBreakdown:
@@ -177,10 +182,10 @@ class Reward:
     progress_m: float = 0.0,
   ) -> RewardBreakdown:
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
-    imu_x = float(data.site_xpos[self._imu_site_id, 0])
-    left_foot_x = float(data.site_xpos[self._left_foot_site_id, 0])
-    right_foot_x = float(data.site_xpos[self._right_foot_site_id, 0])
-    imu_z = float(data.site_xpos[self._imu_site_id, 2])
+    imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
+    left_foot_x = float(data.site_xpos[self._left_foot_site_id, WORLD_X])
+    right_foot_x = float(data.site_xpos[self._right_foot_site_id, WORLD_X])
+    imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
     dx = imu_x - episode.prev_imu_x
     left_foot_dx = left_foot_x - episode.prev_left_foot_x
     right_foot_dx = right_foot_x - episode.prev_right_foot_x
@@ -190,8 +195,8 @@ class Reward:
     any_foot_on_floor = left_foot_on_floor or right_foot_on_floor
 
     imu_zaxis = data.sensor("imu_zaxis").data
-    imu_zaxis_x = float(imu_zaxis[0])
-    upright = float(imu_zaxis[2])
+    imu_zaxis_x = float(imu_zaxis[WORLD_X])
+    upright = float(imu_zaxis[WORLD_Z])
 
     left_knee_angle = float(data.joint(self._left_knee_joint_id).qpos[0])
     right_knee_angle = float(data.joint(self._right_knee_joint_id).qpos[0])

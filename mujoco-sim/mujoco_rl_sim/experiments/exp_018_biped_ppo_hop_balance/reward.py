@@ -183,9 +183,9 @@ class Reward:
   ) -> RewardBreakdown:
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
+    imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
     left_foot_x = float(data.site_xpos[self._left_foot_site_id, WORLD_X])
     right_foot_x = float(data.site_xpos[self._right_foot_site_id, WORLD_X])
-    imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
     dx = imu_x - episode.prev_imu_x
     left_foot_dx = left_foot_x - episode.prev_left_foot_x
     right_foot_dx = right_foot_x - episode.prev_right_foot_x

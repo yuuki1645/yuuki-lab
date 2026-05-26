@@ -5,6 +5,9 @@ FAV_METRIC_ALIASES: dict[str, str] = {
   "episode/return": "fav/return",
   "episode/length": "fav/length",
   "episode/forward_reward_sum": "fav/forward_reward_sum",
+  "episode/total_dx_imu": "fav/total_dx_imu",
+  "train/ep_return_mean": "fav/ep_return_mean",
+  "train/ep_total_dx_imu_mean": "fav/ep_total_dx_imu_mean",
 }
 
 

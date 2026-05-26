@@ -183,6 +183,8 @@ WANDB_TAGS = (
   "progress_reward",
 )
 WANDB_TERMINATION_ROLLING_WINDOW = 100
+# 学習ログ print / Issue 進捗用の直近エピソード数
+EPISODE_ROLLING_WINDOW = 100
 
 COMPARE_BASELINE_EXP = "exp_017_2joint_ppo_hop_balance"
 
@@ -217,4 +219,5 @@ def training_config_dict() -> dict:
     "save_checkpoints": SAVE_CHECKPOINTS,
     "checkpoint_dir": CHECKPOINT_DIR,
     "checkpoint_every": CHECKPOINT_EVERY,
+    "episode_rolling_window": EPISODE_ROLLING_WINDOW,
   }

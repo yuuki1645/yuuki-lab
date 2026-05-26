@@ -155,6 +155,8 @@ class EnvBipedPPO:
 
     contact_force_n = termination.contact_normal_force_n
     step_info = {
+      "imu_x": imu_x,
+      "imu_dx": dx,
       "upright": step_physics.upright,
       "foot_on_floor": float(step_physics.any_foot_on_floor),
       "left_foot_on_floor": float(step_physics.left_foot_on_floor),

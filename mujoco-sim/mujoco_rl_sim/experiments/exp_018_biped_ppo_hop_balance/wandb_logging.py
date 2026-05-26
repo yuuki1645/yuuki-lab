@@ -6,6 +6,11 @@ import os
 from collections import Counter, deque
 from typing import Any
 
+from mujoco_rl_sim.lib.episode_rolling import (
+  EpisodeRollingWindow,
+  format_rolling_log_suffix,
+  rolling_summary_to_wandb,
+)
 from mujoco_rl_sim.lib.wandb_fav import with_fav_metrics
 
 from . import config
@@ -25,11 +30,15 @@ _termination_tracker: TerminationTracker | None = None
 
 class EpisodeMetricsCollector:
   def __init__(self) -> None:
+    self._rolling = EpisodeRollingWindow(window=config.EPISODE_ROLLING_WINDOW)
     self.reset()
 
   def reset(self) -> None:
     self._return = 0.0
     self._forward = 0.0
+    self._episode_dx_sum = 0.0
+    self._episode_start_imu_x: float | None = None
+    self._policy_steps_in_episode = 0
     self._forward_imu = 0.0
     self._forward_foot = 0.0
     self._effort_penalty = 0.0
@@ -48,6 +57,10 @@ class EpisodeMetricsCollector:
     self._max_flight_steps = 0
 
   def on_step(self, reward: float, step_info: dict[str, Any]) -> None:
+    self._policy_steps_in_episode += 1
+    self._episode_dx_sum += float(step_info.get("imu_dx", 0.0))
+    if self._episode_start_imu_x is None:
+      self._episode_start_imu_x = float(step_info.get("imu_x", 0.0))
     if not _active:
       return
     self._return += reward
@@ -89,9 +102,29 @@ class EpisodeMetricsCollector:
     basket_force_n = step_info.get("basket_contact_normal_force_n")
     thigh_force_n = step_info.get("thigh_contact_normal_force_n")
 
+    end_imu_x = float(step_info.get("imu_x", 0.0))
+    start_imu_x = (
+      self._episode_start_imu_x
+      if self._episode_start_imu_x is not None
+      else end_imu_x
+    )
+    net_imu_x = end_imu_x - start_imu_x
+    total_dx_imu = self._episode_dx_sum
+
+    if self._policy_steps_in_episode > 0:
+      self._rolling.push(
+        return_=self._return,
+        length=ep_len,
+        forward_reward_sum=self._forward,
+        total_dx_imu=total_dx_imu,
+        net_imu_x=net_imu_x,
+      )
+
     metrics: dict[str, float] = {
       "episode/return": self._return,
       "episode/length": ep_len,
+      "episode/total_dx_imu": total_dx_imu,
+      "episode/net_imu_x": net_imu_x,
       "episode/terminated": float(terminated),
       "episode/truncated": float(truncated and not terminated),
       "episode/mean_upright": self._upright_sum / ep_len,
@@ -157,6 +190,12 @@ class EpisodeMetricsCollector:
     )
     log(metrics, step=env_step)
     self.reset()
+
+  def rolling_summary(self) -> dict[str, float] | None:
+    return self._rolling.summary()
+
+  def format_rolling_log_suffix(self) -> str:
+    return format_rolling_log_suffix(self._rolling.summary())
 
 
 class TerminationTracker:
@@ -283,20 +322,21 @@ def log_train_update(
   update: int,
   episodes_finished: int,
   step: int,
+  episode_rolling: dict[str, float] | None = None,
 ) -> None:
-  log(
-    {
-      "train/mean_target": stats["mean_target"],
-      "train/policy_loss": stats["policy_loss"],
-      "train/value_loss": stats["value_loss"],
-      "train/entropy": stats["entropy"],
-      "train/approx_kl": stats.get("approx_kl", float("nan")),
-      "train/clip_fraction": stats.get("clip_fraction", float("nan")),
-      "train/update": float(update),
-      "train/episodes_finished": float(episodes_finished),
-    },
-    step=step,
-  )
+  metrics: dict[str, float] = {
+    "train/mean_target": stats["mean_target"],
+    "train/policy_loss": stats["policy_loss"],
+    "train/value_loss": stats["value_loss"],
+    "train/entropy": stats["entropy"],
+    "train/approx_kl": stats.get("approx_kl", float("nan")),
+    "train/clip_fraction": stats.get("clip_fraction", float("nan")),
+    "train/update": float(update),
+    "train/episodes_finished": float(episodes_finished),
+  }
+  if episode_rolling is not None:
+    metrics.update(rolling_summary_to_wandb(episode_rolling))
+  log(metrics, step=step)
 
 
 def log(metrics: dict[str, float], *, step: int) -> None:

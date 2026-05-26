@@ -331,6 +331,7 @@ def main() -> None:
         print(f"[checkpoint] saved update {last_update} -> {paths[0]}")
 
       if updates_done_this_run == 1 or last_update % config.LOG_EVERY == 0:
+        rolling = episode_metrics.rolling_summary()
         print(
           f"update {last_update: 5d}/{end_update} "
           f"(run +{updates_done_this_run}/{run.num_updates}) | "
@@ -342,12 +343,14 @@ def main() -> None:
           f"approx_kl: {stats['approx_kl']:10.5f} | "
           f"clip_frac: {stats['clip_fraction']:10.5f} | "
           f"episodes: {episode_index}"
+          f"{episode_metrics.format_rolling_log_suffix()}"
         )
         wandb_logging.log_train_update(
           stats,
           update=last_update,
           episodes_finished=episode_index,
           step=total_env_steps,
+          episode_rolling=rolling,
         )
   finally:
     if (

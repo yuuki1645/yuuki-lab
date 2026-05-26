@@ -16,26 +16,6 @@ from .lib.actuators import (
 
 
 @dataclass(frozen=True)
-class RewardPhysicsSnapshot:
-  """報酬計算に使う 1 ステップ分の物理量。
-
-  dx / left_foot_dx / right_foot_dx は episode の prev_* との差分（advance 前）。
-  """
-
-  dx: float
-  left_foot_dx: float
-  right_foot_dx: float
-  imu_z: float
-  upright: float
-  imu_zaxis_x: float
-  left_foot_on_floor: bool
-  right_foot_on_floor: bool
-  any_foot_on_floor: bool
-  left_knee_angle: float
-  right_knee_angle: float
-
-
-@dataclass(frozen=True)
 class RewardBreakdown:
   forward_imu: float
   forward_foot: float
@@ -94,38 +74,6 @@ class Reward:
         return True
     return False
 
-  def _build_snapshot(
-    self, data: mujoco.MjData, episode: EpisodeState
-  ) -> RewardPhysicsSnapshot:
-    imu_x = float(data.site_xpos[self._imu_site_id, 0])
-    left_foot_x = float(data.site_xpos[self._left_foot_site_id, 0])
-    right_foot_x = float(data.site_xpos[self._right_foot_site_id, 0])
-    imu_z = float(data.site_xpos[self._imu_site_id, 2])
-
-    dx = imu_x - episode.prev_imu_x
-    left_foot_dx = left_foot_x - episode.prev_left_foot_x
-    right_foot_dx = right_foot_x - episode.prev_right_foot_x
-
-    left_on = self._geom_on_floor(data, self._left_foot_geom_id)
-    right_on = self._geom_on_floor(data, self._right_foot_geom_id)
-
-    imu_zaxis = data.sensor("imu_zaxis").data
-    upright = float(imu_zaxis[2])
-
-    return RewardPhysicsSnapshot(
-      dx=dx,
-      left_foot_dx=left_foot_dx,
-      right_foot_dx=right_foot_dx,
-      imu_z=imu_z,
-      upright=upright,
-      imu_zaxis_x=float(imu_zaxis[0]),
-      left_foot_on_floor=left_on,
-      right_foot_on_floor=right_on,
-      any_foot_on_floor=left_on or right_on,
-      left_knee_angle=float(data.joint(self._left_knee_joint_id).qpos[0]),
-      right_knee_angle=float(data.joint(self._right_knee_joint_id).qpos[0]),
-    )
-
   @staticmethod
   def _forward_imu_lean_multiplier(
     imu_zaxis_x: float, *, any_foot_on_floor: bool
@@ -152,10 +100,15 @@ class Reward:
     return float(progress_m) * config.PROGRESS_REWARD_SCALE
 
   @staticmethod
-  def _knee_hyperflex_penalty(phys: RewardPhysicsSnapshot) -> float:
-    if config.KNEE_HYPERFLEX_AERIAL_ONLY and phys.any_foot_on_floor:
+  def _knee_hyperflex_penalty(
+    left_knee_angle: float,
+    right_knee_angle: float,
+    *,
+    any_foot_on_floor: bool,
+  ) -> float:
+    if config.KNEE_HYPERFLEX_AERIAL_ONLY and any_foot_on_floor:
       return 0.0
-    knee = max(phys.left_knee_angle, phys.right_knee_angle)
+    knee = max(left_knee_angle, right_knee_angle)
     excess = max(0.0, float(knee) - config.KNEE_HYPERFLEX_MAX_RAD)
     return excess * config.KNEE_HYPERFLEX_PENALTY_SCALE
 
@@ -176,15 +129,6 @@ class Reward:
     if not allow_without_contact and not contact_ok:
       return 0.0
     return max(0.0, dx_clipped) * config.FORWARD_REWARD_SCALE * max(0.0, float(scale))
-
-  @staticmethod
-  def _forward_foot_sum(phys: RewardPhysicsSnapshot) -> float:
-    total = 0.0
-    if phys.left_foot_on_floor:
-      total += max(0.0, phys.left_foot_dx)
-    if phys.right_foot_on_floor:
-      total += max(0.0, phys.right_foot_dx)
-    return total
 
   @staticmethod
   def _upright_bonus(upright: float, *, dx: float) -> float:
@@ -232,26 +176,48 @@ class Reward:
     effort: EffortBreakdown,
     progress_m: float = 0.0,
   ) -> RewardBreakdown:
-    phys = self._build_snapshot(data, episode)
+    # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
+    imu_x = float(data.site_xpos[self._imu_site_id, 0])
+    left_foot_x = float(data.site_xpos[self._left_foot_site_id, 0])
+    right_foot_x = float(data.site_xpos[self._right_foot_site_id, 0])
+    imu_z = float(data.site_xpos[self._imu_site_id, 2])
+    dx = imu_x - episode.prev_imu_x
+    left_foot_dx = left_foot_x - episode.prev_left_foot_x
+    right_foot_dx = right_foot_x - episode.prev_right_foot_x
+
+    left_foot_on_floor = self._geom_on_floor(data, self._left_foot_geom_id)
+    right_foot_on_floor = self._geom_on_floor(data, self._right_foot_geom_id)
+    any_foot_on_floor = left_foot_on_floor or right_foot_on_floor
+
+    imu_zaxis = data.sensor("imu_zaxis").data
+    imu_zaxis_x = float(imu_zaxis[0])
+    upright = float(imu_zaxis[2])
+
+    left_knee_angle = float(data.joint(self._left_knee_joint_id).qpos[0])
+    right_knee_angle = float(data.joint(self._right_knee_joint_id).qpos[0])
 
     imu_forward_scale = self._forward_imu_lean_multiplier(
-      phys.imu_zaxis_x, any_foot_on_floor=phys.any_foot_on_floor
+      imu_zaxis_x, any_foot_on_floor=any_foot_on_floor
     )
     forward_imu = self._forward_component(
-      phys.dx,
-      upright=phys.upright,
+      dx,
+      upright=upright,
       allow_without_contact=True,
-      contact_ok=phys.any_foot_on_floor,
+      contact_ok=any_foot_on_floor,
       scale=imu_forward_scale,
     )
 
-    foot_dx = self._forward_foot_sum(phys)
-    foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or phys.any_foot_on_floor
+    foot_dx = 0.0
+    if left_foot_on_floor:
+      foot_dx += max(0.0, left_foot_dx)
+    if right_foot_on_floor:
+      foot_dx += max(0.0, right_foot_dx)
+    foot_allowed = not config.FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot_on_floor
     forward_foot = self._forward_component(
       foot_dx,
-      upright=phys.upright,
+      upright=upright,
       allow_without_contact=foot_allowed,
-      contact_ok=phys.any_foot_on_floor,
+      contact_ok=any_foot_on_floor,
     )
 
     effort_penalty = effort.penalty if config.APPLY_EFFORT_PENALTY else 0.0
@@ -259,23 +225,27 @@ class Reward:
     return RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
-      upright_bonus=self._upright_bonus(phys.upright, dx=phys.dx),
+      upright_bonus=self._upright_bonus(upright, dx=dx),
       push_off_bonus=0.0,
       landing_bonus=0.0,
-      backward_lean_penalty=self._backward_lean_penalty(phys.imu_zaxis_x),
+      backward_lean_penalty=self._backward_lean_penalty(imu_zaxis_x),
       forward_lean_penalty=self._forward_lean_penalty(
-        phys.imu_zaxis_x,
-        any_foot_on_floor=phys.any_foot_on_floor,
+        imu_zaxis_x,
+        any_foot_on_floor=any_foot_on_floor,
         aerial_steps=biped.aerial_steps,
       ),
       height_penalty=self._height_penalty(
-        phys.imu_z, any_foot_on_floor=phys.any_foot_on_floor
+        imu_z, any_foot_on_floor=any_foot_on_floor
       ),
       flight_duration_penalty=self._aerial_duration_penalty(
-        any_foot_on_floor=phys.any_foot_on_floor, aerial_steps=biped.aerial_steps
+        any_foot_on_floor=any_foot_on_floor, aerial_steps=biped.aerial_steps
       ),
       progress_bonus=self._progress_bonus(progress_m),
-      knee_hyperflex_penalty=self._knee_hyperflex_penalty(phys),
+      knee_hyperflex_penalty=self._knee_hyperflex_penalty(
+        left_knee_angle,
+        right_knee_angle,
+        any_foot_on_floor=any_foot_on_floor,
+      ),
       effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
     )

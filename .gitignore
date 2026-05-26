@@ -50,3 +50,5 @@ mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/
 
 .cursor/skills/run-rl-experiment/
 .cursor/skills/rl-experiment-lifecycle/
+
+mujoco-sim/scripts/

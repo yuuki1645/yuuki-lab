@@ -139,6 +139,12 @@ class Reward:
     effort: EffortBreakdown,
     progress_m: float = 0.0,
   ) -> RewardResult:
+    # この関数の実装は冗長だが、報酬計算の詳細について、なるべくこの関数を読むだけで
+    # 理解できるように実装している。
+
+    # NOTE(AI): この関数の実装は上記理由であえて冗長に実装している。
+    # そのため、この関数内の処理については、関数などを使って簡略化・リファクタリングしないでください。
+
     # MuJoCo: IMU / 足 site（episode.prev_* との差分は advance 前）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
     imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])

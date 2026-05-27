@@ -64,53 +64,6 @@ MAX_BACKWARD_LEAN = 0.38
 POSE_TERMINATION_PENALTY = -30.0
 
 CONTACT_SHANK_TERMINATES = False
-CONTACT_SHANK_STEP_PENALTY_SCALE = 1.0
-
-CONTACT_FLOOR_PENALTY_BASE = -20.0
-CONTACT_FLOOR_PENALTY_PER_N = -0.016
-CONTACT_FLOOR_MIN_FORCE_N = 0.0
-CONTACT_FLOOR_FORCE_CAP_N = 10_000.0
-CONTACT_FLOOR_PENALTY_MIN = -200.0
-CONTACT_LINK_PENALTY_SCALE = 0.5
-
-CONTACT_BASKET_PENALTY_BASE = CONTACT_FLOOR_PENALTY_BASE
-CONTACT_BASKET_PENALTY_PER_N = CONTACT_FLOOR_PENALTY_PER_N
-CONTACT_BASKET_MIN_FORCE_N = CONTACT_FLOOR_MIN_FORCE_N
-CONTACT_BASKET_FORCE_CAP_N = CONTACT_FLOOR_FORCE_CAP_N
-CONTACT_BASKET_PENALTY_MIN = CONTACT_FLOOR_PENALTY_MIN
-
-
-def contact_floor_termination_penalty(
-  normal_force_n: float,
-  *,
-  penalty_scale: float = 1.0,
-) -> float:
-  scale = float(penalty_scale)
-  capped_span = max(0.0, CONTACT_FLOOR_FORCE_CAP_N - CONTACT_FLOOR_MIN_FORCE_N)
-  excess_force_n = min(
-    max(0.0, float(normal_force_n) - CONTACT_FLOOR_MIN_FORCE_N),
-    capped_span,
-  )
-  penalty = scale * (
-    CONTACT_FLOOR_PENALTY_BASE + CONTACT_FLOOR_PENALTY_PER_N * excess_force_n
-  )
-  return max(penalty, scale * CONTACT_FLOOR_PENALTY_MIN)
-
-
-def contact_basket_termination_penalty(normal_force_n: float) -> float:
-  return contact_floor_termination_penalty(normal_force_n, penalty_scale=1.0)
-
-
-def contact_link_termination_penalty(normal_force_n: float) -> float:
-  return contact_floor_termination_penalty(
-    normal_force_n, penalty_scale=CONTACT_LINK_PENALTY_SCALE
-  )
-
-
-def contact_shank_step_penalty(normal_force_n: float) -> float:
-  return CONTACT_SHANK_STEP_PENALTY_SCALE * contact_link_termination_penalty(
-    normal_force_n
-  )
 
 # --- 観測: dx(1)+gyro(3)+zaxis(3)+imu_z(1)+feet(4)+joint_q(10)+joint_qvel(10)+prev_a(10) = 42
 MAX_DX_PER_STEP = 0.05 * FRAME_SKIP

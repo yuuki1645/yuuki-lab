@@ -1,6 +1,5 @@
 """両脚バイペッド向け早期終了。"""
 
-from collections.abc import Callable
 from dataclasses import dataclass
 
 import mujoco
@@ -91,20 +90,64 @@ class Termination:
       )
     return peak_normal_force_n
 
+  @staticmethod
+  def _floor_termination_penalty(
+    normal_force_n: float, *, penalty_scale: float = 1.0
+  ) -> float:
+    """床接触の終了ペナルティ。法線力 [N] に応じて base + per_N * excess。"""
+    FLOOR_PENALTY_BASE = -20.0
+    FLOOR_PENALTY_PER_N = -0.016
+    FLOOR_MIN_FORCE_N = 0.0
+    FLOOR_FORCE_CAP_N = 10_000.0
+    FLOOR_PENALTY_MIN = -200.0
+    scale = float(penalty_scale)
+    capped_span = max(0.0, FLOOR_FORCE_CAP_N - FLOOR_MIN_FORCE_N)
+    excess_force_n = min(
+      max(0.0, float(normal_force_n) - FLOOR_MIN_FORCE_N),
+      capped_span,
+    )
+    penalty = scale * (
+      FLOOR_PENALTY_BASE + FLOOR_PENALTY_PER_N * excess_force_n
+    )
+    return max(penalty, scale * FLOOR_PENALTY_MIN)
+
+  @staticmethod
+  def _basket_termination_penalty(normal_force_n: float) -> float:
+    return Termination._floor_termination_penalty(
+      normal_force_n, penalty_scale=1.0
+    )
+
+  @staticmethod
+  def _link_termination_penalty(normal_force_n: float) -> float:
+    LINK_PENALTY_SCALE = 0.5
+    return Termination._floor_termination_penalty(
+      normal_force_n, penalty_scale=LINK_PENALTY_SCALE
+    )
+
+  @staticmethod
+  def _shank_step_penalty(normal_force_n: float) -> float:
+    SHANK_STEP_PENALTY_SCALE = 1.0
+    return SHANK_STEP_PENALTY_SCALE * Termination._link_termination_penalty(
+      normal_force_n
+    )
+
   def _floor_contact_outcome(
     self,
     data: mujoco.MjData,
     *,
     geom_id: int,
     reason: str,
-    penalty_fn: Callable[[float], float],
+    link_penalty: bool,
   ) -> TerminationOutcome | None:
     if not self._has_contact_between_geoms(data, geom_id, self._floor_geom_id):
       return None
     normal_force_n = self._max_normal_force_between_geoms(
       data, geom_id, self._floor_geom_id
     )
-    penalty = penalty_fn(normal_force_n)
+    if link_penalty:
+      penalty = self._link_termination_penalty(normal_force_n)
+    else:
+      penalty = self._basket_termination_penalty(normal_force_n)
     return TerminationOutcome(reason, penalty, normal_force_n)
 
   def done_reason_contact(self, data: mujoco.MjData) -> TerminationOutcome:
@@ -112,7 +155,7 @@ class Termination:
       data,
       geom_id=self._basket_geom_id,
       reason=REASON_CONTACT_BASKET,
-      penalty_fn=config.contact_basket_termination_penalty,
+      link_penalty=False,
     )
     if outcome is not None:
       return outcome
@@ -122,7 +165,7 @@ class Termination:
         data,
         geom_id=thigh_id,
         reason=REASON_CONTACT_THIGH,
-        penalty_fn=config.contact_link_termination_penalty,
+        link_penalty=True,
       )
       if outcome is not None:
         return outcome
@@ -133,7 +176,7 @@ class Termination:
           data,
           geom_id=shank_id,
           reason=REASON_CONTACT_SHANK,
-          penalty_fn=config.contact_link_termination_penalty,
+          link_penalty=True,
         )
         if outcome is not None:
           return outcome
@@ -152,7 +195,7 @@ class Termination:
       normal_force_n = self._max_normal_force_between_geoms(
         data, shank_id, self._floor_geom_id
       )
-      total += config.contact_shank_step_penalty(normal_force_n)
+      total += self._shank_step_penalty(normal_force_n)
     return total
 
   @staticmethod

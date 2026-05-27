@@ -99,7 +99,7 @@ export function getImuSocketUrl(): string {
 }
 
 /**
- * 学習プロセスのテレメトリ用 Socket.IO（``train_002_full_actuators`` の ``--telemetry-port``、既定 8791）。
+ * 学習プロセスのテレメトリ用 Socket.IO（exp_019 ``train`` の ``--telemetry-port``、既定 8791）。
  * 旧名 ``VITE_RL_TELEMETRY_SOCKET_URL`` も未設定時のみフォールバックとして読む。
  */
 export function getTrainingTelemetrySocketUrl(): string {

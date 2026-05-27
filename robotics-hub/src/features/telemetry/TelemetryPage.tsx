@@ -3,6 +3,11 @@ import { trainingTelemetryFetchConfig, trainingTelemetrySetStepWallSleepSec } fr
 import { useDaemonImuTelemetry } from "@/shared/contexts/DaemonImuTelemetryContext";
 import { useTrainingTelemetryStream } from "@/shared/hooks/useTrainingTelemetryStream";
 import type { ImuDaemonSamplePayload } from "@/shared/types/imuDaemon";
+import {
+  isBipedPpoTelemetry,
+  type TrainingTelemetryResetPayload,
+  type TrainingTelemetryStepPayload,
+} from "@/shared/types/trainingTelemetry";
 import "./TelemetryPage.css";
 
 type LogicalRange = { lo: number; hi: number };
@@ -196,12 +201,45 @@ function daemonSampleToAccelGyroAngle(s: ImuDaemonSamplePayload | null): {
 const ACC_LABELS = ["ax", "ay", "az"];
 const GYRO_LABELS = ["gx", "gy", "gz"];
 const ANGLE_LABELS = ["pitch", "roll", "yaw"];
+const ZAXIS_LABELS = ["zx", "zy", "zz"];
+const FOOT_LABELS = ["左接地", "右接地", "左足 dx", "右足 dx"];
 
 const RAD_TO_DEG = 180 / Math.PI;
 
-function radPerSecToDegPerSec(values: number[] | undefined): number[] {
-  const v = values ?? [];
-  return v.map((x) => (typeof x === "number" && Number.isFinite(x) ? x * RAD_TO_DEG : Number.NaN));
+function trainingGyroRadS(
+  step: TrainingTelemetryStepPayload | null,
+  reset: TrainingTelemetryResetPayload | null
+): number[] {
+  const raw =
+    step?.obs_imu_gyro ??
+    reset?.obs_imu_gyro ??
+    step?.obs_gyro ??
+    reset?.obs_gyro ??
+    [];
+  return raw.map((x) => (typeof x === "number" && Number.isFinite(x) ? x * RAD_TO_DEG : Number.NaN));
+}
+
+function trainingPrevAction(
+  step: TrainingTelemetryStepPayload | null,
+  reset: TrainingTelemetryResetPayload | null
+): { values: number[]; unitLabel: string } {
+  const biped = isBipedPpoTelemetry(step) || isBipedPpoTelemetry(reset);
+  if (biped) {
+    const v =
+      step?.obs_prev_action_norm ??
+      reset?.obs_prev_action_norm ??
+      step?.obs_prev_ctrl ??
+      reset?.obs_prev_ctrl ??
+      [];
+    return { values: v, unitLabel: "値 (正規化 [-1,1])" };
+  }
+  const v =
+    step?.obs_prev_action_logical_deg ??
+    reset?.obs_prev_action_logical_deg ??
+    step?.obs_prev_ctrl ??
+    reset?.obs_prev_ctrl ??
+    [];
+  return { values: v, unitLabel: "値 (論理角 deg)" };
 }
 
 /** ``imu/sample`` の ``timestamp``（ラズパイ ``perf_counter``）だけ描画し、親の再描画コストを抑える */
@@ -226,24 +264,24 @@ export default function TelemetryPage() {
   const reset = stream.lastReset;
   const names =
     step?.actuator_names?.length ? step.actuator_names : reset?.actuator_names ?? [];
-  const prevLogical =
-    step?.obs_prev_action_logical_deg ??
-    reset?.obs_prev_action_logical_deg ??
-    step?.obs_prev_ctrl ??
-    reset?.obs_prev_ctrl ??
-    [];
+  const bipedStream = isBipedPpoTelemetry(step) || isBipedPpoTelemetry(reset);
+  const prevAction = trainingPrevAction(step, reset);
+  const prevLogical = prevAction.values;
   const actionLogical = step?.action_logical_deg ?? [];
   const prevCtrlLabels = names.length
     ? names.map((n) => `prev ${n}`)
-    : prevLogical.map((_, i) => `prev_logical[${i}]`);
+    : prevLogical.map((_, i) => `prev[${i}]`);
   const actionLabels = names.length ? names.map((n) => `action ${n}`) : [];
   const logicalRanges = names.map((n) => LOGICAL_RANGE_BY_ACTUATOR[n] ?? null);
-  const prevRanges = logicalRanges.length === prevLogical.length ? logicalRanges : [];
+  const prevRanges =
+    !bipedStream && logicalRanges.length === prevLogical.length ? logicalRanges : [];
   const actionRanges = logicalRanges.length === actionLogical.length ? logicalRanges : [];
   const rewardTotal = step?.reward_total ?? step?.reward;
-  const rewardActionPenalty = step?.reward_action_penalty;
+  const rewardEffortPenalty =
+    step?.reward_effort_penalty ?? step?.reward_action_penalty;
   const rewardFallPenalty = step?.reward_fall_penalty;
   const torsoHeight = step?.torso_height;
+  const expLabel = step?.exp_name ?? reset?.exp_name;
   const [stepWallSleepSec, setStepWallSleepSec] = useState(0);
   const [settingSleep, setSettingSleep] = useState(false);
   const [sleepError, setSleepError] = useState<string | null>(null);
@@ -254,9 +292,24 @@ export default function TelemetryPage() {
   );
 
   const trainingGyroDisplayDegS = useMemo(
-    () => radPerSecToDegPerSec(step?.obs_gyro),
-    [step?.obs_gyro]
+    () => trainingGyroRadS(step, reset),
+    [step, reset]
   );
+
+  const footObsValues = useMemo(() => {
+    if (!bipedStream || !step) return [];
+    return [
+      step.obs_left_foot_contact ?? Number.NaN,
+      step.obs_right_foot_contact ?? Number.NaN,
+      step.obs_left_foot_dx ?? Number.NaN,
+      step.obs_right_foot_dx ?? Number.NaN,
+    ];
+  }, [bipedStream, step]);
+
+  const zaxisValues = useMemo(() => {
+    if (!bipedStream) return [];
+    return step?.obs_imu_zaxis ?? reset?.obs_imu_zaxis ?? [];
+  }, [bipedStream, step, reset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -302,8 +355,9 @@ export default function TelemetryPage() {
       <header className="telemetry__header">
         <h1>テレメトリ</h1>
         <p>
-          学習時は <code>mujoco_rl_sim.scripts.train_002_full_actuators</code> の Socket.IO（
-          <code>rl_telemetry/*</code>）で観測・行動を表示します。実機は{" "}
+          学習時は{" "}
+          <code>mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.train</code> の Socket.IO（
+          <code>rl_telemetry/*</code>・スキーマ <code>biped_ppo_v1</code>）で観測・行動を表示します。実機は{" "}
           <code>robot-daemon</code> の IMU（<code>imu/start</code> 後の <code>imu/sample</code>
           ）を同一ページに表示します。ラズパイへの CSV ログは <code>imu/log_start</code> /{" "}
           <code>imu/log_stop</code> で開始・停止します（ハブ内の別画面に移っても接続は維持されます）。学習ストリームの関節は
@@ -323,9 +377,12 @@ export default function TelemetryPage() {
               : "未接続"}
         </span>
         <span className="telemetry__url">{stream.url}</span>
-        <span className="telemetry__logical-tag">関節角: 論理角 (deg)</span>
+        <span className="telemetry__logical-tag">
+          {bipedStream ? "exp_019 · 行動=論理角 (deg)" : "関節角: 論理角 (deg)"}
+        </span>
+        {expLabel ? <span className="telemetry__meta">{expLabel}</span> : null}
         {typeof step?.num_timesteps === "number" && (
-          <span className="telemetry__meta">SB3 num_timesteps: {step.num_timesteps}</span>
+          <span className="telemetry__meta">env_steps: {step.num_timesteps}</span>
         )}
         <span className="telemetry__meta">受信 step 数: {stream.stepCount}</span>
       </div>
@@ -483,10 +540,10 @@ export default function TelemetryPage() {
                 value: typeof rewardTotal === "number" ? rewardTotal.toFixed(5) : "—",
               },
               {
-                label: "角度ペナルティ",
+                label: bipedStream ? "effort ペナルティ" : "角度ペナルティ",
                 value:
-                  typeof rewardActionPenalty === "number"
-                    ? rewardActionPenalty.toFixed(5)
+                  typeof rewardEffortPenalty === "number"
+                    ? rewardEffortPenalty.toFixed(5)
                     : "—",
               },
               {
@@ -503,22 +560,55 @@ export default function TelemetryPage() {
             ]}
           />
           <div className="telemetry__panel">
-            <h2>学習: 入力 IMU（局所・シミュ値）</h2>
-            <VecTable
-              title={`加速度 (${step?.obs_acc_unit === "m/s2" ? "m/s²" : "g"})`}
-              labels={ACC_LABELS}
-              values={step?.obs_acc ?? []}
-              noPanel
-            />
-            <p className="telemetry__meta">
-              角速度は受信ペイロードが rad/s のため、下表のみ deg/s（×180/π）に換算して表示しています。
-            </p>
-            <VecTable
-              title="角速度 (deg/s)"
-              labels={GYRO_LABELS}
-              values={trainingGyroDisplayDegS}
-              noPanel
-            />
+            <h2>学習: 入力 IMU / 足（シミュ値）</h2>
+            {bipedStream ? (
+              <>
+                <VecTable
+                  title="IMU z 軸（単位ベクトル）"
+                  labels={ZAXIS_LABELS}
+                  values={zaxisValues}
+                  noPanel
+                />
+                <VecTable
+                  title="角速度 (deg/s)"
+                  labels={GYRO_LABELS}
+                  values={trainingGyroDisplayDegS}
+                  noPanel
+                />
+                <p className="telemetry__meta">
+                  角速度は MuJoCo imu_gyro（rad/s）を deg/s に換算。IMU 高さ norm:{" "}
+                  {typeof step?.obs_imu_z_norm === "number"
+                    ? step.obs_imu_z_norm.toFixed(4)
+                    : "—"}
+                </p>
+                {footObsValues.length > 0 && (
+                  <VecTable
+                    title="足接地・足元 dx（正規化）"
+                    labels={FOOT_LABELS}
+                    values={footObsValues}
+                    noPanel
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <VecTable
+                  title={`加速度 (${step?.obs_acc_unit === "m/s2" ? "m/s²" : "g"})`}
+                  labels={ACC_LABELS}
+                  values={step?.obs_acc ?? []}
+                  noPanel
+                />
+                <p className="telemetry__meta">
+                  角速度は受信ペイロードが rad/s のため、下表のみ deg/s（×180/π）に換算して表示しています。
+                </p>
+                <VecTable
+                  title="角速度 (deg/s)"
+                  labels={GYRO_LABELS}
+                  values={trainingGyroDisplayDegS}
+                  noPanel
+                />
+              </>
+            )}
           </div>
           <VecTable
             title="学習: 行動 目標角（論理角 deg）"
@@ -533,10 +623,14 @@ export default function TelemetryPage() {
           />
           <div className="telemetry__grid-row2">
             <VecTable
-              title="学習: 観測内 prev（論理角 deg, 1 step 遅れ）"
+              title={
+                bipedStream
+                  ? "学習: 観測内 prev action（正規化, 1 step 遅れ）"
+                  : "学習: 観測内 prev（論理角 deg, 1 step 遅れ）"
+              }
               labels={prevCtrlLabels}
               values={prevLogical}
-              valueHeader="値 (論理角 deg)"
+              valueHeader={prevAction.unitLabel}
               ranges={prevRanges}
             />
           </div>

@@ -6,7 +6,7 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from mujoco_rl_sim.lib.wandb_fav import with_fav_metrics
+from .wandb_fav import with_fav_metrics
 
 from . import config
 from .termination import (

@@ -89,9 +89,11 @@ class EnvBipedPPO:
     termination = NOT_TERMINATED
     shank_penalty_sum = 0.0
     self._effort.reset_control_step()
+
     for _ in range(config.FRAME_SKIP):
       mujoco.mj_step(self.model, self.data)
       self._effort.record_physics_step(self.data)
+      
       if self.viewer is not None:
         self.viewer.sync()
 

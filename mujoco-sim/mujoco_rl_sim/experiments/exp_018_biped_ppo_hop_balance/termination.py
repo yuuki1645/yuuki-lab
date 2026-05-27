@@ -236,18 +236,19 @@ class Termination:
     )
 
     min_imu_z = MIN_IMU_Z_STANCE if any_foot_on_floor else MIN_IMU_Z
-
     if imu_z < min_imu_z:
       return TerminationOutcome(REASON_IMU_Z, POSE_TERMINATION_PENALTY, None)
+
     if upright < MIN_IMU_UPRIGHT:
       return TerminationOutcome(
         REASON_LOW_UPRIGHT, POSE_TERMINATION_PENALTY, None
       )
+      
     if imu_zaxis_x < -MAX_BACKWARD_LEAN:
       return TerminationOutcome(
         REASON_BACKWARD_LEAN, POSE_TERMINATION_PENALTY, None
       )
-      
+
     return NOT_TERMINATED
 
   def is_done_contact(self, data: mujoco.MjData) -> bool:

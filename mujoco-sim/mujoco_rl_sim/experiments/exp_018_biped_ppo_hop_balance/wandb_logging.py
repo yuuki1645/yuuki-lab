@@ -189,7 +189,13 @@ class EpisodeMetricsCollector:
       )
     )
     log(metrics, step=env_step)
-    self.reset()
+
+    if not _active:
+      self.reset()
+      return
+
+    import wandb
+    wandb.log(with_fav_metrics(metrics), step=env_step)
 
   def rolling_summary(self) -> dict[str, float] | None:
     return self._rolling.summary()
@@ -336,7 +342,11 @@ def log_train_update(
   }
   if episode_rolling is not None:
     metrics.update(rolling_summary_to_wandb(episode_rolling))
-  log(metrics, step=step)
+
+  if not _active:
+    return
+  import wandb
+  wandb.log(with_fav_metrics(metrics), step=step)
 
 
 def log(metrics: dict[str, float], *, step: int) -> None:

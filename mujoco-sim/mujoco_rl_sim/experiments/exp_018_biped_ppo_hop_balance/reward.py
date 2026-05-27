@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import mujoco
+import numpy as np
 
 from . import config
 from .effort import EffortBreakdown
@@ -90,7 +91,7 @@ class Reward:
     if config.KNEE_HYPERFLEX_AERIAL_ONLY and any_foot_on_floor:
       return 0.0
     knee = max(left_knee_angle, right_knee_angle)
-    excess = max(0.0, float(knee) - config.KNEE_HYPERFLEX_MAX_RAD)
+    excess = float(np.clip(float(knee) - config.KNEE_HYPERFLEX_MAX_RAD, 0.0, np.inf))
     return excess * config.KNEE_HYPERFLEX_PENALTY_SCALE
 
   @staticmethod
@@ -98,13 +99,13 @@ class Reward:
     if dx < config.UPRIGHT_BONUS_MIN_DX:
       return 0.0
     return (
-      max(0.0, float(upright) - config.UPRIGHT_BONUS_THRESH)
+      float(np.clip(float(upright) - config.UPRIGHT_BONUS_THRESH, 0.0, np.inf))
       * config.UPRIGHT_BONUS_SCALE
     )
 
   @staticmethod
   def _backward_lean_penalty(imu_zaxis_x: float) -> float:
-    excess = max(0.0, -float(imu_zaxis_x) - config.LEAN_BACKWARD_THRESH)
+    excess = float(np.clip(-float(imu_zaxis_x) - config.LEAN_BACKWARD_THRESH, 0.0, np.inf))
     return excess * config.LEAN_BACKWARD_PENALTY_SCALE
 
   @staticmethod
@@ -115,19 +116,19 @@ class Reward:
       return 0.0
     if aerial_steps < config.LEAN_FORWARD_MIN_AERIAL_STEPS:
       return 0.0
-    excess = max(0.0, float(imu_zaxis_x) - config.LEAN_FORWARD_THRESH)
+    excess = float(np.clip(float(imu_zaxis_x) - config.LEAN_FORWARD_THRESH, 0.0, np.inf))
     return excess * config.LEAN_FORWARD_PENALTY_SCALE
 
   @staticmethod
   def _height_penalty(imu_z: float, *, any_foot_on_floor: bool) -> float:
     if config.HEIGHT_PENALTY_SKIP_WHEN_STANCE and any_foot_on_floor:
       target = config.TARGET_IMU_Z_STANCE
-      deficit = max(0.0, target - float(imu_z))
+      deficit = float(np.clip(target - float(imu_z), 0.0, np.inf))
       return deficit * config.IMU_HEIGHT_PENALTY_SCALE
     if float(imu_z) < config.HEIGHT_PENALTY_AERIAL_CRASH_Z:
-      deficit = max(0.0, config.TARGET_IMU_Z - float(imu_z))
+      deficit = float(np.clip(config.TARGET_IMU_Z - float(imu_z), 0.0, np.inf))
       return deficit * config.IMU_HEIGHT_PENALTY_SCALE * 1.5
-    deficit = max(0.0, config.TARGET_IMU_Z - float(imu_z))
+    deficit = float(np.clip(config.TARGET_IMU_Z - float(imu_z), 0.0, np.inf))
     return deficit * config.IMU_HEIGHT_PENALTY_SCALE
 
   def compute(
@@ -183,36 +184,39 @@ class Reward:
     if not FORWARD_IMU_LEAN_GATE or any_foot_on_floor:
       imu_forward_scale = 1.0
     else:
-      lean_excess = max(0.0, imu_zaxis_x - FORWARD_IMU_LEAN_GATE_THRESH)
-      imu_forward_scale = max(
-        FORWARD_IMU_LEAN_GATE_MIN_MULT,
-        1.0 - FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
+      lean_excess = float(np.clip(imu_zaxis_x - FORWARD_IMU_LEAN_GATE_THRESH, 0.0, np.inf))
+      imu_forward_scale = float(
+        np.clip(
+          1.0 - FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
+          FORWARD_IMU_LEAN_GATE_MIN_MULT,
+          np.inf,
+        )
       )
 
     # IMU の +X 移動量 dx に前進報酬（後方移動・過大 dx はクリップ）
-    dx_clipped = max(-MAX_DX_PER_STEP, min(MAX_DX_PER_STEP, dx))
+    dx_clipped = float(np.clip(dx, -MAX_DX_PER_STEP, MAX_DX_PER_STEP))
     forward_imu = 0.0
     if upright >= FORWARD_MIN_UPRIGHT:
       if not FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
         forward_imu = (
-          max(0.0, dx_clipped)
+          float(np.clip(dx_clipped, 0.0, np.inf))
           * FORWARD_REWARD_SCALE
-          * max(0.0, imu_forward_scale)
+          * float(np.clip(imu_forward_scale, 0.0, np.inf))
         )
 
     # 接地足の +X 移動量の合計に前進報酬
     foot_dx = 0.0
     if left_foot_on_floor:
-      foot_dx += max(0.0, left_foot_dx)
+      foot_dx += float(np.clip(left_foot_dx, 0.0, np.inf))
     if right_foot_on_floor:
-      foot_dx += max(0.0, right_foot_dx)
-    foot_dx_clipped = max(-MAX_DX_PER_STEP, min(MAX_DX_PER_STEP, foot_dx))
+      foot_dx += float(np.clip(right_foot_dx, 0.0, np.inf))
+    foot_dx_clipped = float(np.clip(foot_dx, -MAX_DX_PER_STEP, MAX_DX_PER_STEP))
     foot_allowed = not FORWARD_FOOT_ONLY_WHEN_CONTACT or any_foot_on_floor
     forward_foot = 0.0
     if upright >= FORWARD_MIN_UPRIGHT:
       if not FORWARD_REQUIRE_FOOT_CONTACT or any_foot_on_floor:
         if foot_allowed or any_foot_on_floor:
-          forward_foot = max(0.0, foot_dx_clipped) * FORWARD_REWARD_SCALE
+          forward_foot = float(np.clip(foot_dx_clipped, 0.0, np.inf)) * FORWARD_REWARD_SCALE
 
     effort_penalty = effort.penalty if APPLY_EFFORT_PENALTY else 0.0
 

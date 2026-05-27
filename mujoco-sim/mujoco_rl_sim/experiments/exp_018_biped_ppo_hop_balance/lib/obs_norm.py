@@ -1,11 +1,13 @@
 """観測の正規化ヘルパ（ポリシー入力をおおよそ [-1, 1] に揃える）。"""
 
+import numpy as np
+
 
 def clip_scale(value: float, scale: float) -> float:
   """value / scale を [-1, 1] にクリップ。"""
   if scale <= 0.0:
     return 0.0
-  return max(-1.0, min(1.0, float(value) / scale))
+  return float(np.clip(float(value) / scale, -1.0, 1.0))
 
 
 def range_to_norm(value: float, lo: float, hi: float) -> float:
@@ -13,7 +15,7 @@ def range_to_norm(value: float, lo: float, hi: float) -> float:
   if hi <= lo:
     return 0.0
   t = (float(value) - lo) / (hi - lo)
-  return max(-1.0, min(1.0, 2.0 * t - 1.0))
+  return float(np.clip(2.0 * t - 1.0, -1.0, 1.0))
 
 
 def height_to_norm(z: float, z_min: float, z_max: float) -> float:
@@ -22,4 +24,4 @@ def height_to_norm(z: float, z_min: float, z_max: float) -> float:
   if span <= 0.0:
     return 0.0
   t = (float(z) - z_min) / span
-  return max(-1.0, min(1.0, 2.0 * t - 1.0))
+  return float(np.clip(2.0 * t - 1.0, -1.0, 1.0))

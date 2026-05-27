@@ -101,15 +101,16 @@ class Termination:
     FLOOR_FORCE_CAP_N = 10_000.0
     FLOOR_PENALTY_MIN = -200.0
     scale = float(penalty_scale)
-    capped_span = max(0.0, FLOOR_FORCE_CAP_N - FLOOR_MIN_FORCE_N)
-    excess_force_n = min(
-      max(0.0, float(normal_force_n) - FLOOR_MIN_FORCE_N),
-      capped_span,
+    capped_span = float(
+      np.clip(FLOOR_FORCE_CAP_N - FLOOR_MIN_FORCE_N, 0.0, np.inf)
+    )
+    excess_force_n = float(
+      np.clip(float(normal_force_n) - FLOOR_MIN_FORCE_N, 0.0, capped_span)
     )
     penalty = scale * (
       FLOOR_PENALTY_BASE + FLOOR_PENALTY_PER_N * excess_force_n
     )
-    return max(penalty, scale * FLOOR_PENALTY_MIN)
+    return float(np.clip(penalty, scale * FLOOR_PENALTY_MIN, np.inf))
 
   @staticmethod
   def _basket_termination_penalty(normal_force_n: float) -> float:

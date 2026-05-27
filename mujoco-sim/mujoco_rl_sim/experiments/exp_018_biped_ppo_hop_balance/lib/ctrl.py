@@ -1,9 +1,11 @@
 """ポリシー出力と MuJoCo ctrl の変換。"""
 
+import numpy as np
+
 
 def clip_policy_action(action_val: float) -> float:
   """ポリシー出力を [-1, 1] にクリップする。"""
-  return max(-1.0, min(1.0, float(action_val)))
+  return float(np.clip(float(action_val), -1.0, 1.0))
 
 
 def action_to_ctrl(action_val: float, ctrl_range, *, neutral_ctrl: float) -> float:
@@ -13,7 +15,7 @@ def action_to_ctrl(action_val: float, ctrl_range, *, neutral_ctrl: float) -> flo
   立位 keyframe の関節角を中立にできる。
   """
   lo, hi = float(ctrl_range[0]), float(ctrl_range[1])
-  neutral = max(lo, min(hi, float(neutral_ctrl)))
+  neutral = float(np.clip(float(neutral_ctrl), lo, hi))
   a = clip_policy_action(action_val)
   if a >= 0.0:
     return neutral + a * (hi - neutral)
@@ -23,8 +25,8 @@ def action_to_ctrl(action_val: float, ctrl_range, *, neutral_ctrl: float) -> flo
 def ctrl_to_action(ctrl: float, ctrl_range, *, neutral_ctrl: float) -> float:
   """action_to_ctrl の逆（warmup 用）。"""
   lo, hi = float(ctrl_range[0]), float(ctrl_range[1])
-  neutral = max(lo, min(hi, float(neutral_ctrl)))
-  c = max(lo, min(hi, float(ctrl)))
+  neutral = float(np.clip(float(neutral_ctrl), lo, hi))
+  c = float(np.clip(float(ctrl), lo, hi))
   if c >= neutral:
     span = hi - neutral
     if span <= 0.0:

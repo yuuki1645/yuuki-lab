@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class BipedStepContext:
@@ -64,7 +66,7 @@ class EpisodeState:
 
     if upright < config.PROGRESS_MIN_UPRIGHT:
       return 0.0
-    progress = max(0.0, float(imu_x) - self.best_imu_x)
+    progress = float(np.clip(float(imu_x) - self.best_imu_x, 0.0, np.inf))
     if progress > 0.0:
       self.best_imu_x = float(imu_x)
     return progress

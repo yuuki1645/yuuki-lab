@@ -1,4 +1,5 @@
 import mujoco
+import numpy as np
 
 from .actuators import ACTUATOR_NAMES
 from .ctrl import action_to_ctrl, clip_policy_action
@@ -31,7 +32,7 @@ class ActionBinding:
       self._ctrl_ranges.append((float(lo), float(hi)))
       jn = name.replace("_motor", "")
       q_nom = neutral_q.get(jn, 0.5 * (float(lo) + float(hi)))
-      self._neutral_ctrl.append(max(float(lo), min(float(hi), q_nom)))
+      self._neutral_ctrl.append(float(np.clip(q_nom, float(lo), float(hi))))
 
   def apply(self, data: mujoco.MjData, action) -> tuple[float, ...]:
     clipped: list[float] = []

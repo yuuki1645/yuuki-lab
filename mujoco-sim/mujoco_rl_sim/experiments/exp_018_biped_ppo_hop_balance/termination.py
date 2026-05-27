@@ -212,10 +212,15 @@ class Termination:
     self, data: mujoco.MjData
   ) -> TerminationOutcome:
     # ここだけ読めば「何を見て、どの閾値で落とすか」が分かるようにする。
+    # imu_site の世界 Z [m]。空中時はこれ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
     MIN_IMU_Z = 0.40
+    # 足が床についているときの imu_z 下限 [m]。MIN_IMU_Z より緩く、接地中の低姿勢を許す。
     MIN_IMU_Z_STANCE = 0.34
+    # imu_zaxis の Z 成分（上向き成分）。1 に近いほど直立。これ未満で姿勢不良終了。
     MIN_IMU_UPRIGHT = 0.52
+    # imu_zaxis の X 成分の後傾限界。imu_zaxis_x < -MAX_BACKWARD_LEAN で後ろ倒れ終了。
     MAX_BACKWARD_LEAN = 0.38
+    # 上記いずれかの理由でエピソード終了したときに報酬へ加算するペナルティ。
     POSE_TERMINATION_PENALTY = -30.0
 
     imu_z = float(data.site("imu_site").xpos[WORLD_Z])

@@ -114,8 +114,9 @@ class Termination:
 
   @staticmethod
   def _basket_termination_penalty(normal_force_n: float) -> float:
+    BASKET_PENALTY_SCALE = 1.0
     return Termination._floor_termination_penalty(
-      normal_force_n, penalty_scale=1.0
+      normal_force_n, penalty_scale=BASKET_PENALTY_SCALE
     )
 
   @staticmethod

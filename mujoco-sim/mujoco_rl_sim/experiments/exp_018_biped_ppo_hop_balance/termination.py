@@ -16,6 +16,11 @@ REASON_CONTACT_BASKET = "contact_basket"
 REASON_CONTACT_THIGH = "contact_thigh"
 REASON_CONTACT_SHANK = "contact_shank"
 
+# MuJoCo の位置/ベクトルは [x, y, z] の順で格納される。
+WORLD_X = 0
+WORLD_Y = 1
+WORLD_Z = 2
+
 TERMINATION_REASONS = (
   REASON_TRUNCATED,
   REASON_IMU_Z,
@@ -213,10 +218,10 @@ class Termination:
     MAX_BACKWARD_LEAN = 0.38
     POSE_TERMINATION_PENALTY = -30.0
 
-    imu_z = float(data.site("imu_site").xpos[2])
+    imu_z = float(data.site("imu_site").xpos[WORLD_Z])
     imu_zaxis = data.sensor("imu_zaxis").data
-    upright = float(imu_zaxis[2])
-    imu_zaxis_x = float(imu_zaxis[0])
+    upright = float(imu_zaxis[WORLD_Z])
+    imu_zaxis_x = float(imu_zaxis[WORLD_X])
 
     any_foot_on_floor = self._has_contact_between_geoms(
       data, self._left_foot_geom_id, self._floor_geom_id

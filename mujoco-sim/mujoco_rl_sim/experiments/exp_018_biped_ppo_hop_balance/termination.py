@@ -92,17 +92,17 @@ class Termination:
 
   @staticmethod
   def _floor_termination_penalty(
-    normal_force_n: float, *, link_penalty: bool = False
+    normal_force_n: float, *, penalty_scale: float = 1.0
   ) -> float:
     """床接触の終了ペナルティ。法線力 [N] に応じて base + per_N * excess。"""
-    BASKET_PENALTY_SCALE = 1.0
-    LINK_PENALTY_SCALE = 0.5
     FLOOR_PENALTY_BASE = -20.0
     FLOOR_PENALTY_PER_N = -0.016
     FLOOR_MIN_FORCE_N = 0.0
     FLOOR_FORCE_CAP_N = 10_000.0
     FLOOR_PENALTY_MIN = -200.0
-    scale = LINK_PENALTY_SCALE if link_penalty else BASKET_PENALTY_SCALE
+
+    scale = float(penalty_scale)
+    
     capped_span = float(
       np.clip(FLOOR_FORCE_CAP_N - FLOOR_MIN_FORCE_N, 0.0, np.inf)
     )
@@ -133,16 +133,28 @@ class Termination:
     *,
     geom_id: int,
     reason: str,
-    link_penalty: bool,
   ) -> TerminationOutcome | None:
+    BASKET_PENALTY_SCALE = 1.0
+    LINK_PENALTY_SCALE = 0.5
+
     if not self._has_contact_between_geoms(data, geom_id, self._floor_geom_id):
       return None
+    
     normal_force_n = self._max_normal_force_between_geoms(
       data, geom_id, self._floor_geom_id
     )
+
+    if reason == REASON_CONTACT_BASKET:
+      penalty_scale = BASKET_PENALTY_SCALE
+    elif reason == REASON_CONTACT_THIGH or reason == REASON_CONTACT_SHANK:
+      penalty_scale = LINK_PENALTY_SCALE
+    else:
+      penalty_scale = 1.0
+
     penalty = self._floor_termination_penalty(
-      normal_force_n, link_penalty=link_penalty
+      normal_force_n, penalty_scale=penalty_scale
     )
+
     return TerminationOutcome(reason, penalty, normal_force_n)
 
   def done_reason_contact(self, data: mujoco.MjData) -> TerminationOutcome:

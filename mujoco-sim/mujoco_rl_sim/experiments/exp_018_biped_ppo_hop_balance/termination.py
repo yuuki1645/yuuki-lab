@@ -212,6 +212,7 @@ class Termination:
     self, data: mujoco.MjData
   ) -> TerminationOutcome:
     # ここだけ読めば「何を見て、どの閾値で落とすか」が分かるようにする。
+
     # imu_site の世界 Z [m]。空中時はこれ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
     MIN_IMU_Z = 0.40
     # 足が床についているときの imu_z 下限 [m]。MIN_IMU_Z より緩く、接地中の低姿勢を許す。
@@ -235,6 +236,7 @@ class Termination:
     )
 
     min_imu_z = MIN_IMU_Z_STANCE if any_foot_on_floor else MIN_IMU_Z
+
     if imu_z < min_imu_z:
       return TerminationOutcome(REASON_IMU_Z, POSE_TERMINATION_PENALTY, None)
     if upright < MIN_IMU_UPRIGHT:
@@ -245,6 +247,7 @@ class Termination:
       return TerminationOutcome(
         REASON_BACKWARD_LEAN, POSE_TERMINATION_PENALTY, None
       )
+      
     return NOT_TERMINATED
 
   def is_done_contact(self, data: mujoco.MjData) -> bool:

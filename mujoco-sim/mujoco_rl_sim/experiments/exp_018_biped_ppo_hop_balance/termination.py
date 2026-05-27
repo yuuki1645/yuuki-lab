@@ -121,16 +121,11 @@ class Termination:
     return float(np.clip(penalty, scale * FLOOR_PENALTY_MIN, np.inf))
 
   @staticmethod
-  def _link_termination_penalty(normal_force_n: float) -> float:
-    return Termination._floor_termination_penalty(
-      normal_force_n, link_penalty=True
-    )
-
-  @staticmethod
   def _shank_step_penalty(normal_force_n: float) -> float:
     SHANK_STEP_PENALTY_SCALE = 1.0
-    return SHANK_STEP_PENALTY_SCALE * Termination._link_termination_penalty(
-      normal_force_n
+
+    return SHANK_STEP_PENALTY_SCALE * Termination._floor_termination_penalty(
+      normal_force_n, penalty_scale=SHANK_STEP_PENALTY_SCALE
     )
 
   def _floor_contact_outcome(
@@ -196,6 +191,7 @@ class Termination:
   def shank_contact_step_penalty(self, data: mujoco.MjData) -> float:
     if config.CONTACT_SHANK_TERMINATES:
       return 0.0
+
     total = 0.0
     for shank_id in self._shank_geom_ids:
       if not self._has_contact_between_geoms(
@@ -206,6 +202,7 @@ class Termination:
         data, shank_id, self._floor_geom_id
       )
       total += self._shank_step_penalty(normal_force_n)
+
     return total
 
   def done_reason_pose(
@@ -243,7 +240,7 @@ class Termination:
       return TerminationOutcome(
         REASON_LOW_UPRIGHT, POSE_TERMINATION_PENALTY, None
       )
-      
+
     if imu_zaxis_x < -MAX_BACKWARD_LEAN:
       return TerminationOutcome(
         REASON_BACKWARD_LEAN, POSE_TERMINATION_PENALTY, None

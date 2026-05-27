@@ -162,7 +162,6 @@ class Termination:
       data,
       geom_id=self._basket_geom_id,
       reason=REASON_CONTACT_BASKET,
-      link_penalty=False,
     )
     if outcome is not None:
       return outcome
@@ -172,7 +171,6 @@ class Termination:
         data,
         geom_id=thigh_id,
         reason=REASON_CONTACT_THIGH,
-        link_penalty=True,
       )
       if outcome is not None:
         return outcome
@@ -183,7 +181,6 @@ class Termination:
           data,
           geom_id=shank_id,
           reason=REASON_CONTACT_SHANK,
-          link_penalty=True,
         )
         if outcome is not None:
           return outcome

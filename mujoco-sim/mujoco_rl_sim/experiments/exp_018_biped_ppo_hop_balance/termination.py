@@ -4,13 +4,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import mujoco
+import numpy as np
 
 from . import config
 from .lib.actuators import SHANK_GEOM_IDS, THIGH_GEOM_IDS
-from .lib.contact import (
-  has_contact_between_geoms,
-  max_normal_force_between_geoms,
-)
 from .observation import StepPhysics
 
 REASON_TRUNCATED = "truncated"
@@ -53,6 +50,46 @@ class Termination:
     self._basket_geom_id = model.geom("basket").id
     self._thigh_geom_ids = tuple(model.geom(name).id for name in THIGH_GEOM_IDS)
     self._shank_geom_ids = tuple(model.geom(name).id for name in SHANK_GEOM_IDS)
+    # mj_contactForce の出力先（ループ内で再利用）
+    self._contact_wrench = np.zeros(6)
+
+  @staticmethod
+  def _is_geom_pair(
+    contact: mujoco.MjContact, geom_a_id: int, geom_b_id: int
+  ) -> bool:
+    """geom1/geom2 の順序は MuJoCo が入れ替えることがある。"""
+    return (contact.geom1 == geom_a_id and contact.geom2 == geom_b_id) or (
+      contact.geom1 == geom_b_id and contact.geom2 == geom_a_id
+    )
+
+  @staticmethod
+  def _has_contact_between_geoms(
+    data: mujoco.MjData, geom_a_id: int, geom_b_id: int
+  ) -> bool:
+    """2 geom 間に接触が1つでもあるか。"""
+    for contact_index in range(data.ncon):
+      if Termination._is_geom_pair(
+        data.contact[contact_index], geom_a_id, geom_b_id
+      ):
+        return True
+    return False
+
+  def _max_normal_force_between_geoms(
+    self, data: mujoco.MjData, geom_a_id: int, geom_b_id: int
+  ) -> float:
+    """2 geom 間の接触のうち、法線力 |force[0]| の最大値 [N]。接触なしなら 0。"""
+    peak_normal_force_n = 0.0
+    for contact_index in range(data.ncon):
+      contact = data.contact[contact_index]
+      if not self._is_geom_pair(contact, geom_a_id, geom_b_id):
+        continue
+      mujoco.mj_contactForce(
+        self._model, data, contact_index, self._contact_wrench
+      )
+      peak_normal_force_n = max(
+        peak_normal_force_n, abs(float(self._contact_wrench[0]))
+      )
+    return peak_normal_force_n
 
   def _floor_contact_outcome(
     self,
@@ -62,10 +99,10 @@ class Termination:
     reason: str,
     penalty_fn: Callable[[float], float],
   ) -> TerminationOutcome | None:
-    if not has_contact_between_geoms(data, geom_id, self._floor_geom_id):
+    if not self._has_contact_between_geoms(data, geom_id, self._floor_geom_id):
       return None
-    normal_force_n = max_normal_force_between_geoms(
-      self._model, data, geom_id, self._floor_geom_id
+    normal_force_n = self._max_normal_force_between_geoms(
+      data, geom_id, self._floor_geom_id
     )
     penalty = penalty_fn(normal_force_n)
     return TerminationOutcome(reason, penalty, normal_force_n)
@@ -108,12 +145,12 @@ class Termination:
       return 0.0
     total = 0.0
     for shank_id in self._shank_geom_ids:
-      if not has_contact_between_geoms(
+      if not self._has_contact_between_geoms(
         data, shank_id, self._floor_geom_id
       ):
         continue
-      normal_force_n = max_normal_force_between_geoms(
-        self._model, data, shank_id, self._floor_geom_id
+      normal_force_n = self._max_normal_force_between_geoms(
+        data, shank_id, self._floor_geom_id
       )
       total += config.contact_shank_step_penalty(normal_force_n)
     return total

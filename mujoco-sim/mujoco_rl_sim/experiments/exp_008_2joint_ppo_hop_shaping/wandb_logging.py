@@ -6,8 +6,6 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from .wandb_fav import with_fav_metrics
-
 from . import config
 from .termination import (
   REASON_BACKWARD_LEAN,
@@ -18,6 +16,27 @@ from .termination import (
   REASON_LOW_UPRIGHT,
   TERMINATION_REASONS,
 )
+
+
+# wandb UI の fav/* セクション用エイリアス
+FAV_METRIC_ALIASES: dict[str, str] = {
+  "train/update": "fav/update",
+  "episode/return": "fav/return",
+  "episode/length": "fav/length",
+  "episode/forward_reward_sum": "fav/forward_reward_sum",
+  "episode/total_dx_imu": "fav/total_dx_imu",
+  "train/ep_return_mean": "fav/ep_return_mean",
+  "train/ep_total_dx_imu_mean": "fav/ep_total_dx_imu_mean",
+}
+
+
+def with_fav_metrics(metrics: dict[str, float]) -> dict[str, float]:
+  """主要メトリクスを fav/* に複製して返す。"""
+  out = dict(metrics)
+  for src, dst in FAV_METRIC_ALIASES.items():
+    if src in metrics:
+      out[dst] = metrics[src]
+  return out
 
 _active = False
 _termination_tracker: TerminationTracker | None = None

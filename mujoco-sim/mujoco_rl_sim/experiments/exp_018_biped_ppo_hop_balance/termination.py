@@ -6,8 +6,7 @@ import mujoco
 import numpy as np
 
 from . import config
-from .lib.actuators import SHANK_GEOM_IDS, THIGH_GEOM_IDS
-from .observation import StepPhysics
+from .lib.actuators import LEFT_FOOT_GEOM, RIGHT_FOOT_GEOM, SHANK_GEOM_IDS, THIGH_GEOM_IDS
 
 REASON_TRUNCATED = "truncated"
 REASON_IMU_Z = "imu_z"
@@ -47,6 +46,8 @@ class Termination:
     self._model = model
     self._floor_geom_id = model.geom("floor").id
     self._basket_geom_id = model.geom("basket").id
+    self._left_foot_geom_id = model.geom(LEFT_FOOT_GEOM).id
+    self._right_foot_geom_id = model.geom(RIGHT_FOOT_GEOM).id
     self._thigh_geom_ids = tuple(model.geom(name).id for name in THIGH_GEOM_IDS)
     self._shank_geom_ids = tuple(model.geom(name).id for name in SHANK_GEOM_IDS)
     # mj_contactForce の出力先（ループ内で再利用）
@@ -202,24 +203,37 @@ class Termination:
       total += self._shank_step_penalty(normal_force_n)
     return total
 
-  @staticmethod
   def done_reason_pose(
-    step_physics: StepPhysics, *, any_foot_on_floor: bool
+    self, data: mujoco.MjData
   ) -> TerminationOutcome:
-    imu_z = step_physics.imu_z
-    upright = step_physics.upright
-    imu_zaxis_x = step_physics.imu_zaxis_x
+    # ここだけ読めば「何を見て、どの閾値で落とすか」が分かるようにする。
+    MIN_IMU_Z = 0.40
+    MIN_IMU_Z_STANCE = 0.34
+    MIN_IMU_UPRIGHT = 0.52
+    MAX_BACKWARD_LEAN = 0.38
+    POSE_TERMINATION_PENALTY = -30.0
 
-    min_imu_z = (
-      config.MIN_IMU_Z_STANCE if any_foot_on_floor else config.MIN_IMU_Z
+    imu_z = float(data.site("imu_site").xpos[2])
+    imu_zaxis = data.sensor("imu_zaxis").data
+    upright = float(imu_zaxis[2])
+    imu_zaxis_x = float(imu_zaxis[0])
+
+    any_foot_on_floor = self._has_contact_between_geoms(
+      data, self._left_foot_geom_id, self._floor_geom_id
+    ) or self._has_contact_between_geoms(
+      data, self._right_foot_geom_id, self._floor_geom_id
     )
+
+    min_imu_z = MIN_IMU_Z_STANCE if any_foot_on_floor else MIN_IMU_Z
     if imu_z < min_imu_z:
-      return TerminationOutcome(REASON_IMU_Z, config.POSE_TERMINATION_PENALTY, None)
-    if upright < config.MIN_IMU_UPRIGHT:
-      return TerminationOutcome(REASON_LOW_UPRIGHT, config.POSE_TERMINATION_PENALTY, None)
-    if imu_zaxis_x < -config.MAX_BACKWARD_LEAN:
+      return TerminationOutcome(REASON_IMU_Z, POSE_TERMINATION_PENALTY, None)
+    if upright < MIN_IMU_UPRIGHT:
       return TerminationOutcome(
-        REASON_BACKWARD_LEAN, config.POSE_TERMINATION_PENALTY, None
+        REASON_LOW_UPRIGHT, POSE_TERMINATION_PENALTY, None
+      )
+    if imu_zaxis_x < -MAX_BACKWARD_LEAN:
+      return TerminationOutcome(
+        REASON_BACKWARD_LEAN, POSE_TERMINATION_PENALTY, None
       )
     return NOT_TERMINATED
 

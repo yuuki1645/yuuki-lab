@@ -146,7 +146,7 @@ class EnvBipedPPO:
 
     if not termination.terminated:
       termination = self._termination.done_reason_pose(
-        step_physics, any_foot_on_floor=step_physics.any_foot_on_floor
+        self.data
       )
 
     terminated = termination.terminated

@@ -22,7 +22,10 @@ const PoseEditorPage = lazy(() => import("@/features/pose-editor/PoseEditorPage"
 const DaemonSocketTestPage = lazy(
   () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
 );
-const TelemetryPage = lazy(() => import("@/features/telemetry/TelemetryPage"));
+const DeviceTelemetryPage = lazy(() => import("@/features/telemetry/DeviceTelemetryPage"));
+const TrainingTelemetryPage = lazy(
+  () => import("@/features/telemetry/TrainingTelemetryPage")
+);
 const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
 const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
 
@@ -56,12 +59,19 @@ export const hubTools: HubTool[] = [
     LazyPage: DaemonSocketTestPage,
   },
   {
-    id: "telemetry",
-    path: "/telemetry",
-    label: "テレメトリ",
+    id: "device-telemetry",
+    path: "/device-telemetry",
+    label: "実機テレメトリ",
+    description: "robot-daemon の実機 IMU をリアルタイム表示し、CSV ログを操作します。",
+    LazyPage: DeviceTelemetryPage,
+  },
+  {
+    id: "training-telemetry",
+    path: "/training-telemetry",
+    label: "学習テレメトリ",
     description:
-      "学習（mujoco_rl_sim）の観測・行動に加え、robot-daemon の実機 IMU を表示します。",
-    LazyPage: TelemetryPage,
+      "強化学習（mujoco_rl_sim）の観測・行動・報酬を Socket.IO（rl_telemetry/*）で表示します。",
+    LazyPage: TrainingTelemetryPage,
   },
   {
     id: "data-viewer",

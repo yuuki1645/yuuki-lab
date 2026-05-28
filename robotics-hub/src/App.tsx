@@ -18,7 +18,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<HubLayout />}>
-          <Route path="/rl-telemetry" element={<Navigate to="/telemetry" replace />} />
+          <Route path="/telemetry" element={<Navigate to="/device-telemetry" replace />} />
+          <Route path="/rl-telemetry" element={<Navigate to="/training-telemetry" replace />} />
           <Route index element={<Navigate to={defaultPath} replace />} />
           {hubTools.map((t) => (
             <Route

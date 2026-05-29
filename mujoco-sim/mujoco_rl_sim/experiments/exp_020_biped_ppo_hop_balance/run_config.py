@@ -33,6 +33,9 @@ wandb を無効にする例:
 
   python -m {PACKAGE}.train --no-wandb
 
+チェックポイント run ディレクトリ: wandb 有効時は Run Name（例: lunar-pond-4）、
+--no-wandb 時は run_YYYYMMDD_HHMMSS。同名フォルダがある場合は _2, _3 …
+
 Hub テレメトリを無効にする例:
 
   python -m {PACKAGE}.train --no-telemetry

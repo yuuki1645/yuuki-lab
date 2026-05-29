@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 import torch
+
+from mujoco_rl_sim.lib.run_dir import (
+  make_unique_run_dir,
+  resolve_run_dir_label,
+  wandb_active_run_name,
+)
 
 from . import config
 from .package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
@@ -40,12 +45,17 @@ def resolve_checkpoint_path(path_str: str) -> Path:
   return path
 
 
-def make_run_dir() -> Path:
-  """1 回の train 実行用ディレクトリを作成して返す（CWD 非依存）。"""
+def make_run_dir(*, wandb_run_name: str | None = None) -> Path:
+  """1 回の train 実行用ディレクトリを作成して返す（CWD 非依存）。
+
+  wandb 有効時は Run の Name（例: lunar-pond-4）をフォルダ名に使う。
+  省略時は初期化済み wandb.run.name を参照し、無ければ run_YYYYMMDD_HHMMSS。
+  """
+  if wandb_run_name is None:
+    wandb_run_name = wandb_active_run_name()
   base = Path(config.CHECKPOINT_DIR)
-  run_dir = base / datetime.now().strftime("run_%Y%m%d_%H%M%S")
-  run_dir.mkdir(parents=True, exist_ok=True)
-  return run_dir
+  label = resolve_run_dir_label(wandb_run_name=wandb_run_name)
+  return make_unique_run_dir(base, label)
 
 
 def build_payload(

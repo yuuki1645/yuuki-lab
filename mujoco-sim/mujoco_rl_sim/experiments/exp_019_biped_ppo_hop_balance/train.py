@@ -202,7 +202,14 @@ def main() -> None:
   last_update = start_update
   updates_done_this_run = 0
 
-  checkpoint_run_dir = checkpoint.make_run_dir() if config.SAVE_CHECKPOINTS else None
+  wandb_name = wandb_logging.active_run_name() if run.wandb else None
+  checkpoint_run_dir = (
+    checkpoint.make_run_dir(wandb_run_name=wandb_name)
+    if config.SAVE_CHECKPOINTS
+    else None
+  )
+  if checkpoint_run_dir is not None:
+    wandb_logging.log_checkpoint_run_dir(checkpoint_run_dir)
   _print_run_banner(
     run,
     start_update=start_update,

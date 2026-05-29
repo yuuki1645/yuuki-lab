@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections import Counter, deque
+from pathlib import Path
 from typing import Any
 
 from mujoco_rl_sim.lib.episode_rolling import (
@@ -11,6 +12,7 @@ from mujoco_rl_sim.lib.episode_rolling import (
   format_rolling_log_suffix,
   rolling_summary_to_wandb,
 )
+from mujoco_rl_sim.lib.run_dir import wandb_active_run_name
 
 from . import config
 from .termination import (
@@ -373,6 +375,24 @@ def log(metrics: dict[str, float], *, step: int) -> None:
   import wandb
 
   wandb.log(with_fav_metrics(metrics), step=step)
+
+
+def active_run_name() -> str | None:
+  """有効な wandb run の Name（チェックポイント run ディレクトリ名に使用）。"""
+  if not _active:
+    return None
+  return wandb_active_run_name()
+
+
+def log_checkpoint_run_dir(path: Path) -> None:
+  """ローカルチェックポイント run パスを wandb config に記録する。"""
+  if not _active:
+    return
+  import wandb
+
+  if wandb.run is None:
+    return
+  wandb.config.update({"checkpoint_run_dir": str(path)}, allow_val_change=True)
 
 
 def finish() -> None:

@@ -1,3 +1,14 @@
+"""exp_019 学習エントリポイント（PPO メインループ）。
+
+このファイルの役割:
+  - CLI から実行設定を読む
+  - 環境 (Env2JointPPO) と方策 (AgentPPO) を用意する
+  - ロールアウト収集 → PPO 更新 を繰り返す
+  - チェックポイント / wandb / Hub テレメトリを配線する
+
+報酬・観測・終了条件の中身は env.py / reward.py / observation.py を参照。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -46,9 +57,14 @@ wandb を無効にする例:
 """
 
 
+# ---------------------------------------------------------------------------
+# 実行設定（CLI → dataclass）
+# ---------------------------------------------------------------------------
+
+
 @dataclass(frozen=True)
 class TrainRunConfig:
-  """1 回の train 実行の設定（CLI）。"""
+  """1 回の `train` 実行の設定。argparse の結果を型付きで main に渡す。"""
 
   resume_path: Path | None
   lr: float | None
@@ -63,7 +79,10 @@ class TrainRunConfig:
 
 
 def _parse_args() -> TrainRunConfig:
+  """コマンドライン引数を解析し TrainRunConfig を返す。"""
   p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+
+  # --- 学習再開・最適化 ---
   p.add_argument(
     "--resume",
     type=str,
@@ -96,6 +115,8 @@ def _parse_args() -> TrainRunConfig:
     default=None,
     help="wandb run 名（省略時は config または再開時の自動名）",
   )
+
+  # --- 可視化・実時間化 ---
   p.add_argument(
     "--viewer",
     action="store_true",
@@ -106,6 +127,17 @@ def _parse_args() -> TrainRunConfig:
     action="store_true",
     help="ビューアを無効化（config.ENABLE_VIEWER を上書き）",
   )
+  p.add_argument(
+    "--step-wall-sleep",
+    type=float,
+    default=None,
+    help=(
+      "制御ステップごとの壁時計待ち [s]（省略時は config.STEP_WALL_SLEEP_SEC）。"
+      "ビューア有効時は visualize の sleep が優先され二重待ちしません。"
+    ),
+  )
+
+  # --- robotics-hub 向け Socket.IO テレメトリ ---
   p.add_argument(
     "--telemetry",
     action="store_true",
@@ -128,15 +160,6 @@ def _parse_args() -> TrainRunConfig:
     default=config.TELEMETRY_PORT,
     help=f"テレメトリポート（既定: {config.TELEMETRY_PORT}）",
   )
-  p.add_argument(
-    "--step-wall-sleep",
-    type=float,
-    default=None,
-    help=(
-      "制御ステップごとの壁時計待ち [s]（省略時は config.STEP_WALL_SLEEP_SEC）。"
-      "ビューア有効時は visualize の sleep が優先され二重待ちしません。"
-    ),
-  )
   args = p.parse_args()
 
   resume_path = None
@@ -147,6 +170,7 @@ def _parse_args() -> TrainRunConfig:
   if num_updates < 1:
     raise SystemExit("--num-updates は 1 以上にしてください")
 
+  # --lr を指定した再開は「重みだけ載せ替え・optimizer は新規」が意図
   load_optimizer = args.load_optimizer
   if args.lr is not None:
     load_optimizer = False
@@ -177,11 +201,23 @@ def _parse_args() -> TrainRunConfig:
   )
 
 
+# ---------------------------------------------------------------------------
+# エージェント・ログ・テレメトリの初期化ヘルパ
+# ---------------------------------------------------------------------------
+
+
 def _load_resume_state(resume_path: Path) -> dict[str, Any]:
+  """チェックポイント .pt からメタデータ（update 番号など）を CPU で読む。"""
   return checkpoint.load_checkpoint(resume_path, map_location="cpu")
 
 
 def _create_agent(run: TrainRunConfig) -> tuple[AgentPPO, dict[str, Any] | None]:
+  """方策ネットワークを新規作成するか、チェックポイントから復元する。
+
+  戻り値:
+    agent: PPO 方策
+    payload: 再開時のみ。update / total_env_steps / episodes_finished 等
+  """
   if run.resume_path is None:
     agent = AgentPPO(obs_dim=config.OBS_DIM)
     if run.lr is not None:
@@ -198,6 +234,7 @@ def _create_agent(run: TrainRunConfig) -> tuple[AgentPPO, dict[str, Any] | None]
 
 
 def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
+  """wandb run を開始。再開時はベース update や LR 上書きを config に記録。"""
   extra_config: dict[str, Any] | None = None
   extra_tags: tuple[str, ...] | None = None
   run_name = run.wandb_run_name
@@ -240,6 +277,7 @@ def _print_run_banner(
   episode_index: int,
   checkpoint_run_dir: Path | None,
 ) -> None:
+  """コンソールに run 概要を表示（再開か新規か、チェックポイント保存先など）。"""
   if run.resume_path is not None:
     print(f"[resume] checkpoint: {run.resume_path}")
     print(
@@ -264,6 +302,10 @@ def _print_run_banner(
 
 
 def _start_telemetry(env: Env2JointPPO, run: TrainRunConfig) -> HubTelemetrySocketIoServer | None:
+  """robotics-hub 学習テレメトリ用 Socket.IO サーバを別スレッドで起動。
+
+  Hub から POST される step_wall_sleep_sec は env.set_step_wall_sleep_sec に転送される。
+  """
   if not run.telemetry:
     return None
   tel = HubTelemetrySocketIoServer(
@@ -275,12 +317,18 @@ def _start_telemetry(env: Env2JointPPO, run: TrainRunConfig) -> HubTelemetrySock
   tel.start()
   print(
     f"[telemetry] Socket.IO http://{run.telemetry_host}:{run.telemetry_port} "
-    f"(robotics-hub /telemetry)"
+    f"(robotics-hub /training-telemetry)"
   )
   return tel
 
 
+# ---------------------------------------------------------------------------
+# メイン学習ループ
+# ---------------------------------------------------------------------------
+
+
 def main() -> None:
+  # ===== 1. 実行設定・方策・ログ =====
   run = _parse_args()
   agent, payload = _create_agent(run)
   _wandb_init(run, payload)
@@ -290,16 +338,19 @@ def main() -> None:
   if run.step_wall_sleep_sec is not None:
     env.set_step_wall_sleep_sec(run.step_wall_sleep_sec)
   elif not run.viewer:
+    # ビューア無しのときだけ config の壁時計待ち（実時間化）
     env.set_step_wall_sleep_sec(config.STEP_WALL_SLEEP_SEC)
 
   tel = _start_telemetry(env, run)
-  visualize_steps = run.viewer
+  visualize_steps = run.viewer  # True なら env.step 内で CONTROL_TIMESTEP_S 待ち
 
+  # ===== 2. グローバルカウンタ（再開時は ckpt から復元） =====
   start_update = int(payload["update"]) if payload is not None else 0
   total_env_steps = int(payload.get("total_env_steps", 0)) if payload is not None else 0
   episode_index = int(payload.get("episodes_finished", 0)) if payload is not None else 0
   end_update = start_update + run.num_updates
 
+  # 現在エピソードの観測（tuple: Hub テレメトリ用にコピーしやすい）
   obs = env.reset()
   obs_vec = tuple(obs)
   if tel is not None:
@@ -310,7 +361,8 @@ def main() -> None:
         exp_name=EXP_NAME,
       )
     )
-  episode_step = 0
+
+  episode_step = 0  # エピソード内の制御ステップ数（warmup 判定にも使用）
   update_time_sum_s = 0.0
   last_update = start_update
   updates_done_this_run = 0
@@ -334,10 +386,15 @@ def main() -> None:
     )
 
   try:
+    # ===== 3. PPO 外ループ: 1 iteration = ロールアウト ROLLOUT_STEPS 分 + 方策更新 =====
     for u in range(start_update, end_update):
       t_update_start = time.perf_counter()
-      policy_steps = 0
+      policy_steps = 0  # この update でバッファに積んだステップ数
+
+      # ----- 3a. ロールアウト収集（環境と相互作用） -----
       while policy_steps < config.ROLLOUT_STEPS:
+
+        # --- エピソード先頭の warmup: 固定／スクリプト action のみ（PPO バッファに入れない） ---
         if in_episode_warmup(episode_step):
           elapsed_s = episode_sim_elapsed_s(episode_step)
           action = resolve_warmup_action(
@@ -394,10 +451,12 @@ def main() -> None:
                 )
               )
             episode_step = 0
+          # warmup 中は agent.store しない
           continue
 
+        # --- 通常ステップ: 方策から action をサンプルし、ロールアウトバッファへ保存 ---
         action, value, log_prob = agent.act(obs)
-        obs_before = obs_vec
+        obs_before = obs_vec  # テレメトリ: エージェントが見た観測（step 前）
         obs_next, reward, terminated, step_info = env.step(
           action,
           visualize=visualize_steps,
@@ -422,6 +481,7 @@ def main() -> None:
         truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
         done = terminated or truncated
 
+        # PPO: (s, a, r, V, done, log π) を蓄積。done で GAE ブートストラップが切れる
         agent.store(obs, action, reward, value, done, log_prob)
         policy_steps += 1
 
@@ -447,12 +507,14 @@ def main() -> None:
             )
           episode_step = 0
 
+      # ----- 3b. PPO 更新（収集したロールアウトで複数 epoch 学習） -----
       stats = agent.update(obs)
       last_update = u + 1
       updates_done_this_run += 1
       update_time_sum_s += time.perf_counter() - t_update_start
       avg_update_s = update_time_sum_s / updates_done_this_run
 
+      # ----- 3c. 定期チェックポイント -----
       if (
         checkpoint_run_dir is not None
         and config.CHECKPOINT_EVERY > 0
@@ -469,6 +531,7 @@ def main() -> None:
         )
         print(f"[checkpoint] saved update {last_update} -> {paths[0]}")
 
+      # ----- 3d. コンソール / wandb ログ -----
       if updates_done_this_run == 1 or last_update % config.LOG_EVERY == 0:
         rolling = episode_metrics.rolling_summary()
         print(
@@ -491,7 +554,9 @@ def main() -> None:
           step=total_env_steps,
           episode_rolling=rolling,
         )
+
   finally:
+    # ===== 4. 終了処理（例外時も実行） =====
     if (
       checkpoint_run_dir is not None
       and config.CHECKPOINT_SAVE_FINAL

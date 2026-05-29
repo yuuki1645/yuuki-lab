@@ -94,6 +94,82 @@ def _print_run_banner(
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
 
 
+def _run_warmup_step(
+  obs,
+  obs_vec: tuple[float, ...],
+  *,
+  env: _EnvProtocol,
+  warmup_mod,
+  config_mod,
+  contract_mod: TelemetryContract,
+  tel: HubTelemetrySocketIoServer | None,
+  episode_metrics,
+  exp_name_str: str,
+  episode_step_val: int,
+  total_env_steps_val: int,
+  episode_index_val: int,
+  visualize_steps_flag: bool,
+) -> tuple[Any, tuple[float, ...], int, int, int]:
+  elapsed_s = warmup_mod.episode_sim_elapsed_s(episode_step_val)
+  action = warmup_mod.resolve_warmup_action(
+    config_mod.WARMUP_ACTION_FN,
+    warmup_mod.WarmupContext(
+      obs=obs,
+      elapsed_s=elapsed_s,
+      total_env_steps=total_env_steps_val,
+      episode_step=episode_step_val,
+      episode_index=episode_index_val,
+    ),
+  )
+  obs_before = obs_vec
+  obs_next, reward, terminated, step_info = env.step(
+    action,
+    visualize=visualize_steps_flag,
+    episode_step=episode_step_val,
+  )
+  obs_vec = tuple(obs_next)
+  episode_step_val += 1
+  total_env_steps_val += 1
+  if tel is not None:
+    tel.publish_step(
+      build_step_payload(
+        contract_mod,
+        obs_before=np.asarray(obs_before, dtype=np.float64),
+        action_norm=action,
+        obs_after=np.asarray(obs_vec, dtype=np.float64),
+        info=step_info,
+        episode_step=episode_step_val,
+        num_timesteps=total_env_steps_val,
+        exp_name=exp_name_str,
+      )
+    )
+  truncated = episode_step_val >= config_mod.MAX_STEPS_PER_EPISODE
+  done = terminated or truncated
+  obs = obs_next
+  if done:
+    episode_metrics.on_episode_end(
+      episode_step=episode_step_val,
+      terminated=terminated,
+      truncated=truncated,
+      step_info=step_info,
+      env_step=total_env_steps_val,
+    )
+    episode_index_val += 1
+    obs = env.reset()
+    obs_vec = tuple(obs)
+    if tel is not None:
+      tel.publish_reset(
+        build_reset_payload(
+          contract_mod,
+          obs_vector=obs_vec,
+          num_timesteps=total_env_steps_val,
+          exp_name=exp_name_str,
+        )
+      )
+    episode_step_val = 0
+  return obs, obs_vec, episode_step_val, total_env_steps_val, episode_index_val
+
+
 def run_ppo_train(bindings: PpoTrainBindings) -> None:
   """exp_019 相当の PPO 学習ループを契約駆動で実行する。"""
   run = bindings.train_run_config
@@ -165,63 +241,21 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
 
       while policy_steps < config.ROLLOUT_STEPS:
         if warmup.in_episode_warmup(episode_step):
-          elapsed_s = warmup.episode_sim_elapsed_s(episode_step)
-          action = warmup.resolve_warmup_action(
-            config.WARMUP_ACTION_FN,
-            warmup.WarmupContext(
-              obs=obs,
-              elapsed_s=elapsed_s,
-              total_env_steps=total_env_steps,
-              episode_step=episode_step,
-              episode_index=episode_index,
-            ),
+          obs, obs_vec, episode_step, total_env_steps, episode_index = _run_warmup_step(
+            obs,
+            obs_vec,
+            env=env,
+            warmup_mod=warmup,
+            config_mod=config,
+            contract_mod=contract,
+            tel=tel,
+            episode_metrics=episode_metrics,
+            exp_name_str=exp_name,
+            episode_step_val=episode_step,
+            total_env_steps_val=total_env_steps,
+            episode_index_val=episode_index,
+            visualize_steps_flag=visualize_steps,
           )
-          obs_before = obs_vec
-          obs_next, reward, terminated, step_info = env.step(
-            action,
-            visualize=visualize_steps,
-            episode_step=episode_step,
-          )
-          obs_vec = tuple(obs_next)
-          episode_step += 1
-          total_env_steps += 1
-          if tel is not None:
-            tel.publish_step(
-              build_step_payload(
-                contract,
-                obs_before=np.asarray(obs_before, dtype=np.float64),
-                action_norm=action,
-                obs_after=np.asarray(obs_vec, dtype=np.float64),
-                info=step_info,
-                episode_step=episode_step,
-                num_timesteps=total_env_steps,
-                exp_name=exp_name,
-              )
-            )
-          truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
-          done = terminated or truncated
-          obs = obs_next
-          if done:
-            episode_metrics.on_episode_end(
-              episode_step=episode_step,
-              terminated=terminated,
-              truncated=truncated,
-              step_info=step_info,
-              env_step=total_env_steps,
-            )
-            episode_index += 1
-            obs = env.reset()
-            obs_vec = tuple(obs)
-            if tel is not None:
-              tel.publish_reset(
-                build_reset_payload(
-                  contract,
-                  obs_vector=obs_vec,
-                  num_timesteps=total_env_steps,
-                  exp_name=exp_name,
-                )
-              )
-            episode_step = 0
           continue
 
         action, value, log_prob = agent.act(obs)

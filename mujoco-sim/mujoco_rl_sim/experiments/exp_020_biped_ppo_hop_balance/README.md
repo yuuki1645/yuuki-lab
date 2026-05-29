@@ -271,6 +271,12 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --step-w
 python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --viewer-fast --no-telemetry
 ```
 
+wandb ログ OFF:
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --no-wandb
+```
+
 ## テレメトリ（robotics-hub）
 
 **無効化:** `--no-telemetry`（起動ログに `[telemetry] disabled`）。`config.TELEMETRY_ENABLED` を上書きする。

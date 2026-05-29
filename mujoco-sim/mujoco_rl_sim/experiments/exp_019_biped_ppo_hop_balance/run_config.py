@@ -31,8 +31,7 @@ _TRAIN_CLI_DESCRIPTION = f"""両脚バイペッド前進 PPO 学習ループ（1
 
 wandb を無効にする例:
 
-  set WANDB_MODE=disabled
-  python -m {PACKAGE}.train
+  python -m {PACKAGE}.train --no-wandb
 """
 
 
@@ -51,7 +50,7 @@ class TrainRunConfig:
   主なフィールド:
     resume_path … チェックポイントから再開する場合の .pt パス（新規なら None）
     num_updates … この run で行う PPO 更新回数
-    viewer / telemetry / step_wall_sleep_sec … 可視化・Hub・実時間化の on/off
+    viewer / telemetry / wandb / step_wall_sleep_sec … 可視化・Hub・ログ・実時間化の on/off
   """
 
   resume_path: Path | None
@@ -61,6 +60,7 @@ class TrainRunConfig:
   wandb_run_name: str | None
   viewer: bool
   telemetry: bool
+  wandb: bool
   telemetry_host: str
   telemetry_port: int
   step_wall_sleep_sec: float | None
@@ -111,6 +111,16 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     type=str,
     default=None,
     help="wandb run 名（省略時は config または再開時の自動名）",
+  )
+  p.add_argument(
+    "--wandb",
+    action="store_true",
+    help="Weights & Biases ロギングを有効化（省略時は config.USE_WANDB）",
+  )
+  p.add_argument(
+    "--no-wandb",
+    action="store_true",
+    help="Weights & Biases ロギングを無効化（config.USE_WANDB を上書き）",
   )
 
   # --- 可視化・実時間化 ---
@@ -184,6 +194,12 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
   if args.no_telemetry:
     telemetry = False
 
+  wandb = config.USE_WANDB
+  if args.wandb:
+    wandb = True
+  if args.no_wandb:
+    wandb = False
+
   return TrainRunConfig(
     resume_path=resume_path,
     lr=args.lr,
@@ -192,6 +208,7 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     wandb_run_name=args.wandb_run_name,
     viewer=viewer,
     telemetry=telemetry,
+    wandb=wandb,
     telemetry_host=str(args.telemetry_host),
     telemetry_port=int(args.telemetry_port),
     step_wall_sleep_sec=args.step_wall_sleep,

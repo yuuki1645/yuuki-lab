@@ -279,9 +279,13 @@ def init(
   extra_config: dict[str, Any] | None = None,
   extra_tags: tuple[str, ...] | None = None,
   run_name: str | None = None,
+  enabled: bool = True,
 ) -> bool:
   global _active, _termination_tracker
-  if not is_enabled():
+  if not enabled:
+    print("[wandb] disabled")
+    return False
+  if os.environ.get("WANDB_MODE", "").lower() == "disabled":
     return False
 
   try:

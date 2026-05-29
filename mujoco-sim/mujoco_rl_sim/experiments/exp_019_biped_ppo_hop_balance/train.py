@@ -98,6 +98,7 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
     extra_config=extra_config,
     extra_tags=extra_tags,
     run_name=run_name,
+    enabled=run.wandb,
   )
 
 

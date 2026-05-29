@@ -170,6 +170,24 @@ def _run_warmup_step(
   return obs, obs_vec, episode_step_val, total_env_steps_val, episode_index_val
 
 
+def _effective_step_wall_sleep_sec(run: Any, config: Any) -> float:
+  """制御ステップごとの壁時計待ち [s]（CLI > config）。"""
+  if run.step_wall_sleep_sec is not None:
+    return max(0.0, float(run.step_wall_sleep_sec))
+  return max(0.0, float(config.STEP_WALL_SLEEP_SEC))
+
+
+def _viewer_visualize_realtime(run: Any, config: Any, wall_sleep_sec: float) -> bool:
+  """MuJoCo ビューアを実時間（CONTROL_TIMESTEP_S）で追従するか。
+
+  ビューアは ``env.step`` 内で常に sync する。``visualize=True`` のときだけ
+  追加で ``CONTROL_TIMESTEP_S`` 分 sleep する。wall_sleep_sec==0 なら最速表示。
+  """
+  if not run.viewer:
+    return False
+  return wall_sleep_sec > 0.0
+
+
 def run_ppo_train(bindings: PpoTrainBindings) -> None:
   """exp_019 相当の PPO 学習ループを契約駆動で実行する。"""
   run = bindings.train_run_config
@@ -185,13 +203,19 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
 
   episode_metrics = wandb_logging.episode_collector()
   env = bindings.env_factory(run.viewer)
-  if run.step_wall_sleep_sec is not None:
-    env.set_step_wall_sleep_sec(run.step_wall_sleep_sec)
-  elif not run.viewer:
-    env.set_step_wall_sleep_sec(config.STEP_WALL_SLEEP_SEC)
+  wall_sleep_sec = _effective_step_wall_sleep_sec(run, config)
+  env.set_step_wall_sleep_sec(wall_sleep_sec)
 
   tel = _start_telemetry(env, run)
-  visualize_steps = run.viewer
+  visualize_steps = _viewer_visualize_realtime(run, config, wall_sleep_sec)
+  if run.viewer:
+    if visualize_steps:
+      print(
+        f"[viewer] realtime pacing ({config.CONTROL_TIMESTEP_S:.3f}s/step); "
+        "最速表示は --step-wall-sleep 0 または --viewer-fast"
+      )
+    else:
+      print("[viewer] enabled (no wall-clock sleep; viewer sync only)")
 
   start_update = int(payload["update"]) if payload is not None else 0
   total_env_steps = int(payload.get("total_env_steps", 0)) if payload is not None else 0

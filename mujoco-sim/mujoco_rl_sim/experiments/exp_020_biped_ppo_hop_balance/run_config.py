@@ -130,7 +130,15 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     default=None,
     help=(
       "制御ステップごとの壁時計待ち [s]（省略時は config.STEP_WALL_SLEEP_SEC）。"
-      "ビューア有効時は visualize の sleep が優先され二重待ちしません。"
+      "0 にするとビューア表示のまま最速（visualize の実時間 sleep もオフ）。"
+    ),
+  )
+  p.add_argument(
+    "--viewer-fast",
+    action="store_true",
+    help=(
+      "ビューア ON かつ壁時計待ち 0（--step-wall-sleep 0 と同義）。"
+      "MuJoCo は毎ステップ sync するが sleep しない。"
     ),
   )
 
@@ -184,6 +192,10 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
   if args.no_telemetry:
     telemetry = False
 
+  step_wall_sleep_sec = args.step_wall_sleep
+  if args.viewer_fast and step_wall_sleep_sec is None:
+    step_wall_sleep_sec = 0.0
+
   return TrainRunConfig(
     resume_path=resume_path,
     lr=args.lr,
@@ -194,5 +206,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     telemetry=telemetry,
     telemetry_host=str(args.telemetry_host),
     telemetry_port=int(args.telemetry_port),
-    step_wall_sleep_sec=args.step_wall_sleep,
+    step_wall_sleep_sec=step_wall_sleep_sec,
   )

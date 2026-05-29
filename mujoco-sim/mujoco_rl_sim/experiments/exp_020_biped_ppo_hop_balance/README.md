@@ -255,13 +255,23 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train
 python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --no-viewer --step-wall-sleep 0
 ```
 
+ビューアを表示したまま最速（毎ステップ sync のみ・sleep なし）:
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --viewer-fast
+# または
+python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --step-wall-sleep 0
+```
+
+（既定の `ENABLE_VIEWER=True` なら `--viewer` は不要。実時間追従は `--step-wall-sleep` 省略時の既定どおり。）
+
 ## テレメトリ（robotics-hub）
 
 1. 上記 `train` を起動（`[telemetry] Socket.IO http://0.0.0.0:8791` が表示される）
 2. robotics-hub の **学習テレメトリ**（`/training-telemetry`）を開く
 3. 学習ストリームが `biped_ppo_v1` スキーマで観測・行動・報酬を表示する
 
-`step-wall-sleep` スライダーで壁時計待ちを変更可能（ビューア有効時は visualize の sleep が優先）。
+`step-wall-sleep` スライダーで壁時計待ちを変更可能（0 で最速。学習 CLI の `--viewer-fast` と同じ）。
 
 ## 可視化
 

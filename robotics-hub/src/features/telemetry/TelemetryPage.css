@@ -157,8 +157,58 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.telemetry__grid-row2 {
-  grid-column: 1 / -1;
+.telemetry__grid--training {
+  align-items: start;
+}
+
+.telemetry__col {
+  min-width: 0;
+}
+
+.telemetry__col--meta {
+  /* 左: 報酬・判定 */
+}
+
+.telemetry__col--inputs {
+  /* 中央: 契約観測 */
+}
+
+.telemetry__col--action {
+  /* 右: 行動 */
+}
+
+.telemetry__panel--obs-inputs {
+  max-height: min(85vh, 960px);
+  overflow-y: auto;
+}
+
+.telemetry__obs-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.telemetry__obs-section {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.12);
+}
+
+.telemetry__obs-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.telemetry__obs-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0 0 0.15rem;
+  color: #c8d4ff;
+  font-family: ui-monospace, monospace;
+}
+
+.telemetry__obs-section-desc {
+  margin-bottom: 0.35rem;
+  font-size: 0.76rem;
 }
 
 .telemetry__panel {

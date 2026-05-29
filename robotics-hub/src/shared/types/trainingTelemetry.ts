@@ -88,5 +88,10 @@ export function isBipedPpoTelemetry(
 ): boolean {
   if (!payload) return false;
   if (payload.schema === BIPED_PPO_TELEMETRY_SCHEMA) return true;
-  return typeof payload.exp_name === "string" && payload.exp_name.includes("exp_019");
+  if (typeof payload.exp_name === "string") {
+    return (
+      payload.exp_name.includes("exp_019") || payload.exp_name.includes("exp_020")
+    );
+  }
+  return false;
 }

@@ -54,7 +54,7 @@ export function useTrainingTelemetryStream(active: boolean): TrainingTelemetrySt
     socket.on("connect_error", (err: Error) => {
       setLastError(
         `学習テレメトリ Socket.IO 接続失敗 (${url}): ${err.message}。` +
-          "`python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.train` を起動し、" +
+          "`python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train`（または exp_019）を起動し、" +
           "`VITE_TELEMETRY_SOCKET_URL`（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）が学習ホストと一致しているか確認してください。"
       );
     });

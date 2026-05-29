@@ -285,6 +285,25 @@ wandb ログ OFF:
 python -m mujoco_rl_sim.experiments.exp_021_biped_ppo_hop_balance.train --no-wandb
 ```
 
+### 並列起動（PowerShell スクリプト）
+
+`mujoco-sim/scripts/launch_exp_021_parallel.ps1` で、ビューアなし・wandb 有効・テレメトリ OFF の学習を複数プロセス起動できる。
+
+```powershell
+cd mujoco-sim
+.\scripts\launch_exp_021_parallel.ps1              # 既定 10 本
+.\scripts\launch_exp_021_parallel.ps1 -Count 4     # 4 本だけ
+.\scripts\launch_exp_021_parallel.ps1 -RedirectLogs -LogDir logs\exp021
+```
+
+実行ポリシーで拒否される場合:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\launch_exp_021_parallel.ps1
+```
+
+確認・停止: `Get-Process python` / `Get-Process python | Stop-Process`（他の Python 作業も止まるので注意）。
+
 ## テレメトリ（robotics-hub）
 
 **無効化:** `--no-telemetry`（起動ログに `[telemetry] disabled`）。`config.TELEMETRY_ENABLED` を上書きする。

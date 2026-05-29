@@ -140,6 +140,7 @@ def _start_telemetry(env: EnvBipedPPO, run: TrainRunConfig) -> HubTelemetrySocke
   Hub から POST される step_wall_sleep_sec は env.set_step_wall_sleep_sec に転送される。
   """
   if not run.telemetry:
+    print("[telemetry] disabled")
     return None
   tel = HubTelemetrySocketIoServer(
     host=run.telemetry_host,

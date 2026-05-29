@@ -44,6 +44,7 @@ def _start_telemetry(
   hub_path_label: str = "/training-telemetry",
 ) -> HubTelemetrySocketIoServer | None:
   if not run.telemetry:
+    print("[telemetry] disabled")
     return None
   tel = HubTelemetrySocketIoServer(
     host=run.telemetry_host,

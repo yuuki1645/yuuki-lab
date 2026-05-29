@@ -33,6 +33,10 @@ wandb を無効にする例:
 
   set WANDB_MODE=disabled
   python -m {PACKAGE}.train
+
+Hub テレメトリを無効にする例:
+
+  python -m {PACKAGE}.train --no-telemetry
 """
 
 
@@ -151,7 +155,7 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
   p.add_argument(
     "--no-telemetry",
     action="store_true",
-    help="テレメトリを無効化",
+    help="Hub 向け Socket.IO テレメトリを無効化（config.TELEMETRY_ENABLED を上書き）",
   )
   p.add_argument(
     "--telemetry-host",

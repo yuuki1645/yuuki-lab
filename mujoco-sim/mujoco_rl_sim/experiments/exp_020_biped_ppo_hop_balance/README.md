@@ -265,7 +265,17 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --step-w
 
 （既定の `ENABLE_VIEWER=True` なら `--viewer` は不要。実時間追従は `--step-wall-sleep` 省略時の既定どおり。）
 
+ビューア表示 + テレメトリ OFF（Socket.IO 負荷を削減）:
+
+```bash
+python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --viewer-fast --no-telemetry
+```
+
 ## テレメトリ（robotics-hub）
+
+**無効化:** `--no-telemetry`（起動ログに `[telemetry] disabled`）。`config.TELEMETRY_ENABLED` を上書きする。
+
+**有効時:**
 
 1. 上記 `train` を起動（`[telemetry] Socket.IO http://0.0.0.0:8791` が表示される）
 2. robotics-hub の **学習テレメトリ**（`/training-telemetry`）を開く

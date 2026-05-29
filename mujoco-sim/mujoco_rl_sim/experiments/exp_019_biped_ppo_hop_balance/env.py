@@ -261,7 +261,3 @@ class EnvBipedPPO:
 
   def get_step_wall_sleep_sec(self) -> float:
     return float(self._step_wall_sleep_sec)
-
-
-# 後方互換（import 名）
-Env2JointPPO = EnvBipedPPO

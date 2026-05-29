@@ -4,7 +4,7 @@
 """
 
 from .agent import AgentPPO
-from .env import EnvBipedPPO, Env2JointPPO
+from .env import EnvBipedPPO
 from .observation import PolicyObs, Observation
 
-__all__ = ["AgentPPO", "EnvBipedPPO", "Env2JointPPO", "PolicyObs", "Observation"]
+__all__ = ["AgentPPO", "EnvBipedPPO", "PolicyObs", "Observation"]

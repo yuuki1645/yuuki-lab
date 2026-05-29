@@ -2,7 +2,7 @@
 
 このファイルの役割:
   - CLI から実行設定を読む
-  - 環境 (Env2JointPPO) と方策 (AgentPPO) を用意する
+  - 環境 (EnvBipedPPO) と方策 (AgentPPO) を用意する
   - ロールアウト収集 → PPO 更新 を繰り返す
   - チェックポイント / wandb / Hub テレメトリを配線する
 
@@ -26,7 +26,7 @@ from . import checkpoint
 from . import config
 from . import wandb_logging
 from .agent import AgentPPO
-from .env import Env2JointPPO
+from .env import EnvBipedPPO
 from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, EXP_NAME, PACKAGE
 from .warmup import (
   WarmupContext,
@@ -301,7 +301,7 @@ def _print_run_banner(
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
 
 
-def _start_telemetry(env: Env2JointPPO, run: TrainRunConfig) -> HubTelemetrySocketIoServer | None:
+def _start_telemetry(env: EnvBipedPPO, run: TrainRunConfig) -> HubTelemetrySocketIoServer | None:
   """robotics-hub 学習テレメトリ用 Socket.IO サーバを別スレッドで起動。
 
   Hub から POST される step_wall_sleep_sec は env.set_step_wall_sleep_sec に転送される。
@@ -334,7 +334,7 @@ def main() -> None:
   _wandb_init(run, payload)
 
   episode_metrics = wandb_logging.episode_collector()
-  env = Env2JointPPO(enable_viewer=run.viewer)
+  env = EnvBipedPPO(enable_viewer=run.viewer)
   if run.step_wall_sleep_sec is not None:
     env.set_step_wall_sleep_sec(run.step_wall_sleep_sec)
   elif not run.viewer:

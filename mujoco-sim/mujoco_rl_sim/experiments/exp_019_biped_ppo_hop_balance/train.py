@@ -64,7 +64,21 @@ wandb を無効にする例:
 
 @dataclass(frozen=True)
 class TrainRunConfig:
-  """1 回の `train` 実行の設定。argparse の結果を型付きで main に渡す。"""
+  """この `train` プロセス 1 回分の実行オプションをまとめた設定オブジェクト。
+
+  `python -m ...train --resume ... --no-viewer` など CLI で渡した値を、
+  `main()` や `_create_agent()` が参照しやすい形にしたものです。
+  config.py の学習ハイパラ（LR・ROLLOUT_STEPS 等）とは別で、
+  **「今回の run だけ上書きするか」** を表します。
+
+  - frozen=True … 実行中に書き換えない（設定が途中で変わらない）
+  - argparse.Namespace の代わり … フィールド名・型が IDE で分かる
+
+  主なフィールド:
+    resume_path … チェックポイントから再開する場合の .pt パス（新規なら None）
+    num_updates … この run で行う PPO 更新回数
+    viewer / telemetry / step_wall_sleep_sec … 可視化・Hub・実時間化の on/off
+  """
 
   resume_path: Path | None
   lr: float | None
@@ -79,7 +93,11 @@ class TrainRunConfig:
 
 
 def _parse_args() -> TrainRunConfig:
-  """コマンドライン引数を解析し TrainRunConfig を返す。"""
+  """sys.argv を読み、上記 TrainRunConfig を組み立てて返す。
+
+  config.py の既定値と CLI フラグをマージする（例: --no-viewer で ENABLE_VIEWER を無効化）。
+  main() の先頭で 1 回だけ呼び、以降は TrainRunConfig を各ヘルパに渡す。
+  """
   p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
 
   # --- 学習再開・最適化 ---

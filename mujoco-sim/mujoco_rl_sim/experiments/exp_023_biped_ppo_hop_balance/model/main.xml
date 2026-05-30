@@ -8,7 +8,7 @@
 
     座標: +X 前, +Y 左, +Z 上。基準点はカゴ底面中央（basket_thigh の原点）。
     寸法 [m]: カゴ 0.28×0.145×0.18, 腿/脛セグメント各 0.20, サーボ 0.065 高,
-    足裏板 0.25×0.10×0.002（Y 幅 10 cm、踵側 -1.5 cm はみ出し）, リポ 0.13×0.04×0.024（各腿セグメント内）。
+    足裏板 0.25×0.10×0.002（Y 幅 10 cm、踵側 -2.5 cm はみ出し）, リポ 0.13×0.04×0.024（各腿セグメント内）。
     腿/脛フレーム: 単一 geom ではなく左右 3mm アルミ板 2 枚（4cm×20cm、各 63g）で挟み込み。
 
     関節 range 属性は度（exp_017 同様）。論理角は docs/human_joint_kinematics.md 参照。
@@ -84,10 +84,10 @@
                   <geom name="left_ankle_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                   <body name="left_sole" pos="0 0 -0.065">
-                    <site name="foot_site" pos="0.11 0 0.001"/>
-                    <site name="heel_bottom_site" pos="-0.015 0 0"/>
-                    <site name="toe_bottom_site" pos="0.215 0 0"/>
-                    <geom name="foot_plate" type="box" pos="0.11 0 0.001" size="0.125 0.05 0.001" material="metal" mass="0.226"/>
+                    <site name="foot_site" pos="0.10 0 0.001"/>
+                    <site name="heel_bottom_site" pos="-0.025 0 0"/>
+                    <site name="toe_bottom_site" pos="0.205 0 0"/>
+                    <geom name="foot_plate" type="box" pos="0.10 0 0.001" size="0.125 0.05 0.001" material="metal" mass="0.226"/>
                   </body>
                 </body>
               </body>
@@ -125,10 +125,10 @@
                   <geom name="right_ankle_roll_servo" type="box" pos="0 0 -0.0325" size="0.015 0.024 0.0325" material="servo" mass="0.18" contype="0" conaffinity="0"/>
 
                   <body name="right_sole" pos="0 0 -0.065">
-                    <site name="right_foot_site" pos="0.11 0 0.001"/>
-                    <site name="right_heel_bottom_site" pos="-0.015 0 0"/>
-                    <site name="right_toe_bottom_site" pos="0.215 0 0"/>
-                    <geom name="right_foot_plate" type="box" pos="0.11 0 0.001" size="0.125 0.05 0.001" material="metal" mass="0.226"/>
+                    <site name="right_foot_site" pos="0.10 0 0.001"/>
+                    <site name="right_heel_bottom_site" pos="-0.025 0 0"/>
+                    <site name="right_toe_bottom_site" pos="0.205 0 0"/>
+                    <geom name="right_foot_plate" type="box" pos="0.10 0 0.001" size="0.125 0.05 0.001" material="metal" mass="0.226"/>
                   </body>
                 </body>
               </body>

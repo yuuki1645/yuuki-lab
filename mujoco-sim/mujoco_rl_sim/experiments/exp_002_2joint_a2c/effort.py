@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import mujoco
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
+import config
 
 
 @dataclass(frozen=True)

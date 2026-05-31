@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.transforms import TanhTransform
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
+import config
 
 
 class Actor(nn.Module):
@@ -235,7 +235,7 @@ class AgentExp001A2C:
     map_location: str | torch.device = "cpu",
   ) -> AgentExp001A2C:
     """保存済みチェックポイントからエージェントを復元する。"""
-    from mujoco_rl_sim.experiments.exp_001_2joint_a2c import checkpoint
+    import checkpoint
 
     payload = checkpoint.load_checkpoint(path, map_location=map_location)
     obs_dim = int(payload["obs_dim"])

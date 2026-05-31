@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from _paths import install
+
+install()
+
+
 import argparse
 import time
 from collections.abc import Callable
@@ -8,12 +13,12 @@ from typing import Any
 
 import mujoco
 
-from . import checkpoint
-from . import config
-from .agent import AgentA2C
-from .env import Env2JointA2C
-from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
-from .warmup import (
+import checkpoint
+import config
+from agent import AgentA2C
+from env import Env2JointA2C
+from package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

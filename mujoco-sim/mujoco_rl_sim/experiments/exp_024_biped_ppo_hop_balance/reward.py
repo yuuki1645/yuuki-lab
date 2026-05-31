@@ -5,16 +5,16 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-from . import config
-from .effort import EffortBreakdown
-from .episode_state import BipedStepContext, EpisodeState
-from .lib.actuators import (
+import config
+from effort import EffortBreakdown
+from episode_state import BipedStepContext, EpisodeState
+from lib.actuators import (
   LEFT_FOOT_GEOM,
   LEFT_FOOT_SITE,
   RIGHT_FOOT_GEOM,
   RIGHT_FOOT_SITE,
 )
-from .lib.pose import pose_metrics
+from lib.pose import pose_metrics
 
 # MuJoCo site_xpos / 3D ベクトルの成分（ワールド座標: +X 前, +Y 左, +Z 上）
 WORLD_X = 0

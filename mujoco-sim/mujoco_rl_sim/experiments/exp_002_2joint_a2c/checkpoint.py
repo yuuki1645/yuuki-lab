@@ -8,10 +8,10 @@ from typing import Any, TYPE_CHECKING
 
 import torch
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
+import config
 
 if TYPE_CHECKING:
-  from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
+  from agent import AgentExp002A2C
 
 # 将来のスキーマ変更時に load 側で分岐できるよう識別子を保存
 CHECKPOINT_FORMAT = "exp_002_a2c_v1"

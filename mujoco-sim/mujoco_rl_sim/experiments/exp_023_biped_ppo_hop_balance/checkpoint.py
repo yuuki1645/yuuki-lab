@@ -7,14 +7,14 @@ from typing import Any, TYPE_CHECKING
 
 import torch
 
-from mujoco_rl_sim.lib.run_dir import (
+from lib.run_dir import (
   make_unique_run_dir,
   resolve_run_dir_label,
   wandb_active_run_name,
 )
 
-from . import config
-from .package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
+import config
+from package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
   from .agent import AgentPPO

@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+from _paths import install
+
+install()
+
+
 import argparse
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import checkpoint
-from . import config
-from . import wandb_logging
-from .agent import AgentA2C
-from .env import Env2JointA2C
-from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, EXP_NAME, PACKAGE
-from .warmup import (
+import checkpoint
+import config
+import wandb_logging
+from agent import AgentA2C
+from env import Env2JointA2C
+from package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, EXP_NAME, PACKAGE
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

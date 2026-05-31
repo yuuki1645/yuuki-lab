@@ -6,8 +6,8 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from . import config
-from .termination import (
+import config
+from termination import (
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,
   REASON_CONTACT_THIGH,

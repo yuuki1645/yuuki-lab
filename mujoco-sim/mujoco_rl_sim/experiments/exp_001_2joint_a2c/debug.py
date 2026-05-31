@@ -1,6 +1,6 @@
 import math
 
-from mujoco_rl_sim.lib.terminal_bar import terminal_bar
+from lib.terminal_bar import terminal_bar
 
 
 def _deg(rad: float) -> float:

@@ -1,7 +1,7 @@
 """exp_001: 膝・足首 2 関節 A2C（model/main.xml）。"""
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.agent import AgentExp001A2C
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.env import EnvExp0012JointA2C
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.observation import ObsExp001, Observation
+from agent import AgentExp001A2C
+from env import EnvExp0012JointA2C
+from observation import ObsExp001, Observation
 
 __all__ = ["AgentExp001A2C", "EnvExp0012JointA2C", "ObsExp001", "Observation"]

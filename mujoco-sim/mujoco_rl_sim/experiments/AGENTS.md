@@ -1,5 +1,18 @@
 # mujoco_rl_sim 実験 — AI エージェント向け共通メモ
 
+## 実行方法（スタンドアロン）
+
+各 `exp_*` フォルダは **単体で完結** しています（`contract/` 等は実験フォルダ内に同梱）。
+
+```bash
+cd experiments/<exp_name>
+pip install -r requirements.txt   # 初回のみ
+python train.py
+python visualize.py
+```
+
+チェックポイントは各実験フォルダ直下 `runs/<exp_name>/` に保存されます。
+
 ## 「2joint」実験名の意味
 
 `exp_*_2joint_*` の **2joint は膝・足首の 2 関節（DOF）** を指す。  

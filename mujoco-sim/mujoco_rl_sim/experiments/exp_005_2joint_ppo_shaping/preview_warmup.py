@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from _paths import install
+
+install()
+
+
 import argparse
 
-from . import config
-from .env import Env2JointPPO
-from .package_meta import PACKAGE
-from .warmup import (
+import config
+from env import Env2JointPPO
+from package_meta import PACKAGE
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

@@ -6,14 +6,14 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from mujoco_rl_sim.lib.episode_rolling import (
+from lib.episode_rolling import (
   EpisodeRollingWindow,
   format_rolling_log_suffix,
   rolling_summary_to_wandb,
 )
 
-from . import config
-from .termination import (
+import config
+from termination import (
   REASON_BACKWARD_LEAN,
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,

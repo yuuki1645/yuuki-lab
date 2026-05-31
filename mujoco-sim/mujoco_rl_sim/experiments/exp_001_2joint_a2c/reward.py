@@ -21,7 +21,7 @@
 
 from dataclasses import dataclass
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
+import config
 
 
 @dataclass(frozen=True)

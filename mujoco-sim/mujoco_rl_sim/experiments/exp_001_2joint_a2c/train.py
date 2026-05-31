@@ -2,21 +2,26 @@
 
 実行例（mujoco-sim ディレクトリから）:
 
-  python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
+  python -m train
 
 wandb を無効にする例:
 
   set WANDB_MODE=disabled
-  python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
+  python -m train
 """
+
+
+from _paths import install
+
+install()
 
 import time
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import checkpoint
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import wandb_logging
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.agent import AgentExp001A2C
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.env import EnvExp0012JointA2C
+import checkpoint
+import config
+import wandb_logging
+from agent import AgentExp001A2C
+from env import EnvExp0012JointA2C
 
 
 def main() -> None:

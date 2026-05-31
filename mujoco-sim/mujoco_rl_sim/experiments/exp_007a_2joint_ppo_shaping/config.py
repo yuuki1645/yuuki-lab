@@ -6,7 +6,7 @@ exp_006 と同一だが FORWARD_REQUIRE_FOOT_CONTACT=True のみ変更。
 
 from pathlib import Path
 
-from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
+from package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 # --- MuJoCo / 制御レート -------------------------------------------------------
 _EXP_DIR = EXP_DIR
@@ -130,7 +130,7 @@ ADV_STD_MIN = 0.1
 ACTION_LOG_PROB_EPS = 1e-6
 LOG_PROB_CLIP = 20.0
 
-from .warmup import default_warmup_action
+from warmup import default_warmup_action
 
 WARMUP_ENABLED = True
 WARMUP_DURATION_S = 1.2

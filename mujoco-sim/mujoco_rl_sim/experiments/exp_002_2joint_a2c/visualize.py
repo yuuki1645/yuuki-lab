@@ -3,16 +3,21 @@
 実行例（mujoco-sim ディレクトリから）:
 
   # 実験 XML のみ（方策なし、ctrl 無操作）
-  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize
+  python -m visualize
 
   # チェックポイントで方策を再生（config.WARMUP_ENABLED 時は train と同様に warmup 後に方策）
-  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \\
+  python -m visualize \\
     --checkpoint mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/final.pt
 
 ビューアを閉じると終了する。エピソード終了後は自動で reset して再生を続ける。
 """
 
+
 from __future__ import annotations
+
+from _paths import install
+
+install()
 
 import argparse
 import time
@@ -22,11 +27,11 @@ from typing import Any
 
 import mujoco
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import (
+import checkpoint
+import config
+from agent import AgentExp002A2C
+from env import EnvExp0022JointA2C
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

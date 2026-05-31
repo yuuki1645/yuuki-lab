@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from . import config
-from .lib.actuators import ACTUATOR_NAMES
-from .lib.ctrl import clip_policy_action
+import config
+from lib.actuators import ACTUATOR_NAMES
+from lib.ctrl import clip_policy_action
 
 WarmupActionFn = Callable[["WarmupContext"], tuple[float, ...]]
 

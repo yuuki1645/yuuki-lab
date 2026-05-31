@@ -15,7 +15,7 @@ import torch.optim as optim
 from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.transforms import TanhTransform
 
-from . import config
+import config
 
 
 class Actor(nn.Module):

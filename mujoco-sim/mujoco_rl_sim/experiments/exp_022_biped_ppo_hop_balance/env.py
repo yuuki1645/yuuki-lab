@@ -6,20 +6,20 @@ import mujoco
 import mujoco.viewer
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
-from . import config
-from .episode_state import EpisodeState
-from mujoco_rl_sim.telemetry.biped_ppo import (
+import config
+from episode_state import EpisodeState
+from telemetry.biped_ppo import (
   actuator_names,
   joint_qpos_to_logical_deg,
   policy_action_to_logical_deg,
 )
 
-from .lib.action import ActionBinding
-from .lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
-from .observation import Observation
-from .effort import EffortTracker
-from .reward import Reward
-from .termination import (
+from lib.action import ActionBinding
+from lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
+from observation import Observation
+from effort import EffortTracker
+from reward import Reward
+from termination import (
   REASON_BACKWARD_LEAN,
   REASON_IMU_Z,
   REASON_LOW_UPRIGHT,

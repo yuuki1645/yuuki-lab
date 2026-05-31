@@ -11,12 +11,12 @@ from dataclasses import dataclass
 
 import mujoco
 
-from . import config
-from .lib.contact import (
+import config
+from lib.contact import (
   has_contact_between_geoms,
   max_normal_force_between_geoms,
 )
-from .observation import StepPhysics
+from observation import StepPhysics
 
 REASON_TRUNCATED = "truncated"
 # 姿勢（exp_001）

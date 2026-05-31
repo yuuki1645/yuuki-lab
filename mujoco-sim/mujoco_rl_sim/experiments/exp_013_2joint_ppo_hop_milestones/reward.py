@@ -49,10 +49,10 @@ HopStepContext（episode_state が毎 step 更新）:
 
 from dataclasses import dataclass
 
-from . import config
-from .effort import EffortBreakdown
-from .episode_state import HopStepContext
-from .observation import StepPhysics
+import config
+from effort import EffortBreakdown
+from episode_state import HopStepContext
+from observation import StepPhysics
 
 
 @dataclass(frozen=True)

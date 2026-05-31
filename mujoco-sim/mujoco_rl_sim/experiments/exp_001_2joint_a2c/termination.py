@@ -1,4 +1,4 @@
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
+import config
 
 # done_reason / wandb 用の終了理由ラベル
 REASON_IMU_Z = "imu_z"  # IMU 高さが下限を下回った（しゃがみ／倒れ込み）

@@ -1,0 +1,8 @@
+# exp_025 スタンドアロン実行用（本フォルダだけを別マシンへコピーする場合）
+mujoco>=3.0
+numpy>=1.23
+torch>=2.0
+flask>=3.0
+flask-cors>=4.0
+flask-socketio>=5.3.0
+wandb>=0.16

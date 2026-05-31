@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 import mujoco
 
-from . import config
-from .lib.contact import (
+import config
+from lib.contact import (
   has_contact_between_geoms,
   max_normal_force_between_geoms,
 )

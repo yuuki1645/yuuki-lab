@@ -1,6 +1,6 @@
 import mujoco
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.ctrl import action_to_ctrl, clip_policy_action
+from lib.ctrl import action_to_ctrl, clip_policy_action
 
 
 class ActionBinding:

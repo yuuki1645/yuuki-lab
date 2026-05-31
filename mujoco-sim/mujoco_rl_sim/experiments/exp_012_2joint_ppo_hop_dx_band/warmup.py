@@ -21,8 +21,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from . import config
-from .lib.ctrl import clip_policy_action
+import config
+from lib.ctrl import clip_policy_action
 
 WarmupActionFn = Callable[["WarmupContext"], tuple[float, float]]
 

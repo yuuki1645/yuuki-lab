@@ -6,7 +6,7 @@
 
 from pathlib import Path
 
-from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
+from package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 ROBOT_MORPHOLOGY = "biped_legs_only"
 ROBOT_LEG_COUNT = 2
@@ -102,7 +102,7 @@ ADV_STD_MIN = 0.1
 ACTION_LOG_PROB_EPS = 1e-6
 LOG_PROB_CLIP = 20.0
 
-from .warmup import default_warmup_action
+from warmup import default_warmup_action
 
 WARMUP_ENABLED = True
 WARMUP_DURATION_S = 1.0

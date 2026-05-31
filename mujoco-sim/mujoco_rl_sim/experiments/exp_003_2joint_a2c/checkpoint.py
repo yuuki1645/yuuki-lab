@@ -8,8 +8,8 @@ from typing import Any, TYPE_CHECKING
 
 import torch
 
-from . import config
-from .package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
+import config
+from package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
   from .agent import AgentA2C

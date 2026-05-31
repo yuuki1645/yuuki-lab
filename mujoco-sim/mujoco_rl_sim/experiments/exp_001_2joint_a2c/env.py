@@ -4,12 +4,12 @@ import mujoco
 import mujoco.viewer
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.episode_state import EpisodeState
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.observation import Observation
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.reward import Reward
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.termination import Termination
-from mujoco_rl_sim.lib.ctrl import action_to_ctrl
+import config
+from episode_state import EpisodeState
+from observation import Observation
+from reward import Reward
+from termination import Termination
+from lib.ctrl import action_to_ctrl
 
 
 class EnvExp0012JointA2C:

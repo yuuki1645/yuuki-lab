@@ -6,14 +6,14 @@ import mujoco
 import mujoco.viewer
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
-from . import config
-from .episode_state import EpisodeState
-from .lib.action import ActionBinding
-from .lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
-from .observation import Observation
-from .effort import EffortTracker
-from .reward import Reward
-from .termination import (
+import config
+from episode_state import EpisodeState
+from lib.action import ActionBinding
+from lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
+from observation import Observation
+from effort import EffortTracker
+from reward import Reward
+from termination import (
   NOT_TERMINATED,
   REASON_CONTACT_BASKET,
   REASON_CONTACT_THIGH,

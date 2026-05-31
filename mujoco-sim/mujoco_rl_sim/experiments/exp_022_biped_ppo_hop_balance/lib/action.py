@@ -1,8 +1,8 @@
 import mujoco
 import numpy as np
 
-from .actuators import ACTUATOR_NAMES
-from .ctrl import action_to_ctrl, clip_policy_action
+from lib.actuators import ACTUATOR_NAMES
+from lib.ctrl import action_to_ctrl, clip_policy_action
 
 
 class ActionBinding:

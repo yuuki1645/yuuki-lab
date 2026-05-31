@@ -5,8 +5,8 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-from . import config
-from .lib.actuators import LEFT_FOOT_GEOM, RIGHT_FOOT_GEOM, SHANK_GEOM_IDS, THIGH_GEOM_IDS
+import config
+from lib.actuators import LEFT_FOOT_GEOM, RIGHT_FOOT_GEOM, SHANK_GEOM_IDS, THIGH_GEOM_IDS
 
 REASON_TRUNCATED = "truncated"
 REASON_IMU_Z = "imu_z"

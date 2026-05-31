@@ -12,7 +12,7 @@ exp_010 final ~3.11 m がベスト。追加 shaping 単体は u3500 で 1〜2.7 
 
 from pathlib import Path
 
-from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
+from package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 # ロボット形態（wandb・ドキュメント用の明示フラグ）
 ROBOT_MORPHOLOGY = "monoped_single_leg_hopper"  # NOT biped
@@ -187,7 +187,7 @@ ADV_STD_MIN = 0.1
 ACTION_LOG_PROB_EPS = 1e-6
 LOG_PROB_CLIP = 20.0
 
-from .warmup import default_warmup_action
+from warmup import default_warmup_action
 
 WARMUP_ENABLED = True
 WARMUP_DURATION_S = 2.0

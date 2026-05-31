@@ -8,18 +8,18 @@ from typing import Any, TYPE_CHECKING
 
 import torch
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
-from mujoco_rl_sim.lib.mujoco_paths import mujoco_sim_asset_path
+import config
+from package_meta import CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
-  from mujoco_rl_sim.experiments.exp_001_2joint_a2c.agent import AgentExp001A2C
+  from agent import AgentExp001A2C
 
 CHECKPOINT_FORMAT = "exp_001_a2c_v1"
 
 
 def make_run_dir() -> Path:
   """1 回の train 実行用ディレクトリを作成して返す（mujoco-sim 直下・CWD 非依存）。"""
-  base = Path(mujoco_sim_asset_path(config.CHECKPOINT_DIR))
+  base = CHECKPOINT_ROOT
   run_dir = base / datetime.now().strftime("run_%Y%m%d_%H%M%S")
   run_dir.mkdir(parents=True, exist_ok=True)
   return run_dir

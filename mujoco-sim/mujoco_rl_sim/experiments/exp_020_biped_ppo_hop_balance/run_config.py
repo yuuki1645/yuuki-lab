@@ -10,9 +10,9 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import checkpoint
-from . import config
-from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
+import checkpoint
+import config
+from package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
 
 _TRAIN_CLI_DESCRIPTION = f"""両脚バイペッド前進 PPO 学習ループ（10 DOF 全サーボ・観測 42 次元）。
 

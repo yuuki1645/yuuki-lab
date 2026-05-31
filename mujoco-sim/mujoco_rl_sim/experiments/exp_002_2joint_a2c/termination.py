@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 import mujoco
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.contact import (
+import config
+from lib.contact import (
   has_contact_between_geoms,
   max_normal_force_between_geoms,
 )

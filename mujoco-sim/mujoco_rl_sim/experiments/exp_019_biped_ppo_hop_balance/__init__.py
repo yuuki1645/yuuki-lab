@@ -3,8 +3,8 @@
 学習のエントリポイントは train.main。
 """
 
-from .agent import AgentPPO
-from .env import EnvBipedPPO
-from .observation import PolicyObs, Observation
+from agent import AgentPPO
+from env import EnvBipedPPO
+from observation import PolicyObs, Observation
 
 __all__ = ["AgentPPO", "EnvBipedPPO", "PolicyObs", "Observation"]

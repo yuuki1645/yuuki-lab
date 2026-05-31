@@ -20,9 +20,9 @@
 
 from dataclasses import dataclass
 
-from . import config
-from .effort import EffortBreakdown
-from .observation import StepPhysics
+import config
+from effort import EffortBreakdown
+from observation import StepPhysics
 
 
 @dataclass(frozen=True)

@@ -11,10 +11,10 @@ from typing import NamedTuple
 
 import mujoco
 
-from . import config
-from .debug import print_step_overlay
-from .episode_state import EpisodeState
-from .lib.obs_norm import clip_scale, height_to_norm, range_to_norm
+import config
+from debug import print_step_overlay
+from episode_state import EpisodeState
+from lib.obs_norm import clip_scale, height_to_norm, range_to_norm
 
 
 class PolicyObs(NamedTuple):

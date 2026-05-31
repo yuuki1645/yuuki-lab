@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import mujoco
 
-from . import config
-from .lib.actuators import ACTUATOR_NAMES
+import config
+from lib.actuators import ACTUATOR_NAMES
 
 
 @dataclass(frozen=True)

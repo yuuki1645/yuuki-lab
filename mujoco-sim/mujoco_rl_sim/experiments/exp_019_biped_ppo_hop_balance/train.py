@@ -8,7 +8,12 @@
 CLI 引数と TrainRunConfig は run_config.py。報酬・観測は env.py / reward.py / observation.py。
 """
 
+
 from __future__ import annotations
+
+from _paths import install
+
+install()
 
 import time
 from pathlib import Path
@@ -16,17 +21,17 @@ from typing import Any
 
 import numpy as np
 
-from mujoco_rl_sim.telemetry.biped_ppo import build_reset_payload, build_step_payload
+from telemetry.biped_ppo import build_reset_payload, build_step_payload
 from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
 
-from . import checkpoint
-from . import config
-from . import wandb_logging
-from .agent import AgentPPO
-from .env import EnvBipedPPO
-from .package_meta import EXP_NAME
-from .run_config import TrainRunConfig, parse_train_args
-from .warmup import (
+import checkpoint
+import config
+import wandb_logging
+from agent import AgentPPO
+from env import EnvBipedPPO
+from package_meta import EXP_NAME
+from run_config import TrainRunConfig, parse_train_args
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

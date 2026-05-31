@@ -6,13 +6,13 @@ from typing import NamedTuple
 import mujoco
 import numpy as np
 
-from . import config
-from .episode_state import EpisodeState
-from .lib.actuators import JOINT_NAMES, LEFT_FOOT_SITE, RIGHT_FOOT_SITE
-from mujoco_rl_sim.contract.validate import assert_obs_vector
+import config
+from episode_state import EpisodeState
+from lib.actuators import JOINT_NAMES, LEFT_FOOT_SITE, RIGHT_FOOT_SITE
+from contract.validate import assert_obs_vector
 
-from .experiment_contract import TELEMETRY_CONTRACT
-from .lib.obs_norm import clip_scale, height_to_norm, range_to_norm
+from experiment_contract import TELEMETRY_CONTRACT
+from lib.obs_norm import clip_scale, height_to_norm, range_to_norm
 
 # biped_ppo_v1 契約上の foot_contact スロット。exp_022 では contact 走査を行わない。
 _UNUSED_FOOT_CONTACT = -1.0

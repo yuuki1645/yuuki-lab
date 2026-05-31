@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import mujoco
 
-from . import config
+import config
 
 
 @dataclass(frozen=True)

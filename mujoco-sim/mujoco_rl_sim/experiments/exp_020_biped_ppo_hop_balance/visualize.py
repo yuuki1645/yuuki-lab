@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from _paths import install
+
+install()
+
+
 import argparse
 import time
 from collections.abc import Callable
@@ -12,12 +17,12 @@ from mujoco_sim_common.viewer_visual_presets import (
   apply_passive_viewer_options,
 )
 
-from . import checkpoint
-from . import config
-from .agent import AgentPPO
-from .env import EnvBipedPPO
-from .package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
-from .warmup import (
+import checkpoint
+import config
+from agent import AgentPPO
+from env import EnvBipedPPO
+from package_meta import CHECKPOINT_REL_FROM_MUJOCO_SIM, PACKAGE
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

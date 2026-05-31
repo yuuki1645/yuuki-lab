@@ -8,7 +8,7 @@
 
 from pathlib import Path
 
-from .package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
+from package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 # --- MuJoCo / 制御レート -------------------------------------------------------
 _EXP_DIR = EXP_DIR
@@ -124,7 +124,7 @@ LOG_PROB_CLIP = 20.0  # log_prob のクリップ（数値暴走抑制）
 # 各エピソード開始からシミュレーション時間 WARMUP_DURATION_S のあいだ、方策の代わりに WARMUP_ACTION_FN。
 # 判定は 50 Hz 制御ステップ（CONTROL_TIMESTEP_S）基準。1.0 s ≒ 50 ステップ。
 # 方針 B: warmup 中は env.step のみ（agent.store しない）。update ごとに ROLLOUT_STEPS 分の方策データを集める。
-from .warmup import default_warmup_action
+from warmup import default_warmup_action
 
 WARMUP_ENABLED = True
 WARMUP_DURATION_S = 1.2  # シミュレーション内の秒（壁時計ではない）

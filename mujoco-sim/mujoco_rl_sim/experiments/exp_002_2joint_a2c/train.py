@@ -2,11 +2,11 @@
 
 実行例（mujoco-sim ディレクトリから）:
 
-  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
+  python -m train
 
 チェックポイントから再開（新 run ディレクトリ・新 wandb run、学習率指定）:
 
-  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train \\
+  python -m train \\
     --resume mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/run_20260520_160244/update_005000.pt \\
     --lr 1e-4 \\
     --num-updates 1500
@@ -14,10 +14,15 @@
 wandb を無効にする例:
 
   set WANDB_MODE=disabled
-  python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
+  python -m train
 """
 
+
 from __future__ import annotations
+
+from _paths import install
+
+install()
 
 import argparse
 import time
@@ -25,12 +30,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import checkpoint
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import wandb_logging
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.agent import AgentExp002A2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.env import EnvExp0022JointA2C
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.warmup import (
+import checkpoint
+import config
+import wandb_logging
+from agent import AgentExp002A2C
+from env import EnvExp0022JointA2C
+from warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

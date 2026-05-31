@@ -1,21 +1,26 @@
 """exp_023 学習エントリ（足裏 25 cm×10 cm・踵はみ出しモデル・``mujoco_rl_sim.contract`` 駆動）。"""
 
+
 from __future__ import annotations
+
+from _paths import install
+
+install()
 
 from pathlib import Path
 from typing import Any
 
-from mujoco_rl_sim.contract import PpoTrainBindings, run_ppo_train
+from contract import PpoTrainBindings, run_ppo_train
 
-from . import checkpoint
-from . import config
-from . import wandb_logging
-from .agent import AgentPPO
-from .env import EnvBipedPPO
-from .experiment_contract import TELEMETRY_CONTRACT
-from .package_meta import EXP_NAME
-from . import warmup
-from .run_config import TrainRunConfig, parse_train_args
+import checkpoint
+import config
+import wandb_logging
+from agent import AgentPPO
+from env import EnvBipedPPO
+from experiment_contract import TELEMETRY_CONTRACT
+from package_meta import EXP_NAME
+import warmup
+from run_config import TrainRunConfig, parse_train_args
 
 
 def _load_resume_state(resume_path: Path) -> dict[str, Any]:
@@ -55,7 +60,7 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
       "num_updates_this_run": run.num_updates,
       "end_update_target": base_update + run.num_updates,
       "telemetry_schema": TELEMETRY_CONTRACT.schema_id,
-      "contract_package": "mujoco_rl_sim.contract",
+      "contract_package": "contract",
     }
     if run.lr is not None:
       extra_config["lr"] = run.lr
@@ -69,7 +74,7 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
   else:
     extra_config = {
       "telemetry_schema": TELEMETRY_CONTRACT.schema_id,
-      "contract_package": "mujoco_rl_sim.contract",
+      "contract_package": "contract",
     }
     extra_tags = ("contract",)
 

@@ -6,8 +6,8 @@ observation.maybe_print_debug から呼ばれる（通常は env 側でコメン
 
 import math
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.terminal_bar import terminal_bar
+import config
+from lib.terminal_bar import terminal_bar
 
 
 def _deg(rad: float) -> float:

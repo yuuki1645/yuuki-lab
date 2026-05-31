@@ -1,6 +1,11 @@
 """チェックポイントをヘッドレス再生し、時系列と代表フレームを保存する（visualize 補助）。"""
 
+
 from __future__ import annotations
+
+from _paths import install
+
+install()
 
 import argparse
 import json
@@ -10,10 +15,10 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from . import config
-from .agent import AgentPPO
-from .env import Env2JointPPO
-from .warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
+import config
+from agent import AgentPPO
+from env import Env2JointPPO
+from warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
 
 
 @dataclass

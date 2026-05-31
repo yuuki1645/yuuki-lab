@@ -3,14 +3,14 @@
 行動の ctrl 変換・観測正規化・接触読み取り・ターミナル表示など。
 """
 
-from .action import ActionBinding
-from .ctrl import action_to_ctrl, clip_policy_action
-from .obs_norm import (
+from lib.action import ActionBinding
+from lib.ctrl import action_to_ctrl, clip_policy_action
+from lib.obs_norm import (
   clip_scale,
   height_to_norm,
   range_to_norm,
 )
-from .terminal_bar import terminal_bar
+from lib.terminal_bar import terminal_bar
 
 __all__ = [
   "ActionBinding",

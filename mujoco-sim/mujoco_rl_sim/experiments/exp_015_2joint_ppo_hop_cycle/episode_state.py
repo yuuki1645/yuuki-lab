@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from . import config
+import config
 
 
 @dataclass(frozen=True)

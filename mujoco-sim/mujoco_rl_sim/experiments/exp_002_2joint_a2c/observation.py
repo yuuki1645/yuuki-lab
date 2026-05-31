@@ -11,10 +11,10 @@ from typing import NamedTuple
 
 import mujoco
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.debug import print_step_overlay
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.episode_state import EpisodeState
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.lib.obs_norm import clip_scale, height_to_norm, range_to_norm
+import config
+from debug import print_step_overlay
+from episode_state import EpisodeState
+from lib.obs_norm import clip_scale, height_to_norm, range_to_norm
 
 
 class ObsExp002(NamedTuple):

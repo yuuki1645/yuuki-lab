@@ -18,11 +18,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$MujocoSimRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-Set-Location $MujocoSimRoot
+$ExpDir = Join-Path $PSScriptRoot "..\mujoco_rl_sim\experiments\exp_024_biped_ppo_hop_balance"
+$ExpDir = (Resolve-Path $ExpDir).Path
+Set-Location $ExpDir
 
 $TrainArgs = @(
-  "-m", "mujoco_rl_sim.experiments.exp_024_biped_ppo_hop_balance.train",
+  "train.py",
   "--no-viewer",
   "--step-wall-sleep", "0",
   "--no-telemetry"
@@ -33,12 +34,12 @@ if ($LogDir -ne "") {
 }
 if ($RedirectLogs) {
   if ($LogDir -eq "") {
-    $LogDir = Join-Path $MujocoSimRoot "logs\exp024_parallel"
+    $LogDir = Join-Path $ExpDir "logs\parallel"
   }
   New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 }
 
-Write-Host "[launch] mujoco-sim root: $MujocoSimRoot"
+Write-Host "[launch] exp dir: $ExpDir"
 Write-Host "[launch] starting $Count process(es) | wandb=on (default) | viewer=off | telemetry=off"
 
 1..$Count | ForEach-Object {
@@ -46,7 +47,7 @@ Write-Host "[launch] starting $Count process(es) | wandb=on (default) | viewer=o
   $procArgs = @{
     FilePath     = "python"
     ArgumentList = $TrainArgs
-    WorkingDirectory = $MujocoSimRoot
+    WorkingDirectory = $ExpDir
   }
   if ($RedirectLogs) {
     $procArgs["RedirectStandardOutput"] = Join-Path $LogDir "run_$i.out.log"

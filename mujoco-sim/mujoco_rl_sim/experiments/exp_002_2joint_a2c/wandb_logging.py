@@ -6,8 +6,8 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.termination import (
+import config
+from termination import (
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,
   REASON_CONTACT_THIGH,

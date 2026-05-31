@@ -1,6 +1,6 @@
 import mujoco
 
-from .ctrl import action_to_ctrl, clip_policy_action
+from lib.ctrl import action_to_ctrl, clip_policy_action
 
 
 class ActionBinding:

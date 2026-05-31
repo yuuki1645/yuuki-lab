@@ -20,9 +20,9 @@
 
 from dataclasses import dataclass
 
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.effort import EffortBreakdown
-from mujoco_rl_sim.experiments.exp_002_2joint_a2c.observation import StepPhysics
+import config
+from effort import EffortBreakdown
+from observation import StepPhysics
 
 
 @dataclass(frozen=True)

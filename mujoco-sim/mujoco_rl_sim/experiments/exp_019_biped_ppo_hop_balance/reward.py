@@ -5,10 +5,10 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-from . import config
-from .effort import EffortBreakdown
-from .episode_state import BipedStepContext, EpisodeState
-from .lib.actuators import (
+import config
+from effort import EffortBreakdown
+from episode_state import BipedStepContext, EpisodeState
+from lib.actuators import (
   LEFT_FOOT_GEOM,
   LEFT_FOOT_SITE,
   RIGHT_FOOT_GEOM,

@@ -4,8 +4,8 @@
 学習のエントリポイントは train.main。
 """
 
-from .agent import AgentA2C
-from .env import Env2JointA2C
-from .observation import PolicyObs, Observation
+from agent import AgentA2C
+from env import Env2JointA2C
+from observation import PolicyObs, Observation
 
 __all__ = ["AgentA2C", "Env2JointA2C", "PolicyObs", "Observation"]

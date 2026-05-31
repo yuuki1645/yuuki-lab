@@ -6,8 +6,8 @@ import os
 from collections import Counter, deque
 from typing import Any
 
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c import config
-from mujoco_rl_sim.experiments.exp_001_2joint_a2c.termination import TERMINATION_REASONS
+import config
+from termination import TERMINATION_REASONS
 
 _active = False
 _termination_tracker: TerminationTracker | None = None

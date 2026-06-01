@@ -56,6 +56,10 @@
 
 <img src="images/biped_lower_body_structure.jpg" alt="ロボット設計図寸法付き" width="600">
 
+## 設計図2（シミュレーション用・バランス棒付き）
+
+<img src="images/balance_control_bar_on_basket.jpg" alt="ロボット設計図" width="600">
+
 ## 使用しているサーボ
 
 <img src="images/150kg_servo.jpg" alt="150kg サーボ" width="300">

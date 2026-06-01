@@ -27,7 +27,7 @@ class EpisodeState:
   prev_right_on_floor: bool = False
   aerial_steps: int = 0
   best_imu_x: float = 0.0
-  prev_action: tuple[float, ...] = field(default_factory=lambda: (0.0,) * 10)
+  prev_action: tuple[float, ...] = field(default_factory=tuple)
 
   def reset_forward_tracking(
     self,
@@ -36,7 +36,7 @@ class EpisodeState:
     left_foot_x: float,
     right_foot_x: float,
     imu_z: float,
-    n_action: int = 10,
+    n_action: int = 12,
   ) -> None:
     self.origin_imu_x = imu_x
     self.best_imu_x = imu_x

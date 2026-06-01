@@ -1,9 +1,9 @@
-"""exp_025: exp_024 同等（スタンドアロン）。
+"""exp_025: exp_024 ベース（スタンドアロン）。
 
-exp_023 + ボディフレーム前後傾き・ヨーずれ・水平傾きペナルティ。
+exp_023 + ボディフレーム前後傾き・ヨーずれ・水平傾きペナルティ
++ カゴ上バランス棒（2 軸サーボ）を追加。
 
-``model/main.xml`` は exp_023 と同一（足裏 25 cm×10 cm・踵はみ出し）。
-観測契約は biped_ppo_v1 のまま（42 次元）。
+観測契約は biped_ppo_v1（48 次元）。
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from package_meta import CHECKPOINT_ROOT, EXP_DIR, EXP_NAME
 
 ROBOT_MORPHOLOGY = "biped_legs_only"
 ROBOT_LEG_COUNT = 2
-ROBOT_ACTUATED_DOF = 10
+ROBOT_ACTUATED_DOF = 12
 
 _EXP_DIR = EXP_DIR
 XML_RELATIVE = "model/main.xml"
@@ -74,7 +74,7 @@ CONTACT_SHANK_TERMINATES = False
 # 姿勢終了: ボディフレーム後傾（exp_023 の imu_zaxis_x と同閾値）
 MAX_BACKWARD_LEAN_BODY = 0.38
 
-# --- 観測: dx(1)+gyro(3)+zaxis(3)+imu_z(1)+feet(4)+joint_q(10)+joint_qvel(10)+prev_a(10) = 42
+# --- 観測: dx(1)+gyro(3)+zaxis(3)+imu_z(1)+feet(4)+joint_q(12)+joint_qvel(12)+prev_a(12) = 48
 MAX_DX_PER_STEP = 0.05 * FRAME_SKIP
 MAX_GYRO_RAD_S = 10.0
 MAX_JOINT_VEL_RAD_S = 10.0
@@ -82,8 +82,8 @@ MAX_FOOT_DX_PER_STEP = 0.04 * FRAME_SKIP
 MAX_IMU_Z = 1.2
 MIN_IMU_Z_NORM = 0.0
 
-ACTION_DIM = 10
-OBS_DIM = 42
+ACTION_DIM = 12
+OBS_DIM = 48
 
 GAMMA = 0.99**FRAME_SKIP
 GAE_LAMBDA = 0.95
@@ -135,7 +135,7 @@ WANDB_TAGS = (
   "ppo",
   "biped",
   "biped_walk",
-  "10dof",
+  "12dof",
   "forward",
   "progress_reward",
   "body_frame_lean",

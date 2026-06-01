@@ -1,4 +1,4 @@
-"""biped_ppo_v1: exp_019 / exp_020 と同一の 42 次元観測・テレメトリ契約。"""
+"""biped_ppo_v1: 48 次元観測・テレメトリ契約（脚10 + 上半身2 DOF）。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from contract.spec import (
   TelemetryContract,
 )
 
-BIPED_PPO_V1_OBS_DIM = 42
+BIPED_PPO_V1_OBS_DIM = 48
 
 _BIPED_OBS_SLICES: tuple[ObservationSlice, ...] = (
   ObservationSlice("obs_dx", 0, 1, "scalar", "IMU +X 移動量（正規化）"),
@@ -21,9 +21,9 @@ _BIPED_OBS_SLICES: tuple[ObservationSlice, ...] = (
   ObservationSlice("obs_right_foot_contact", 9, 10, "scalar", "右足接地 ±1"),
   ObservationSlice("obs_left_foot_dx", 10, 11, "scalar", "左足 +X 移動量（正規化）"),
   ObservationSlice("obs_right_foot_dx", 11, 12, "scalar", "右足 +X 移動量（正規化）"),
-  ObservationSlice("obs_joint_q_norm", 12, 22, "vector", "関節角 q（正規化）×10"),
-  ObservationSlice("obs_joint_qvel_norm", 22, 32, "vector", "関節角速度（正規化）×10"),
-  ObservationSlice("obs_prev_action_norm", 32, 42, "vector", "直前 action [-1,1]×10"),
+  ObservationSlice("obs_joint_q_norm", 12, 24, "vector", "関節角 q（正規化）×12"),
+  ObservationSlice("obs_joint_qvel_norm", 24, 36, "vector", "関節角速度（正規化）×12"),
+  ObservationSlice("obs_prev_action_norm", 36, 48, "vector", "直前 action [-1,1]×12"),
 )
 
 _BIPED_REWARD_LOG = RewardLogSpec(

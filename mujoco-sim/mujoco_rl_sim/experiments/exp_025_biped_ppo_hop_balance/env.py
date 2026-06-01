@@ -1,4 +1,4 @@
-"""exp_024: 両脚バイペッド前進 PPO（ボディフレーム姿勢ペナルティ・10 DOF）。"""
+"""exp_024: 両脚バイペッド前進 PPO（ボディフレーム姿勢ペナルティ・12 DOF）。"""
 
 import time
 
@@ -31,7 +31,7 @@ from termination import (
 
 
 class EnvBipedPPO:
-  """両脚 10 DOF・観測 42 次元・+X 前進タスク。"""
+  """両脚 12 DOF・観測 48 次元・+X 前進タスク。"""
 
   def __init__(self, *, enable_viewer: bool = True):
     self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)

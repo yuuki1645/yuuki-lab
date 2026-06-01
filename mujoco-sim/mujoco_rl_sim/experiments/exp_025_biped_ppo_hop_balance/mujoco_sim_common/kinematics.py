@@ -79,16 +79,18 @@ LOGICAL_RANGE_HEEL_ROLL = (-20.0, 20.0)
 LOGICAL_RANGE_KNEE = (0.0, 120.0)
 LOGICAL_RANGE_HIP1 = (-30.0, 90.0)
 LOGICAL_RANGE_HIP2 = (-30.0, 120.0)
+LOGICAL_RANGE_BALANCE = (-45.0, 45.0)
 
 DEFAULT_LOGICAL_HEEL = -30.0
 DEFAULT_LOGICAL_HEEL_ROLL = 0.0
 DEFAULT_LOGICAL_KNEE = 30.0
 DEFAULT_LOGICAL_HIP1 = 0.0
 DEFAULT_LOGICAL_HIP2 = 60.0
+DEFAULT_LOGICAL_BALANCE = 0.0
 
 
 # ============================================================
-# ★ 10 関節分の「個別クラス」を直書き（robot-daemon と同じ流儀）
+# ★ 12 関節分の「個別クラス」を直書き（robot-daemon と同じ流儀）
 #   ここから先は、各サーボごとに
 #   - クランプ
 #   - オフセット
@@ -294,6 +296,44 @@ class RHeelRollKinematics(JointKinematicsBase):
         return -mujoco_deg
 
 
+class BasketTopRollKinematics(JointKinematicsBase):
+    """上半身ロール（basket_top_roll）: logical 0° = MuJoCo 0°（恒等）"""
+
+    def __init__(self):
+        super().__init__(
+            "basket_top_roll_motor",
+            "basket_top_roll",
+            *LOGICAL_RANGE_BALANCE,
+            DEFAULT_LOGICAL_BALANCE,
+        )
+
+    def logical_to_mujoco_deg(self, logical_deg: float) -> float:
+        l = self.clamp_logical(logical_deg)
+        return l
+
+    def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
+        return mujoco_deg
+
+
+class BalancePitchKinematics(JointKinematicsBase):
+    """上半身ピッチ（balance_pitch）: logical 0° = MuJoCo 0°（恒等）"""
+
+    def __init__(self):
+        super().__init__(
+            "balance_pitch_motor",
+            "balance_pitch",
+            *LOGICAL_RANGE_BALANCE,
+            DEFAULT_LOGICAL_BALANCE,
+        )
+
+    def logical_to_mujoco_deg(self, logical_deg: float) -> float:
+        l = self.clamp_logical(logical_deg)
+        return l
+
+    def mujoco_deg_to_logical(self, mujoco_deg: float) -> float:
+        return mujoco_deg
+
+
 # ★ インスタンスを生成して辞書へ（キーはアクチュエータ名）
 KINEMATICS: dict[str, JointKinematicsBase] = {
     "left_hip_roll_motor": LHip1Kinematics(),
@@ -306,6 +346,8 @@ KINEMATICS: dict[str, JointKinematicsBase] = {
     "right_knee_pitch_motor": RKneeKinematics(),
     "right_ankle_pitch_motor": RHeelKinematics(),
     "right_ankle_roll_motor": RHeelRollKinematics(),
+    "basket_top_roll_motor": BasketTopRollKinematics(),
+    "balance_pitch_motor": BalancePitchKinematics(),
 }
 
 

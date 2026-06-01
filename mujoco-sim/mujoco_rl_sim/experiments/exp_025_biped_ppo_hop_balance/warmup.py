@@ -1,4 +1,4 @@
-"""各エピソード開始直後のウォームアップ行動（10 DOF、keyframe stand 相当）。"""
+"""各エピソード開始直後のウォームアップ行動（12 DOF、keyframe stand 相当）。"""
 
 from __future__ import annotations
 

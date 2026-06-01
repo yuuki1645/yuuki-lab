@@ -1,4 +1,4 @@
-"""両脚バイペッド向け観測（42 次元）。"""
+"""両脚バイペッド向け観測（48 次元）。"""
 
 from dataclasses import dataclass
 from typing import NamedTuple

@@ -44,7 +44,7 @@ class EpisodeState:
 
   def advance_progress(self, imu_x: float, *, upright: float) -> float:
     """直立を保ちながら更新した best_imu_x 超過分 [m]（exp_010 進捗報酬用）。"""
-    from . import config
+    import config
 
     if upright < config.PROGRESS_MIN_UPRIGHT:
       return 0.0

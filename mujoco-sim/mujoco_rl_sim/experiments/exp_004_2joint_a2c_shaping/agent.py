@@ -267,7 +267,7 @@ class AgentA2C:
 
     lr を指定した場合は optimizer を読み込まず、新しい学習率だけを設定する。
     """
-    from . import checkpoint
+    import checkpoint
 
     payload = checkpoint.load_checkpoint(path, map_location=map_location)
     obs_dim = int(payload["obs_dim"])

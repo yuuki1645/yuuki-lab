@@ -12,7 +12,7 @@ import config
 from package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
-  from .agent import AgentA2C
+  from agent import AgentA2C
 
 
 def resolve_checkpoint_path(path_str: str) -> Path:

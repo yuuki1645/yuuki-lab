@@ -58,7 +58,7 @@ class EpisodeState:
     return left_dx, right_dx
 
   def advance_progress(self, imu_x: float, *, upright: float) -> float:
-    from . import config
+    import config
 
     if upright < config.PROGRESS_MIN_UPRIGHT:
       return 0.0
@@ -68,7 +68,7 @@ class EpisodeState:
     return progress
 
   def advance_biped_context(self, *, imu_z: float) -> BipedStepContext:
-    from . import config
+    import config
 
     in_stance = float(imu_z) < config.STANCE_IMU_Z_THRESHOLD
     entered_stance = in_stance and not self.prev_in_stance

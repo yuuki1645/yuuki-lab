@@ -12,7 +12,7 @@ import config
 from package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
-  from .agent import AgentPPO
+  from agent import AgentPPO
 
 EXPECTED_CHECKPOINT_FORMAT = CHECKPOINT_FORMAT
 COMPATIBLE_CHECKPOINT_FORMATS = (

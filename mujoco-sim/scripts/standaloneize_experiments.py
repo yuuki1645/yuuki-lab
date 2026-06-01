@@ -175,6 +175,28 @@ def _fix_lib_submodules(exp_dir: Path) -> None:
       py.write_text(new, encoding="utf-8")
 
 
+def _fix_relative_imports(exp_dir: Path) -> None:
+  """関数内・TYPE_CHECKING 等に残る ``from .`` を除去（python train.py 用）。"""
+  for py in exp_dir.rglob("*.py"):
+    lines = py.read_text(encoding="utf-8").splitlines(keepends=True)
+    new_lines: list[str] = []
+    changed = False
+    for line in lines:
+      orig = line
+      m = re.match(r"^(\s*)from \. import (.+)$", line.rstrip("\n"))
+      if m:
+        line = f"{m.group(1)}import {m.group(2)}\n"
+      else:
+        m2 = re.match(r"^(\s*)from \.([\w]+) import (.+)$", line.rstrip("\n"))
+        if m2:
+          line = f"{m2.group(1)}from {m2.group(2)} import {m2.group(3)}\n"
+      if line != orig:
+        changed = True
+      new_lines.append(line)
+    if changed:
+      py.write_text("".join(new_lines), encoding="utf-8")
+
+
 def _fix_lib_init(text: str) -> str:
   for mod in ("action", "ctrl", "obs_norm", "terminal_bar", "actuators", "pose", "contact"):
     text = re.sub(
@@ -279,6 +301,7 @@ def standaloneize(exp_dir: Path) -> None:
       py.write_text(new, encoding="utf-8")
 
   _fix_lib_submodules(exp_dir)
+  _fix_relative_imports(exp_dir)
 
   for name in ENTRY_SCRIPTS:
     script = exp_dir / name

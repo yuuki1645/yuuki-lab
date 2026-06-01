@@ -11,7 +11,7 @@ python train.py
 python visualize.py
 ```
 
-チェックポイントは各実験フォルダ直下 `runs/<exp_name>/` に保存されます。
+チェックポイントは `mujoco_rl_sim/runs/<exp_name>/` に保存されます（実験フォルダ外・CWD 非依存）。
 
 ## 「2joint」実験名の意味
 

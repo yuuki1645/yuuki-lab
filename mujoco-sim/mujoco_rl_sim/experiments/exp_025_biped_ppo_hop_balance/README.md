@@ -17,7 +17,7 @@ python analyze_rollout.py --checkpoint runs/.../final.pt
 python preview_warmup.py
 ```
 
-- チェックポイント: `runs/<フォルダ名>/`（本ディレクトリ直下）
+- チェックポイント: `mujoco_rl_sim/runs/<フォルダ名>/`（実験フォルダ外）
 - フォルダを別リポジトリへコピーしても、上記コマンドは同じ（フォルダ名が変わると `runs/` 配下名も変わる）
 
 契約の観測 idx 表:

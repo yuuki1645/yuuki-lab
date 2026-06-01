@@ -293,19 +293,19 @@ python -m mujoco_rl_sim.experiments.exp_023_biped_ppo_hop_balance.train --no-wan
 
 ### 並列起動（PowerShell スクリプト）
 
-`mujoco-sim/scripts/launch_exp_023_parallel.ps1` で、ビューアなし・wandb 有効・テレメトリ OFF の学習を複数プロセス起動できる。
+`launch_parallel.ps1` で、ビューアなし・wandb 有効・テレメトリ OFF の学習を複数プロセス起動できる。
 
 ```powershell
-cd mujoco-sim
-.\scripts\launch_exp_023_parallel.ps1              # 既定 10 本
-.\scripts\launch_exp_023_parallel.ps1 -Count 4     # 4 本だけ
-.\scripts\launch_exp_023_parallel.ps1 -RedirectLogs -LogDir logs\exp023
+cd exp_023_biped_ppo_hop_balance
+.\launch_parallel.ps1              # 既定 10 本
+.\launch_parallel.ps1 -Count 4     # 4 本だけ
+.\launch_parallel.ps1 -RedirectLogs -LogDir logs\parallel
 ```
 
 実行ポリシーで拒否される場合:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\launch_exp_023_parallel.ps1
+powershell -ExecutionPolicy Bypass -File .\launch_parallel.ps1
 ```
 
 確認・停止: `Get-Process python` / `Get-Process python | Stop-Process`（他の Python 作業も止まるので注意）。

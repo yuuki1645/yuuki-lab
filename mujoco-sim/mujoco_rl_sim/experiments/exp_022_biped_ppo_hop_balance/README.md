@@ -20,7 +20,7 @@ python -m mujoco_rl_sim.experiments.exp_022_biped_ppo_hop_balance.train --no-vie
 並列起動:
 
 ```powershell
-.\scripts\launch_exp_022_parallel.ps1
+.\launch_parallel.ps1
 ```
 
 ## 終了条件（姿勢のみ）

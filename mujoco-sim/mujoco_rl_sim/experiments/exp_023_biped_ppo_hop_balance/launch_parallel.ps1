@@ -1,14 +1,14 @@
 # exp_023: ビューアなし・wandb 有効で学習を複数プロセス並列起動する。
 #
-# 使い方（mujoco-sim から）:
-#   .\scripts\launch_exp_023_parallel.ps1
-#   .\scripts\launch_exp_023_parallel.ps1 -Count 4
+# 使い方（本フォルダで）:
+#   .\launch_parallel.ps1
+#   .\launch_parallel.ps1 -Count 4
 #
 # 実行ポリシーでブロックされた場合:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\launch_exp_023_parallel.ps1
+#   powershell -ExecutionPolicy Bypass -File .\launch_parallel.ps1
 #
 # ログをファイルに残す:
-#   .\scripts\launch_exp_023_parallel.ps1 -LogDir logs\exp023
+#   .\launch_parallel.ps1 -RedirectLogs -LogDir logs\parallel
 
 param(
   [int]$Count = 10,
@@ -18,11 +18,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$MujocoSimRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-Set-Location $MujocoSimRoot
+$ExpDir = $PSScriptRoot
+Set-Location $ExpDir
 
 $TrainArgs = @(
-  "-m", "mujoco_rl_sim.experiments.exp_023_biped_ppo_hop_balance.train",
+  "train.py",
   "--no-viewer",
   "--step-wall-sleep", "0",
   "--no-telemetry"
@@ -33,20 +33,20 @@ if ($LogDir -ne "") {
 }
 if ($RedirectLogs) {
   if ($LogDir -eq "") {
-    $LogDir = Join-Path $MujocoSimRoot "logs\exp023_parallel"
+    $LogDir = Join-Path $ExpDir "logs\parallel"
   }
   New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 }
 
-Write-Host "[launch] mujoco-sim root: $MujocoSimRoot"
+Write-Host "[launch] exp dir: $ExpDir"
 Write-Host "[launch] starting $Count process(es) | wandb=on (default) | viewer=off | telemetry=off"
 
 1..$Count | ForEach-Object {
   $i = $_
   $procArgs = @{
-    FilePath     = "python"
-    ArgumentList = $TrainArgs
-    WorkingDirectory = $MujocoSimRoot
+    FilePath         = "python"
+    ArgumentList     = $TrainArgs
+    WorkingDirectory = $ExpDir
   }
   if ($RedirectLogs) {
     $procArgs["RedirectStandardOutput"] = Join-Path $LogDir "run_$i.out.log"

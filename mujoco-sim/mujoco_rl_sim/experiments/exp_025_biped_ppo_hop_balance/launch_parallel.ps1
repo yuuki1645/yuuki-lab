@@ -1,14 +1,14 @@
-# exp_024: ビューアなし・wandb 有効で学習を複数プロセス並列起動する。
+# exp_025: ビューアなし・wandb 有効で学習を複数プロセス並列起動する。
 #
-# 使い方（mujoco-sim から）:
-#   .\scripts\launch_exp_024_parallel.ps1
-#   .\scripts\launch_exp_024_parallel.ps1 -Count 4
+# 使い方（本フォルダで）:
+#   .\launch_parallel.ps1
+#   .\launch_parallel.ps1 -Count 4
 #
 # 実行ポリシーでブロックされた場合:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\launch_exp_024_parallel.ps1
+#   powershell -ExecutionPolicy Bypass -File .\launch_parallel.ps1
 #
 # ログをファイルに残す:
-#   .\scripts\launch_exp_024_parallel.ps1 -LogDir logs\exp024
+#   .\launch_parallel.ps1 -RedirectLogs -LogDir logs\parallel
 
 param(
   [int]$Count = 10,
@@ -18,8 +18,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ExpDir = Join-Path $PSScriptRoot "..\mujoco_rl_sim\experiments\exp_024_biped_ppo_hop_balance"
-$ExpDir = (Resolve-Path $ExpDir).Path
+$ExpDir = $PSScriptRoot
 Set-Location $ExpDir
 
 $TrainArgs = @(
@@ -45,8 +44,8 @@ Write-Host "[launch] starting $Count process(es) | wandb=on (default) | viewer=o
 1..$Count | ForEach-Object {
   $i = $_
   $procArgs = @{
-    FilePath     = "python"
-    ArgumentList = $TrainArgs
+    FilePath         = "python"
+    ArgumentList     = $TrainArgs
     WorkingDirectory = $ExpDir
   }
   if ($RedirectLogs) {

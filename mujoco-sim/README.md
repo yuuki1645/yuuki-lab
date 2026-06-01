@@ -195,7 +195,6 @@ mujoco-sim/
     lib/               # 実験間共有ユーティリティ
     runs/              # exp_003 以降のチェックポイント（git 対象外）
     telemetry/         # Gym ラッパ（RlTelemetryWrapper）
-    scripts/           # 試用（test.py など）
   pyproject.toml
   requirements.txt
 ```

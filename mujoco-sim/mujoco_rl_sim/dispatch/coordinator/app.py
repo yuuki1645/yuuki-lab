@@ -176,6 +176,7 @@ def create_app(settings: CoordinatorSettings) -> Flask:
   @app.get("/api/ui/dashboard")
   @_auth
   def dashboard() -> Any:
+    repo.expire_stale_jobs()
     return jsonify(
       {
         "sweeps": repo.list_sweeps(),

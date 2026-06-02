@@ -38,6 +38,7 @@ tr:nth-child(even) {
 .status-succeeded { color: #4ade80; }
 .status-failed { color: #f87171; }
 .status-cancelled { color: #9ca3af; }
+.status-offline { color: #9ca3af; }
 
 button {
   cursor: pointer;

@@ -96,9 +96,13 @@ function renderWorkers(workers) {
   tbody.innerHTML = "";
   for (const w of workers) {
     const tr = document.createElement("tr");
+    const online = w.online === true;
+    const statusLabel = online ? "online" : "offline";
+    const statusClass = online ? "status-succeeded" : "status-cancelled";
     tr.innerHTML = `
       <td>${w.worker_id}</td>
       <td>${w.hostname}</td>
+      <td class="${statusClass}">${statusLabel}</td>
       <td>${w.max_concurrent_jobs}</td>
       <td>${w.active_jobs ?? 0}</td>
       <td>${formatJst(w.last_heartbeat_at)}</td>

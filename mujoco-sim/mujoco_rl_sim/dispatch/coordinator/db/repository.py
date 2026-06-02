@@ -13,6 +13,7 @@ from mujoco_rl_sim.dispatch.common.sweep_spec import PlannedJob, SweepSpec
 
 _HEARTBEAT_SEC = 15
 _LEASE_TIMEOUT_SEC = 90
+_WORKER_ONLINE_TIMEOUT_SEC = 45
 
 
 def _utc_now() -> datetime:
@@ -21,6 +22,26 @@ def _utc_now() -> datetime:
 
 def _iso(dt: datetime) -> str:
   return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_utc_iso(value: str | None) -> datetime | None:
+  if not value:
+    return None
+  raw = value.strip()
+  try:
+    if raw.endswith("Z"):
+      return datetime.strptime(raw, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    return datetime.fromisoformat(raw).astimezone(timezone.utc)
+  except ValueError:
+    return None
+
+
+def _worker_is_online(last_heartbeat_at: str | None, *, now: datetime | None = None) -> bool:
+  hb = _parse_utc_iso(last_heartbeat_at)
+  if hb is None:
+    return False
+  ref = now or _utc_now()
+  return (ref - hb).total_seconds() <= _WORKER_ONLINE_TIMEOUT_SEC
 
 
 class DispatchRepository:
@@ -366,7 +387,11 @@ class DispatchRepository:
       ORDER BY w.worker_id
       """
     )
-    return [dict(r) for r in cur.fetchall()]
+    workers = [dict(r) for r in cur.fetchall()]
+    now = _utc_now()
+    for w in workers:
+      w["online"] = _worker_is_online(w.get("last_heartbeat_at"), now=now)
+    return workers
 
   @staticmethod
   def _job_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:

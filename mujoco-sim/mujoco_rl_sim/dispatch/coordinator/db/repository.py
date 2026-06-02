@@ -109,6 +109,30 @@ class DispatchRepository:
     self._conn.commit()
     return n
 
+  def delete_sweep(self, sweep_id: str) -> dict[str, int]:
+    """sweep と配下ジョブを DB から削除する。実行中ジョブがあっても削除する。"""
+    cur = self._conn.cursor()
+    cur.execute("SELECT 1 FROM sweeps WHERE sweep_id = ?", (sweep_id,))
+    if cur.fetchone() is None:
+      raise ValueError(f"sweep が見つかりません: {sweep_id}")
+
+    cur.execute(
+      """
+      SELECT COUNT(*) FROM jobs
+      WHERE sweep_id = ? AND status IN (?, ?)
+      """,
+      (sweep_id, JobStatus.LEASED.value, JobStatus.RUNNING.value),
+    )
+    active = int(cur.fetchone()[0])
+
+    cur.execute("SELECT COUNT(*) FROM jobs WHERE sweep_id = ?", (sweep_id,))
+    job_count = int(cur.fetchone()[0])
+
+    cur.execute("DELETE FROM jobs WHERE sweep_id = ?", (sweep_id,))
+    cur.execute("DELETE FROM sweeps WHERE sweep_id = ?", (sweep_id,))
+    self._conn.commit()
+    return {"deleted_jobs": job_count, "active_jobs_removed": active}
+
   def upsert_worker(
     self,
     *,

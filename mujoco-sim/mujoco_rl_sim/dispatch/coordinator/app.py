@@ -60,6 +60,15 @@ def create_app(settings: CoordinatorSettings) -> Flask:
     n = repo.cancel_sweep(sweep_id)
     return jsonify({"cancelled_queued_jobs": n})
 
+  @app.delete("/api/sweeps/<sweep_id>")
+  @_auth
+  def delete_sweep(sweep_id: str) -> Any:
+    try:
+      result = repo.delete_sweep(sweep_id)
+    except ValueError as exc:
+      return jsonify({"error": str(exc)}), 404
+    return jsonify({"sweep_id": sweep_id, **result})
+
   @app.get("/api/jobs")
   @_auth
   def list_jobs() -> Any:

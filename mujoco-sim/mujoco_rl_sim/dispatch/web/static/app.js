@@ -35,15 +35,33 @@ function renderSweeps(sweeps) {
       <td>${s.running ?? 0}</td>
       <td>${s.succeeded ?? 0}</td>
       <td>${s.failed ?? 0}</td>
-      <td><button class="danger" data-cancel="${s.sweep_id}">cancel queued</button></td>
+      <td>
+        <button class="danger" data-cancel="${s.sweep_id}">cancel queued</button>
+        <button class="danger" data-delete="${s.sweep_id}">delete</button>
+      </td>
     `;
     tbody.appendChild(tr);
   }
   tbody.querySelectorAll("[data-cancel]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-cancel");
-      if (!confirm(`Cancel queued jobs for ${id}?`)) return;
-      await api(`/api/sweeps/${id}/cancel`, { method: "POST" });
+      if (!confirm(`queued ジョブを cancel しますか?\n${id}`)) return;
+      await api(`/api/sweeps/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+      await refresh();
+    });
+  });
+  tbody.querySelectorAll("[data-delete]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-delete");
+      if (
+        !confirm(
+          `sweep と全ジョブを DB から削除しますか?\n${id}\n` +
+            "(実行中の Worker プロセスは自動では止まりません)"
+        )
+      ) {
+        return;
+      }
+      await api(`/api/sweeps/${encodeURIComponent(id)}`, { method: "DELETE" });
       await refresh();
     });
   });
@@ -75,6 +93,7 @@ function renderJobs(jobs) {
         ? `${j.primary_metric_name || ""}: ${j.primary_metric.toFixed(4)}`
         : "-";
     tr.innerHTML = `
+      <td>${j.sweep_id}</td>
       <td>${j.run_id}</td>
       <td class="${statusClass(j.status)}">${j.status}</td>
       <td>${j.worker_id ?? "-"}</td>

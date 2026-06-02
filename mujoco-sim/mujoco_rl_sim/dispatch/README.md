@@ -43,6 +43,12 @@ python -m mujoco_rl_sim.dispatch.worker --config worker.config.toml
 
 Coordinator PC でも Worker を起動すれば、同じ Pull API で学習に参加できます。
 
+Web UI の **delete** は sweep と配下ジョブを DB から削除します（実行中の `train.py` プロセスは止まりません）。
+
+```bash
+python -m mujoco_rl_sim.dispatch.coordinator.cli --config coordinator.config.toml sweep delete --sweep-id MY_SWEEP_ID
+```
+
 ## W&B
 
 - `project`: 各 exp の `config.WANDB_PROJECT`（exp フォルダ名）

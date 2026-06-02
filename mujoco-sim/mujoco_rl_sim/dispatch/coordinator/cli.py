@@ -28,6 +28,9 @@ def main(argv: list[str] | None = None) -> None:
   p_status = reg_sub.add_parser("status", help="sweep 状態")
   p_status.add_argument("--sweep-id", type=str, required=True)
 
+  p_delete = reg_sub.add_parser("delete", help="sweep と全ジョブを DB から削除")
+  p_delete.add_argument("--sweep-id", type=str, required=True)
+
   args = parser.parse_args(argv)
 
   if args.cmd == "plan":
@@ -57,6 +60,18 @@ def main(argv: list[str] | None = None) -> None:
     print(
       f"{s['sweep_id']}: queued={s['queued']} running={s['running']} "
       f"ok={s['succeeded']} fail={s['failed']} cancelled={s['cancelled']}"
+    )
+    return
+
+  if args.cmd == "sweep" and args.sweep_cmd == "delete":
+    try:
+      result = repo.delete_sweep(args.sweep_id)
+    except ValueError as exc:
+      print(str(exc), file=sys.stderr)
+      sys.exit(1)
+    print(
+      f"deleted sweep {args.sweep_id}: jobs={result['deleted_jobs']} "
+      f"(active={result['active_jobs_removed']})"
     )
     return
 

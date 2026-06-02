@@ -50,6 +50,7 @@ button {
 
 button.danger {
   background: #b91c1c;
+  margin-right: 0.35rem;
 }
 
 input {

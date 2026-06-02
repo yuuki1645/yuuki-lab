@@ -14,7 +14,8 @@ from mujoco_rl_sim.dispatch.coordinator.settings import CoordinatorSettings
 
 
 def create_app(settings: CoordinatorSettings) -> Flask:
-  app = Flask(__name__)
+  # 既定の /static/（存在しない coordinator/static/）より先に UI 用静的ファイルを配信する
+  app = Flask(__name__, static_folder=None)
   conn = connect(settings.db_path)
   repo = DispatchRepository(conn)
 

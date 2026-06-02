@@ -1,4 +1,4 @@
-sweep_id: exp026_baseline_20260602
+sweep_id: exp026_baseline_20260602_v2
 exp_id: exp_026_biped_ppo_hop_balance
 description: config.py 既定ハイパラで seed 10 本（ばらつき確認）
 

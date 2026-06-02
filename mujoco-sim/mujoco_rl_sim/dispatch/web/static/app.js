@@ -85,11 +85,27 @@ function renderJobs(jobs) {
   }
 }
 
+function showError(msg) {
+  let el = document.getElementById("ui-error");
+  if (!el) {
+    el = document.createElement("p");
+    el.id = "ui-error";
+    el.style.color = "#f87171";
+    document.querySelector("header").after(el);
+  }
+  el.textContent = msg;
+}
+
 async function refresh() {
-  const data = await api("/api/ui/dashboard");
-  renderSweeps(data.sweeps || []);
-  renderWorkers(data.workers || []);
-  renderJobs(data.recent_jobs || []);
+  try {
+    const data = await api("/api/ui/dashboard");
+    showError("");
+    renderSweeps(data.sweeps || []);
+    renderWorkers(data.workers || []);
+    renderJobs(data.recent_jobs || []);
+  } catch (err) {
+    showError(String(err));
+  }
 }
 
 document.getElementById("refresh").addEventListener("click", refresh);

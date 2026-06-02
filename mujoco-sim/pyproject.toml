@@ -21,6 +21,9 @@ rl = [
   "stable-baselines3>=2.2.0",
   "wandb>=0.16",
 ]
+dispatch = [
+  "pyyaml>=6",
+]
 video = [
   "imageio>=2.34",
   "imageio-ffmpeg>=0.4.9",
@@ -29,6 +32,9 @@ video = [
 [project.scripts]
 mujoco-sim-serve = "mujoco_realtime_sim.__main__:main"
 mujoco-sim-view = "mujoco_realtime_sim.viewer_cmd:main"
+mujoco-dispatch-coord = "mujoco_rl_sim.dispatch.coordinator.__main__:main"
+mujoco-dispatch-worker = "mujoco_rl_sim.dispatch.worker.__main__:main"
+mujoco-dispatch = "mujoco_rl_sim.dispatch.coordinator.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

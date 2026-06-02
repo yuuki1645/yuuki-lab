@@ -48,6 +48,7 @@ def with_fav_metrics(metrics: dict[str, float]) -> dict[str, float]:
 
 _active = False
 _termination_tracker: TerminationTracker | None = None
+_best_train_ep_return_mean: float | None = None
 
 
 class EpisodeMetricsCollector:
@@ -311,18 +312,33 @@ def init(
   tags = list(config.WANDB_TAGS)
   if extra_tags:
     tags.extend(extra_tags)
+  extra_tag_env = os.environ.get("DISPATCH_WANDB_EXTRA_TAGS", "").strip()
+  if extra_tag_env:
+    tags.extend(t.strip() for t in extra_tag_env.split(",") if t.strip())
 
   init_kwargs: dict[str, Any] = {
     "project": config.WANDB_PROJECT,
     "config": run_config,
     "tags": tags,
   }
+  dispatch_group = os.environ.get("DISPATCH_WANDB_GROUP", "").strip()
+  if dispatch_group:
+    init_kwargs["group"] = dispatch_group
+  dispatch_sweep = os.environ.get("DISPATCH_SWEEP_ID", "").strip()
+  if dispatch_sweep:
+    run_config["dispatch_sweep_id"] = dispatch_sweep
+  dispatch_run = os.environ.get("DISPATCH_RUN_ID", "").strip()
+  if dispatch_run:
+    run_config["dispatch_run_id"] = dispatch_run
+
   name = run_name if run_name is not None else config.WANDB_RUN_NAME
   if name:
     init_kwargs["name"] = name
   if config.WANDB_ENTITY:
     init_kwargs["entity"] = config.WANDB_ENTITY
 
+  global _best_train_ep_return_mean
+  _best_train_ep_return_mean = None
   wandb.init(**init_kwargs)
   _active = True
   _termination_tracker = TerminationTracker(
@@ -370,6 +386,12 @@ def log_train_update(
   }
   if episode_rolling is not None:
     metrics.update(rolling_summary_to_wandb(episode_rolling))
+    global _best_train_ep_return_mean
+    mean_ret = episode_rolling.get("ep_ret_mean")
+    if mean_ret is not None:
+      v = float(mean_ret)
+      if _best_train_ep_return_mean is None or v > _best_train_ep_return_mean:
+        _best_train_ep_return_mean = v
 
   if not _active:
     return
@@ -403,12 +425,35 @@ def log_checkpoint_run_dir(path: Path) -> None:
   wandb.config.update({"checkpoint_run_dir": str(path)}, allow_val_change=True)
 
 
-def finish() -> None:
-  global _active, _termination_tracker
-  if not _active:
+def _write_dispatch_summary() -> None:
+  """dispatch Worker 向けに主指標を JSON で書き出す。"""
+  run_id = os.environ.get("DISPATCH_RUN_ID", "").strip()
+  if not run_id:
     return
-  import wandb
+  payload: dict[str, Any] = {
+    "dispatch_run_id": run_id,
+    "train/ep_return_mean_max": _best_train_ep_return_mean,
+  }
+  if _best_train_ep_return_mean is not None:
+    payload["train/ep_return_mean"] = _best_train_ep_return_mean
+  out = Path(__file__).resolve().parent / "dispatch_summary.json"
+  out.write_text(
+    __import__("json").dumps(payload, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+  )
 
-  wandb.finish()
+
+def finish() -> None:
+  global _active, _termination_tracker, _best_train_ep_return_mean
+  if _active:
+    import wandb
+
+    if _best_train_ep_return_mean is not None and wandb.run is not None:
+      wandb.run.summary["train/ep_return_mean_max"] = _best_train_ep_return_mean
+    _write_dispatch_summary()
+    wandb.finish()
+  else:
+    _write_dispatch_summary()
   _active = False
   _termination_tracker = None
+  _best_train_ep_return_mean = None

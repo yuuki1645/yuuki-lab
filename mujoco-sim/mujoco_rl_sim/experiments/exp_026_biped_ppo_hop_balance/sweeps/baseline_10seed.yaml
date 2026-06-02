@@ -1,0 +1,12 @@
+sweep_id: exp026_baseline_20260602
+exp_id: exp_026_biped_ppo_hop_balance
+description: config.py 既定ハイパラで seed 10 本（ばらつき確認）
+
+shuffle_seed: 42
+seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+param_grid: {}
+
+fixed_overrides:
+  num_updates: 6000
+  wandb: true

@@ -1,0 +1,18 @@
+# dispatch runtime
+mujoco_rl_sim/dispatch_data/
+
+# worker secrets (local)
+**/worker.config.local
+**/coordinator.config.toml
+
+# experiment dispatch artifacts
+**/dispatch_summary.json
+
+# RL checkpoints (existing convention)
+mujoco_rl_sim/runs/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+wandb/

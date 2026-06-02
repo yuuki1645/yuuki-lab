@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MuJoCo Dispatch</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>MuJoCo RL Dispatch</h1>
+    <label>API token <input id="token" type="password" placeholder="X-Dispatch-Token" /></label>
+    <button id="refresh">更新</button>
+  </header>
+
+  <section>
+    <h2>Sweeps</h2>
+    <table id="sweeps"><thead>
+      <tr><th>sweep_id</th><th>exp</th><th>queued</th><th>running</th><th>ok</th><th>fail</th><th>actions</th></tr>
+    </thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Workers</h2>
+    <table id="workers"><thead>
+      <tr><th>worker_id</th><th>host</th><th>slots</th><th>active</th><th>last heartbeat</th></tr>
+    </thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Jobs (recent)</h2>
+    <table id="jobs"><thead>
+      <tr><th>run_id</th><th>status</th><th>worker</th><th>metric</th><th>error</th></tr>
+    </thead><tbody></tbody></table>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

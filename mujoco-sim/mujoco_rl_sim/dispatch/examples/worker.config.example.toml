@@ -1,0 +1,7 @@
+worker_id = "lab-pc-01"
+coordinator_url = "http://192.168.1.10:8790"
+# api_token = "change-me"
+max_concurrent_jobs = 1
+poll_interval_sec = 10
+heartbeat_interval_sec = 15
+# mujoco_rl_sim_root = "C:/path/to/mujoco-sim/mujoco_rl_sim"

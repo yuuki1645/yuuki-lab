@@ -1,0 +1,4 @@
+host = "0.0.0.0"
+port = 8790
+# db_path = "mujoco_rl_sim/dispatch_data/coordinator.db"
+# api_token = "change-me"

@@ -1,0 +1,60 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 1rem 2rem;
+  background: #0f1419;
+  color: #e7ecf3;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+th, td {
+  border: 1px solid #2a3544;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+th {
+  background: #1a2332;
+}
+
+tr:nth-child(even) {
+  background: #151c26;
+}
+
+.status-queued { color: #8ab4f8; }
+.status-running, .status-leased { color: #fbbf24; }
+.status-succeeded { color: #4ade80; }
+.status-failed { color: #f87171; }
+.status-cancelled { color: #9ca3af; }
+
+button {
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+}
+
+button.danger {
+  background: #b91c1c;
+}
+
+input {
+  background: #1a2332;
+  border: 1px solid #2a3544;
+  color: #e7ecf3;
+  padding: 0.35rem;
+}

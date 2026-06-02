@@ -64,8 +64,20 @@ class CoordinatorClient:
   def start_job(self, run_id: str, *, worker_id: str) -> None:
     self._request("POST", f"/api/jobs/{run_id}/start", {"worker_id": worker_id})
 
-  def job_heartbeat(self, run_id: str, *, worker_id: str) -> None:
-    self._request("POST", f"/api/jobs/{run_id}/heartbeat", {"worker_id": worker_id})
+  def job_heartbeat(
+    self,
+    run_id: str,
+    *,
+    worker_id: str,
+    current_update: int | None = None,
+    total_updates: int | None = None,
+  ) -> None:
+    body: dict[str, Any] = {"worker_id": worker_id}
+    if current_update is not None:
+      body["current_update"] = current_update
+    if total_updates is not None:
+      body["total_updates"] = total_updates
+    self._request("POST", f"/api/jobs/{run_id}/heartbeat", body)
 
   def complete_job(
     self,

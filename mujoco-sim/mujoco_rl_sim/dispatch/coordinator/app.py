@@ -142,7 +142,24 @@ def create_app(settings: CoordinatorSettings) -> Flask:
   def job_hb(run_id: str) -> Any:
     body = request.get_json(force=True, silent=True) or {}
     worker_id = str(body.get("worker_id", "")).strip()
-    if not repo.refresh_job_lease(run_id, worker_id=worker_id):
+    current_update = body.get("current_update")
+    total_updates = body.get("total_updates")
+    if current_update is not None:
+      try:
+        current_update = int(current_update)
+      except (TypeError, ValueError):
+        return jsonify({"error": "invalid current_update"}), 400
+    if total_updates is not None:
+      try:
+        total_updates = int(total_updates)
+      except (TypeError, ValueError):
+        return jsonify({"error": "invalid total_updates"}), 400
+    if not repo.refresh_job_lease(
+      run_id,
+      worker_id=worker_id,
+      current_update=current_update,
+      total_updates=total_updates,
+    ):
       return jsonify({"error": "cannot refresh lease"}), 409
     return jsonify({"ok": True})
 

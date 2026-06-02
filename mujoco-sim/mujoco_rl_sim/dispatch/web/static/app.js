@@ -1,4 +1,7 @@
 const TOKEN_KEY = "mujoco_dispatch_token";
+const POLL_IDLE_MS = 15000;
+const POLL_ACTIVE_MS = 5000;
+let pollTimer = null;
 
 function token() {
   const el = document.getElementById("token");
@@ -111,6 +114,43 @@ function renderWorkers(workers) {
   }
 }
 
+function jobTotalUpdates(job) {
+  if (job.total_updates != null && job.total_updates > 0) {
+    return job.total_updates;
+  }
+  const overrides = job.overrides || {};
+  if (overrides.num_updates != null && overrides.num_updates > 0) {
+    return Number(overrides.num_updates);
+  }
+  return null;
+}
+
+function renderProgress(job) {
+  const total = jobTotalUpdates(job);
+  const current = job.current_update;
+  const active = job.status === "running" || job.status === "leased";
+
+  if (total == null || total < 1) {
+    return active ? `<span class="progress-label">—</span>` : "-";
+  }
+
+  let cur = current != null ? Math.max(0, Math.min(current, total)) : 0;
+  if (job.status === "succeeded") {
+    cur = total;
+  }
+
+  const pct = Math.round((cur / total) * 1000) / 10;
+  const width = Math.max(0, Math.min(100, pct));
+  return `
+    <div class="progress-cell">
+      <span class="progress-label">${cur}/${total}</span>
+      <div class="progress-bar" role="progressbar" aria-valuenow="${cur}" aria-valuemin="0" aria-valuemax="${total}">
+        <span style="width: ${width}%"></span>
+      </div>
+    </div>
+  `;
+}
+
 function renderJobs(jobs) {
   const tbody = document.querySelector("#jobs tbody");
   tbody.innerHTML = "";
@@ -124,6 +164,7 @@ function renderJobs(jobs) {
       <td>${j.sweep_id}</td>
       <td>${j.run_id}</td>
       <td class="${statusClass(j.status)}">${j.status}</td>
+      <td>${renderProgress(j)}</td>
       <td>${j.worker_id ?? "-"}</td>
       <td>${metric}</td>
       <td>${j.error_message ? j.error_message.slice(0, 80) : ""}</td>
@@ -149,10 +190,22 @@ async function refresh() {
     showError("");
     renderSweeps(data.sweeps || []);
     renderWorkers(data.workers || []);
-    renderJobs(data.recent_jobs || []);
+    const jobs = data.recent_jobs || [];
+    renderJobs(jobs);
+    scheduleRefresh(jobs);
   } catch (err) {
     showError(String(err));
+    scheduleRefresh([]);
   }
+}
+
+function scheduleRefresh(jobs) {
+  if (pollTimer != null) {
+    clearTimeout(pollTimer);
+  }
+  const hasActive = jobs.some((j) => j.status === "running" || j.status === "leased");
+  const delay = hasActive ? POLL_ACTIVE_MS : POLL_IDLE_MS;
+  pollTimer = setTimeout(refresh, delay);
 }
 
 document.getElementById("refresh").addEventListener("click", refresh);
@@ -160,4 +213,3 @@ const saved = localStorage.getItem(TOKEN_KEY);
 if (saved) document.getElementById("token").value = saved;
 
 refresh();
-setInterval(refresh, 15000);

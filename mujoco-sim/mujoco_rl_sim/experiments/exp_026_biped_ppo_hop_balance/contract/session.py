@@ -386,6 +386,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
           episodes_finished=episode_index,
           step=total_env_steps,
           episode_rolling=rolling,
+          total_updates=end_update,
         )
 
   finally:

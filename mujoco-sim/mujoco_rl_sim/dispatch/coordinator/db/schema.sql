@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   lease_expires_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   started_at TEXT,
-  finished_at TEXT
+  finished_at TEXT,
+  current_update INTEGER,
+  total_updates INTEGER,
+  progress_updated_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_sweep_status ON jobs(sweep_id, status);

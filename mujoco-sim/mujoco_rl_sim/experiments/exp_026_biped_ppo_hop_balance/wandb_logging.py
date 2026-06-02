@@ -373,6 +373,7 @@ def log_train_update(
   episodes_finished: int,
   step: int,
   episode_rolling: dict[str, float] | None = None,
+  total_updates: int | None = None,
 ) -> None:
   metrics: dict[str, float] = {
     "train/mean_target": stats["mean_target"],
@@ -392,6 +393,14 @@ def log_train_update(
       v = float(mean_ret)
       if _best_train_ep_return_mean is None or v > _best_train_ep_return_mean:
         _best_train_ep_return_mean = v
+
+  if total_updates is not None and os.environ.get("DISPATCH_RUN_ID", "").strip():
+    try:
+      from mujoco_rl_sim.dispatch.common.progress import write_dispatch_progress
+
+      write_dispatch_progress(current_update=update, total_updates=total_updates)
+    except ImportError:
+      pass
 
   if not _active:
     return

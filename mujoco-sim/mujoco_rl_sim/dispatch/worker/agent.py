@@ -19,6 +19,7 @@ class WorkerAgent:
     self._client = CoordinatorClient(settings.coordinator_url, api_token=settings.api_token)
     self._stop = threading.Event()
     self._active: dict[str, Future[tuple[int, str, float | None, str | None]]] = {}
+    self._job_progress: dict[str, dict[str, int]] = {}
     self._lock = threading.Lock()
 
   def run_forever(self) -> None:
@@ -72,10 +73,16 @@ class WorkerAgent:
       return
 
     print(f"[dispatch-worker] running {run_id} ({job['exp_id']})")
+
+    def _on_progress(prog: dict[str, int]) -> None:
+      with self._lock:
+        self._job_progress[run_id] = prog
+
     fut = pool.submit(
       run_train_job,
       job,
       mujoco_rl_sim_root=self._settings.mujoco_rl_sim_root,
+      on_progress=_on_progress,
     )
     with self._lock:
       self._active[run_id] = fut
@@ -84,8 +91,15 @@ class WorkerAgent:
     with self._lock:
       run_ids = list(self._active.keys())
     for run_id in run_ids:
+      with self._lock:
+        prog = self._job_progress.get(run_id)
       try:
-        self._client.job_heartbeat(run_id, worker_id=self._settings.worker_id)
+        self._client.job_heartbeat(
+          run_id,
+          worker_id=self._settings.worker_id,
+          current_update=prog.get("current_update") if prog else None,
+          total_updates=prog.get("total_updates") if prog else None,
+        )
       except RuntimeError:
         pass
 
@@ -128,3 +142,4 @@ class WorkerAgent:
 
       with self._lock:
         self._active.pop(run_id, None)
+        self._job_progress.pop(run_id, None)

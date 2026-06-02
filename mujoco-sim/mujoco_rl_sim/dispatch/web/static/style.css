@@ -60,3 +60,32 @@ input {
   color: #e7ecf3;
   padding: 0.35rem;
 }
+
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 10rem;
+}
+
+.progress-label {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 5.5rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 0.55rem;
+  background: #2a3544;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}

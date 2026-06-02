@@ -6,11 +6,20 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from mujoco_rl_sim.dispatch.common.primary_metric import metric_from_summary_file
+from mujoco_rl_sim.dispatch.common.progress import (
+  dispatch_progress_path_for_job,
+  read_dispatch_progress,
+)
 from mujoco_rl_sim.dispatch.paths import experiment_dir
+
+_PROGRESS_POLL_SEC = 2.0
 
 
 def _git_commit(cwd: Path) -> str | None:
@@ -46,12 +55,13 @@ def build_train_command(job: dict[str, Any], *, exp_path: Path) -> list[str]:
   return cmd
 
 
-def build_job_env(job: dict[str, Any]) -> dict[str, str]:
+def build_job_env(job: dict[str, Any], *, progress_path: Path) -> dict[str, str]:
   env = os.environ.copy()
   env["DISPATCH_RUN_ID"] = job["run_id"]
   env["DISPATCH_SWEEP_ID"] = job["sweep_id"]
   env["DISPATCH_CONFIG_HASH"] = job["config_hash"]
   env["DISPATCH_WANDB_GROUP"] = job["config_hash"]
+  env["DISPATCH_PROGRESS_FILE"] = str(progress_path)
   tags = f"sweep:{job['sweep_id']},worker:dispatch"
   env["DISPATCH_WANDB_EXTRA_TAGS"] = tags
   seed = job.get("overrides", {}).get("seed")
@@ -60,27 +70,57 @@ def build_job_env(job: dict[str, Any]) -> dict[str, str]:
   return env
 
 
+def _read_log_tail(path: Path, *, max_chars: int = 2000) -> str:
+  try:
+    text = path.read_text(encoding="utf-8", errors="replace")
+  except OSError:
+    return ""
+  return text[-max_chars:]
+
+
 def run_train_job(
   job: dict[str, Any],
   *,
   mujoco_rl_sim_root: Path,
+  on_progress: Callable[[dict[str, int]], None] | None = None,
 ) -> tuple[int, str, float | None, str | None]:
   """終了コード, ログ要約, primary_metric, artifact_path を返す。"""
   exp_id = job["exp_id"]
   exp_path = experiment_dir(exp_id)
   cmd = build_train_command(job, exp_path=exp_path)
-  env = build_job_env(job)
+  progress_path = dispatch_progress_path_for_job(job, mujoco_rl_sim_root=mujoco_rl_sim_root)
+  progress_path.parent.mkdir(parents=True, exist_ok=True)
+  env = build_job_env(job, progress_path=progress_path)
   repo_root = mujoco_rl_sim_root.parent
+  run_id = str(job["run_id"])
 
-  proc = subprocess.run(
-    cmd,
-    cwd=exp_path,
-    env=env,
-    capture_output=True,
-    text=True,
-    timeout=None,
-  )
-  log_tail = (proc.stderr or proc.stdout or "")[-2000:]
+  with tempfile.TemporaryDirectory(prefix="dispatch-train-") as tmpdir:
+    log_path = Path(tmpdir) / "train.log"
+    with log_path.open("w", encoding="utf-8") as log_file:
+      proc = subprocess.Popen(
+        cmd,
+        cwd=exp_path,
+        env=env,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        text=True,
+      )
+      last_progress: dict[str, int] | None = None
+      while proc.poll() is None:
+        prog = read_dispatch_progress(progress_path, run_id=run_id)
+        if prog is None:
+          fallback = exp_path / "dispatch_progress.json"
+          prog = read_dispatch_progress(fallback, run_id=run_id)
+        if prog is not None and prog != last_progress:
+          last_progress = prog
+          if on_progress is not None:
+            on_progress(prog)
+        time.sleep(_PROGRESS_POLL_SEC)
+
+      code = int(proc.wait())
+
+    log_tail = _read_log_tail(log_path)
+
   primary: float | None = None
   artifact_path: str | None = None
 
@@ -88,14 +128,15 @@ def run_train_job(
   if summary_path.is_file():
     try:
       data = json.loads(summary_path.read_text(encoding="utf-8"))
-      primary = metric_from_summary_file(data)
-      artifact_path = data.get("artifact_path")
+      if str(data.get("dispatch_run_id", "")).strip() in ("", run_id):
+        primary = metric_from_summary_file(data)
+        artifact_path = data.get("artifact_path")
     except (json.JSONDecodeError, OSError):
       pass
 
   if primary is None:
     runs_dir = mujoco_rl_sim_root / "runs" / exp_id
-    candidate = runs_dir / job["run_id"] / "dispatch_summary.json"
+    candidate = runs_dir / run_id / "dispatch_summary.json"
     if candidate.is_file():
       try:
         data = json.loads(candidate.read_text(encoding="utf-8"))
@@ -104,8 +145,8 @@ def run_train_job(
       except (json.JSONDecodeError, OSError):
         pass
 
-  git_commit = _git_commit(repo_root)
-  if proc.returncode != 0:
-    return proc.returncode, log_tail, None, artifact_path
+  _git_commit(repo_root)
+  if code != 0:
+    return code, log_tail, None, artifact_path
 
-  return proc.returncode, log_tail, primary, artifact_path or str(exp_path)
+  return code, log_tail, primary, artifact_path or str(exp_path)

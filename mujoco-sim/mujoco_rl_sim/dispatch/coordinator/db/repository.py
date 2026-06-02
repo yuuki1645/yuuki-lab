@@ -9,6 +9,7 @@ from typing import Any
 
 from mujoco_rl_sim.dispatch.common.models import JobStatus
 from mujoco_rl_sim.dispatch.common.primary_metric import PRIMARY_METRIC_NAME
+from mujoco_rl_sim.dispatch.common.progress import total_updates_from_job
 from mujoco_rl_sim.dispatch.common.sweep_spec import PlannedJob, SweepSpec
 
 _HEARTBEAT_SEC = 15
@@ -235,30 +236,82 @@ class DispatchRepository:
     return self.get_job(run_id)
 
   def mark_running(self, run_id: str, *, worker_id: str) -> bool:
+    job = self.get_job(run_id)
+    total = total_updates_from_job(job) if job else None
     expires = _utc_now() + timedelta(seconds=_LEASE_TIMEOUT_SEC)
     cur = self._conn.cursor()
     cur.execute(
       """
       UPDATE jobs
-      SET status = ?, started_at = COALESCE(started_at, ?), lease_expires_at = ?
+      SET status = ?, started_at = COALESCE(started_at, ?), lease_expires_at = ?,
+          total_updates = COALESCE(?, total_updates),
+          current_update = COALESCE(current_update, 0)
       WHERE run_id = ? AND worker_id = ? AND status = ?
       """,
-      (JobStatus.RUNNING.value, _iso(_utc_now()), _iso(expires), run_id, worker_id, JobStatus.LEASED.value),
+      (
+        JobStatus.RUNNING.value,
+        _iso(_utc_now()),
+        _iso(expires),
+        total,
+        run_id,
+        worker_id,
+        JobStatus.LEASED.value,
+      ),
     )
     ok = cur.rowcount == 1
     self._conn.commit()
     return ok
 
-  def refresh_job_lease(self, run_id: str, *, worker_id: str) -> bool:
+  def refresh_job_lease(
+    self,
+    run_id: str,
+    *,
+    worker_id: str,
+    current_update: int | None = None,
+    total_updates: int | None = None,
+  ) -> bool:
     expires = _utc_now() + timedelta(seconds=_LEASE_TIMEOUT_SEC)
+    now = _iso(_utc_now())
     cur = self._conn.cursor()
-    cur.execute(
-      """
-      UPDATE jobs SET lease_expires_at = ?
-      WHERE run_id = ? AND worker_id = ? AND status IN (?, ?)
-      """,
-      (_iso(expires), run_id, worker_id, JobStatus.LEASED.value, JobStatus.RUNNING.value),
-    )
+    if current_update is not None or total_updates is not None:
+      cur.execute(
+        """
+        UPDATE jobs
+        SET lease_expires_at = ?,
+            current_update = CASE
+              WHEN ? IS NULL THEN current_update
+              ELSE MAX(COALESCE(current_update, 0), ?)
+            END,
+            total_updates = COALESCE(?, total_updates),
+            progress_updated_at = ?
+        WHERE run_id = ? AND worker_id = ? AND status IN (?, ?)
+        """,
+        (
+          _iso(expires),
+          current_update,
+          current_update,
+          total_updates,
+          now,
+          run_id,
+          worker_id,
+          JobStatus.LEASED.value,
+          JobStatus.RUNNING.value,
+        ),
+      )
+    else:
+      cur.execute(
+        """
+        UPDATE jobs SET lease_expires_at = ?
+        WHERE run_id = ? AND worker_id = ? AND status IN (?, ?)
+        """,
+        (
+          _iso(expires),
+          run_id,
+          worker_id,
+          JobStatus.LEASED.value,
+          JobStatus.RUNNING.value,
+        ),
+      )
     ok = cur.rowcount == 1
     self._conn.commit()
     return ok
@@ -278,7 +331,9 @@ class DispatchRepository:
       """
       UPDATE jobs
       SET status = ?, finished_at = ?, lease_expires_at = NULL,
-          primary_metric = ?, primary_metric_name = ?, artifact_path = ?, git_commit = ?
+          primary_metric = ?, primary_metric_name = ?, artifact_path = ?, git_commit = ?,
+          current_update = COALESCE(total_updates, current_update),
+          progress_updated_at = ?
       WHERE run_id = ? AND worker_id = ? AND status IN (?, ?)
       """,
       (
@@ -288,6 +343,7 @@ class DispatchRepository:
         PRIMARY_METRIC_NAME if primary_metric is not None else None,
         artifact_path,
         git_commit,
+        now,
         run_id,
         worker_id,
         JobStatus.LEASED.value,

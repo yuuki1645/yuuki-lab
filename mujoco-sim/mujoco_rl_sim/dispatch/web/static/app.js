@@ -23,6 +23,30 @@ function statusClass(s) {
   return `status-${s}`;
 }
 
+/** API/SQLite の UTC 時刻を JST 表示に変換する。 */
+function formatJst(value) {
+  if (value == null || value === "") return "-";
+  let s = String(value).trim();
+  if (!s.includes("T") && s.includes(" ")) {
+    s = s.replace(" ", "T") + "Z";
+  } else if (!/Z|[+-]\d{2}:\d{2}$/i.test(s)) {
+    s += "Z";
+  }
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return String(value);
+  const formatted = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d);
+  return `${formatted} JST`;
+}
+
 function renderSweeps(sweeps) {
   const tbody = document.querySelector("#sweeps tbody");
   tbody.innerHTML = "";
@@ -77,7 +101,7 @@ function renderWorkers(workers) {
       <td>${w.hostname}</td>
       <td>${w.max_concurrent_jobs}</td>
       <td>${w.active_jobs ?? 0}</td>
-      <td>${w.last_heartbeat_at ?? "-"}</td>
+      <td>${formatJst(w.last_heartbeat_at)}</td>
     `;
     tbody.appendChild(tr);
   }

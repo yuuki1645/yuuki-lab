@@ -65,7 +65,7 @@ def test_job_heartbeat_updates_progress(tmp_path: Path) -> None:
       fixed_overrides={"num_updates": 100},
     ),
     spec_path=None,
-    jobs=[
+      jobs=[
       PlannedJob(
         run_id="run1",
         sweep_id="s1",
@@ -75,6 +75,9 @@ def test_job_heartbeat_updates_progress(tmp_path: Path) -> None:
         run_index=0,
         overrides={"num_updates": 100, "seed": 1},
         queue_position=0,
+        config_id=1,
+        seed_id=1,
+        config_overrides={"num_updates": 100},
       )
     ],
   )

@@ -151,24 +151,112 @@ function renderProgress(job) {
   `;
 }
 
+function sortJobsForDisplay(jobs) {
+  return [...jobs].sort((a, b) => {
+    const sweep = String(a.sweep_id).localeCompare(String(b.sweep_id));
+    if (sweep !== 0) return sweep;
+    const cfgA = a.config_id ?? 999999;
+    const cfgB = b.config_id ?? 999999;
+    if (cfgA !== cfgB) return cfgA - cfgB;
+    const seedA = a.seed_id ?? 999999;
+    const seedB = b.seed_id ?? 999999;
+    if (seedA !== seedB) return seedA - seedB;
+    return String(a.run_id).localeCompare(String(b.run_id));
+  });
+}
+
+function formatConfigValue(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? String(value) : String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function formatConfigOverrides(overrides) {
+  if (!overrides || typeof overrides !== "object") {
+    return "{}";
+  }
+  const lines = Object.keys(overrides)
+    .sort()
+    .map((key) => `${key}: ${formatConfigValue(overrides[key])}`);
+  return lines.join("\n");
+}
+
+function showConfigModal(job) {
+  const modal = document.getElementById("config-modal");
+  const title = document.getElementById("config-modal-title");
+  const meta = document.getElementById("config-modal-meta");
+  const body = document.getElementById("config-modal-body");
+  const configId = job.config_id ?? "-";
+  title.textContent = `Config ${configId}`;
+  meta.textContent = [
+    `sweep: ${job.sweep_id}`,
+    job.config_hash ? `hash: ${job.config_hash}` : null,
+    job.seed != null ? `training seed: ${job.seed}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  body.textContent = formatConfigOverrides(job.config_overrides || {});
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function hideConfigModal() {
+  const modal = document.getElementById("config-modal");
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
 function renderJobs(jobs) {
   const tbody = document.querySelector("#jobs tbody");
   tbody.innerHTML = "";
-  for (const j of jobs) {
+  for (const j of sortJobsForDisplay(jobs)) {
     const tr = document.createElement("tr");
     const metric =
       j.primary_metric != null
         ? `${j.primary_metric_name || ""}: ${j.primary_metric.toFixed(4)}`
         : "-";
-    tr.innerHTML = `
-      <td>${j.sweep_id}</td>
-      <td>${j.run_id}</td>
-      <td class="${statusClass(j.status)}">${j.status}</td>
-      <td>${renderProgress(j)}</td>
-      <td>${j.worker_id ?? "-"}</td>
-      <td>${metric}</td>
-      <td>${j.error_message ? j.error_message.slice(0, 80) : ""}</td>
-    `;
+
+    const cells = [
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
+    ];
+
+    cells[0].textContent = j.sweep_id;
+
+    if (j.config_id != null) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "config-link";
+      btn.textContent = String(j.config_id);
+      btn.title = "クリックでコンフィグを表示";
+      btn.addEventListener("click", () => showConfigModal(j));
+      cells[1].appendChild(btn);
+    } else {
+      cells[1].textContent = "-";
+    }
+
+    cells[2].textContent = j.seed_id != null ? String(j.seed_id) : "-";
+    cells[3].textContent = j.seed != null ? String(j.seed) : "-";
+    cells[4].textContent = j.run_id;
+    cells[5].className = statusClass(j.status);
+    cells[5].textContent = j.status;
+    cells[6].innerHTML = renderProgress(j);
+    cells[7].textContent = j.worker_id ?? "-";
+    cells[8].textContent = metric;
+    cells[9].textContent = j.error_message ? j.error_message.slice(0, 80) : "";
+
+    for (const cell of cells) {
+      tr.appendChild(cell);
+    }
     tbody.appendChild(tr);
   }
 }
@@ -209,6 +297,13 @@ function scheduleRefresh(jobs) {
 }
 
 document.getElementById("refresh").addEventListener("click", refresh);
+document.getElementById("config-modal-close").addEventListener("click", hideConfigModal);
+document.querySelectorAll("[data-close-config-modal]").forEach((el) => {
+  el.addEventListener("click", hideConfigModal);
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") hideConfigModal();
+});
 const saved = localStorage.getItem(TOKEN_KEY);
 if (saved) document.getElementById("token").value = saved;
 

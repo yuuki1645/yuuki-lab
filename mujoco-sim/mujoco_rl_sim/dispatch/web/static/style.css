@@ -89,3 +89,83 @@ input {
   border-radius: 3px;
   transition: width 0.3s ease;
 }
+
+button.config-link {
+  background: transparent;
+  color: #8ab4f8;
+  padding: 0;
+  text-decoration: underline;
+  font: inherit;
+}
+
+button.config-link:hover {
+  color: #bfdbfe;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  background: #1a2332;
+  border: 1px solid #2a3544;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-close {
+  background: transparent;
+  color: #e7ecf3;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0.1rem 0.45rem;
+}
+
+.modal-meta {
+  margin: 0 0 0.75rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.modal-body {
+  margin: 0;
+  padding: 0.75rem;
+  background: #0f1419;
+  border: 1px solid #2a3544;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}

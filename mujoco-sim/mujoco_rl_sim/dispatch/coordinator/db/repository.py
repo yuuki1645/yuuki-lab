@@ -7,6 +7,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from mujoco_rl_sim.dispatch.common.job_display import enrich_jobs_display_fields
 from mujoco_rl_sim.dispatch.common.models import JobStatus
 from mujoco_rl_sim.dispatch.common.primary_metric import PRIMARY_METRIC_NAME
 from mujoco_rl_sim.dispatch.common.progress import total_updates_from_job
@@ -94,8 +95,9 @@ class DispatchRepository:
           """
           INSERT INTO jobs (
             run_id, sweep_id, exp_id, config_hash, seed, run_index,
-            status, queue_position, overrides_json
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            status, queue_position, overrides_json,
+            config_id, seed_id, config_overrides_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           """,
           (
             job.run_id,
@@ -107,6 +109,9 @@ class DispatchRepository:
             JobStatus.QUEUED.value,
             job.queue_position,
             json.dumps(job.overrides, ensure_ascii=False),
+            job.config_id,
+            job.seed_id,
+            json.dumps(job.config_overrides, ensure_ascii=False),
           ),
         )
         inserted += 1
@@ -390,7 +395,9 @@ class DispatchRepository:
     row = cur.fetchone()
     if row is None:
       return None
-    return self._job_row_to_dict(row)
+    job = self._job_row_to_dict(row)
+    enrich_jobs_display_fields([job])
+    return job
 
   def list_sweeps(self) -> list[dict[str, Any]]:
     cur = self._conn.cursor()
@@ -430,7 +437,9 @@ class DispatchRepository:
     params.append(limit)
     cur = self._conn.cursor()
     cur.execute(q, params)
-    return [self._job_row_to_dict(r) for r in cur.fetchall()]
+    jobs = [self._job_row_to_dict(r) for r in cur.fetchall()]
+    enrich_jobs_display_fields(jobs)
+    return jobs
 
   def list_workers(self) -> list[dict[str, Any]]:
     cur = self._conn.cursor()
@@ -453,4 +462,7 @@ class DispatchRepository:
   def _job_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     d = dict(row)
     d["overrides"] = json.loads(d.pop("overrides_json"))
+    raw_cfg = d.get("config_overrides_json")
+    if raw_cfg:
+      d["config_overrides"] = json.loads(raw_cfg)
     return d

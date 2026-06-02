@@ -35,6 +35,9 @@ class PlannedJob:
   run_index: int
   overrides: dict[str, Any]
   queue_position: int
+  config_id: int
+  seed_id: int
+  config_overrides: dict[str, Any]
 
 
 def load_sweep_spec(path: Path) -> SweepSpec:
@@ -94,10 +97,10 @@ def expand_sweep_jobs(spec: SweepSpec) -> list[PlannedJob]:
   combos = _expand_param_combos(spec.param_grid)
   planned: list[PlannedJob] = []
   run_index = 0
-  for combo in combos:
+  for config_id, combo in enumerate(combos, start=1):
     merged_base = {**spec.fixed_overrides, **combo}
     cfg_hash = compute_config_hash(combo if combo else spec.fixed_overrides)
-    for seed in spec.seeds:
+    for seed_id, seed in enumerate(spec.seeds, start=1):
       overrides = {**merged_base, "seed": seed}
       run_id = build_run_id(sweep_id=spec.sweep_id, seed=seed, run_index=run_index)
       planned.append(
@@ -110,6 +113,9 @@ def expand_sweep_jobs(spec: SweepSpec) -> list[PlannedJob]:
           run_index=run_index,
           overrides=overrides,
           queue_position=0,
+          config_id=config_id,
+          seed_id=seed_id,
+          config_overrides=dict(merged_base),
         )
       )
       run_index += 1
@@ -126,6 +132,9 @@ def expand_sweep_jobs(spec: SweepSpec) -> list[PlannedJob]:
       run_index=j.run_index,
       overrides=j.overrides,
       queue_position=i,
+      config_id=j.config_id,
+      seed_id=j.seed_id,
+      config_overrides=j.config_overrides,
     )
     for i, j in enumerate(planned)
   ]

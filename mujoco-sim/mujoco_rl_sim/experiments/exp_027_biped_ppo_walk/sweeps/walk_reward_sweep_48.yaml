@@ -20,5 +20,5 @@ param_grid:
   forward_reward_scale: [40.0, 55.0]
 
 fixed_overrides:
-  num_updates: 6000
+  num_updates: 5000
   wandb: true

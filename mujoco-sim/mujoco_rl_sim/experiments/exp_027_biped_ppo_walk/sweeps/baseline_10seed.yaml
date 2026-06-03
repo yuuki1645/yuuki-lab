@@ -1,4 +1,13 @@
-# exp_027 ベースライン（10 seed）
+# 本線は walk_reward_sweep_48.yaml（48 run）。こちらは既定報酬のスモーク用（10 run）。
+sweep_id: exp027_baseline_10seed
 exp_id: exp_027_biped_ppo_walk
-num_updates: 6000
-seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+description: 既定報酬・LR=2.5e-4 で seed 10（本スイープ前の確認用）
+
+shuffle_seed: 42
+seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+param_grid: {}
+
+fixed_overrides:
+  num_updates: 6000
+  wandb: true

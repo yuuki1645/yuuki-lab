@@ -19,7 +19,19 @@ from env import EnvBipedPPO
 from experiment_contract import TELEMETRY_CONTRACT
 from package_meta import EXP_NAME
 import warmup
+import json
+import os
+
+from lib.dispatch_config import apply_dispatch_config_overrides
 from run_config import TrainRunConfig, parse_train_args
+
+
+def _dispatch_overrides_for_logging() -> dict[str, Any]:
+  raw = os.environ.get("DISPATCH_CONFIG_OVERRIDES_JSON", "").strip()
+  if not raw:
+    return {}
+  payload = json.loads(raw)
+  return payload if isinstance(payload, dict) else {}
 
 
 def _load_resume_state(resume_path: Path) -> dict[str, Any]:
@@ -77,6 +89,11 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
     }
     extra_tags = ("contract",)
 
+  logged = _dispatch_overrides_for_logging()
+  if logged:
+    extra_config = dict(extra_config)
+    extra_config["dispatch_config_overrides"] = logged
+
   wandb_logging.init(
     extra_config=extra_config,
     extra_tags=extra_tags,
@@ -87,6 +104,7 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
 
 def main() -> None:
   run = parse_train_args()
+  apply_dispatch_config_overrides()
   bindings = PpoTrainBindings(
     config=config,
     checkpoint=checkpoint,

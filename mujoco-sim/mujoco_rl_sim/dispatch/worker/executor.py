@@ -37,6 +37,13 @@ def _git_commit(cwd: Path) -> str | None:
     return None
 
 
+_TRAIN_CLI_OVERRIDE_KEYS = frozenset({"seed", "lr", "num_updates", "wandb"})
+
+
+def _config_overrides_for_env(overrides: dict[str, Any]) -> dict[str, Any]:
+  return {k: v for k, v in overrides.items() if k not in _TRAIN_CLI_OVERRIDE_KEYS}
+
+
 def build_train_command(job: dict[str, Any], *, exp_path: Path) -> list[str]:
   overrides: dict[str, Any] = job.get("overrides") or {}
   cmd = [sys.executable, "train.py", "--no-viewer", "--no-telemetry"]
@@ -67,6 +74,11 @@ def build_job_env(job: dict[str, Any], *, progress_path: Path) -> dict[str, str]
   seed = job.get("overrides", {}).get("seed")
   if seed is not None:
     env["DISPATCH_SEED"] = str(seed)
+  cfg_overrides = _config_overrides_for_env(job.get("overrides") or {})
+  if cfg_overrides:
+    env["DISPATCH_CONFIG_OVERRIDES_JSON"] = json.dumps(
+      cfg_overrides, ensure_ascii=False, sort_keys=True
+    )
   return env
 
 

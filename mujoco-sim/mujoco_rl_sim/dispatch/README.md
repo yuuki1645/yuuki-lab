@@ -64,5 +64,6 @@ python -m mujoco_rl_sim.dispatch.coordinator.cli --config coordinator.config.tom
 | `DISPATCH_CONFIG_HASH` | W&B group |
 | `DISPATCH_WANDB_GROUP` | W&B group |
 | `DISPATCH_WANDB_EXTRA_TAGS` | 追加 tag（カンマ区切り） |
+| `DISPATCH_CONFIG_OVERRIDES_JSON` | 実験 `config` 上書き（JSON。`seed`/`lr`/`num_updates`/`wandb` 以外の sweep キー） |
 
 学習終了時に `dispatch_summary.json` を exp フォルダへ書き、主指標を Coordinator へ報告します（exp_026 の `wandb_logging` 参照）。

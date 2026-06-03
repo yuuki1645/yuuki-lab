@@ -5,28 +5,48 @@ body {
   color: #e7ecf3;
 }
 
-header {
+.site-header {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #2a3544;
 }
 
-.brand {
-  margin-right: 0.5rem;
+.hero-brand {
+  text-align: center;
+  padding: 0.75rem 0 0.25rem;
 }
 
-.brand h1 {
+.hero-title {
   margin: 0;
-  font-size: 1.5rem;
-  letter-spacing: 0.04em;
-  color: #f59e0b;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #ea580c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.35));
 }
 
 .brand-tagline {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.2em;
   color: #8b9cb3;
+}
+
+.header-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
 }
 
 table {

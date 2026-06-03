@@ -46,7 +46,7 @@ def _config_overrides_for_env(overrides: dict[str, Any]) -> dict[str, Any]:
 
 def build_train_command(job: dict[str, Any], *, exp_path: Path) -> list[str]:
   overrides: dict[str, Any] = job.get("overrides") or {}
-  cmd = [sys.executable, "train.py", "--no-viewer", "--no-telemetry"]
+  cmd = [sys.executable, "train.py", "--no-viewer", "--no-telemetry", "--step-wall-sleep", "0"]
   run_name = job["run_id"]
   cmd.extend(["--wandb-run-name", run_name])
 

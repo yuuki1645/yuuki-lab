@@ -4,7 +4,7 @@
 
 | ファイル | 内容 |
 |---------|------|
-| [prometheus.md](prometheus.md) | **プロメテウス** — 自宅 LAN 分散強化学習（設計・Mermaid 図・動画向け解説） |
+| [prometheus.md](prometheus.md) | **プロメテウス** — 自宅 LAN 分散強化学習（設計・Mermaid 図） |
 | [robot_spec.md](robot_spec.md) | 実機ロボット（カゴ・サーボ・バッテリー等）の寸法・重量 |
 | [human_anthropometry.md](human_anthropometry.md) | 人間の身長・肢節長・質量・重心（典型値） |
 | [human_joint_torque.md](human_joint_torque.md) | 関節トルク（等尺性最大・歩行ピーク・ロボットとの比較） |

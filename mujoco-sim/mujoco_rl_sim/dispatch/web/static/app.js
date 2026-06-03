@@ -26,9 +26,9 @@ function statusClass(s) {
   return `status-${s}`;
 }
 
-/** API/SQLite の UTC 時刻を JST 表示に変換する。 */
-function formatJst(value) {
-  if (value == null || value === "") return "-";
+/** API/SQLite の UTC 時刻文字列を Date に変換する。 */
+function parseUtcDate(value) {
+  if (value == null || value === "") return null;
   let s = String(value).trim();
   if (!s.includes("T") && s.includes(" ")) {
     s = s.replace(" ", "T") + "Z";
@@ -36,7 +36,13 @@ function formatJst(value) {
     s += "Z";
   }
   const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return String(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** API/SQLite の UTC 時刻を JST 表示に変換する。 */
+function formatJst(value) {
+  const d = parseUtcDate(value);
+  if (d == null) return "-";
   const formatted = new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
@@ -48,6 +54,43 @@ function formatJst(value) {
     hour12: false,
   }).format(d);
   return `${formatted} JST`;
+}
+
+/** 開始から現在（または完了）までの経過秒 / update 数。 */
+function avgSecPerUpdate(job) {
+  const started = parseUtcDate(job.started_at);
+  if (started == null) return null;
+
+  let updates = job.current_update;
+  if (updates == null || updates < 1) return null;
+
+  if (job.status === "succeeded") {
+    const total = jobTotalUpdates(job);
+    if (total != null && total > 0) {
+      updates = total;
+    }
+  }
+
+  const end =
+    parseUtcDate(job.finished_at) ??
+    (job.status === "running" || job.status === "leased" ? new Date() : null);
+  if (end == null) return null;
+
+  const elapsedSec = (end.getTime() - started.getTime()) / 1000;
+  if (elapsedSec <= 0) return null;
+  return elapsedSec / updates;
+}
+
+function formatAvgUpdateDuration(sec) {
+  if (sec == null || !Number.isFinite(sec)) return "-";
+  if (sec < 1) return `${(sec * 1000).toFixed(0)} ms/update`;
+  if (sec < 60) return `${sec.toFixed(1)} s/update`;
+  const min = Math.floor(sec / 60);
+  const remSec = sec % 60;
+  if (min < 60) return `${min}分${remSec.toFixed(0)}秒/update`;
+  const hour = Math.floor(min / 60);
+  const remMin = min % 60;
+  return `${hour}時間${remMin}分/update`;
 }
 
 function renderSweeps(sweeps) {
@@ -228,6 +271,8 @@ function renderJobs(jobs) {
       document.createElement("td"),
       document.createElement("td"),
       document.createElement("td"),
+      document.createElement("td"),
+      document.createElement("td"),
     ];
 
     cells[0].textContent = j.sweep_id;
@@ -250,9 +295,11 @@ function renderJobs(jobs) {
     cells[5].className = statusClass(j.status);
     cells[5].textContent = j.status;
     cells[6].innerHTML = renderProgress(j);
-    cells[7].textContent = j.worker_id ?? "-";
-    cells[8].textContent = metric;
-    cells[9].textContent = j.error_message ? j.error_message.slice(0, 80) : "";
+    cells[7].textContent = formatJst(j.started_at);
+    cells[8].textContent = formatAvgUpdateDuration(avgSecPerUpdate(j));
+    cells[9].textContent = j.worker_id ?? "-";
+    cells[10].textContent = metric;
+    cells[11].textContent = j.error_message ? j.error_message.slice(0, 80) : "";
 
     for (const cell of cells) {
       tr.appendChild(cell);

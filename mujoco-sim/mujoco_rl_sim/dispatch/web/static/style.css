@@ -12,6 +12,23 @@ header {
   flex-wrap: wrap;
 }
 
+.brand {
+  margin-right: 0.5rem;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  color: #f59e0b;
+}
+
+.brand-tagline {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: #8b9cb3;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

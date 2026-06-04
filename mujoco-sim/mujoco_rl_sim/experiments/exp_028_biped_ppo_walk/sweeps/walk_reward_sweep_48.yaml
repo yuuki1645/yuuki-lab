@@ -1,0 +1,24 @@
+# 交互片脚歩行の主スイープ（48 run ≈ 50）
+# LR は config 既定 2.5e-4 固定。歩行 shaping の感度が高い 3 軸を探索。
+#
+# | パラメータ | 役割 |
+# | double_support_penalty_scale | すり足抑制の強さ |
+# | alternating_landing_bonus_scale | 左右交互着地の誘導 |
+# | forward_reward_scale | 前進信号と shaping のバランス |
+#
+# 3 × 2 × 2 = 12 設定 × seed 4 = 48 job
+sweep_id: exp028_walk_reward_sweep_48
+exp_id: exp_028_biped_ppo_walk
+description: 歩行報酬3軸×4seed=48（LR固定・交互片脚）
+
+shuffle_seed: 42
+seeds: [1, 2, 3, 4]
+
+param_grid:
+  double_support_penalty_scale: [4.0, 8.0, 14.0]
+  alternating_landing_bonus_scale: [0.25, 0.55]
+  forward_reward_scale: [40.0, 55.0]
+
+fixed_overrides:
+  num_updates: 5000
+  wandb: true

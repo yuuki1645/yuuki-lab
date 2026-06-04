@@ -10,6 +10,8 @@ from flask import Flask, jsonify, request, send_from_directory
 from mujoco_rl_sim.dispatch.common.auth import check_token
 from mujoco_rl_sim.dispatch.coordinator.db.connection import connect
 from mujoco_rl_sim.dispatch.coordinator.db.repository import DispatchRepository
+from mujoco_rl_sim.dispatch.coordinator.services.checkpoint_catalog import list_checkpoints
+from mujoco_rl_sim.dispatch.coordinator.services.visualize_runner import VisualizeRunner
 from mujoco_rl_sim.dispatch.coordinator.settings import CoordinatorSettings
 
 
@@ -18,6 +20,11 @@ def create_app(settings: CoordinatorSettings) -> Flask:
   app = Flask(__name__, static_folder=None)
   conn = connect(settings.db_path)
   repo = DispatchRepository(conn)
+  viz_runner = VisualizeRunner(
+    runs_root=settings.runs_root,
+    python_executable=settings.python_executable,
+    log_dir=settings.visualize_log_dir,
+  )
 
   def _auth(f: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(f)
@@ -35,6 +42,10 @@ def create_app(settings: CoordinatorSettings) -> Flask:
   @app.get("/")
   def index() -> Any:
     return send_from_directory(settings.web_root, "index.html")
+
+  @app.get("/checkpoints")
+  def checkpoints_page() -> Any:
+    return send_from_directory(settings.web_root, "checkpoints.html")
 
   @app.get("/static/<path:filename>")
   def static_files(filename: str) -> Any:
@@ -201,5 +212,60 @@ def create_app(settings: CoordinatorSettings) -> Flask:
         "recent_jobs": repo.list_jobs(limit=100),
       }
     )
+
+  @app.get("/api/checkpoints")
+  @_auth
+  def checkpoints_list() -> Any:
+    exp_id = request.args.get("exp_id") or None
+    run_dir = request.args.get("run_dir") or None
+    archive_raw = request.args.get("archive")
+    archive: bool | None = None
+    if archive_raw is not None and archive_raw != "":
+      archive = archive_raw.lower() in ("1", "true", "yes")
+    visualizable_only = request.args.get("visualizable_only", "").lower() in (
+      "1",
+      "true",
+      "yes",
+    )
+    try:
+      limit = int(request.args.get("limit", "500"))
+      offset = int(request.args.get("offset", "0"))
+    except ValueError:
+      return jsonify({"error": "invalid limit or offset"}), 400
+    return jsonify(
+      list_checkpoints(
+        runs_root=settings.runs_root,
+        exp_id=exp_id,
+        run_dir=run_dir,
+        archive=archive,
+        visualizable_only=visualizable_only,
+        limit=limit,
+        offset=offset,
+      )
+    )
+
+  @app.post("/api/visualize")
+  @_auth
+  def visualize_start() -> Any:
+    if not settings.visualize_enabled:
+      return jsonify({"error": "visualize disabled"}), 503
+    body = request.get_json(force=True, silent=True) or {}
+    checkpoint_rel = str(body.get("checkpoint_rel", "")).strip()
+    if not checkpoint_rel:
+      return jsonify({"error": "checkpoint_rel required"}), 400
+    try:
+      result = viz_runner.start(checkpoint_rel=checkpoint_rel)
+    except ValueError as exc:
+      return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError as exc:
+      return jsonify({"error": str(exc)}), 404
+    except OSError as exc:
+      return jsonify({"error": str(exc)}), 500
+    return jsonify(result), 201
+
+  @app.get("/api/visualize/sessions")
+  @_auth
+  def visualize_sessions() -> Any:
+    return jsonify({"sessions": viz_runner.list_sessions()})
 
   return app

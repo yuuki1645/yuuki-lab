@@ -197,10 +197,17 @@ flowchart LR
 
 | 層 | 技術 |
 |----|------|
-| 司令室 | Python / Flask、SQLite、静的 Web UI（`/api/*`） |
+| 司令室 | Python / Flask、SQLite、静的 Web UI（`/api/*`、チェックポイント可視化 `/checkpoints`） |
 | 部隊 | Python、`ThreadPoolExecutor` で `train.py` を subprocess 実行 |
 | 認証 | 共有 API トークン（`X-Dispatch-Token`） |
 | ネットワーク | 自宅 LAN（クラウド VM への自動スケールはしない） |
+
+### チェックポイント可視化（Web UI）
+
+- ページ: Coordinator の `/checkpoints`（トップのナビから遷移）
+- 一覧: `mujoco_rl_sim/runs/` および `runs/archive/` 配下の各 `.pt`（`final.pt` / `update_*.pt` など 1 ファイル = 1 行）
+- 起動: 行の「可視化」→ 対応 `experiments/<exp_id>/visualize.py`（archive は `experiments/archive/<exp_id>/`）を `--stochastic` 付きで subprocess 実行
+- ビューアは **Coordinator を起動した PC** に開く。比較用に複数同時起動可（終了は各ビューアの閉じるボタン）
 
 ---
 

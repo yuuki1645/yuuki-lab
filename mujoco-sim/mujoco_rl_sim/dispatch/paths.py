@@ -24,8 +24,17 @@ def default_db_path() -> Path:
   return dispatch_data_dir() / "coordinator.db"
 
 
-def experiment_dir(exp_id: str) -> Path:
-  path = EXPERIMENTS_ROOT / exp_id
+def resolve_experiment_dir(exp_id: str, *, archive: bool = False) -> Path:
+  """実験ディレクトリを返す。archive 実験は ``experiments/archive/<exp_id>``。"""
+  if archive:
+    path = EXPERIMENTS_ROOT / "archive" / exp_id
+  else:
+    path = EXPERIMENTS_ROOT / exp_id
   if not path.is_dir():
-    raise FileNotFoundError(f"実験ディレクトリがありません: {path}")
+    label = "archive/" if archive else ""
+    raise FileNotFoundError(f"実験ディレクトリがありません: {label}{exp_id}")
   return path
+
+
+def experiment_dir(exp_id: str) -> Path:
+  return resolve_experiment_dir(exp_id, archive=False)

@@ -1,59 +1,9 @@
-const TOKEN_KEY = "mujoco_dispatch_token";
 const POLL_IDLE_MS = 15000;
 const POLL_ACTIVE_MS = 5000;
 let pollTimer = null;
 
-function token() {
-  const el = document.getElementById("token");
-  const v = el.value.trim();
-  if (v) localStorage.setItem(TOKEN_KEY, v);
-  return v || localStorage.getItem(TOKEN_KEY) || "";
-}
-
-async function api(path, options = {}) {
-  const headers = { ...(options.headers || {}) };
-  const t = token();
-  if (t) headers["X-Dispatch-Token"] = t;
-  const res = await fetch(path, { ...options, headers });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`${res.status} ${path}: ${text}`);
-  }
-  return res.json();
-}
-
 function statusClass(s) {
   return `status-${s}`;
-}
-
-/** API/SQLite の UTC 時刻文字列を Date に変換する。 */
-function parseUtcDate(value) {
-  if (value == null || value === "") return null;
-  let s = String(value).trim();
-  if (!s.includes("T") && s.includes(" ")) {
-    s = s.replace(" ", "T") + "Z";
-  } else if (!/Z|[+-]\d{2}:\d{2}$/i.test(s)) {
-    s += "Z";
-  }
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-/** API/SQLite の UTC 時刻を JST 表示に変換する。 */
-function formatJst(value) {
-  const d = parseUtcDate(value);
-  if (d == null) return "-";
-  const formatted = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(d);
-  return `${formatted} JST`;
 }
 
 /** 開始から現在（または完了）までの経過秒 / update 数。 */
@@ -308,28 +258,17 @@ function renderJobs(jobs) {
   }
 }
 
-function showError(msg) {
-  let el = document.getElementById("ui-error");
-  if (!el) {
-    el = document.createElement("p");
-    el.id = "ui-error";
-    el.style.color = "#f87171";
-    document.querySelector("header").after(el);
-  }
-  el.textContent = msg;
-}
-
 async function refresh() {
   try {
     const data = await api("/api/ui/dashboard");
-    showError("");
+    clearUiError();
     renderSweeps(data.sweeps || []);
     renderWorkers(data.workers || []);
     const jobs = data.recent_jobs || [];
     renderJobs(jobs);
     scheduleRefresh(jobs);
   } catch (err) {
-    showError(String(err));
+    showUiError(String(err));
     scheduleRefresh([]);
   }
 }
@@ -351,7 +290,4 @@ document.querySelectorAll("[data-close-config-modal]").forEach((el) => {
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") hideConfigModal();
 });
-const saved = localStorage.getItem(TOKEN_KEY);
-if (saved) document.getElementById("token").value = saved;
-
 refresh();

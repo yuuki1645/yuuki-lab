@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prometheus — チェックポイント可視化</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="hero-brand">
+      <h1 class="hero-title">Prometheus</h1>
+      <p class="brand-tagline">分散強化学習システム</p>
+    </div>
+    <nav class="main-nav" aria-label="メイン">
+      <a href="/">ダッシュボード</a>
+      <a href="/checkpoints">チェックポイント</a>
+    </nav>
+    <div class="header-toolbar">
+      <label>API token <input id="token" type="password" placeholder="X-Dispatch-Token" /></label>
+      <button id="refresh">更新</button>
+    </div>
+  </header>
+
+  <p class="page-hint">
+    可視化はこの PC（Coordinator 起動端末）で MuJoCo ビューアを開きます。
+    複数のチェックポイントを同時に起動できます（各ウィンドウはビューアの閉じるボタンで終了）。
+    方針は常に <code>--stochastic</code> です。
+  </p>
+
+  <section class="toolbar-section">
+    <label>
+      実験 (exp_id)
+      <select id="filter-exp">
+        <option value="">（すべて）</option>
+      </select>
+    </label>
+    <label>
+      <input type="checkbox" id="filter-visualizable" checked />
+      可視化可能のみ
+    </label>
+    <label>
+      <input type="checkbox" id="filter-archive" />
+      archive のみ
+    </label>
+    <span id="checkpoint-count" class="meta-label"></span>
+  </section>
+
+  <section>
+    <h2>実行中のビューア</h2>
+    <table id="sessions"><thead>
+      <tr><th>pid</th><th>exp</th><th>checkpoint</th><th>開始 (JST)</th></tr>
+    </thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>チェックポイント</h2>
+    <table id="checkpoints"><thead>
+      <tr>
+        <th>exp</th><th>run</th><th>file</th><th>更新 (JST)</th><th>サイズ</th><th>archive</th><th></th>
+      </tr>
+    </thead><tbody></tbody></table>
+    <button type="button" id="load-more" class="hidden">さらに読み込む</button>
+  </section>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/checkpoints.js"></script>
+</body>
+</html>

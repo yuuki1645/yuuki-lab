@@ -39,6 +39,31 @@ body {
   color: #8b9cb3;
 }
 
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.main-nav a {
+  color: #8ab4f8;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.main-nav a:hover {
+  color: #bfdbfe;
+  background: #1a2332;
+}
+
+.main-nav a.active {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
 .header-toolbar {
   display: flex;
   align-items: center;
@@ -47,6 +72,66 @@ body {
   flex-wrap: wrap;
   margin-top: 0.75rem;
   font-size: 0.85rem;
+}
+
+.ui-error {
+  color: #f87171;
+  margin: 0 0 1rem;
+}
+
+.page-hint {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.page-hint code {
+  color: #e7ecf3;
+  font-size: 0.85em;
+}
+
+.toolbar-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.toolbar-section select {
+  background: #1a2332;
+  border: 1px solid #2a3544;
+  color: #e7ecf3;
+  padding: 0.35rem 0.5rem;
+  margin-left: 0.35rem;
+}
+
+.meta-label {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.muted {
+  color: #9ca3af;
+}
+
+#checkpoints code,
+#sessions code {
+  font-size: 0.82rem;
+}
+
+button.visualize-btn {
+  background: #059669;
+}
+
+#load-more {
+  margin-bottom: 2rem;
+}
+
+#load-more.hidden {
+  display: none;
 }
 
 table {

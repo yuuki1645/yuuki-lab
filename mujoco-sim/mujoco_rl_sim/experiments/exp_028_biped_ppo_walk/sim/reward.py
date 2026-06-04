@@ -283,6 +283,7 @@ class Reward:
     MAX_DX_PER_STEP = config.MAX_DX_PER_STEP
     APPLY_EFFORT_PENALTY = config.APPLY_EFFORT_PENALTY
 
+    #region 生値読み出し（位置・速度差分）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
     imu_z = float(data.site_xpos[self._imu_site_id, WORLD_Z])
     left_foot_x = float(data.site_xpos[self._left_foot_site_id, WORLD_X])
@@ -290,7 +291,9 @@ class Reward:
     dx = imu_x - episode.prev_imu_x
     left_foot_dx = left_foot_x - episode.prev_left_foot_x
     right_foot_dx = right_foot_x - episode.prev_right_foot_x
+    #endregion
 
+    #region 接地・姿勢
     left_foot_on_floor = self._geom_on_floor(data, self._left_foot_geom_id)
     right_foot_on_floor = self._geom_on_floor(data, self._right_foot_geom_id)
     any_foot_on_floor = left_foot_on_floor or right_foot_on_floor
@@ -304,9 +307,10 @@ class Reward:
     right_knee_angle = float(data.joint(self._right_knee_joint_id).qpos[0])
 
     step_physics = physics
-
     imu_dz = episode.imu_dz(imu_z)
-    # 前進報酬のゲート: 直立 + 接地 + 片足支持（歩行タスクの核心条件）
+    #endregion
+
+    #region 前進ゲート（片足支持・直立・接地）
     forward_allowed = upright >= config.FORWARD_MIN_UPRIGHT
     if config.FORWARD_REQUIRE_FOOT_CONTACT and not any_foot_on_floor:
       forward_allowed = False
@@ -329,7 +333,9 @@ class Reward:
           np.inf,
         )
       )
+    #endregion
 
+    #region 前進報酬 forward_imu / forward_foot
     dx_clipped = float(np.clip(dx, -MAX_DX_PER_STEP, MAX_DX_PER_STEP))
     forward_imu = 0.0
     if forward_allowed:
@@ -349,9 +355,13 @@ class Reward:
     forward_foot = 0.0
     if forward_allowed:
       forward_foot = foot_dx_clipped * config.FORWARD_REWARD_SCALE
+    #endregion
 
+    #region effort
     effort_penalty = effort.penalty if APPLY_EFFORT_PENALTY else 0.0
+    #endregion
 
+    #region shaping — 歩行ボーナス
     upright_bonus = self._upright_bonus(upright, dx=dx)
     push_off_bonus = self._push_off_bonus(step_physics, biped=biped, imu_dz=imu_dz)
     landing_bonus = self._landing_bonus(step_physics, biped=biped)
@@ -364,6 +374,10 @@ class Reward:
       left_foot_z=step_physics.left_foot_z,
       right_foot_z=step_physics.right_foot_z,
     )
+    progress_bonus = self._progress_bonus(progress_m)
+    #endregion
+
+    #region shaping — 姿勢・すり足・ホップ抑制ペナルティ
     backward_lean_penalty = self._backward_lean_penalty(lean_fwd_body)
     forward_lean_penalty = self._forward_lean_penalty(
       lean_fwd_body,
@@ -381,7 +395,6 @@ class Reward:
     flight_duration_penalty = self._aerial_duration_penalty(
       any_foot_on_floor=any_foot_on_floor, aerial_steps=biped.aerial_steps
     )
-    progress_bonus = self._progress_bonus(progress_m)
     knee_hyperflex_penalty = self._knee_hyperflex_penalty(
       left_knee_angle,
       right_knee_angle,
@@ -393,7 +406,9 @@ class Reward:
       left_foot_dx=left_foot_dx,
       right_foot_dx=right_foot_dx,
     )
+    #endregion
 
+    #region breakdown 組み立て
     breakdown = RewardBreakdown(
       forward_imu=forward_imu,
       forward_foot=forward_foot,
@@ -414,7 +429,9 @@ class Reward:
       effort_penalty=effort_penalty,
       effort_power_cost=effort.power_cost,
     )
+    #endregion
 
+    #region 合成 total / forward / shaping
     forward = forward_imu + forward_foot
     shaping = (
       upright_bonus
@@ -433,6 +450,7 @@ class Reward:
       - double_support_penalty
     )
     total = forward + shaping - effort_penalty
+    #endregion
 
     return RewardResult(
       total=total,

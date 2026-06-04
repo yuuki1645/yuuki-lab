@@ -26,6 +26,7 @@ def episode_sim_elapsed_s(episode_step: int) -> float:
 
 
 def in_episode_warmup(episode_step: int) -> bool:
+  """エピソード開始から WARMUP_DURATION_S 未満なら True（方策学習前の安定化期間）。"""
   if not config.WARMUP_ENABLED:
     return False
   return episode_sim_elapsed_s(episode_step) < config.WARMUP_DURATION_S

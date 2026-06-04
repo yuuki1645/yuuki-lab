@@ -30,6 +30,8 @@ from sim.warmup import (
 
 __doc__ = f"""MuJoCo モデルまたはチェックポイントをビューアで実時間再生する。
 
+train.py と同じ EnvBipedPPO・warmup 設定を使う可視化専用入口。
+
 実行例（本フォルダで）:
 
   python visualize.py

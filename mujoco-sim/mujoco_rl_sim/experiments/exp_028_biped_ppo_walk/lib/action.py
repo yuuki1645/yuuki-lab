@@ -35,6 +35,7 @@ class ActionBinding:
       self._neutral_ctrl.append(float(np.clip(q_nom, float(lo), float(hi))))
 
   def apply(self, data: mujoco.MjData, action) -> tuple[float, ...]:
+    """action[i]∈[-1,1] を ctrl[i] に写像。返り値は clip 後 action（観測 prev_action 用）。"""
     clipped: list[float] = []
     for act_id, ctrl_range, neutral, raw in zip(
       self._act_ids, self._ctrl_ranges, self._neutral_ctrl, action, strict=True

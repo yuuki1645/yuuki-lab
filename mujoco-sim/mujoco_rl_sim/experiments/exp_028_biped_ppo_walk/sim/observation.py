@@ -27,6 +27,21 @@ RIGHT_TOE_SITE = "right_toe_bottom_site"
 
 
 class PolicyObs(NamedTuple):
+  """ポリシー入力ベクトル（51 次元）。並びは contract/biped_walk_v1.py と一致。
+
+  [0]     dx
+  [1:4]   imu_gyro xyz
+  [4:7]   imu_zaxis xyz
+  [7]     imu_z (正規化)
+  [8:10]  左右足接地 ±1
+  [10:12] 左右足 dx
+  [12:14] 左右足 z
+  [14]    single_support ±1
+  [15:27] joint_q ×12
+  [27:39] joint_qvel ×12
+  [39:51] prev_action ×12
+  """
+
   dx: float
   imu_gyro_x: float
   imu_gyro_y: float
@@ -112,6 +127,8 @@ class StepPhysics:
 
 
 class Observation:
+  """MuJoCo 状態から PolicyObs（正規化済み）と StepPhysics（生値）を構築する。"""
+
   def __init__(self, model: mujoco.MjModel):
     self._floor_id = model.geom("floor").id
     self._left_foot_id = model.geom(LEFT_FOOT_GEOM).id
@@ -152,16 +169,18 @@ class Observation:
     imu_z = float(data.site("imu_site").xpos[2])
     rel_imu_x = imu_x - episode.origin_imu_x
 
+    # 接地判定: 足 geom と床 geom の接触有無
     left_on = self._geom_on_floor(data, self._left_foot_id)
     right_on = self._geom_on_floor(data, self._right_foot_id)
     any_foot = left_on or right_on
+    # 片足支持 = 左右どちらか 1 本だけ接地（歩行の基本位相）
     single_support = (left_on and not right_on) or (right_on and not left_on)
     if left_on and not right_on:
-      support_side = 1
+      support_side = 1   # 左支持
     elif right_on and not left_on:
-      support_side = -1
+      support_side = -1  # 右支持
     else:
-      support_side = 0
+      support_side = 0   # 両足 or 両足非接地
 
     left_foot_z = self._site_z(data, LEFT_FOOT_SITE)
     right_foot_z = self._site_z(data, RIGHT_FOOT_SITE)

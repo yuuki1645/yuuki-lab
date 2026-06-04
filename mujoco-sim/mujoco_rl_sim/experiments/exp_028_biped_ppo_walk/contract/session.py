@@ -1,4 +1,8 @@
-"""PPO 学習ループ（ロールアウト・テレメトリ・チェックポイント）の共通実装。"""
+"""PPO 学習ループ（ロールアウト・テレメトリ・チェックポイント）の共通実装。
+
+各 exp_* は train.py から ``PpoTrainBindings`` を組み立てて ``run_ppo_train`` を呼ぶ。
+実験間で共通の学習フローをここに集約し、環境・契約・チェックポイントだけ差し替える。
+"""
 
 from __future__ import annotations
 
@@ -190,7 +194,12 @@ def _viewer_visualize_realtime(run: Any, config: Any, wall_sleep_sec: float) -> 
 
 
 def run_ppo_train(bindings: PpoTrainBindings) -> None:
-  """exp_019 相当の PPO 学習ループを契約駆動で実行する。"""
+  """PPO 学習のメインループ。
+
+  外側: update ループ（NUM_UPDATES 回）
+  内側: ROLLOUT_STEPS 分の環境 Interaction → agent.update()
+  各エピソード先頭 WARMUP_DURATION_S は方策データに含めない（warmup 専用 step）。
+  """
   run = bindings.train_run_config
   config = bindings.config
   contract = bindings.telemetry
@@ -271,8 +280,10 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
       t_update_start = time.perf_counter()
       policy_steps = 0
 
+      # --- ロールアウト収集: ROLLOUT_STEPS 分 interact → バッファ ---
       while policy_steps < config.ROLLOUT_STEPS:
         if warmup.in_episode_warmup(episode_step):
+          # ウォームアップ中は agent.store しない（方策学習データに混ぜない）
           obs, obs_vec, episode_step, total_env_steps, episode_index = _run_warmup_step(
             obs,
             obs_vec,
@@ -343,6 +354,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
             )
           episode_step = 0
 
+      # --- PPO 更新（同一ロールアウトを PPO_EPOCHS 回ミニバッチ学習）---
       stats = agent.update(obs)
       last_update = u + 1
       updates_done_this_run += 1

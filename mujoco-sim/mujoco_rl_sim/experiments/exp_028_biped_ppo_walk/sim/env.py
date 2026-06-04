@@ -31,7 +31,11 @@ from sim.termination import (
 
 
 class EnvBipedPPO:
-  """両脚 12 DOF・観測 51 次元・+X 交互片脚歩行タスク。"""
+  """両脚 12 DOF・観測 51 次元・+X 交互片脚歩行タスク。
+
+  1 制御ステップ = FRAME_SKIP 回の mj_step → 観測・報酬・終了判定。
+  報酬の詳細は sim/reward.py、歩行位相は sim/episode_state.py を参照。
+  """
 
   def __init__(self, *, enable_viewer: bool = True):
     self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
@@ -68,6 +72,7 @@ class EnvBipedPPO:
     mujoco.mj_forward(self.model, self.data)
 
   def reset(self):
+    """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。"""
     self._apply_stand_keyframe()
     if self.viewer is not None:
       self.viewer.sync()
@@ -91,6 +96,14 @@ class EnvBipedPPO:
     return vec
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
+    """ポリシー行動を適用し、1 制御ステップ分シミュレーションする。
+
+    処理順:
+      1. action → ctrl（ActionBinding）
+      2. FRAME_SKIP 回 mj_step（接触終了・すね床接触ペナルティを毎物理ステップ評価）
+      3. 観測ベクトル構築（observation.py）
+      4. 歩行位相更新 → 報酬（reward.py）→ 姿勢終了（termination.py）
+    """
     _ = episode_step
     prev_action = self._action.apply(self.data, action)
 
@@ -98,6 +111,7 @@ class EnvBipedPPO:
     shank_penalty_sum = 0.0
     self._effort.reset_control_step()
 
+    # --- 物理積分（50 Hz 制御 = 10 × 500 Hz 物理）---
     for _ in range(config.FRAME_SKIP):
       mujoco.mj_step(self.model, self.data)
       self._effort.record_physics_step(self.data)
@@ -125,6 +139,7 @@ class EnvBipedPPO:
     left_foot_dx = left_foot_x - self._episode.prev_left_foot_x
     right_foot_dx = right_foot_x - self._episode.prev_right_foot_x
 
+    # --- 観測・歩行位相・報酬 ---
     policy_obs, step_physics = self._observation.build(
       self.model,
       self.data,
@@ -158,6 +173,7 @@ class EnvBipedPPO:
     self._episode.advance_imu_x(imu_x)
     self._episode.advance_foot_dx(left_foot_x, right_foot_x)
 
+    # 接触以外の転倒条件（低姿勢・後傾など）は物理ステップ後に 1 回だけ評価
     if not termination.terminated:
       termination = self._termination.done_reason_pose(
         self.data

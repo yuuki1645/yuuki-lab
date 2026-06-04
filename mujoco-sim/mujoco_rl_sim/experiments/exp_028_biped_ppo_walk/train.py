@@ -1,4 +1,13 @@
-"""exp_028 学習エントリ（交互片脚歩行・拡大 MLP・スタンドアロン ``contract`` 同梱）。"""
+"""exp_028 学習エントリ（交互片脚歩行・拡大 MLP・スタンドアロン ``contract`` 同梱）。
+
+本ファイルは薄いラッパー。学習ループ本体は ``contract.session.run_ppo_train`` にあり、
+実験固有の差し替え点（環境・エージェント・W&B）だけを ``PpoTrainBindings`` で渡す。
+
+実行::
+
+  python train.py
+  python train.py --resume path/to/latest.pt
+"""
 
 from __future__ import annotations
 
@@ -25,6 +34,7 @@ from sim.env import EnvBipedPPO
 
 
 def _dispatch_overrides_for_logging() -> dict[str, Any]:
+  """W&B に記録する sweep 上書き内容（apply_dispatch_config_overrides と同じ env）。"""
   raw = os.environ.get("DISPATCH_CONFIG_OVERRIDES_JSON", "").strip()
   if not raw:
     return {}
@@ -102,6 +112,7 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
 
 def main() -> None:
   run = parse_train_args()
+  # 並列 sweep 起動時: 環境変数経由で報酬係数などを config に反映
   apply_dispatch_config_overrides()
   bindings = PpoTrainBindings(
     config=config,

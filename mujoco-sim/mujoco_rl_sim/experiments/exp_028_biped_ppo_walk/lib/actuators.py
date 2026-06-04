@@ -1,4 +1,10 @@
-"""12 関節アクチュエータ名・対応ジョイント（model/main.xml と順序を一致）。"""
+"""12 関節アクチュエータ名・対応ジョイント（model/main.xml と順序を一致）。
+
+順序::
+  [0:5]   左脚: hip_roll, hip_pitch, knee, ankle_pitch, ankle_roll
+  [5:10]  右脚: 同上
+  [10:12] 胴体: basket_top_roll, balance_pitch
+"""
 
 ACTUATOR_NAMES: tuple[str, ...] = (
   "left_hip_roll_motor",

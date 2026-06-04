@@ -21,6 +21,11 @@ class BipedStepContext:
 
 @dataclass
 class EpisodeState:
+  """エピソードをまたいで保持する歩行位相・前ステップ位置。
+
+  advance_biped_context が着地検出・交互歩行・飛翔ステップ数を更新する。
+  """
+
   origin_imu_x: float = 0.0
   prev_imu_x: float = 0.0
   prev_left_foot_x: float = 0.0
@@ -69,6 +74,7 @@ class EpisodeState:
   def advance_progress(
     self, imu_x: float, *, upright: float, single_support: bool
   ) -> float:
+    """IMU +X のエピソード内最高更新量 [m]。片足支持・直立時のみカウント。"""
     import config
 
     if upright < config.PROGRESS_MIN_UPRIGHT:
@@ -95,6 +101,7 @@ class EpisodeState:
     right_on_floor: bool,
     imu_z: float,
   ) -> BipedStepContext:
+    # 着地 = 非接地 → 接地 の立ち上がりエッジ
     left_landed = left_on_floor and not self.prev_left_on_floor
     right_landed = right_on_floor and not self.prev_right_on_floor
     any_foot = left_on_floor or right_on_floor
@@ -104,12 +111,14 @@ class EpisodeState:
     )
     support_side = self._single_support_side(left_on_floor, right_on_floor)
 
+    # 交互着地: 前ステップが反対脚支持だった状態からの着地
     alternating_landing = False
     if left_landed and self.prev_single_support_side == -1:
-      alternating_landing = True
+      alternating_landing = True  # 右支持 → 左着地
     if right_landed and self.prev_single_support_side == 1:
-      alternating_landing = True
+      alternating_landing = True  # 左支持 → 右着地
 
+    # 両足非接地の連続ステップ数（ホップ抑制ペナルティ用）
     if any_foot:
       self.aerial_steps = 0
     else:

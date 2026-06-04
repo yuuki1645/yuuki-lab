@@ -79,6 +79,7 @@ class Reward:
 
   @staticmethod
   def _aerial_duration_penalty(*, any_foot_on_floor: bool, aerial_steps: int) -> float:
+    """両足非接地が AERIAL_DURATION_PENALTY_AFTER_STEPS を超えるとホップ抑制ペナルティ。"""
     if any_foot_on_floor:
       return 0.0
     over = aerial_steps - config.AERIAL_DURATION_PENALTY_AFTER_STEPS
@@ -88,6 +89,7 @@ class Reward:
 
   @staticmethod
   def _progress_bonus(progress_m: float) -> float:
+    """エピソード内で IMU +X が過去最高を更新した分だけボーナス（片足支持時のみ加算）。"""
     return float(progress_m) * config.PROGRESS_REWARD_SCALE
 
   @staticmethod
@@ -177,6 +179,7 @@ class Reward:
     left_foot_dx: float,
     right_foot_dx: float,
   ) -> float:
+    """両足接地中の前進（すり足）を抑制。前進量に比例してペナルティ。"""
     if not both_feet_on_floor:
       return 0.0
     forward_motion = max(
@@ -198,6 +201,7 @@ class Reward:
     left_foot_z: float,
     right_foot_z: float,
   ) -> float:
+    """遊脚が SWING_MIN_FOOT_Z 以上持ち上がっているとボーナス（つまずき防止）。"""
     if not single_support:
       return 0.0
     if single_support_side == 1 and not right_foot_on_floor:
@@ -217,6 +221,7 @@ class Reward:
     biped: BipedStepContext,
     imu_dz: float,
   ) -> float:
+    """支持脚の押し出し: 片足支持中に足が前へ動き、膝伸展 or IMU 上昇。"""
     if not biped.single_support:
       return 0.0
     if biped.single_support_side == 1:
@@ -239,6 +244,7 @@ class Reward:
     *,
     biped: BipedStepContext,
   ) -> float:
+    """着地ステップ: つま先・かかとが低く、前傾しすぎない着地にボーナス。"""
     if biped.left_landed:
       toe_z = physics.left_toe_z
       heel_z = physics.left_heel_z
@@ -257,6 +263,7 @@ class Reward:
 
   @staticmethod
   def _alternating_landing_bonus(*, biped: BipedStepContext) -> float:
+    """反対脚支持からの着地（左右交互）を検出したステップにボーナス。"""
     if not biped.alternating_landing:
       return 0.0
     return config.ALTERNATING_LANDING_BONUS_SCALE
@@ -271,7 +278,7 @@ class Reward:
     physics: StepPhysics,
     progress_m: float = 0.0,
   ) -> RewardResult:
-    # NOTE(AI): 報酬の詳細はこの関数内リテラルと config を読むだけで追えるよう冗長に保つ。
+    # 報酬合成: forward = IMU/支持脚前進, shaping = 歩行 shaping ± ペナルティ
 
     MAX_DX_PER_STEP = config.MAX_DX_PER_STEP
     APPLY_EFFORT_PENALTY = config.APPLY_EFFORT_PENALTY
@@ -299,6 +306,7 @@ class Reward:
     step_physics = physics
 
     imu_dz = episode.imu_dz(imu_z)
+    # 前進報酬のゲート: 直立 + 接地 + 片足支持（歩行タスクの核心条件）
     forward_allowed = upright >= config.FORWARD_MIN_UPRIGHT
     if config.FORWARD_REQUIRE_FOOT_CONTACT and not any_foot_on_floor:
       forward_allowed = False
@@ -332,6 +340,7 @@ class Reward:
       )
 
     stance_foot_dx = 0.0
+    # 支持脚（single_support_side）の +X 移動のみ forward_foot に反映
     if single_support and biped.single_support_side == 1:
       stance_foot_dx = float(np.clip(left_foot_dx, 0.0, np.inf))
     elif single_support and biped.single_support_side == -1:

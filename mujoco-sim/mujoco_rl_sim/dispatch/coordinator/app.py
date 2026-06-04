@@ -227,22 +227,27 @@ def create_app(settings: CoordinatorSettings) -> Flask:
       "true",
       "yes",
     )
+    filename_raw = (request.args.get("filename") or "").strip()
+    filename = filename_raw or None
     try:
       limit = int(request.args.get("limit", "500"))
       offset = int(request.args.get("offset", "0"))
     except ValueError:
       return jsonify({"error": "invalid limit or offset"}), 400
-    return jsonify(
-      list_checkpoints(
+    try:
+      payload = list_checkpoints(
         runs_root=settings.runs_root,
         exp_id=exp_id,
         run_dir=run_dir,
+        filename=filename,
         archive=archive,
         visualizable_only=visualizable_only,
         limit=limit,
         offset=offset,
       )
-    )
+    except ValueError as exc:
+      return jsonify({"error": str(exc)}), 400
+    return jsonify(payload)
 
   @app.post("/api/visualize")
   @_auth

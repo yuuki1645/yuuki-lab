@@ -23,7 +23,7 @@ python -m mujoco_rl_sim.dispatch.coordinator --config coordinator.config.toml
 
 - Web UI: http://127.0.0.1:8790/
   - **ダッシュボード** (`/`): sweep / worker / job 一覧
-  - **チェックポイント** (`/checkpoints`): `mujoco_rl_sim/runs/` 内の `.pt` を一覧し、対応する `experiments/<exp_id>/visualize.py` を `--stochastic` 付きで起動（複数ビューア同時可。Coordinator を動かしている端末にウィンドウが開く）
+  - **チェックポイント** (`/checkpoints`): `mujoco_rl_sim/runs/` 内の `.pt` を一覧（既定は `final.pt` のみ。`latest.pt` のみ / 全 `.pt` も選択可）し、対応する `experiments/<exp_id>/visualize.py` を `--stochastic` 付きで起動（複数ビューア同時可。Coordinator を動かしている端末にウィンドウが開く）
 - DB 既定: `mujoco_rl_sim/dispatch_data/coordinator.db`
 
 ## sweep 登録

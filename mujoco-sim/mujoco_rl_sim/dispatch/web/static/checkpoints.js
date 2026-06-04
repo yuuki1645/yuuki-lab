@@ -15,6 +15,8 @@ function buildListQuery(offset) {
   if (document.getElementById("filter-archive").checked) {
     params.set("archive", "true");
   }
+  const filename = document.getElementById("filter-filename").value;
+  if (filename) params.set("filename", filename);
   return params.toString();
 }
 
@@ -169,6 +171,7 @@ document.getElementById("refresh").addEventListener("click", refreshAll);
 document.getElementById("filter-exp").addEventListener("change", () => refreshAll());
 document.getElementById("filter-visualizable").addEventListener("change", () => refreshAll());
 document.getElementById("filter-archive").addEventListener("change", () => refreshAll());
+document.getElementById("filter-filename").addEventListener("change", () => refreshAll());
 document.getElementById("load-more").addEventListener("click", async () => {
   try {
     await loadCheckpoints({ append: true });

@@ -43,3 +43,11 @@ def test_list_checkpoints_main_and_archive(tmp_path: Path, monkeypatch) -> None:
 
   viz = [c for c in data["checkpoints"] if c["visualizable"]]
   assert len(viz) == 3
+
+  final_only = list_checkpoints(runs_root=runs, filename="final.pt", limit=100)
+  assert final_only["total"] == 1
+  assert final_only["checkpoints"][0]["filename"] == "final.pt"
+
+  latest_only = list_checkpoints(runs_root=runs, filename="latest.pt", limit=100)
+  assert latest_only["total"] == 1
+  assert latest_only["checkpoints"][0]["filename"] == "latest.pt"

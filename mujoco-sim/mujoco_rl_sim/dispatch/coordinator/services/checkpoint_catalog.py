@@ -9,6 +9,8 @@ from typing import Any
 from mujoco_rl_sim.dispatch.common.checkpoint_paths import parse_checkpoint_rel
 from mujoco_rl_sim.dispatch.paths import resolve_experiment_dir
 
+FILTERABLE_CHECKPOINT_FILENAMES = frozenset({"final.pt", "latest.pt"})
+
 
 def _checkpoint_entry(
   *,
@@ -87,15 +89,23 @@ def list_checkpoints(
   runs_root: Path,
   exp_id: str | None = None,
   run_dir: str | None = None,
+  filename: str | None = None,
   archive: bool | None = None,
   visualizable_only: bool = False,
   limit: int = 500,
   offset: int = 0,
 ) -> dict[str, Any]:
-  """チェックポイント一覧（mtime 降順）。"""
+  """チェックポイント一覧（mtime 降順）。
+
+  ``filename`` に ``final.pt`` または ``latest.pt`` を指定するとそのファイルのみ。
+  """
   runs_root = runs_root.resolve()
   limit = max(1, min(limit, 5000))
   offset = max(0, offset)
+  if filename is not None and filename not in FILTERABLE_CHECKPOINT_FILENAMES:
+    raise ValueError(
+      f"filename must be one of {sorted(FILTERABLE_CHECKPOINT_FILENAMES)}: {filename!r}"
+    )
 
   entries: list[dict[str, Any]] = []
   for rel_posix, is_archive in _iter_checkpoint_files(runs_root):
@@ -111,6 +121,8 @@ def list_checkpoints(
     if exp_id is not None and entry["exp_id"] != exp_id:
       continue
     if run_dir is not None and entry["run_dir"] != run_dir:
+      continue
+    if filename is not None and entry["filename"] != filename:
       continue
     if visualizable_only and not entry["visualizable"]:
       continue

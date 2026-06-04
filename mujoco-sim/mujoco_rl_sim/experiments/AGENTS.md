@@ -56,3 +56,25 @@ python visualize.py
 1. `model/main.xml` に脚が何本あるか確認（現状は 1 本）
 2. `config.ROBOT_MORPHOLOGY` または実験 `README.md` を読む
 3. ホッパ実験では飛翔中 `dx` を殺す変更を提案しない
+
+## 新 exp 作成時 — README.md に書くこと
+
+**詳細なコードリーディング手引きは各 exp の `README.md` に置く**（人間・AI 共通の正本）。  
+`AGENTS.md` には実験固有の落とし穴・変更注意のみ（README の重複を避ける）。
+
+新規 `exp_*` または exp コピー直後に、README に次の節を含める（テンプレート）:
+
+1. **概要** … 由来 exp・タスク・exp 間 diff 表
+2. **実行** … `train.py` / `visualize.py` / 補助 CLI
+3. **ディレクトリ構成** … 表形式
+4. **コードリーディングの手引き**（必須）
+   - 最初に押さえる 3 点（config / タスク本体 / contract）
+   - 推奨読み順（5〜8 ファイル、目的付き）
+   - 1 制御ステップ（または 1 update）の処理フロー
+   - 「変更したい内容 → 触るファイル」対応表
+   - エントリポイント早見（train / visualize / contract / sweep）
+   - 前後 exp との diff の追い方（該当する場合）
+5. **報酬・観測の要点** … 式の全文は README または contract markdown へ
+6. **sweep / チェックポイント** … パスと YAML 名
+
+コピー元 exp の README 手引きをベースに、**diff したファイルだけ**読み順・対応表を更新する。

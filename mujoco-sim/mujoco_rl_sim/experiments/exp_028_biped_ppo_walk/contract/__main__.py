@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from contract.codegen import observation_markdown_table, reward_log_markdown_list
-from experiment_contract import TELEMETRY_CONTRACT
+from contract import TELEMETRY_CONTRACT
 
 
 def main(argv: list[str] | None = None) -> int:

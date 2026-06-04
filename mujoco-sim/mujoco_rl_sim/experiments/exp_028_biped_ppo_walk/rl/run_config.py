@@ -9,7 +9,7 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-import checkpoint
+import rl.checkpoint as checkpoint
 import config
 from package_meta import CHECKPOINT_REL_FROM_EXP
 

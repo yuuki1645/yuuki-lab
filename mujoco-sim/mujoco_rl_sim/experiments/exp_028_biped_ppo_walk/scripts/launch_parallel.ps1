@@ -1,14 +1,14 @@
 # exp_028: ビューアなし・wandb 有効で学習を複数プロセス並列起動する。
 #
-# 使い方（本フォルダで）:
-#   .\launch_parallel.ps1
-#   .\launch_parallel.ps1 -Count 4
+# 使い方（実験ルートで）:
+#   .\scripts\launch_parallel.ps1
+#   .\scripts\launch_parallel.ps1 -Count 4
 #
 # 実行ポリシーでブロックされた場合:
-#   powershell -ExecutionPolicy Bypass -File .\launch_parallel.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\launch_parallel.ps1
 #
 # ログをファイルに残す:
-#   .\launch_parallel.ps1 -RedirectLogs -LogDir logs\parallel
+#   .\scripts\launch_parallel.ps1 -RedirectLogs -LogDir logs\parallel
 
 param(
   [int]$Count = 10,
@@ -18,7 +18,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ExpDir = $PSScriptRoot
+$ExpDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ExpDir
 
 $TrainArgs = @(

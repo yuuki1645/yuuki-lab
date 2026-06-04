@@ -19,7 +19,30 @@ python train.py
 python visualize.py
 ```
 
+補助 CLI:
+
+```bash
+python scripts/analyze_rollout.py --checkpoint runs/.../final.pt
+python scripts/preview_warmup.py
+.\scripts\launch_parallel.ps1
+```
+
 契約表: `python -m contract markdown`
+
+## ディレクトリ構成
+
+| パス | 内容 |
+|------|------|
+| `train.py`, `visualize.py` | 学習・可視化の入口 |
+| `config.py`, `package_meta.py`, `_paths.py` | 設定・パス |
+| `sim/` | 環境・観測・報酬・終了・warmup |
+| `rl/` | PPO・チェックポイント・run 設定・W&B |
+| `scripts/` | ロールアウト解析・warmup プレビュー・並列学習 |
+| `contract/` | 観測契約 `biped_walk_v1`・PPO ループ |
+| `lib/` | ctrl・正規化・dispatch 上書き |
+| `telemetry/`, `mujoco_sim_common/` | Hub・viewer 共有 |
+
+歩行ロジックの読み方: `config.py` → `sim/episode_state.py` → `sim/reward.py` → `sim/observation.py` → `sim/env.py`
 
 ## sweep（約 50 run）
 

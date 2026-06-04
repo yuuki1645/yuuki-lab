@@ -16,12 +16,12 @@ from mujoco_sim_common.viewer_visual_presets import (
   apply_passive_viewer_options,
 )
 
-import checkpoint
 import config
-from agent import AgentPPO
-from env import EnvBipedPPO
+import rl.checkpoint as checkpoint
 from package_meta import CHECKPOINT_REL_FROM_EXP
-from warmup import (
+from rl.agent import AgentPPO
+from sim.env import EnvBipedPPO
+from sim.warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,

@@ -6,7 +6,7 @@ from typing import NamedTuple
 import mujoco
 
 import config
-from episode_state import EpisodeState
+from sim.episode_state import EpisodeState
 from lib.actuators import (
   JOINT_NAMES,
   LEFT_FOOT_GEOM,
@@ -16,7 +16,7 @@ from lib.actuators import (
 )
 from contract.validate import assert_obs_vector
 
-from experiment_contract import TELEMETRY_CONTRACT
+from contract import TELEMETRY_CONTRACT
 from lib.obs_norm import clip_scale, height_to_norm, range_to_norm
 from lib.pose import pose_metrics
 

@@ -6,6 +6,8 @@
 - **ベース**: [exp_026](../exp_026_biped_ppo_hop_balance/)（MLP 256→256→128）
 - **差分**: ホップ/すり足ではなく **交互片脚歩行** 向けの報酬・観測（`biped_walk_v1`、51 次元）
 - **実行**: 本フォルダで `python train.py` / `python visualize.py`
+- **レイアウト**: 本体は `sim/`（環境・報酬・観測）と `rl/`（PPO・ckpt）。補助は `scripts/`。ルートは `train.py` / `visualize.py` / `config.py` など入口のみ
+- **契約**: `contract.TELEMETRY_CONTRACT`（= `BIPED_WALK_V1`）
 - **チェックポイント**: `mujoco_rl_sim/runs/exp_028_biped_ppo_walk/`
 
 ## 歩行タスクの定義

@@ -6,8 +6,8 @@ import mujoco
 import numpy as np
 
 import config
-from effort import EffortBreakdown
-from episode_state import BipedStepContext, EpisodeState
+from sim.effort import EffortBreakdown
+from sim.episode_state import BipedStepContext, EpisodeState
 from lib.actuators import (
   LEFT_FOOT_GEOM,
   LEFT_FOOT_SITE,
@@ -15,7 +15,7 @@ from lib.actuators import (
   RIGHT_FOOT_SITE,
 )
 from lib.pose import pose_metrics
-from observation import (
+from sim.observation import (
   LEFT_HEEL_SITE,
   LEFT_TOE_SITE,
   RIGHT_HEEL_SITE,

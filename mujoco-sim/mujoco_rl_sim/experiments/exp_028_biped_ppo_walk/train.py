@@ -9,21 +9,19 @@ install()
 from pathlib import Path
 from typing import Any
 
-from contract import PpoTrainBindings, run_ppo_train
-
-import checkpoint
 import config
-import wandb_logging
-from agent import AgentPPO
-from env import EnvBipedPPO
-from experiment_contract import TELEMETRY_CONTRACT
-from package_meta import EXP_NAME
-import warmup
 import json
 import os
 
+from contract import TELEMETRY_CONTRACT, PpoTrainBindings, run_ppo_train
 from lib.dispatch_config import apply_dispatch_config_overrides
-from run_config import TrainRunConfig, parse_train_args
+from package_meta import EXP_NAME
+import rl.checkpoint as checkpoint
+import rl.wandb_logging as wandb_logging
+from rl.agent import AgentPPO
+from rl.run_config import TrainRunConfig, parse_train_args
+import sim.warmup as warmup
+from sim.env import EnvBipedPPO
 
 
 def _dispatch_overrides_for_logging() -> dict[str, Any]:

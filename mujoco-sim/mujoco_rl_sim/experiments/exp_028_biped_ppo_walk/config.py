@@ -128,7 +128,7 @@ ADV_STD_MIN = 0.1
 ACTION_LOG_PROB_EPS = 1e-6
 LOG_PROB_CLIP = 20.0
 
-from warmup import default_warmup_action
+from sim.warmup import default_warmup_action
 
 WARMUP_ENABLED = True
 WARMUP_DURATION_S = 1.0

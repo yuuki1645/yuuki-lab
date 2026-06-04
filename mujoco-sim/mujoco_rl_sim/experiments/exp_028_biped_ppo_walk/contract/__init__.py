@@ -2,6 +2,8 @@
 
 from contract.biped_v1 import BIPED_PPO_V1
 from contract.biped_walk_v1 import BIPED_WALK_V1
+
+TELEMETRY_CONTRACT = BIPED_WALK_V1
 from contract.session import PpoTrainBindings, run_ppo_train
 from contract.spec import (
   ObservationSlice,
@@ -16,6 +18,7 @@ from contract.validate import assert_obs_vector, validate_obs_vector
 __all__ = [
   "BIPED_PPO_V1",
   "BIPED_WALK_V1",
+  "TELEMETRY_CONTRACT",
   "ObservationSlice",
   "ObservationSpec",
   "PpoTrainBindings",

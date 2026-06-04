@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+  sys.path.insert(0, str(_ROOT))
+
 from _paths import install
 
 install()
@@ -7,8 +14,8 @@ install()
 import argparse
 
 import config
-from env import EnvBipedPPO
-from warmup import (
+from sim.env import EnvBipedPPO
+from sim.warmup import (
   WarmupContext,
   episode_sim_elapsed_s,
   in_episode_warmup,
@@ -19,7 +26,7 @@ __doc__ = """config.WARMUP_ACTION_FN を MuJoCo ビューアで実時間プレ�
 
 実行例（本フォルダで）:
 
-  python preview_warmup.py
+  python scripts/preview_warmup.py
 """
 
 

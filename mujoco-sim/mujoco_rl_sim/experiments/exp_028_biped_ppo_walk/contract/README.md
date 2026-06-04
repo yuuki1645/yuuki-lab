@@ -21,6 +21,7 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train
 |------|----------------|
 | exp_019 | `telemetry/biped_ppo.py` が本契約のラッパ（後方互換） |
 | exp_020 | `experiment_contract.py` + `contract.session.run_ppo_train` |
+| exp_028 | `contract.TELEMETRY_CONTRACT` + `contract.session.run_ppo_train` |
 
 ## モジュール
 

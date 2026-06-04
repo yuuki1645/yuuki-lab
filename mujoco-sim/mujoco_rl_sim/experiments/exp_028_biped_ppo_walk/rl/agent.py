@@ -413,7 +413,7 @@ class AgentPPO:
     map_location: str | torch.device = "cpu",
   ) -> AgentPPO:
     """保存済みチェックポイントからエージェントを復元する。"""
-    import checkpoint
+    import rl.checkpoint as checkpoint
 
     payload = checkpoint.load_checkpoint(path, map_location=map_location)
     fmt = payload.get("format", "")

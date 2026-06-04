@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+  sys.path.insert(0, str(_ROOT))
+
 from _paths import install
 
 install()
@@ -15,10 +22,10 @@ import mujoco
 import numpy as np
 
 import config
-from agent import AgentPPO
-from env import EnvBipedPPO
 from lib.actuators import JOINT_NAMES
-from warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
+from rl.agent import AgentPPO
+from sim.env import EnvBipedPPO
+from sim.warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
 
 
 @dataclass

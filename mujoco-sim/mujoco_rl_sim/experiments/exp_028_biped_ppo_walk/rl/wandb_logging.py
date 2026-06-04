@@ -15,7 +15,7 @@ from lib.episode_rolling import (
 from lib.run_dir import wandb_active_run_name
 
 import config
-from termination import (
+from sim.termination import (
   REASON_BACKWARD_LEAN,
   REASON_CONTACT_BASKET,
   REASON_CONTACT_SHANK,

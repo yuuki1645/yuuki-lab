@@ -165,7 +165,7 @@ LOG_PROB_CLIP = 20.0
 #region 学習ループ（contract/session.py）
 from sim.warmup import default_warmup_action
 
-WARMUP_ENABLED = True
+WARMUP_ENABLED = False
 WARMUP_DURATION_S = 1.0
 WARMUP_ACTION_FN = default_warmup_action
 

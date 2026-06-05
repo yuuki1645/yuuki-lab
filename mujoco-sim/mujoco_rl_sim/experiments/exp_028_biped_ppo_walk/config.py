@@ -178,11 +178,9 @@ LOG_EVERY = 5
 ENABLE_VIEWER = True
 STEP_WALL_SLEEP_SEC = CONTROL_TIMESTEP_S
 
-# passive viewer user_scn オーバーレイ: (z [m], rgba) — 目標 IMU 高さの半透明平面
+# passive viewer user_scn オーバーレイ: (z [m], rgba) — IMU 転倒下限の参考用薄赤平面
 VIEWER_TARGET_HEIGHT_PLANES: tuple[tuple[float, tuple[float, float, float, float]], ...] = (
-  (TARGET_IMU_Z, (0.0, 0.85, 0.25, 0.30)),
-  (TARGET_IMU_Z_SINGLE_STANCE, (0.25, 0.55, 1.0, 0.22)),
-  (TARGET_IMU_Z_DOUBLE_STANCE, (1.0, 0.70, 0.10, 0.22)),
+  (0.3, (1.0, 0.25, 0.25, 0.28)),
 )
 VIEWER_HEIGHT_PLANE_HALF_XY = (3.0, 3.0)  # 薄板 X/Y 半サイズ [m]
 VIEWER_HEIGHT_PLANE_THICKNESS = 0.001  # 薄板厚 [m]

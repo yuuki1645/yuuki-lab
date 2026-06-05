@@ -211,10 +211,10 @@ class Termination:
   ) -> TerminationOutcome:
     # ここだけ読めば「何を見て、どの閾値で落とすか」が分かるようにする。
 
-    # imu_site の世界 Z [m]。空中時はこれ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
-    MIN_IMU_Z = 0.40
-    # 足が床についているときの imu_z 下限 [m]。MIN_IMU_Z より緩く、接地中の低姿勢を許す。
-    MIN_IMU_Z_STANCE = 0.34
+    # imu_site の世界 Z [m]。これ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
+    MIN_IMU_Z = 0.3
+    # 足が床についているときの imu_z 下限 [m]（Viewer 参考平面と同じ高さ）。
+    MIN_IMU_Z_STANCE = 0.3
     # imu_zaxis の Z 成分（上向き成分）。1 に近いほど直立。これ未満で姿勢不良終了。
     MIN_IMU_UPRIGHT = 0.52
     # ボディ +X への前傾射影がこれ未満（後傾）で終了。ヨーで imu_zaxis_x に逃げられない。

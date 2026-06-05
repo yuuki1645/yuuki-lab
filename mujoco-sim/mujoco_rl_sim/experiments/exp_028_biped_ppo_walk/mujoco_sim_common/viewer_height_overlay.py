@@ -1,8 +1,8 @@
 # type: ignore
-"""MuJoCo passive viewer 用：目標 IMU 高さの半透明平面オーバーレイ（user_scn）。
+"""MuJoCo passive viewer 用：IMU 転倒下限の参考平面オーバーレイ（user_scn）。
 
 物理モデル（MJCF）には geom を追加せず、viewer.user_scn に薄板 BOX を描画する。
-config.VIEWER_TARGET_HEIGHT_PLANES で z [m] と rgba を指定する。
+config.VIEWER_TARGET_HEIGHT_PLANES で z [m] と rgba（薄赤半透明）を指定する。
 """
 
 from __future__ import annotations

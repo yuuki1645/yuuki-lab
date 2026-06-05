@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import mujoco
+from mujoco_sim_common.viewer_height_overlay import sync_viewer_with_height_overlay
 from mujoco_sim_common.viewer_visual_presets import (
   apply_model_visual_preset,
   apply_passive_viewer_options,
@@ -156,14 +157,14 @@ def _step_physics_only(
 ) -> None:
   for _ in range(config.FRAME_SKIP):
     mujoco.mj_step(model, data)
-    viewer.sync()
+    sync_viewer_with_height_overlay(viewer)
   time.sleep(config.CONTROL_TIMESTEP_S)
 
 
 def _run_biped_xml_only(*, print_every: int) -> None:
   model, data, viewer = _launch_biped_viewer()
   _reset_biped_stand(model, data)
-  viewer.sync()
+  sync_viewer_with_height_overlay(viewer)
   print(
     f"[visualize] actuators: {model.nu} | "
     f"feet z: L={data.site('foot_site').xpos[2]:.3f} "
@@ -189,7 +190,7 @@ def _step_physics_only_env(env: EnvBipedPPO) -> None:
   for _ in range(config.FRAME_SKIP):
     mujoco.mj_step(env.model, env.data)
     if env.viewer is not None:
-      env.viewer.sync()
+      sync_viewer_with_height_overlay(env.viewer)
   time.sleep(config.CONTROL_TIMESTEP_S)
 
 

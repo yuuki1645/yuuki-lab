@@ -4,6 +4,7 @@ import time
 
 import mujoco
 import mujoco.viewer
+from mujoco_sim_common.viewer_height_overlay import sync_viewer_with_height_overlay
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
 import config
@@ -75,7 +76,7 @@ class EnvBipedPPO:
     """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。"""
     self._apply_stand_keyframe()
     if self.viewer is not None:
-      self.viewer.sync()
+      sync_viewer_with_height_overlay(self.viewer)
 
     imu_x = float(self.data.site("imu_site").xpos[0])
     imu_z = float(self.data.site("imu_site").xpos[2])
@@ -125,7 +126,7 @@ class EnvBipedPPO:
     effort = self._effort.control_step_breakdown()
 
     if self.viewer is not None:
-      self.viewer.sync()
+      sync_viewer_with_height_overlay(self.viewer)
     if visualize:
       time.sleep(config.CONTROL_TIMESTEP_S)
     elif self._step_wall_sleep_sec > 0.0:

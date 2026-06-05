@@ -16,8 +16,28 @@ class EpisodeSnapshot:
   net_imu_x: float
 
 
+def _episode_batch_summary(eps: list[EpisodeSnapshot]) -> dict[str, float]:
+  """エピソードリストから平均・最大を算出（rolling / interval 共通）。"""
+  returns = [e.return_ for e in eps]
+  lengths = [e.length for e in eps]
+  forwards = [e.forward_reward_sum for e in eps]
+  dx_sums = [e.total_dx_imu for e in eps]
+  net_x = [e.net_imu_x for e in eps]
+  return {
+    "ep_roll_n": float(len(eps)),
+    "ep_ret_mean": mean(returns),
+    "ep_ret_max": max(returns),
+    "ep_len_mean": mean(lengths),
+    "ep_fwd_rw_mean": mean(forwards),
+    "ep_dx_mean": mean(dx_sums),
+    "ep_dx_max": max(dx_sums),
+    "ep_net_x_mean": mean(net_x),
+    "ep_net_x_max": max(net_x),
+  }
+
+
 class EpisodeRollingWindow:
-  """直近 window 本のエピソード指標を保持する。"""
+  """直近 window 本のエピソード指標を保持する（wandb 用）。"""
 
   def __init__(self, *, window: int) -> None:
     if window < 1:
@@ -25,24 +45,8 @@ class EpisodeRollingWindow:
     self._window = window
     self._episodes: deque[EpisodeSnapshot] = deque(maxlen=window)
 
-  def push(
-    self,
-    *,
-    return_: float,
-    length: float,
-    forward_reward_sum: float,
-    total_dx_imu: float,
-    net_imu_x: float,
-  ) -> None:
-    self._episodes.append(
-      EpisodeSnapshot(
-        return_=return_,
-        length=length,
-        forward_reward_sum=forward_reward_sum,
-        total_dx_imu=total_dx_imu,
-        net_imu_x=net_imu_x,
-      )
-    )
+  def push(self, snapshot: EpisodeSnapshot) -> None:
+    self._episodes.append(snapshot)
 
   def count(self) -> int:
     return len(self._episodes)
@@ -50,33 +54,40 @@ class EpisodeRollingWindow:
   def summary(self) -> dict[str, float] | None:
     if not self._episodes:
       return None
-    eps = list(self._episodes)
-    returns = [e.return_ for e in eps]
-    lengths = [e.length for e in eps]
-    forwards = [e.forward_reward_sum for e in eps]
-    dx_sums = [e.total_dx_imu for e in eps]
-    net_x = [e.net_imu_x for e in eps]
-    return {
-      "ep_roll_n": float(len(eps)),
-      "ep_ret_mean": mean(returns),
-      "ep_ret_max": max(returns),
-      "ep_len_mean": mean(lengths),
-      "ep_fwd_rw_mean": mean(forwards),
-      "ep_dx_mean": mean(dx_sums),
-      "ep_dx_max": max(dx_sums),
-      "ep_net_x_mean": mean(net_x),
-      "ep_net_x_max": max(net_x),
-    }
+    return _episode_batch_summary(list(self._episodes))
 
 
-def format_rolling_log_suffix(summary: dict[str, float] | None) -> str:
-  """output.log 用の固定フォーマット suffix（パースしやすい）。"""
+class EpisodeIntervalBuffer:
+  """前回コンソールログ以降に終了したエピソードを保持する。"""
+
+  def __init__(self) -> None:
+    self._episodes: list[EpisodeSnapshot] = []
+
+  def push(self, snapshot: EpisodeSnapshot) -> None:
+    self._episodes.append(snapshot)
+
+  def take_summary(self) -> dict[str, float] | None:
+    """集計してバッファを空にする（ログ 1 行 = 前回ログから今回まで）。"""
+    if not self._episodes:
+      return None
+    summary = _episode_batch_summary(self._episodes)
+    self._episodes.clear()
+    return summary
+
+
+def format_interval_log_suffix(summary: dict[str, float] | None) -> str:
+  """前回ログ区間のエピソード統計（コンソール進捗行用）。"""
   if summary is None:
-    return " | ep_roll_n:      0"
+    return (
+      " | ep_ret_mean:        n/a"
+      " | ep_len_mean:        n/a"
+      " | ep_fwd_rw_mean:        n/a"
+      " | ep_dx_mean:        n/a"
+      " | ep_dx_max:        n/a"
+      " | ep_net_x_mean:        n/a"
+    )
   return (
-    f" | ep_roll_n: {int(summary['ep_roll_n']):6d}"
     f" | ep_ret_mean: {summary['ep_ret_mean']:10.5f}"
-    f" | ep_ret_max: {summary['ep_ret_max']:10.5f}"
     f" | ep_len_mean: {summary['ep_len_mean']:10.3f}"
     f" | ep_fwd_rw_mean: {summary['ep_fwd_rw_mean']:10.5f}"
     f" | ep_dx_mean: {summary['ep_dx_mean']:10.5f}"

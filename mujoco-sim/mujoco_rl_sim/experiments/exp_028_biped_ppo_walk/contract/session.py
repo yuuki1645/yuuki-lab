@@ -379,18 +379,12 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
 
       if updates_done_this_run == 1 or last_update % config.LOG_EVERY == 0:
         rolling = episode_metrics.rolling_summary()
+        interval_suffix = episode_metrics.take_interval_log_suffix()
         print(
           f"update {last_update: 5d}/{end_update} "
           f"(run +{updates_done_this_run}/{run.num_updates}) | "
-          f"avg_update_s: {avg_update_s:8.3f} | "
-          f"mean_target: {stats['mean_target']:10.5f} | "
-          f"policy_loss: {stats['policy_loss']:10.5f} | "
-          f"value_loss: {stats['value_loss']:10.5f} | "
-          f"entropy: {stats['entropy']:10.5f} | "
-          f"approx_kl: {stats['approx_kl']:10.5f} | "
-          f"clip_frac: {stats['clip_fraction']:10.5f} | "
-          f"episodes: {episode_index}"
-          f"{episode_metrics.format_rolling_log_suffix()}"
+          f"avg_update_s: {avg_update_s:8.3f}"
+          f"{interval_suffix}"
         )
         wandb_logging.log_train_update(
           stats,

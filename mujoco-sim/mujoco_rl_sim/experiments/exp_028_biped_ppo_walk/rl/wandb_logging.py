@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from lib.episode_rolling import (
+  EpisodeIntervalBuffer,
   EpisodeRollingWindow,
-  format_rolling_log_suffix,
+  EpisodeSnapshot,
+  format_interval_log_suffix,
   rolling_summary_to_wandb,
 )
 from lib.run_dir import wandb_active_run_name
@@ -54,6 +56,7 @@ _best_train_ep_return_mean: float | None = None
 class EpisodeMetricsCollector:
   def __init__(self) -> None:
     self._rolling = EpisodeRollingWindow(window=config.EPISODE_ROLLING_WINDOW)
+    self._interval = EpisodeIntervalBuffer()
     self.reset()
 
   def reset(self) -> None:
@@ -91,10 +94,11 @@ class EpisodeMetricsCollector:
     self._episode_dx_sum += float(step_info.get("imu_dx", 0.0))
     if self._episode_start_imu_x is None:
       self._episode_start_imu_x = float(step_info.get("imu_x", 0.0))
-    if not _active:
-      return
+    # コンソール interval 用（wandb 無効でも ep_* を集計）
     self._return += reward
     self._forward += step_info["reward_forward"]
+    if not _active:
+      return
     self._forward_imu += step_info.get("reward_forward_imu", 0.0)
     self._forward_foot += step_info.get("reward_forward_foot", 0.0)
     self._effort_penalty += step_info["reward_effort_penalty"]
@@ -141,9 +145,6 @@ class EpisodeMetricsCollector:
     step_info: dict[str, Any],
     env_step: int,
   ) -> None:
-    if not _active:
-      return
-
     ep_len = float(episode_step)
     termination_reason = step_info.get("termination_reason")
     basket_force_n = step_info.get("basket_contact_normal_force_n")
@@ -159,13 +160,20 @@ class EpisodeMetricsCollector:
     total_dx_imu = self._episode_dx_sum
 
     if self._policy_steps_in_episode > 0:
-      self._rolling.push(
+      snapshot = EpisodeSnapshot(
         return_=self._return,
         length=ep_len,
         forward_reward_sum=self._forward,
         total_dx_imu=total_dx_imu,
         net_imu_x=net_imu_x,
       )
+      self._interval.push(snapshot)
+      if _active:
+        self._rolling.push(snapshot)
+
+    if not _active:
+      self.reset()
+      return
 
     metrics: dict[str, float] = {
       "episode/return": self._return,
@@ -248,8 +256,9 @@ class EpisodeMetricsCollector:
   def rolling_summary(self) -> dict[str, float] | None:
     return self._rolling.summary()
 
-  def format_rolling_log_suffix(self) -> str:
-    return format_rolling_log_suffix(self._rolling.summary())
+  def take_interval_log_suffix(self) -> str:
+    """前回ログ以降のエピソード統計をフォーマットし、interval バッファをクリア。"""
+    return format_interval_log_suffix(self._interval.take_summary())
 
 
 class TerminationTracker:

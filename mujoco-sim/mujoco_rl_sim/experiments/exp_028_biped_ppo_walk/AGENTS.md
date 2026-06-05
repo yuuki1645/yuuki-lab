@@ -8,6 +8,7 @@
 - **実行**: 本フォルダで `python train.py` / `python visualize.py`
 - **レイアウト**: 本体は `sim/`（環境・報酬・観測）と `rl/`（PPO・ckpt）。補助は `scripts/`。ルートは `train.py` / `visualize.py` / `config.py` など入口のみ
 - **コードリーディング**: 詳細手引きは [README.md](README.md) の「コードリーディングの手引き」（本 AGENTS.md には落とし穴のみ）
+- **報酬設計**: 全文は [README.md](README.md) の「報酬設計」節（`sim/reward.py` の正本ドキュメント）
 - **契約**: `contract.TELEMETRY_CONTRACT`（= `BIPED_WALK_V1`）
 - **チェックポイント**: `mujoco_rl_sim/runs/exp_028_biped_ppo_walk/`
 
@@ -27,7 +28,7 @@
 
 ## 変更時の注意
 
-- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README.md に書くこと」に従い README 手引きを更新（AGENTS へ長文手引きを複製しない）
+- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README.md に書くこと」に従い README を更新（**報酬設計節を必ず**、AGENTS へ長文を複製しない）
 - 観測次元を変える場合は `contract/biped_walk_v1.py` + `config.OBS_DIM` + `contract/validate`
 - sweep に載せるキーは `lib/dispatch_config.SWEEPABLE_CONFIG_KEYS` に追加
 - exp_026 のチェックポイントは **観測 48→51** のためそのまま読めない

@@ -281,7 +281,6 @@ class Reward:
     # 報酬合成: forward = IMU/支持脚前進, shaping = 歩行 shaping ± ペナルティ
 
     MAX_DX_PER_STEP = config.MAX_DX_PER_STEP
-    APPLY_EFFORT_PENALTY = config.APPLY_EFFORT_PENALTY
 
     #region 生値読み出し（位置・速度差分）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
@@ -358,7 +357,7 @@ class Reward:
     #endregion
 
     #region effort
-    effort_penalty = effort.penalty if APPLY_EFFORT_PENALTY else 0.0
+    effort_penalty = effort.penalty if config.REWARD_ENABLE_EFFORT else 0.0
     #endregion
 
     #region shaping — 歩行ボーナス
@@ -406,6 +405,33 @@ class Reward:
       left_foot_dx=left_foot_dx,
       right_foot_dx=right_foot_dx,
     )
+    #endregion
+
+    #region ENABLE 群による項の無効化（config.REWARD_ENABLE_*）
+    if not config.REWARD_ENABLE_FORWARD:
+      forward_imu = 0.0
+    if not config.REWARD_ENABLE_FORWARD_FOOT:
+      forward_foot = 0.0
+    if not config.REWARD_ENABLE_PROGRESS:
+      progress_bonus = 0.0
+    if not config.REWARD_ENABLE_WALK_SHAPING:
+      push_off_bonus = 0.0
+      landing_bonus = 0.0
+      alternating_landing_bonus = 0.0
+      swing_clearance_bonus = 0.0
+    if not config.REWARD_ENABLE_UPRIGHT_BONUS:
+      upright_bonus = 0.0
+    if not config.REWARD_ENABLE_POSTURE_PENALTIES:
+      backward_lean_penalty = 0.0
+      forward_lean_penalty = 0.0
+      heading_misalign_penalty = 0.0
+      lateral_tilt_penalty = 0.0
+      height_penalty = 0.0
+      knee_hyperflex_penalty = 0.0
+    if not config.REWARD_ENABLE_DOUBLE_SUPPORT:
+      double_support_penalty = 0.0
+    if not config.REWARD_ENABLE_FLIGHT_DURATION:
+      flight_duration_penalty = 0.0
     #endregion
 
     #region breakdown 組み立て

@@ -382,7 +382,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
         interval_suffix = episode_metrics.take_interval_log_suffix()
         print(
           f"update {last_update: 5d}/{end_update} "
-          f"(run +{updates_done_this_run}/{run.num_updates}) | "
+          f"(run +{updates_done_this_run: 5d}/{run.num_updates}) | "
           f"avg_update_s: {avg_update_s:8.3f}"
           f"{interval_suffix}"
         )

@@ -87,12 +87,12 @@ def format_interval_log_suffix(summary: dict[str, float] | None) -> str:
       " | ep_net_x_mean:        n/a"
     )
   return (
-    f" | ep_ret_mean: {summary['ep_ret_mean']:10.5f}"
-    f" | ep_len_mean: {summary['ep_len_mean']:10.3f}"
-    f" | ep_fwd_rw_mean: {summary['ep_fwd_rw_mean']:10.5f}"
-    f" | ep_dx_mean: {summary['ep_dx_mean']:10.5f}"
-    f" | ep_dx_max: {summary['ep_dx_max']:10.5f}"
-    f" | ep_net_x_mean: {summary['ep_net_x_mean']:10.5f}"
+    f" | ep_ret_mean: {summary['ep_ret_mean']:7.1f}"
+    f" | ep_len_mean: {summary['ep_len_mean']:7.1f}"
+    f" | ep_fwd_rw_mean: {summary['ep_fwd_rw_mean']:7.1f}"
+    f" | ep_dx_mean: {summary['ep_dx_mean']:7.1f}"
+    f" | ep_dx_max: {summary['ep_dx_max']:7.1f}"
+    f" | ep_net_x_mean: {summary['ep_net_x_mean']:10.3f}"
   )
 
 

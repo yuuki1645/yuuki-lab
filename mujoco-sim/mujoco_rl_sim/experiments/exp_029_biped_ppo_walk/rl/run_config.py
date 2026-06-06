@@ -82,6 +82,7 @@ class TrainRunConfig:
   step_wall_sleep_sec: float | None
   config_set_args: tuple[str, ...]
   post_train_eval: bool
+  training_seed: int | None
 
 
 def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
@@ -144,6 +145,15 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     "--no-eval",
     action="store_true",
     help="学習終了後の自動 eval（eval_report.json）をスキップ",
+  )
+  p.add_argument(
+    "--seed",
+    type=int,
+    default=None,
+    help=(
+      "学習 RNG の seed（省略時は DISPATCH_SEED 環境変数、どちらも無ければ非決定的）。"
+      "eval seed とは別。"
+    ),
   )
 
   # --- config.py 上書き（run 単位） ---
@@ -265,4 +275,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     step_wall_sleep_sec=step_wall_sleep_sec,
     config_set_args=config_set_args,
     post_train_eval=not args.no_eval,
+    training_seed=args.seed,
   )

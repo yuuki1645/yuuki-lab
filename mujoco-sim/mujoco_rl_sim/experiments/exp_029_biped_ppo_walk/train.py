@@ -30,6 +30,7 @@ from lib.run_config_snapshot import (
   build_effective_config_snapshot,
   write_config_effective_json,
 )
+from lib.training_seed import apply_training_seed, resolve_training_seed
 from package_meta import EXP_NAME
 import rl.checkpoint as checkpoint
 import rl.wandb_logging as wandb_logging
@@ -108,6 +109,11 @@ def _wandb_init(
     }
     extra_tags = ("contract",)
 
+  training_seed = resolve_training_seed(cli_seed=run.training_seed)
+  if training_seed is not None:
+    extra_config = dict(extra_config)
+    extra_config["training_seed"] = training_seed
+
   if applied_config_overrides:
     extra_config = dict(extra_config)
     extra_config["config_overrides"] = applied_config_overrides
@@ -163,6 +169,26 @@ def main() -> None:
   run = parse_train_args()
   applied_overrides = _apply_run_config_overrides(run)
 
+  training_seed = resolve_training_seed(cli_seed=run.training_seed)
+  if training_seed is not None:
+    apply_training_seed(training_seed)
+    print(f"[seed] training seed={training_seed}")
+  else:
+    print("[seed] training seed not set (non-deterministic run)")
+
+  eval_report: dict[str, Any] | None = None
+  try:
+    eval_report = _run_training(run, applied_overrides)
+  finally:
+    if eval_report is not None:
+      wandb_logging.log_eval_report(eval_report)
+    wandb_logging.finish()
+
+
+def _run_training(
+  run: TrainRunConfig,
+  applied_overrides: dict[str, Any],
+) -> dict[str, Any] | None:
   def init_wandb(run_cfg: TrainRunConfig, payload: dict[str, Any] | None) -> None:
     _wandb_init(
       run_cfg,
@@ -187,21 +213,22 @@ def main() -> None:
     train_run_config=run,
   )
   train_result = run_ppo_train(bindings)
-  _maybe_run_post_train_eval(run, train_result)
+  return _maybe_run_post_train_eval(run, train_result)
 
 
-def _maybe_run_post_train_eval(run: TrainRunConfig, train_result) -> None:
+def _maybe_run_post_train_eval(run: TrainRunConfig, train_result) -> dict[str, Any] | None:
   """学習完了後に ``final.pt`` で eval v0 を実行する（``--no-eval`` でスキップ）。"""
   if not run.post_train_eval:
     print("[eval] post-train eval skipped (--no-eval)")
-    return
+    return None
 
   final_ckpt = train_result.final_checkpoint_path
   if final_ckpt is None:
     print("[eval] post-train eval skipped (no final checkpoint saved)")
-    return
+    return None
 
-  run_post_train_eval(final_ckpt)
+  _out_path, report = run_post_train_eval(final_ckpt)
+  return report
 
 
 if __name__ == "__main__":

@@ -427,7 +427,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
       )
       final_checkpoint_path = paths[0]
       print(f"[checkpoint] saved final -> {final_checkpoint_path}")
-    wandb_logging.finish()
+    # wandb.finish() は train.py が post-train eval 後に呼ぶ（eval 主指標を summary に載せるため）
     if tel is not None:
       tel.stop()
 

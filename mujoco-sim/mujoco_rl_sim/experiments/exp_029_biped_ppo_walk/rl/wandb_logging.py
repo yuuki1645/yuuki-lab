@@ -51,6 +51,8 @@ def with_fav_metrics(metrics: dict[str, float]) -> dict[str, float]:
 _active = False
 _termination_tracker: TerminationTracker | None = None
 _best_train_ep_return_mean: float | None = None
+_checkpoint_run_dir: Path | None = None
+_eval_report: dict[str, Any] | None = None
 
 
 class EpisodeMetricsCollector:
@@ -457,6 +459,8 @@ def active_run_name() -> str | None:
 
 def log_checkpoint_run_dir(path: Path) -> None:
   """ローカルチェックポイント run パスを wandb config に記録する。"""
+  global _checkpoint_run_dir
+  _checkpoint_run_dir = path.resolve()
   if not _active:
     return
   import wandb
@@ -466,26 +470,107 @@ def log_checkpoint_run_dir(path: Path) -> None:
   wandb.config.update({"checkpoint_run_dir": str(path)}, allow_val_change=True)
 
 
-def _write_dispatch_summary() -> None:
-  """dispatch Worker 向けに主指標を JSON で書き出す。"""
+def _eval_summary_metrics(report: dict[str, Any]) -> dict[str, float]:
+  """eval_report.json から W&B / dispatch 用の平坦な指標 dict を作る。"""
+  from eval.spec import PRIMARY_METRIC_NAME
+
+  metrics: dict[str, float] = {}
+  primary_value = report.get("primary_metric_value")
+  if primary_value is not None:
+    metrics[str(report.get("primary_metric_name", PRIMARY_METRIC_NAME))] = float(
+      primary_value
+    )
+
+  summary = report.get("summary") or {}
+  nested = summary.get("metrics") or {}
+  disp = nested.get("displacement_x") or {}
+  for key in ("mean", "std", "min", "max", "ci95_low", "ci95_high"):
+    if key in disp:
+      metrics[f"eval/displacement_x_{key}"] = float(disp[key])
+  if "truncated_rate" in nested:
+    metrics["eval/truncated_rate"] = float(nested["truncated_rate"])
+  return metrics
+
+
+def log_eval_report(report: dict[str, Any]) -> None:
+  """post-train eval 結果を W&B run.summary と dispatch 台帳用に保持する。"""
+  global _eval_report
+  _eval_report = report
+  if not _active:
+    return
+  import wandb
+
+  if wandb.run is None:
+    return
+
+  for key, value in _eval_summary_metrics(report).items():
+    wandb.run.summary[key] = value
+  eval_spec_id = report.get("eval_spec_id")
+  if eval_spec_id:
+    wandb.run.summary["eval_spec_id"] = str(eval_spec_id)
+
+
+def _dispatch_summary_write_paths() -> list[Path]:
+  """dispatch Worker / Coordinator が参照する summary 出力先。"""
   run_id = os.environ.get("DISPATCH_RUN_ID", "").strip()
   if not run_id:
-    return
-  payload: dict[str, Any] = {
-    "dispatch_run_id": run_id,
-    "train/ep_return_mean_max": _best_train_ep_return_mean,
-  }
+    return []
+
+  paths: list[Path] = []
+  try:
+    from package_meta import EXP_NAME, MUJOCO_RL_SIM_ROOT
+
+    paths.append(MUJOCO_RL_SIM_ROOT / "runs" / EXP_NAME / run_id / "dispatch_summary.json")
+  except ImportError:
+    pass
+
+  if _checkpoint_run_dir is not None:
+    paths.append(_checkpoint_run_dir / "dispatch_summary.json")
+  return paths
+
+
+def _build_dispatch_summary_payload() -> dict[str, Any] | None:
+  """dispatch_summary.json の内容を組み立てる（DISPATCH_RUN_ID 未設定時は None）。"""
+  run_id = os.environ.get("DISPATCH_RUN_ID", "").strip()
+  if not run_id:
+    return None
+
+  from eval.spec import PRIMARY_METRIC_NAME
+
+  payload: dict[str, Any] = {"dispatch_run_id": run_id}
+  if _checkpoint_run_dir is not None:
+    payload["artifact_path"] = str(_checkpoint_run_dir)
+
+  if _eval_report is not None:
+    payload.update(_eval_summary_metrics(_eval_report))
+    payload["primary_metric_name"] = str(
+      _eval_report.get("primary_metric_name", PRIMARY_METRIC_NAME)
+    )
+    eval_spec_id = _eval_report.get("eval_spec_id")
+    if eval_spec_id:
+      payload["eval_spec_id"] = str(eval_spec_id)
+
   if _best_train_ep_return_mean is not None:
+    payload["train/ep_return_mean_max"] = _best_train_ep_return_mean
     payload["train/ep_return_mean"] = _best_train_ep_return_mean
-  out = Path(__file__).resolve().parent / "dispatch_summary.json"
-  out.write_text(
-    __import__("json").dumps(payload, ensure_ascii=False, indent=2),
-    encoding="utf-8",
-  )
+
+  return payload
+
+
+def _write_dispatch_summary() -> None:
+  """dispatch Worker 向けに主指標を JSON で書き出す。"""
+  payload = _build_dispatch_summary_payload()
+  if payload is None:
+    return
+  text = __import__("json").dumps(payload, ensure_ascii=False, indent=2)
+  for out in _dispatch_summary_write_paths():
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
 
 
 def finish() -> None:
   global _active, _termination_tracker, _best_train_ep_return_mean
+  global _checkpoint_run_dir, _eval_report
   if _active:
     import wandb
 
@@ -498,3 +583,5 @@ def finish() -> None:
   _active = False
   _termination_tracker = None
   _best_train_ep_return_mean = None
+  _checkpoint_run_dir = None
+  _eval_report = None

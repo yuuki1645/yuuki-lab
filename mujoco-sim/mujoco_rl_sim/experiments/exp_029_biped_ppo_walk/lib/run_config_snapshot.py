@@ -10,6 +10,7 @@ from typing import Any
 
 import config
 from lib.config_overrides import OVERRIDABLE_CONFIG_KEYS
+from lib.training_seed import resolve_training_seed
 from package_meta import MUJOCO_RL_SIM_ROOT
 
 CONFIG_EFFECTIVE_FILENAME = "config_effective.json"
@@ -130,6 +131,7 @@ def build_effective_config_snapshot(
         "telemetry_port": run.telemetry_port,
         "step_wall_sleep_sec": run.step_wall_sleep_sec,
         "config_set_args": list(run.config_set_args),
+        "training_seed": run.training_seed,
       }
     ),
   }
@@ -140,6 +142,10 @@ def build_effective_config_snapshot(
   dispatch_meta = _dispatch_env_metadata()
   if dispatch_meta:
     snapshot["dispatch"] = dispatch_meta
+
+  effective_training_seed = resolve_training_seed(cli_seed=run.training_seed)
+  if effective_training_seed is not None:
+    snapshot["training_seed"] = int(effective_training_seed)
 
   if resume_payload is not None:
     snapshot["resume"] = _json_value(

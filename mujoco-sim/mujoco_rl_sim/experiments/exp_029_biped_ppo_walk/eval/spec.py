@@ -30,7 +30,7 @@ DEG2RAD = float(np.pi / 180.0)
 ROOT_YAW_NOISE_RAD = ROOT_YAW_NOISE_DEG * DEG2RAD
 JOINT_NOISE_RAD = JOINT_NOISE_DEG * DEG2RAD
 
-# 主指標名（eval_report.json / 将来 W&B 用）
+# 主指標名（eval_report.json / W&B run.summary / dispatch_summary）
 PRIMARY_METRIC_NAME = "eval/displacement_x_mean"
 
 

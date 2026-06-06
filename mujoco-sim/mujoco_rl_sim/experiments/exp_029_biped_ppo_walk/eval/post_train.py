@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from eval.report import build_eval_report, write_eval_report
 from eval.runner import run_checkpoint_eval
@@ -14,14 +15,14 @@ def run_post_train_eval(
   *,
   device: str = "cpu",
   out_path: Path | None = None,
-) -> Path:
+) -> tuple[Path, dict[str, Any]]:
   """``final.pt`` 等に対して eval を実行し ``eval_report.json`` を書き出す。
 
   Args:
     out_path: 省略時は ``<checkpoint 親>/eval_report.json``。
 
   Returns:
-    書き出した ``eval_report.json`` のパス。
+    (書き出した ``eval_report.json`` のパス, report dict)
   """
   ckpt = checkpoint_path.resolve()
   if not ckpt.is_file():
@@ -48,4 +49,4 @@ def run_post_train_eval(
   print(
     f"[eval] truncated_rate={report['summary']['metrics']['truncated_rate']:.3f}"
   )
-  return out_path
+  return out_path, report

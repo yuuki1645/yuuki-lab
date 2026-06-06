@@ -176,10 +176,13 @@ python scripts/eval_compare.py --csv compare.csv
 
 | 項目 | 状態 |
 |------|------|
-| W&B `run.summary` への eval 主指標 | 未実装 |
+| W&B `run.summary` への eval 主指標 | **実装済**（`train.py` → `rl/wandb_logging.log_eval_report`） |
+| dispatch 台帳への eval 主指標 | **実装済**（`runs/<exp>/<run_id>/dispatch_summary.json`、eval 優先） |
 | dispatch / プロメテウスでの eval 横断 UI | 未実装 |
-| 学習 seed の正式適用（`DISPATCH_SEED` → RNG） | 未実装 |
+| 学習 seed の正式適用（`DISPATCH_SEED` / `--seed` → RNG） | **実装済**（`lib/training_seed.py`） |
 | 既存 run の一括 eval バッチ | 未実装（exp_029 は空から開始） |
+
+学習 seed の優先順位: CLI `--seed` > 環境変数 `DISPATCH_SEED` > 未指定（非決定的）。
 
 ## 実行
 

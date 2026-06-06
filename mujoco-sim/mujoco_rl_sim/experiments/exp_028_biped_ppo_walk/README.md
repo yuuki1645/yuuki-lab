@@ -76,12 +76,30 @@ python scripts/eval.py --checkpoint ... --out path/to/eval_report.json
 | ツール | 用途 |
 |--------|------|
 | `scripts/eval.py` | 公式採点（統計・JSON） |
+| `scripts/eval_compare.py` | 複数 run の `eval_report.json` 横断比較（表・CSV） |
 | `scripts/analyze_rollout.py` | デバッグ（時系列 JSON・代表フレーム PNG） |
 
 **学習終了後**は `train.py` が自動で `final.pt` を eval し、同 run ディレクトリに
 `eval_report.json` を書き出す（スキップ: `python train.py --no-eval`）。
 
 v0 は **JSON のみ**（W&B / dispatch 連携は未実装）。手動再 eval は `scripts/eval.py`。
+
+### run 横断比較（CLI）
+
+`eval_report.json` がある run だけを拾い、主指標 `eval/displacement_x_mean` の降順で一覧する。
+
+```bash
+# 既定: runs/exp_028_biped_ppo_walk/ を走査
+python scripts/eval_compare.py
+
+# 特定 run のみ
+python scripts/eval_compare.py ../../runs/exp_028_biped_ppo_walk/run_20260605_130101
+
+# CSV 出力
+python scripts/eval_compare.py --csv compare.csv
+```
+
+`eval_spec_id` が `biped_walk_eval_v0` と異なる report は `!` 列と警告で示す。
 
 ## ディレクトリ構成
 

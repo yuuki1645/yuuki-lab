@@ -1,6 +1,6 @@
 """exp_028 評価仕様（evaluation setup）の定数。
 
-v0: 開発・デバッグ用 5 seed × 3 ep = 15 試行。学習コードには影響しない。
+v0: 10 seed × 5 ep = 50 試行（日常 ckpt 評価用）。学習コードには影響しない。
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ import numpy as np
 # 評価仕様 ID（eval_report.json に記録）
 EVAL_SPEC_ID = "biped_walk_eval_v0"
 
-# 開発・デバッグ用（将来は 10×5 / 10×10 等へ拡張）
-EVAL_SEEDS: tuple[int, ...] = (101, 102, 103, 104, 105)
-EPISODES_PER_SEED = 3
+# 日常 ckpt 評価（将来は 10×10 等へ拡張）
+EVAL_SEEDS: tuple[int, ...] = (101, 102, 103, 104, 105, 106, 107, 108, 109, 110)
+EPISODES_PER_SEED = 5
 
 # 初期姿勢ノイズ（stand keyframe 適用後）
 ROOT_YAW_NOISE_DEG = 3.0

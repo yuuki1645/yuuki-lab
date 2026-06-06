@@ -32,6 +32,10 @@ wandb を無効にする例:
 
   python train.py --no-wandb
 
+学習終了後の自動 eval をスキップする例:
+
+  python train.py --no-eval
+
 config 定数を run ごとに上書きする例（``lib/config_overrides.OVERRIDABLE_CONFIG_KEYS`` 参照）:
 
   python train.py --set forward_reward_scale=55.0 --set reward_enable_walk_shaping=true
@@ -77,6 +81,7 @@ class TrainRunConfig:
   telemetry_port: int
   step_wall_sleep_sec: float | None
   config_set_args: tuple[str, ...]
+  post_train_eval: bool
 
 
 def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
@@ -134,6 +139,11 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     "--no-wandb",
     action="store_true",
     help="Weights & Biases ロギングを無効化（config.USE_WANDB を上書き）",
+  )
+  p.add_argument(
+    "--no-eval",
+    action="store_true",
+    help="学習終了後の自動 eval（eval_report.json）をスキップ",
   )
 
   # --- config.py 上書き（run 単位） ---
@@ -254,4 +264,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     telemetry_port=int(args.telemetry_port),
     step_wall_sleep_sec=step_wall_sleep_sec,
     config_set_args=config_set_args,
+    post_train_eval=not args.no_eval,
   )

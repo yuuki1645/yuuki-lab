@@ -26,6 +26,15 @@ class _EnvProtocol(Protocol):
 
 
 @dataclass(frozen=True)
+class TrainRunResult:
+  """``run_ppo_train`` 完了時のチェックポイント情報（学習後 eval 用）。"""
+
+  checkpoint_run_dir: Path | None
+  final_checkpoint_path: Path | None
+  updates_done_this_run: int
+
+
+@dataclass(frozen=True)
 class PpoTrainBindings:
   """実験フォルダ固有のモジュール・型を束ねる。"""
 
@@ -195,7 +204,7 @@ def _viewer_visualize_realtime(run: Any, config: Any, wall_sleep_sec: float) -> 
   return wall_sleep_sec > 0.0
 
 
-def run_ppo_train(bindings: PpoTrainBindings) -> None:
+def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   """PPO 学習のメインループ。
 
   外側: update ループ（NUM_UPDATES 回）
@@ -279,6 +288,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
       f"action_fn={config.WARMUP_ACTION_FN.__name__}"
     )
 
+  final_checkpoint_path: Path | None = None
   try:
     for u in range(start_update, end_update):
       t_update_start = time.perf_counter()
@@ -415,7 +425,14 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
         latest=False,
         final=True,
       )
-      print(f"[checkpoint] saved final -> {paths[0]}")
+      final_checkpoint_path = paths[0]
+      print(f"[checkpoint] saved final -> {final_checkpoint_path}")
     wandb_logging.finish()
     if tel is not None:
       tel.stop()
+
+  return TrainRunResult(
+    checkpoint_run_dir=checkpoint_run_dir,
+    final_checkpoint_path=final_checkpoint_path,
+    updates_done_this_run=updates_done_this_run,
+  )

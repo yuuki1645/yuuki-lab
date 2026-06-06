@@ -24,6 +24,7 @@ import json
 import os
 
 from contract import TELEMETRY_CONTRACT, PpoTrainBindings, run_ppo_train
+from eval.post_train import run_post_train_eval
 from lib.config_overrides import apply_cli_set_overrides, apply_dispatch_env_overrides
 from lib.run_config_snapshot import (
   build_effective_config_snapshot,
@@ -185,7 +186,22 @@ def main() -> None:
     ),
     train_run_config=run,
   )
-  run_ppo_train(bindings)
+  train_result = run_ppo_train(bindings)
+  _maybe_run_post_train_eval(run, train_result)
+
+
+def _maybe_run_post_train_eval(run: TrainRunConfig, train_result) -> None:
+  """学習完了後に ``final.pt`` で eval v0 を実行する（``--no-eval`` でスキップ）。"""
+  if not run.post_train_eval:
+    print("[eval] post-train eval skipped (--no-eval)")
+    return
+
+  final_ckpt = train_result.final_checkpoint_path
+  if final_ckpt is None:
+    print("[eval] post-train eval skipped (no final checkpoint saved)")
+    return
+
+  run_post_train_eval(final_ckpt)
 
 
 if __name__ == "__main__":

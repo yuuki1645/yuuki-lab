@@ -78,7 +78,10 @@ python scripts/eval.py --checkpoint ... --out path/to/eval_report.json
 | `scripts/eval.py` | 公式採点（統計・JSON） |
 | `scripts/analyze_rollout.py` | デバッグ（時系列 JSON・代表フレーム PNG） |
 
-v0 は **手動 CLI・JSON のみ**（W&B / dispatch 連携は未実装）。
+**学習終了後**は `train.py` が自動で `final.pt` を eval し、同 run ディレクトリに
+`eval_report.json` を書き出す（スキップ: `python train.py --no-eval`）。
+
+v0 は **JSON のみ**（W&B / dispatch 連携は未実装）。手動再 eval は `scripts/eval.py`。
 
 ## ディレクトリ構成
 

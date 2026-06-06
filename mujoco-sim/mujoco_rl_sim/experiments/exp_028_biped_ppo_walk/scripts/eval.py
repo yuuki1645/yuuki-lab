@@ -19,9 +19,7 @@ install()
 
 import argparse
 
-from eval.report import build_eval_report, write_eval_report
-from eval.runner import run_checkpoint_eval
-from eval.spec import EPISODES_PER_SEED, EVAL_SEEDS, PRIMARY_METRIC_NAME
+from eval.post_train import run_post_train_eval
 import rl.checkpoint as checkpoint
 
 
@@ -46,33 +44,8 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
   args = _parse_args()
   ckpt = checkpoint.resolve_checkpoint_path(args.checkpoint)
-  out_path = (
-    Path(args.out).expanduser().resolve()
-    if args.out
-    else (ckpt.parent / "eval_report.json")
-  )
-
-  print(
-    f"[eval] checkpoint={ckpt}\n"
-    f"[eval] trials={len(EVAL_SEEDS)} seeds × {EPISODES_PER_SEED} ep "
-    f"= {len(EVAL_SEEDS) * EPISODES_PER_SEED}"
-  )
-
-  records = run_checkpoint_eval(ckpt, device=args.device)
-  report = build_eval_report(checkpoint_path=ckpt, records=records)
-  write_eval_report(out_path, report)
-
-  disp = report["summary"]["metrics"]["displacement_x"]
-  print(f"[eval] wrote: {out_path}")
-  print(
-    f"[eval] {PRIMARY_METRIC_NAME}={disp['mean']:.4f} m "
-    f"(std={disp['std']:.4f}, min={disp['min']:.4f}, max={disp['max']:.4f}, "
-    f"95%CI=[{disp['ci95_low']:.4f}, {disp['ci95_high']:.4f}])"
-  )
-  print(
-    f"[eval] truncated_rate="
-    f"{report['summary']['metrics']['truncated_rate']:.3f}"
-  )
+  out_path = Path(args.out).expanduser().resolve() if args.out else None
+  run_post_train_eval(ckpt, device=args.device, out_path=out_path)
 
 
 if __name__ == "__main__":

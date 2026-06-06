@@ -12,6 +12,7 @@
 - **終了条件**: 全文は [README.md](README.md) の「終了条件と終了ペナルティ」節（`sim/termination.py` の正本ドキュメント）
 - **契約**: `contract.TELEMETRY_CONTRACT`（= `BIPED_WALK_V1`）
 - **チェックポイント**: `mujoco_rl_sim/runs/exp_028_biped_ppo_walk/`
+- **評価**: `python scripts/eval.py --checkpoint <run>/final.pt` → `eval_report.json`（仕様は README「評価仕様」・`eval/spec.py`）
 
 ## 歩行タスクの定義
 

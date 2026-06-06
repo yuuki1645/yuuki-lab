@@ -23,11 +23,62 @@ python visualize.py
 
 ```bash
 python scripts/analyze_rollout.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
+python scripts/eval.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 python scripts/preview_warmup.py
 .\scripts\launch_parallel.ps1
 ```
 
 契約表: `python -m contract markdown`
+
+## 評価仕様（evaluation setup）
+
+学習済みチェックポイントを **固定条件** で採点し、`eval_report.json` を出力する。  
+sweep ランキング用ではなく、**1 ckpt の性能を mean ± std で把握**するのが目的。
+
+| 項目 | v0（開発用） |
+|------|----------------|
+| 仕様 ID | `biped_walk_eval_v0`（`eval/spec.py`） |
+| 試行数 | **5 seed × 3 ep = 15** |
+| eval_seeds | `101, 102, 103, 104, 105` |
+| ポリシー | **deterministic**（`act_eval`） |
+| warmup | **False**（学習と同じ） |
+| エピソード長 | `MAX_STEPS_PER_EPISODE`（30 s） |
+
+### 初期姿勢ノイズ（eval のみ・`stand` keyframe 適用後）
+
+| 対象 | ノイズ |
+|------|--------|
+| ルート X/Y 位置 | **なし**（平面タスク） |
+| ルートヨー | ±3° |
+| 関節角 12 DOF | ±2°（`jnt_range` でクリップ） |
+| ルート線速度 | 各軸 ±0.05 m/s |
+| ルート角速度 | 各軸 ±0.1 rad/s |
+
+RNG: `np.random.default_rng([eval_seed, ep_index])`（15 試行すべて別ノイズ）。  
+`origin_imu_x` は **ノイズ適用後** の IMU 世界 X。
+
+### 主指標・副指標
+
+| 種別 | 指標 |
+|------|------|
+| **Primary** | `displacement_x = final_imu_x - origin_imu_x` の mean |
+| 統計量 | mean, std, min, max, 95%CI（全 15 試行） |
+| Secondary | `episode_length`, `truncated_rate`, `termination_breakdown`, `alternating_landing_rate`, `single_support_ratio`, `double_support_ratio` |
+
+### 実行・出力
+
+```bash
+python scripts/eval.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
+# 省略時: <checkpoint 親>/eval_report.json
+python scripts/eval.py --checkpoint ... --out path/to/eval_report.json
+```
+
+| ツール | 用途 |
+|--------|------|
+| `scripts/eval.py` | 公式採点（統計・JSON） |
+| `scripts/analyze_rollout.py` | デバッグ（時系列 JSON・代表フレーム PNG） |
+
+v0 は **手動 CLI・JSON のみ**（W&B / dispatch 連携は未実装）。
 
 ## ディレクトリ構成
 
@@ -37,7 +88,8 @@ python scripts/preview_warmup.py
 | `config.py`, `package_meta.py`, `_paths.py` | 設定・パス |
 | `sim/` | 環境・観測・報酬・終了・warmup |
 | `rl/` | PPO・チェックポイント・run 設定・W&B |
-| `scripts/` | ロールアウト解析・warmup プレビュー・並列学習 |
+| `eval/` | チェックポイント評価（仕様・ノイズ・集計・レポート） |
+| `scripts/` | `eval.py`・ロールアウト解析・warmup プレビュー・並列学習 |
 | `contract/` | 観測契約 `biped_walk_v1`・PPO ループ |
 | `lib/` | ctrl・正規化・dispatch 上書き |
 | `telemetry/`, `mujoco_sim_common/` | Hub・viewer 共有 |

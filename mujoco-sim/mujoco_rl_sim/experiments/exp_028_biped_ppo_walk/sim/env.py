@@ -1,8 +1,10 @@
 """exp_028: 両脚交互片脚歩行 PPO（ボディフレーム姿勢・12 DOF）。"""
 
-import time
+from __future__ import annotations
 
+import time
 import mujoco
+import numpy as np
 import mujoco.viewer
 from mujoco_sim_common.viewer_height_overlay import sync_viewer_with_height_overlay
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
@@ -29,7 +31,6 @@ from sim.termination import (
   REASON_BACKWARD_LEAN,
   Termination,
 )
-
 
 class EnvBipedPPO:
   """両脚 12 DOF・観測 51 次元・+X 交互片脚歩行タスク。
@@ -72,9 +73,12 @@ class EnvBipedPPO:
       mujoco.mj_resetData(self.model, self.data)
     mujoco.mj_forward(self.model, self.data)
 
-  def reset(self):
-    """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。"""
-    self._apply_stand_keyframe()
+  def _finalize_reset(self) -> tuple[np.ndarray, float]:
+    """物理状態確定後にエピソード状態・観測を初期化する。
+
+    Returns:
+      (obs_vector, origin_imu_x) … origin はノイズ適用後の IMU 世界 X [m]。
+    """
     if self.viewer is not None:
       sync_viewer_with_height_overlay(self.viewer)
 
@@ -93,8 +97,26 @@ class EnvBipedPPO:
     policy_obs, _ = self._observation.build(
       self.model, self.data, self._episode, dx=0.0
     )
-    vec = policy_obs.to_vector()
-    return vec
+    return policy_obs.to_vector(), imu_x
+
+  def reset(self):
+    """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。"""
+    self._apply_stand_keyframe()
+    obs, _origin_imu_x = self._finalize_reset()
+    return obs
+
+  def reset_eval(self, rng: np.random.Generator) -> tuple[np.ndarray, float, dict]:
+    """Eval 用 reset: stand keyframe + 初期姿勢ノイズ（学習には使わない）。
+
+    Returns:
+      (obs, origin_imu_x, noise_applied)
+    """
+    from eval.noise import apply_initial_pose_noise
+
+    self._apply_stand_keyframe()
+    noise_applied = apply_initial_pose_noise(self.model, self.data, rng)
+    obs, origin_imu_x = self._finalize_reset()
+    return obs, origin_imu_x, noise_applied
 
   def step(self, action, visualize: bool = False, episode_step: int = 0):
     """ポリシー行動を適用し、1 制御ステップ分シミュレーションする。

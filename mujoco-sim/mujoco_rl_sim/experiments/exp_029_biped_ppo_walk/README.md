@@ -180,6 +180,7 @@ python scripts/eval_compare.py --csv compare.csv
 | dispatch 台帳への eval 主指標 | **実装済**（`runs/<exp>/<run_id>/dispatch_summary.json`、eval 優先） |
 | dispatch / プロメテウスでの eval 横断 UI | 未実装 |
 | 学習 seed の正式適用（`DISPATCH_SEED` / `--seed` → RNG） | **実装済**（`lib/training_seed.py`） |
+| pytest + GitHub Actions CI | **実装済**（`tests/`、`.github/workflows/mujoco-rl-tests.yml`） |
 | 既存 run の一括 eval バッチ | 未実装（exp_029 は空から開始） |
 
 学習 seed の優先順位: CLI `--seed` > 環境変数 `DISPATCH_SEED` > 未指定（非決定的）。
@@ -192,6 +193,16 @@ pip install -r requirements.txt
 python train.py
 python visualize.py
 ```
+
+### テスト（pytest）
+
+```bash
+pip install pytest
+python -m pytest tests/ -q -m "not slow"   # 高速のみ（config / eval / 契約 / 報酬）
+python -m pytest tests/ -q                 # slow 含む（MuJoCo reset・1-update 学習）
+```
+
+リポジトリ CI: `.github/workflows/mujoco-rl-tests.yml`（push / PR で `mujoco-sim/**` 変更時）。
 
 補助 CLI:
 

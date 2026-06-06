@@ -1,0 +1,54 @@
+# exp_029 RL + dispatch の pytest（高速テストは毎 push、slow は同 workflow 内で続行）
+name: mujoco-rl-tests
+
+on:
+  push:
+    paths:
+      - "mujoco-sim/**"
+      - ".github/workflows/mujoco-rl-tests.yml"
+  pull_request:
+    paths:
+      - "mujoco-sim/**"
+      - ".github/workflows/mujoco-rl-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: mujoco-sim
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            mujoco-sim/pyproject.toml
+            mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[rl,dispatch]"
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pytest
+          pip install -r mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/requirements.txt
+
+      - name: dispatch tests
+        run: python -m pytest mujoco_rl_sim/dispatch/tests/ -q
+
+      - name: exp_029 fast tests
+        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk
+        env:
+          WANDB_MODE: disabled
+        run: python -m pytest tests/ -q -m "not slow"
+
+      - name: exp_029 slow tests (MuJoCo / train smoke)
+        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk
+        env:
+          WANDB_MODE: disabled
+        run: python -m pytest tests/ -q -m slow

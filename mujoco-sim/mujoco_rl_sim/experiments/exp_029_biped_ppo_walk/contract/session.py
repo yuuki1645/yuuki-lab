@@ -15,6 +15,7 @@ import numpy as np
 
 from contract.telemetry import build_reset_payload, build_step_payload
 from contract.spec import TelemetryContract
+from lib.train_throughput import ThroughputTracker, UpdateTiming, pacing_warnings
 from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
 
 
@@ -119,6 +120,14 @@ def _print_run_banner(
     )
   else:
     print("[training-dr] disabled")
+
+  wall_sleep = _effective_step_wall_sleep_sec(run, config)
+  for msg in pacing_warnings(
+    viewer=bool(run.viewer),
+    telemetry=bool(run.telemetry),
+    step_wall_sleep_sec=wall_sleep,
+  ):
+    print(msg)
 
 
 def _run_warmup_step(
@@ -267,9 +276,9 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
     )
 
   episode_step = 0
-  update_time_sum_s = 0.0
   last_update = start_update
   updates_done_this_run = 0
+  throughput = ThroughputTracker(rollout_steps_per_update=int(config.ROLLOUT_STEPS))
 
   wandb_name = wandb_logging.active_run_name() if run.wandb else None
   checkpoint_run_dir = (
@@ -302,7 +311,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   final_checkpoint_path: Path | None = None
   try:
     for u in range(start_update, end_update):
-      t_update_start = time.perf_counter()
+      t_rollout_start = time.perf_counter()
       policy_steps = 0
 
       # --- ロールアウト収集: ROLLOUT_STEPS 分 interact → バッファ ---
@@ -379,12 +388,23 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
             )
           episode_step = 0
 
+      t_rollout_s = time.perf_counter() - t_rollout_start
+
       # --- PPO 更新（同一ロールアウトを PPO_EPOCHS 回ミニバッチ学習）---
+      t_ppo_start = time.perf_counter()
       stats = agent.update(obs)
+      t_ppo_s = time.perf_counter() - t_ppo_start
+
+      timing = UpdateTiming(
+        rollout_s=t_rollout_s,
+        ppo_update_s=t_ppo_s,
+        rollout_steps=int(config.ROLLOUT_STEPS),
+      )
+      throughput.record(timing)
+
       last_update = u + 1
       updates_done_this_run += 1
-      update_time_sum_s += time.perf_counter() - t_update_start
-      avg_update_s = update_time_sum_s / updates_done_this_run
+      avg_update_s = throughput.avg_update_s
 
       if (
         checkpoint_run_dir is not None
@@ -409,6 +429,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
           f"update {last_update: 5d}/{end_update} "
           f"(run +{updates_done_this_run: 5d}/{run.num_updates}) | "
           f"avg_update_s: {avg_update_s:8.3f}"
+          f"{throughput.format_interval_suffix(timing)}"
           f"{interval_suffix}"
         )
         wandb_logging.log_train_update(
@@ -418,9 +439,12 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
           step=total_env_steps,
           episode_rolling=rolling,
           total_updates=end_update,
+          timing_metrics=throughput.wandb_metrics(timing),
         )
 
   finally:
+    if updates_done_this_run > 0:
+      print(throughput.format_run_summary())
     if (
       checkpoint_run_dir is not None
       and config.CHECKPOINT_SAVE_FINAL

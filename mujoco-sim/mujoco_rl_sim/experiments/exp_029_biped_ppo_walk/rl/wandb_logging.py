@@ -36,6 +36,9 @@ FAV_METRIC_ALIASES: dict[str, str] = {
   "episode/total_dx_imu": "fav/total_dx_imu",
   "train/ep_return_mean": "fav/ep_return_mean",
   "train/ep_total_dx_imu_mean": "fav/ep_total_dx_imu_mean",
+  "train/rollout_fraction": "fav/rollout_fraction",
+  "train/steps_per_sec": "fav/steps_per_sec",
+  "train/avg_steps_per_sec": "fav/avg_steps_per_sec",
 }
 
 
@@ -408,6 +411,7 @@ def log_train_update(
   step: int,
   episode_rolling: dict[str, float] | None = None,
   total_updates: int | None = None,
+  timing_metrics: dict[str, float] | None = None,
 ) -> None:
   metrics: dict[str, float] = {
     "train/mean_target": stats["mean_target"],
@@ -419,6 +423,8 @@ def log_train_update(
     "train/update": float(update),
     "train/episodes_finished": float(episodes_finished),
   }
+  if timing_metrics is not None:
+    metrics.update(timing_metrics)
   if episode_rolling is not None:
     metrics.update(rolling_summary_to_wandb(episode_rolling))
     global _best_train_ep_return_mean

@@ -196,6 +196,20 @@ python scripts/eval_compare.py --csv compare.csv
 
 `visualize.py` / `scripts/eval.py` / `analyze_rollout.py` は DR **なし**（決定的 stand）。
 
+### 学習スループット計測（レベル1）
+
+学習ログ（``LOG_EVERY`` ごと）に **rollout / PPO update の壁時計** を表示する。
+
+| 指標 | 意味 |
+|------|------|
+| `rollout_s` | 環境ロールアウト収集 [s] |
+| `ppo_s` | PPO 勾配更新 [s] |
+| `rollout_frac` | rollout が update 全体に占める割合（**0.7 超なら sim 側が支配的**） |
+| `steps/s` | `ROLLOUT_STEPS / rollout_s` |
+
+最速設定: ``--no-viewer --step-wall-sleep 0 --no-telemetry``（`launch_parallel.ps1` 既定）。
+W&B には ``train/rollout_fraction`` 等も記録（``fav/*`` エイリアスあり）。
+
 学習 seed の優先順位: CLI `--seed` > 環境変数 `DISPATCH_SEED` > 未指定（非決定的）。
 
 ## 実行

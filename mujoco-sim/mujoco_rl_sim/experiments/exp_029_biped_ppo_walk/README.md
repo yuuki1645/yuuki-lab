@@ -181,7 +181,20 @@ python scripts/eval_compare.py --csv compare.csv
 | dispatch / プロメテウスでの eval 横断 UI | 未実装 |
 | 学習 seed の正式適用（`DISPATCH_SEED` / `--seed` → RNG） | **実装済**（`lib/training_seed.py`） |
 | pytest + GitHub Actions CI | **実装済**（`tests/`、`.github/workflows/mujoco-rl-tests.yml`） |
+| 学習時 Domain Randomization（A+B+C） | **実装済**（`sim/domain_randomization.py`、既定 ON） |
 | 既存 run の一括 eval バッチ | 未実装（exp_029 は空から開始） |
+
+### 学習時 Domain Randomization（v1）
+
+| 項目 | 内容 |
+|------|------|
+| 対象 | 初期姿勢ノイズ（eval 同レンジ）・足底 slide friction・全 actuator kp/kv |
+| タイミング | 学習 ``reset(episode_index=...)`` のみ（エピソードごと） |
+| eval | **変更なし**（``reset_eval`` + 公式 eval ノイズ） |
+| 既定 | **ON**（無効化: ``python train.py --no-training-dr`` または ``--set training_dr_enabled=false``） |
+| RNG | ``training_seed`` + ``episode_index``（eval seed とは独立） |
+
+`visualize.py` / `scripts/eval.py` / `analyze_rollout.py` は DR **なし**（決定的 stand）。
 
 学習 seed の優先順位: CLI `--seed` > 環境変数 `DISPATCH_SEED` > 未指定（非決定的）。
 

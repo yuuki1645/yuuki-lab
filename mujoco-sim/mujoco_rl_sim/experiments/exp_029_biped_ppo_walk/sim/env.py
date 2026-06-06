@@ -22,6 +22,10 @@ from lib.actuators import LEFT_FOOT_SITE, RIGHT_FOOT_SITE
 from sim.observation import Observation
 from sim.effort import EffortTracker
 from sim.reward import Reward
+from sim.domain_randomization import (
+  TrainingDomainRandomization,
+  make_episode_dr_rng,
+)
 from sim.termination import (
   NOT_TERMINATED,
   REASON_CONTACT_BASKET,
@@ -39,10 +43,22 @@ class EnvBipedPPO:
   報酬の詳細は sim/reward.py、歩行位相は sim/episode_state.py を参照。
   """
 
-  def __init__(self, *, enable_viewer: bool = True):
+  def __init__(
+    self,
+    *,
+    enable_viewer: bool = True,
+    training_dr_enabled: bool | None = None,
+    training_seed: int | None = None,
+  ):
     self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
     apply_model_visual_preset(self.model)
     self.data = mujoco.MjData(self.model)
+
+    if training_dr_enabled is None:
+      training_dr_enabled = bool(config.TRAINING_DR_ENABLED)
+    self._training_dr_enabled = bool(training_dr_enabled)
+    self._training_seed = training_seed
+    self._training_dr = TrainingDomainRandomization(self.model)
 
     physics_dt = float(self.model.opt.timestep)
     if abs(physics_dt - config.PHYSICS_TIMESTEP_S) > 1e-9:
@@ -99,20 +115,32 @@ class EnvBipedPPO:
     )
     return policy_obs.to_vector(), imu_x
 
-  def reset(self):
-    """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。"""
+  def reset(self, *, episode_index: int = 0):
+    """keyframe ``stand`` から再開し、エピソード状態・観測を初期化する。
+
+    学習 DR 有効時はエピソードごとに初期姿勢・足底摩擦・kp/kv をサンプルする。
+    """
+    self._training_dr.restore_nominal(self.model)
     self._apply_stand_keyframe()
+    if self._training_dr_enabled:
+      dr_rng = make_episode_dr_rng(self._training_seed, episode_index)
+      _applied = self._training_dr.apply_for_episode(
+        self.model,
+        self.data,
+        rng=dr_rng,
+      )
     obs, _origin_imu_x = self._finalize_reset()
     return obs
 
   def reset_eval(self, rng: np.random.Generator) -> tuple[np.ndarray, float, dict]:
-    """Eval 用 reset: stand keyframe + 初期姿勢ノイズ（学習には使わない）。
+    """Eval 用 reset: stand keyframe + 初期姿勢ノイズ（学習 DR は使わない）。
 
     Returns:
       (obs, origin_imu_x, noise_applied)
     """
     from eval.noise import apply_initial_pose_noise
 
+    self._training_dr.restore_nominal(self.model)
     self._apply_stand_keyframe()
     noise_applied = apply_initial_pose_noise(self.model, self.data, rng)
     obs, origin_imu_x = self._finalize_reset()

@@ -41,6 +41,9 @@ OVERRIDABLE_CONFIG_KEYS: dict[str, str] = {
   "max_backward_lean_body": "MAX_BACKWARD_LEAN_BODY",
   "pose_termination_penalty": "POSE_TERMINATION_PENALTY",
   "contact_shank_terminates": "CONTACT_SHANK_TERMINATES",
+  # 学習 DR（sim/domain_randomization.py）
+  "training_dr_enabled": "TRAINING_DR_ENABLED",
+  "training_dr_pose_scale": "TRAINING_DR_POSE_SCALE",
 }
 
 # 後方互換（README / sweep 文書の旧名称）

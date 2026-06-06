@@ -137,7 +137,7 @@ def main() -> None:
   args = _parse_args()
   _print_warmup_config()
 
-  env = EnvBipedPPO(enable_viewer=True)
+  env = EnvBipedPPO(enable_viewer=True, training_dr_enabled=False)
   if env.viewer is None:
     raise SystemExit("[preview_warmup] MuJoCo ビューアを起動できませんでした。")
 

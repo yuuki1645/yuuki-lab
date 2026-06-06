@@ -12,6 +12,7 @@ import config
 from lib.config_overrides import OVERRIDABLE_CONFIG_KEYS
 from lib.training_seed import resolve_training_seed
 from package_meta import MUJOCO_RL_SIM_ROOT
+from sim.domain_randomization import training_dr_spec_dict
 
 CONFIG_EFFECTIVE_FILENAME = "config_effective.json"
 _SCHEMA_VERSION = 1
@@ -132,8 +133,10 @@ def build_effective_config_snapshot(
         "step_wall_sleep_sec": run.step_wall_sleep_sec,
         "config_set_args": list(run.config_set_args),
         "training_seed": run.training_seed,
+        "training_dr_cli": bool(getattr(run, "training_dr", True)),
       }
     ),
+    "training_dr_spec": _training_dr_spec_for_run(run),
   }
 
   if applied_config_overrides:
@@ -159,6 +162,15 @@ def build_effective_config_snapshot(
     )
 
   return snapshot
+
+
+def _training_dr_spec_for_run(run: Any) -> dict[str, Any]:
+  """実効 DR 設定（config 上書き後の TRAINING_DR_ENABLED を反映）。"""
+  spec = training_dr_spec_dict()
+  spec["enabled"] = bool(config.TRAINING_DR_ENABLED) and bool(
+    getattr(run, "training_dr", True)
+  )
+  return spec
 
 
 def write_config_effective_json(

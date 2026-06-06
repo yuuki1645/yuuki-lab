@@ -19,7 +19,7 @@ from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
 
 
 class _EnvProtocol(Protocol):
-  def reset(self): ...
+  def reset(self, *, episode_index: int = 0): ...
   def step(self, action, visualize: bool = False, episode_step: int = 0): ...
   def set_step_wall_sleep_sec(self, sec: float) -> None: ...
   def get_step_wall_sleep_sec(self) -> float: ...
@@ -48,6 +48,9 @@ class PpoTrainBindings:
   create_agent: Callable[[Any], tuple[Any, dict[str, Any] | None]]
   init_wandb: Callable[[Any, dict[str, Any] | None], None]
   train_run_config: Any
+  # 学習 DR（env_factory が参照。banner 表示にも使用）
+  training_dr_enabled: bool = True
+  training_seed_resolved: int | None = None
   # checkpoint run dir 作成直後に config_effective.json 等を書く任意フック
   on_checkpoint_run_dir: Callable[[Path, dict[str, Any] | None, Any], None] | None = None
 
@@ -108,6 +111,14 @@ def _print_run_banner(
 
   if checkpoint_run_dir is not None:
     print(f"[checkpoint] run dir: {checkpoint_run_dir}")
+
+  if bindings.training_dr_enabled:
+    print(
+      "[training-dr] enabled: pose + foot friction + actuator kp/kv "
+      f"(seed={bindings.training_seed_resolved})"
+    )
+  else:
+    print("[training-dr] disabled")
 
 
 def _run_warmup_step(
@@ -171,7 +182,7 @@ def _run_warmup_step(
       env_step=total_env_steps_val,
     )
     episode_index_val += 1
-    obs = env.reset()
+    obs = env.reset(episode_index=episode_index_val)
     obs_vec = tuple(obs)
     if tel is not None:
       tel.publish_reset(
@@ -243,7 +254,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   episode_index = int(payload.get("episodes_finished", 0)) if payload is not None else 0
   end_update = start_update + run.num_updates
 
-  obs = env.reset()
+  obs = env.reset(episode_index=episode_index)
   obs_vec = tuple(obs)
   if tel is not None:
     tel.publish_reset(
@@ -355,7 +366,7 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
             env_step=total_env_steps,
           )
           episode_index += 1
-          obs = env.reset()
+          obs = env.reset(episode_index=episode_index)
           obs_vec = tuple(obs)
           if tel is not None:
             tel.publish_reset(

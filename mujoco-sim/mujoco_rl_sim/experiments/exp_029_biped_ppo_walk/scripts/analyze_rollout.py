@@ -129,7 +129,7 @@ def main() -> None:
   agent = AgentPPO.from_checkpoint(ckpt, map_location=args.device)
   act = (lambda obs: agent.act(obs)[0]) if args.stochastic else agent.act_eval
 
-  env = EnvBipedPPO(enable_viewer=False)
+  env = EnvBipedPPO(enable_viewer=False, training_dr_enabled=False)
   renderer = mujoco.Renderer(env.model, height=args.height, width=args.width)
   track_camera = _make_track_camera(env.model)
   warmup_steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S) if config.WARMUP_ENABLED else 0

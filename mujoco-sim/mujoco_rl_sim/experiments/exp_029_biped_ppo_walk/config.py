@@ -206,6 +206,19 @@ TELEMETRY_HOST = "0.0.0.0"
 TELEMETRY_PORT = 8791
 #endregion
 
+#region 学習時 Domain Randomization（sim/domain_randomization.py）
+# 既定 ON。無効化: ``python train.py --no-training-dr`` または sweep で training_dr_enabled=false
+TRAINING_DR_ENABLED = True
+# 初期姿勢: eval/noise.py と同レンジ × この scale
+TRAINING_DR_POSE_SCALE = 1.0
+# 足底 slide friction の乗算レンジ（名目値 × U[lo, hi]）
+TRAINING_DR_FOOT_FRICTION_GEOMS = ("foot_plate", "right_foot_plate")
+TRAINING_DR_FRICTION_SLIDE_MULT_RANGE = (0.85, 1.15)
+# position アクチュエータ kp / kv の乗算レンジ
+TRAINING_DR_ACTUATOR_KP_MULT_RANGE = (0.90, 1.10)
+TRAINING_DR_ACTUATOR_KV_MULT_RANGE = (0.90, 1.10)
+#endregion
+
 #region チェックポイント
 SAVE_CHECKPOINTS = True
 CHECKPOINT_DIR = str(CHECKPOINT_ROOT)
@@ -294,5 +307,11 @@ def training_config_dict() -> dict:
     "step_wall_sleep_sec": STEP_WALL_SLEEP_SEC,
     "telemetry_enabled": TELEMETRY_ENABLED,
     "telemetry_port": TELEMETRY_PORT,
+    "training_dr_enabled": TRAINING_DR_ENABLED,
+    "training_dr_pose_scale": TRAINING_DR_POSE_SCALE,
+    "training_dr_foot_friction_geoms": list(TRAINING_DR_FOOT_FRICTION_GEOMS),
+    "training_dr_friction_slide_mult_range": list(TRAINING_DR_FRICTION_SLIDE_MULT_RANGE),
+    "training_dr_actuator_kp_mult_range": list(TRAINING_DR_ACTUATOR_KP_MULT_RANGE),
+    "training_dr_actuator_kv_mult_range": list(TRAINING_DR_ACTUATOR_KV_MULT_RANGE),
   }
 #endregion

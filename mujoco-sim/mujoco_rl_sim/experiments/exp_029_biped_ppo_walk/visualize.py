@@ -343,7 +343,7 @@ def main() -> None:
     print("[visualize] finished")
     return
 
-  env = EnvBipedPPO(enable_viewer=True)
+  env = EnvBipedPPO(enable_viewer=True, training_dr_enabled=False)
   if env.viewer is None:
     raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
 

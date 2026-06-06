@@ -83,6 +83,7 @@ class TrainRunConfig:
   config_set_args: tuple[str, ...]
   post_train_eval: bool
   training_seed: int | None
+  training_dr: bool  # False のとき --no-training-dr（config.TRAINING_DR_ENABLED は別途参照）
 
 
 def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
@@ -154,6 +155,11 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
       "学習 RNG の seed（省略時は DISPATCH_SEED 環境変数、どちらも無ければ非決定的）。"
       "eval seed とは別。"
     ),
+  )
+  p.add_argument(
+    "--no-training-dr",
+    action="store_true",
+    help="学習時 Domain Randomization を無効化（既定は config.TRAINING_DR_ENABLED）",
   )
 
   # --- config.py 上書き（run 単位） ---
@@ -276,4 +282,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     config_set_args=config_set_args,
     post_train_eval=not args.no_eval,
     training_seed=args.seed,
+    training_dr=not args.no_training_dr,
   )

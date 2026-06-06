@@ -119,7 +119,7 @@ def run_checkpoint_eval(
   agent = AgentPPO.from_checkpoint(checkpoint_path, map_location=device)
   act_eval = agent.act_eval
 
-  env = EnvBipedPPO(enable_viewer=False)
+  env = EnvBipedPPO(enable_viewer=False, training_dr_enabled=False)
   env.set_step_wall_sleep_sec(0.0)
 
   records: list[EpisodeEvalRecord] = []

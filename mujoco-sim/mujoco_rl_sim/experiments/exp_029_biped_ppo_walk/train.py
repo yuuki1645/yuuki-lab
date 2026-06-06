@@ -74,6 +74,7 @@ def _wandb_init(
   payload: dict[str, Any] | None,
   *,
   applied_config_overrides: dict[str, Any],
+  training_dr_effective: bool,
 ) -> None:
   extra_config: dict[str, Any] | None = None
   extra_tags: tuple[str, ...] | None = None
@@ -113,6 +114,8 @@ def _wandb_init(
   if training_seed is not None:
     extra_config = dict(extra_config)
     extra_config["training_seed"] = training_seed
+  extra_config = dict(extra_config or {})
+  extra_config["training_dr"] = bool(training_dr_effective)
 
   if applied_config_overrides:
     extra_config = dict(extra_config)
@@ -168,6 +171,7 @@ def _make_on_checkpoint_run_dir(
 def main() -> None:
   run = parse_train_args()
   applied_overrides = _apply_run_config_overrides(run)
+  training_dr_effective = bool(config.TRAINING_DR_ENABLED) and bool(run.training_dr)
 
   training_seed = resolve_training_seed(cli_seed=run.training_seed)
   if training_seed is not None:
@@ -178,7 +182,11 @@ def main() -> None:
 
   eval_report: dict[str, Any] | None = None
   try:
-    eval_report = _run_training(run, applied_overrides)
+    eval_report = _run_training(
+      run,
+      applied_overrides,
+      training_dr_effective=training_dr_effective,
+    )
   finally:
     if eval_report is not None:
       wandb_logging.log_eval_report(eval_report)
@@ -188,12 +196,24 @@ def main() -> None:
 def _run_training(
   run: TrainRunConfig,
   applied_overrides: dict[str, Any],
+  *,
+  training_dr_effective: bool,
 ) -> dict[str, Any] | None:
   def init_wandb(run_cfg: TrainRunConfig, payload: dict[str, Any] | None) -> None:
     _wandb_init(
       run_cfg,
       payload,
       applied_config_overrides=applied_overrides,
+      training_dr_effective=training_dr_effective,
+    )
+
+  resolved_seed = resolve_training_seed(cli_seed=run.training_seed)
+
+  def _env_factory(viewer: bool) -> EnvBipedPPO:
+    return EnvBipedPPO(
+      enable_viewer=viewer,
+      training_dr_enabled=training_dr_effective,
+      training_seed=resolved_seed,
     )
 
   bindings = PpoTrainBindings(
@@ -203,7 +223,7 @@ def _run_training(
     warmup=warmup,
     exp_name=EXP_NAME,
     telemetry=TELEMETRY_CONTRACT,
-    env_factory=lambda viewer: EnvBipedPPO(enable_viewer=viewer),
+    env_factory=_env_factory,
     create_agent=_create_agent,
     init_wandb=init_wandb,
     on_checkpoint_run_dir=_make_on_checkpoint_run_dir(
@@ -211,6 +231,8 @@ def _run_training(
       applied_config_overrides=applied_overrides,
     ),
     train_run_config=run,
+    training_dr_enabled=training_dr_effective,
+    training_seed_resolved=resolved_seed,
   )
   train_result = run_ppo_train(bindings)
   return _maybe_run_post_train_eval(run, train_result)

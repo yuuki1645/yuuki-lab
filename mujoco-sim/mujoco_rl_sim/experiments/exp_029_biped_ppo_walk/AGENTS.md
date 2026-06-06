@@ -7,6 +7,7 @@
 - **差分**: ホップ/すり足ではなく **交互片脚歩行** 向けの報酬・観測（`biped_walk_v1`、51 次元）
 - **実行**: 本フォルダで `python train.py` / `python visualize.py`
 - **レイアウト**: 本体は `sim/`（環境・報酬・観測）と `rl/`（PPO・ckpt）。補助は `scripts/`。ルートは `train.py` / `visualize.py` / `config.py` など入口のみ
+- **ワークフロー**: [README.md](README.md) の「強化学習実験ワークフロー（exp_029）」が標準手順の正本
 - **コードリーディング**: 詳細手引きは [README.md](README.md) の「コードリーディングの手引き」（本 AGENTS.md には落とし穴のみ）
 - **報酬設計**: 全文は [README.md](README.md) の「報酬設計」節（`sim/reward.py` の正本ドキュメント）
 - **終了条件**: 全文は [README.md](README.md) の「終了条件と終了ペナルティ」節（`sim/termination.py` の正本ドキュメント）

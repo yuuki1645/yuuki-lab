@@ -39,6 +39,8 @@ class PpoTrainBindings:
   create_agent: Callable[[Any], tuple[Any, dict[str, Any] | None]]
   init_wandb: Callable[[Any, dict[str, Any] | None], None]
   train_run_config: Any
+  # checkpoint run dir 作成直後に config_effective.json 等を書く任意フック
+  on_checkpoint_run_dir: Callable[[Path, dict[str, Any] | None, Any], None] | None = None
 
 
 def _start_telemetry(
@@ -257,6 +259,8 @@ def run_ppo_train(bindings: PpoTrainBindings) -> None:
   )
   if checkpoint_run_dir is not None:
     wandb_logging.log_checkpoint_run_dir(checkpoint_run_dir)
+    if bindings.on_checkpoint_run_dir is not None:
+      bindings.on_checkpoint_run_dir(checkpoint_run_dir, payload, agent)
   _print_run_banner(
     bindings,
     run,

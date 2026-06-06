@@ -25,6 +25,10 @@ import os
 
 from contract import TELEMETRY_CONTRACT, PpoTrainBindings, run_ppo_train
 from lib.config_overrides import apply_cli_set_overrides, apply_dispatch_env_overrides
+from lib.run_config_snapshot import (
+  build_effective_config_snapshot,
+  write_config_effective_json,
+)
 from package_meta import EXP_NAME
 import rl.checkpoint as checkpoint
 import rl.wandb_logging as wandb_logging
@@ -128,6 +132,32 @@ def _apply_run_config_overrides(run: TrainRunConfig) -> dict[str, Any]:
   return applied
 
 
+def _make_on_checkpoint_run_dir(
+  run: TrainRunConfig,
+  *,
+  applied_config_overrides: dict[str, Any],
+):
+  """``config_effective.json`` を run ディレクトリへ書き出すコールバックを返す。"""
+
+  def _on_checkpoint_run_dir(
+    run_dir: Path,
+    resume_payload: dict[str, Any] | None,
+    agent: AgentPPO,
+  ) -> None:
+    snapshot = build_effective_config_snapshot(
+      run,
+      agent,
+      applied_config_overrides=applied_config_overrides,
+      resume_payload=resume_payload,
+      exp_name=EXP_NAME,
+      telemetry_schema=TELEMETRY_CONTRACT.schema_id,
+    )
+    out_path = write_config_effective_json(run_dir, snapshot)
+    print(f"[config] saved effective config -> {out_path}")
+
+  return _on_checkpoint_run_dir
+
+
 def main() -> None:
   run = parse_train_args()
   applied_overrides = _apply_run_config_overrides(run)
@@ -149,6 +179,10 @@ def main() -> None:
     env_factory=lambda viewer: EnvBipedPPO(enable_viewer=viewer),
     create_agent=_create_agent,
     init_wandb=init_wandb,
+    on_checkpoint_run_dir=_make_on_checkpoint_run_dir(
+      run,
+      applied_config_overrides=applied_overrides,
+    ),
     train_run_config=run,
   )
   run_ppo_train(bindings)

@@ -18,20 +18,23 @@ from sim.env import EnvBipedPPO
 from sim.termination import REASON_TRUNCATED
 
 
-def _resolve_termination_reason(
+def _episode_stop_state(
   *,
   terminated: bool,
   step_info: dict,
   episode_step: int,
-) -> tuple[str, bool]:
-  """終了理由と truncated フラグを確定する。"""
-  truncated = (episode_step + 1) >= int(config.MAX_STEPS_PER_EPISODE)
+) -> tuple[bool, str, bool]:
+  """エピソードを終了すべきか、理由、truncated かを返す。
+
+  Returns:
+    (should_stop, termination_reason, truncated)
+  """
   if terminated:
     reason = step_info.get("termination_reason") or "terminated"
-    return str(reason), False
-  if truncated:
-    return REASON_TRUNCATED, True
-  return REASON_TRUNCATED, True
+    return True, str(reason), False
+  if (episode_step + 1) >= int(config.MAX_STEPS_PER_EPISODE):
+    return True, REASON_TRUNCATED, True
+  return False, "", False
 
 
 def run_eval_episode(
@@ -54,7 +57,7 @@ def run_eval_episode(
   landing_events = 0
   final_imu_x = origin_imu_x
   termination_reason = REASON_TRUNCATED
-  truncated = True
+  truncated = False
   episode_length = 0
 
   for step in range(int(config.MAX_STEPS_PER_EPISODE)):
@@ -74,12 +77,14 @@ def run_eval_episode(
     if float(step_info.get("alternating_landing", 0.0)) > 0.5:
       alternating_landings += 1
 
-    termination_reason, truncated = _resolve_termination_reason(
+    should_stop, stop_reason, stop_truncated = _episode_stop_state(
       terminated=bool(terminated),
       step_info=step_info,
       episode_step=step,
     )
-    if terminated or truncated:
+    if should_stop:
+      termination_reason = stop_reason
+      truncated = stop_truncated
       break
 
   denom_policy = max(policy_steps, 1)

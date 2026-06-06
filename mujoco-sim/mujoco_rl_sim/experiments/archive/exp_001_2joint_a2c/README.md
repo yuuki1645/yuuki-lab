@@ -19,18 +19,17 @@
 | `debug.py` | ターミナル向けステップ表示 |
 | `model/main.xml` | 実験専用 MuJoCo モデル（`mujoco_sim_assets` 非依存） |
 
-共通処理は `mujoco_rl_sim/lib/`（`obs_norm` など）を参照。
+共通処理は実験フォルダ内 `lib/`（`obs_norm` など）を参照。
 
 ## 実行方法
 
-`mujoco-sim` ディレクトリで:
-
 ```bash
+cd mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c
 pip install torch   # 未導入の場合
-python -m mujoco_rl_sim.experiments.exp_001_2joint_a2c.train
+python train.py
 ```
 
-- 1 回の実行ごとに **`checkpoints/exp_001_2joint_a2c/run_YYYYMMDD_HHMMSS/`** が新規作成される（`mujoco-sim` 直下・CWD 非依存）
+- 1 回の実行ごとに **`mujoco_rl_sim/runs/archive/exp_001_2joint_a2c/run_YYYYMMDD_HHMMSS/`** が新規作成される（`package_meta.CHECKPOINT_ROOT`・CWD 非依存）
 - `CHECKPOINT_EVERY`（既定 1000）ごとに `update_XXXXXX.pt`、終了時に `final.pt`（`CHECKPOINT_SAVE_FINAL=True` のとき）
 - wandb: `config.USE_WANDB = True`（`pip install -e ".[rl]"` で `wandb` を入れる）。無効化は `WANDB_MODE=disabled`
 

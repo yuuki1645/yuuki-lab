@@ -13,17 +13,17 @@
 
 ```bash
 cd mujoco-sim
-python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.train
+python train.py
 ```
 
 ## 可視化
 
 ```bash
 # XML のみ（keyframe stand）
-python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.visualize
+python visualize.py
 
 # 学習済みチェックポイント
-python -m mujoco_rl_sim.experiments.exp_018_biped_ppo_hop_balance.visualize --checkpoint runs/.../latest.pt
+python visualize.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 
 ## exp_017 との違い

@@ -61,4 +61,4 @@ IMU ファイルの列は `wall_unix`, `perf_timestamp`, `mock`, 加速度・角
 
 ### Robotics Hub のテレメトリページ
 
-**[robotics-hub](../robotics-hub/)** の **テレメトリ**（`/telemetry`）は、ブラウザから本デーモンへ Socket.IO で接続し、接続直後に **`imu/start`**（既定 30 Hz）を送ります。サーバー側は従来どおり **`imu/sample`** で加速度・角速度・推定角をブロードキャストします（実装は `imu_stream_service.py`）。Hub を別マシンのブラウザで開く場合は、デーモンが `0.0.0.0:5000` で待ち受けていることと、Hub 側の **`VITE_TELEMETRY_IMU_SOCKET_URL`**（または同一 LAN なら既定の `hostname:5000`）を確認してください。
+**[robotics-hub](../robotics-hub/)** の **実機テレメトリ**（`/device-telemetry`。旧 `/telemetry` はリダイレクト）は、ブラウザから本デーモンへ Socket.IO で接続し、接続直後に **`imu/start`**（既定 30 Hz）を送ります。サーバー側は従来どおり **`imu/sample`** で加速度・角速度・推定角をブロードキャストします（実装は `imu_stream_service.py`）。Hub を別マシンのブラウザで開く場合は、デーモンが `0.0.0.0:5000` で待ち受けていることと、Hub 側の **`VITE_TELEMETRY_IMU_SOCKET_URL`**（または同一 LAN なら既定の `hostname:5000`）を確認してください。

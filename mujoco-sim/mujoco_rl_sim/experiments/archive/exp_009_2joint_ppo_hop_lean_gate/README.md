@@ -20,19 +20,19 @@
 ## 学習
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_009_2joint_ppo_hop_lean_gate.train
+python -m mujoco_rl_sim.experiments.archive.exp_009_2joint_ppo_hop_lean_gate.train
 ```
 
 exp_008 から転移（任意）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_009_2joint_ppo_hop_lean_gate.train \
+python -m mujoco_rl_sim.experiments.archive.exp_009_2joint_ppo_hop_lean_gate.train \
   --resume run_YYYYMMDD_HHMMSS/final.pt --lr 2e-4 --num-updates 4000
 ```
 
 ## ロールアウト分析
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_009_2joint_ppo_hop_lean_gate.analyze_rollout \
+python -m mujoco_rl_sim.experiments.archive.exp_009_2joint_ppo_hop_lean_gate.analyze_rollout \
   --checkpoint run_YYYYMMDD_HHMMSS/latest.pt --seed 42
 ```

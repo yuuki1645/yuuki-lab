@@ -17,7 +17,7 @@
 ## 学習
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_010_2joint_ppo_hop_progress.train \
+python -m mujoco_rl_sim.experiments.archive.exp_010_2joint_ppo_hop_progress.train \
   --resume "../exp_008_2joint_ppo_hop_shaping/run_20260524_110357/update_001500.pt" \
   --lr 2e-4 --num-updates 2000
 ```

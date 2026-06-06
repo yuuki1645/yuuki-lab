@@ -13,7 +13,7 @@
 ## 学習
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_012_2joint_ppo_hop_dx_band.train \
+python -m mujoco_rl_sim.experiments.archive.exp_012_2joint_ppo_hop_dx_band.train \
   --resume "../exp_011_2joint_ppo_hop_upright_vel/run_20260524_182506/update_003500.pt" \
   --lr 8e-5 --num-updates 1200
 ```

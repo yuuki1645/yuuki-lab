@@ -21,7 +21,7 @@ python train.py
 python train.py --no-viewer --no-wandb --num-updates 2
 
 python visualize.py
-python analyze_rollout.py --checkpoint runs/.../final.pt
+python analyze_rollout.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 python preview_warmup.py
 ```
 
@@ -36,97 +36,23 @@ python -m contract markdown
 
 ---
 
-## 概要（exp_024 同等）
+## 概要
 
-**exp_023 の派生**（`model/main.xml` は exp_023 と同一）。報酬のみ次を追加・変更します。
-
-| 対策 | 実装（`lib/pose.py`） |
-|------|------------------------|
-| 1. 前後傾きのヨーすり抜け | `lean_fwd_body = dot(imu_zaxis, body +X)` で前後傾きペナルティ・後傾終了・飛翔前傾ゲート |
-| 2. 正面維持 | `heading_align = dot(body +X, world +X)` が `HEADING_ALIGN_MIN=0.85` 未満で shaping ペナルティ |
-| 3. 水平傾き | `tilt_horiz = hypot(zaxis_x, zaxis_y)` が `LATERAL_TILT_THRESH=0.12` 超で shaping ペナルティ |
-
-観測 42 次元・契約 `biped_ppo_v1`・前進報酬（ワールド +X）は exp_023 と同一です。
-
-| 項目 | exp_023 | exp_024 |
-|------|---------|---------|
-| モデル XML | 足裏 25×10 cm | **同一** |
-| 前進 `dx` / `progress` | ワールド +X | **同一** |
-| 前後傾きペナルティ | `imu_zaxis_x` | **`lean_fwd_body`** |
-| ヨーずれ | なし | **`heading_misalign_penalty`** |
-| 横傾き | なし | **`lateral_tilt_penalty`** |
-
-**exp_019 と同一の学習**（観測 42 / 行動 10 / 報酬 shaping・ハイパラ）を、  
-**同梱 `contract/`**（スキーマ `biped_ppo_v1`）で観測・テレメトリ・学習ループを駆動します。
-
-| 項目 | exp_019 | exp_024 |
-|------|---------|---------|
-| 学習本体 | 同一 | 同一（exp_021 経由） |
-| テレメトリ | 契約ラッパ / contract 直結 | **contract 直結** |
-| モデル | 足裏 30 cm | **足裏 25 cm×10 cm・踵はみ出し** |
-
-契約の観測 idx 表は次で再生成できます:
-
-```bash
-python -m contract markdown
-```
-
-**exp_018 / 019 と同様**、次を既定で有効にします。
-
-- **現実時間ステップ**（50 Hz、`STEP_WALL_SLEEP_SEC = CONTROL_TIMESTEP_S`）
-- **学習中 MuJoCo ビューア**（同期レートも制御周期に合わせる）
-- **robotics-hub テレメトリ**（Socket.IO `rl_telemetry/*`、既定ポート **8791**）
+**exp_025 と同一**（48 次元観測 / 12 次元行動 / バランス棒付き XML / 報酬 shaping）。  
+詳細は [exp_025](../exp_025_biped_ppo_hop_balance/README.md) を参照。本 exp の差分は上表の MLP・学習率のみ。
 
 | 項目 | 値 |
 |------|-----|
-| 形態 | 両脚バイペッド（`model/main.xml`、10 DOF 全サーボ） |
-| タスク | ワールド +X 方向への前進 |
-| 制御周期 | 50 Hz（物理 500 Hz × `FRAME_SKIP=10`） |
-| 観測次元 | **48**（`config.OBS_DIM`） |
-| 行動次元 | **12**（`config.ACTION_DIM`、脚 10 + バランス棒 2） |
+| 形態 | 両脚バイペッド + **カゴ上バランス棒**（`model/main.xml`、**12 DOF**） |
+| 観測 / 行動 | **48 / 12** |
 | 方策 MLP | **`POLICY_HIDDEN_SIZES = (256, 256, 128)`** |
-| 実装 | `observation.py`（観測）、`reward.py` + `termination.py`（報酬）、`env.py`（合成） |
 
 ---
 
 ## 観測設計
 
-ポリシー入力は 1 制御ステップごとに `PolicyObs.to_vector()` で得られる **42 次元**の実数ベクトルです。  
-座標系は MuJoCo ワールド（+X 前、+Y 左、+Z 上）。  
-正規化の意図は、ポリシー入力をおおよそ **[-1, 1]** に揃えることです（`lib/obs_norm.py`）。
-
-### ベクトルレイアウト（インデックス順）
-
-| idx | 名前 | 次元 | 生の意味（MuJoCo） | 正規化・備考 |
-|-----|------|------|-------------------|--------------|
-| 0 | `dx` | 1 | 制御ステップ内の IMU site（`imu_site`）の +X 移動量 [m] | `clip_scale(dx, MAX_DX_PER_STEP)`。`MAX_DX_PER_STEP = 0.05 × FRAME_SKIP = 0.5` |
-| 1–3 | `imu_gyro_*` | 3 | センサ `imu_gyro`（角速度 [rad/s]、IMU 局所） | 各成分を `clip_scale(·, MAX_GYRO_RAD_S)`（`MAX_GYRO_RAD_S = 10`） |
-| 4–6 | `imu_zaxis_*` | 3 | センサ `imu_zaxis`（IMU の上向き単位ベクトル、ワールド） | **そのまま**（既に単位ベクトル）。`upright = imu_zaxis_z` |
-| 7 | `imu_z` | 1 | `imu_site` の世界 Z 座標 [m] | `height_to_norm(z, MIN_IMU_Z_NORM, MAX_IMU_Z)`（`0.0 … 1.2` → `[-1, 1]`） |
-| 8 | `left_foot_contact` | 1 | 左足 geom（`foot_plate`）が床と接触しているか | 接触あり **+1.0** / なし **-1.0** |
-| 9 | `right_foot_contact` | 1 | 右足 geom（`right_foot_plate`）が床と接触しているか | 同上 |
-| 10 | `left_foot_dx` | 1 | 左足 site（`foot_site`）の +X 移動量 [m] | `clip_scale(·, MAX_FOOT_DX_PER_STEP)`（`0.04 × FRAME_SKIP = 0.4`） |
-| 11 | `right_foot_dx` | 1 | 右足 site（`right_foot_site`）の +X 移動量 [m] | 同上 |
-| 12–21 | `joint_q` | 10 | 各関節の `qpos` [rad] | 関節ごとに `model.jnt_range` を `[-1, 1]` へ線形マップ（`range_to_norm`） |
-| 22–31 | `joint_qvel` | 10 | 各関節の `qvel` [rad/s] | `clip_scale(·, MAX_JOINT_VEL_RAD_S)`（`10`） |
-| 32–41 | `prev_action` | 10 | **直前ステップ**で環境に適用したポリシー出力 | **正規化 action** `[-1, 1]`（1 ステップ遅れ） |
-
-**合計:** 1 + 3 + 3 + 1 + 4 + 10 + 10 + 10 = **42**
-
-### 関節の並び（idx 12–31 / 32–41 で共通）
-
-`lib/actuators.py` の `JOINT_NAMES` 順（左足 5 → 右足 5）:
-
-1. `left_hip_roll`
-2. `left_hip_pitch`
-3. `left_knee_pitch`
-4. `left_ankle_pitch`
-5. `left_ankle_roll`
-6. `right_hip_roll`
-7. `right_hip_pitch`
-8. `right_knee_pitch`
-9. `right_ankle_pitch`
-10. `right_ankle_roll`
+**48 次元**。idx 表の正本は `python -m contract markdown`（`contract/biped_v1.py`）。  
+レイアウトの詳細は [exp_025 の観測設計](../exp_025_biped_ppo_hop_balance/README.md) を参照。
 
 ### 行動（ポリシー出力）
 
@@ -147,7 +73,7 @@ python -m contract markdown
 
 - 観測組み立て: `observation.py`（`Observation.build`）
 - 正規化: `lib/obs_norm.py`
-- テレメトリ用スライス: `mujoco_rl_sim/telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
+- テレメトリ用スライス: `telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
 
 ---
 
@@ -369,7 +295,7 @@ powershell -ExecutionPolicy Bypass -File .\launch_parallel.ps1
 
 ```bash
 python visualize.py
-python visualize.py --checkpoint runs/.../latest.pt
+python visualize.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 
 ## exp_023 との違い

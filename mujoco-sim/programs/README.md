@@ -38,5 +38,5 @@ python mujoco_test_001.py
 ## 関連ドキュメント
 
 - パッケージ全体: `../README.md`（`mujoco-sim` ルート）
-- 2 関節 A2C 実験: `../mujoco_rl_sim/experiments/exp_002_2joint_a2c/README.md` など
+- 2 関節 A2C 実験: `../mujoco_rl_sim/experiments/archive/exp_002_2joint_a2c/README.md` など
 - データビュワーへの配置: `robotics-hub/README.md` のデータセット節

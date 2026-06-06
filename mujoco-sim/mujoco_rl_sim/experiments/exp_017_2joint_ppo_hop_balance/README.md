@@ -19,8 +19,8 @@ exp_010 final（~3.11 m）が現状ベスト。exp_011〜016 では追加 shapin
 
 ```bash
 cd mujoco-sim
-python -m mujoco_rl_sim.experiments.exp_017_2joint_ppo_hop_balance.train \
-  --resume "../exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" \
+python train.py \
+  --resume "../archive/exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" \
   --lr 2e-4 --num-updates 2000
 ```
 

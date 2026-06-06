@@ -21,7 +21,7 @@ pip install -e ".[rl,dispatch]"
 python -m mujoco_rl_sim.dispatch.coordinator --config coordinator.config.toml
 ```
 
-- Web UI: http://127.0.0.1:8790/
+- Web UI: `http://<Coordinator の IP>:8790/`（例: 同一 PC なら `http://127.0.0.1:8790/`）
   - **ダッシュボード** (`/`): sweep / worker / job 一覧
   - **チェックポイント** (`/checkpoints`): `mujoco_rl_sim/runs/` 内の `.pt` を一覧（既定は `final.pt` のみ。`latest.pt` のみ / 全 `.pt` も選択可）し、対応する `experiments/<exp_id>/visualize.py` を `--stochastic` 付きで起動（複数ビューア同時可。Coordinator を動かしている端末にウィンドウが開く）
 - DB 既定: `mujoco_rl_sim/dispatch_data/coordinator.db`
@@ -68,4 +68,4 @@ python -m mujoco_rl_sim.dispatch.coordinator.cli --config coordinator.config.tom
 | `DISPATCH_WANDB_EXTRA_TAGS` | 追加 tag（カンマ区切り） |
 | `DISPATCH_CONFIG_OVERRIDES_JSON` | 実験 `config` 上書き（JSON。`seed`/`lr`/`num_updates`/`wandb` 以外の sweep キー） |
 
-学習終了時に `dispatch_summary.json` を exp フォルダへ書き、主指標を Coordinator へ報告します（exp_026 の `wandb_logging` 参照）。
+学習終了時に `dispatch_summary.json` を exp フォルダへ書き、主指標を Coordinator へ報告します（exp_026 / exp_027 / exp_028 等の `wandb_logging` 参照）。

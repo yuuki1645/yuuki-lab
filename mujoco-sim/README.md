@@ -5,7 +5,7 @@
 - **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも試用スクリプトもここを参照します。
 - **`mujoco_sim_common`** — 論理角 kinematics、Hub 向け Socket.IO テレメトリ、ビュワー補助 HTTP などの共有部品。
 - **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。
-- **`mujoco_rl_sim`** — **A2C 実験**（`experiments/`）と共有 `lib/`（HTTP サーバとは別経路）。wandb や SB3 サンプル利用時は **`pip install -e ".[rl]"`**。実験の学習には **PyTorch** を別途インストール。
+- **`mujoco_rl_sim`** — **PPO 実験**（`experiments/`）と各 exp 内の共有コード。wandb や SB3 サンプル利用時は **`pip install -e ".[rl]"`**。実験の学習には **PyTorch** を別途インストール。
 
 サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新** を主に担当します。
 
@@ -124,34 +124,36 @@ python mujoco_test_005.py --dataset YuukiLab004 --steps 3000 --subsample 8
 
 ## 強化学習（`mujoco_rl_sim`）
 
-本番の RL は **`mujoco_rl_sim/experiments/`** 配下の実験パッケージ（2 関節脚 A2C など）で行います。各実験は **実験専用 MJCF**（`model/main.xml`）と **PyTorch 実装の A2C** を持ち、HTTP 実時間シミュ（`8787`）とは別プロセスです。
+本線の RL は **`mujoco_rl_sim/experiments/exp_015_*` 以降**（PPO）。exp_001〜014 は **`experiments/archive/`**（参照用）。各実験は **実験専用 MJCF**（`model/main.xml`）と **PyTorch PPO** を持ち、HTTP 実時間シミュ（`8787`）とは別プロセスです。
 
 **依存:**
 
 ```bash
-pip install -e ".[rl]"   # gymnasium, stable-baselines3, wandb（実験の wandb ログ用）
-pip install torch        # 実験の A2C 学習に必須（pyproject には含めていない）
+pip install -e ".[rl]"   # gymnasium, stable-baselines3, wandb, flask-socketio 等
+pip install torch        # 実験の PPO 学習に必須（pyproject には含めていない）
 ```
 
 | 実験 | 概要 | 詳細 |
 |------|------|------|
-| `exp_001_2joint_a2c` | 500 Hz 制御・観測 20 次元・姿勢ベース終了 | [README](mujoco_rl_sim/experiments/exp_001_2joint_a2c/README.md) |
-| `exp_002_2joint_a2c` | 50 Hz 制御・観測 19 次元・接触終了。ckpt は実験フォルダ内 | [README](mujoco_rl_sim/experiments/exp_002_2joint_a2c/README.md) |
-| `exp_003_2joint_a2c` | exp_002 系。ckpt は `mujoco_rl_sim/runs/<実験名>/`（コピー向け） | [README](mujoco_rl_sim/experiments/exp_003_2joint_a2c/README.md) |
+| `exp_015`〜`exp_017` | 片脚ホッパ PPO | [exp_015 README](mujoco_rl_sim/experiments/exp_015_2joint_ppo_hop_cycle/README.md) 等 |
+| `exp_018`〜`exp_026` | 両脚ホップ/バランス PPO | [exp_026 README](mujoco_rl_sim/experiments/exp_026_biped_ppo_hop_balance/README.md) 等 |
+| `exp_027`〜`exp_028` | 両脚歩行 PPO | [exp_028 README](mujoco_rl_sim/experiments/exp_028_biped_ppo_walk/README.md) 等 |
+| `archive/exp_001`〜`exp_014` | 早期 A2C/PPO 実験 | [archive README](mujoco_rl_sim/experiments/archive/README.md) |
 
-**実行例**（いずれも `mujoco-sim` をカレントに）:
+**実行例**（`mujoco-sim/mujoco_rl_sim/experiments/exp_028_biped_ppo_walk` をカレントに）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.train
-python -m mujoco_rl_sim.experiments.exp_002_2joint_a2c.visualize \
-  --checkpoint checkpoints/run_YYYYMMDD_HHMMSS/final.pt
+python train.py
+python visualize.py --checkpoint ../../runs/exp_028_biped_ppo_walk/run_YYYYMMDD_HHMMSS/final.pt
 ```
 
-新規実験は **`exp_003_2joint_a2c` をコピーしてリネーム**する手順が README にあります（`package_meta.py` で wandb 名・チェックポイント先を自動決定）。
+新規実験は **本線の exp（例: exp_028）をコピーしてリネーム**する手順が各 README にあります（`package_meta.py` で wandb 名・チェックポイント先を自動決定）。
+
+**Hub 学習テレメトリ:** 各 exp の `train.py` が Socket.IO（既定 **8791**）を起動。`--step-wall-sleep` で壁時計遅延を調整。
 
 **SB3 の最小サンプル**（Gymnasium + PPO）は `programs/mujoco_test_006.py` / `007.py` を参照（`pip install -e ".[rl]"`）。
 
-**共有コード:** `mujoco_rl_sim/lib/`（パス解決・観測正規化など）。`mujoco_rl_sim/telemetry/` には Gymnasium 用 `RlTelemetryWrapper` があります（`mujoco_sim_common.telemetry.HubTelemetrySocketIoServer` へ送出。試用スクリプト `programs/mujoco_test_004.py` などで利用）。
+**共有コード:** 論理角等は **`mujoco_sim_common/`**。各 exp 内に **`lib/`**・**`telemetry/`**（`RlTelemetryWrapper` 等）を同梱。`programs/mujoco_test_004.py` 等で Hub 向け Socket.IO テレメトリを試用可能。
 
 ## HTTP API（要約）
 
@@ -191,10 +193,8 @@ mujoco-sim/
     telemetry/         # Hub 向け Socket.IO（HubTelemetrySocketIoServer）
     viewer_aux_bridge.py  # ビュワー補助 HTTP（programs/mujoco_test_009.py）
   mujoco_rl_sim/
-    experiments/       # A2C 実験（exp_001_*, exp_002_*, exp_003_* …）
-    lib/               # 実験間共有ユーティリティ
-    runs/              # exp_003 以降のチェックポイント（git 対象外）
-    telemetry/         # Gym ラッパ（RlTelemetryWrapper）
+    experiments/       # PPO 実験（exp_015 以降が本線、exp_001〜014 は archive/）
+    runs/              # チェックポイント（git 対象外。archive 実験は runs/archive/）
   pyproject.toml
   requirements.txt
 ```

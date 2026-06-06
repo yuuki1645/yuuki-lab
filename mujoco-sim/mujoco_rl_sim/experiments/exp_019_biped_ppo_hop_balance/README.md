@@ -77,7 +77,7 @@
 
 - 観測組み立て: `observation.py`（`Observation.build`）
 - 正規化: `lib/obs_norm.py`
-- テレメトリ用スライス: `mujoco_rl_sim/telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
+- テレメトリ用スライス: `telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
 
 ---
 
@@ -230,13 +230,13 @@ flowchart TD
 
 ```bash
 cd mujoco-sim
-python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.train
+python train.py
 ```
 
 高速学習のみ（ビューア・実時間待ちオフ）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.train --no-viewer --step-wall-sleep 0
+python train.py --no-viewer --step-wall-sleep 0
 ```
 
 ## テレメトリ（robotics-hub）
@@ -250,8 +250,8 @@ python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.train --no-vie
 ## 可視化
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.visualize
-python -m mujoco_rl_sim.experiments.exp_019_biped_ppo_hop_balance.visualize --checkpoint runs/.../latest.pt
+python visualize.py
+python visualize.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 
 ## exp_018 との違い

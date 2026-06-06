@@ -47,13 +47,13 @@
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train
+python -m mujoco_rl_sim.experiments.archive.exp_003_2joint_a2c.train
 ```
 
 再開例:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.train \
+python -m mujoco_rl_sim.experiments.archive.exp_003_2joint_a2c.train \
   --resume run_YYYYMMDD_HHMMSS/update_005000.pt \
   --lr 1e-4 \
   --num-updates 1500
@@ -69,15 +69,15 @@ wandb プロジェクト名は `config.WANDB_PROJECT`（= フォルダ名 `exp_0
 ## 可視化・ウォームアッププレビュー
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize
+python -m mujoco_rl_sim.experiments.archive.exp_003_2joint_a2c.visualize
 # visualize の --checkpoint 相対パスは実験フォルダ基準（ckpt は runs/ 配下）
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.visualize \
-  --checkpoint ../runs/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/final.pt --stochastic
+python -m mujoco_rl_sim.experiments.archive.exp_003_2joint_a2c.visualize \
+  --checkpoint ../../../runs/archive/exp_003_2joint_a2c/run_YYYYMMDD_HHMMSS/final.pt --stochastic
 
-python -m mujoco_rl_sim.experiments.exp_003_2joint_a2c.preview_warmup
+python -m mujoco_rl_sim.experiments.archive.exp_003_2joint_a2c.preview_warmup
 ```
 
-`train --resume` の相対パスは **`mujoco_rl_sim/runs/<実験名>/` 基準**（`run_.../update_....pt`）。`visualize --checkpoint` は **`checkpoint.resolve_checkpoint_path` を使わず**実験フォルダ基準で解決するため、上記の `../runs/...` 形式か絶対パスを使う。
+`train --resume` の相対パスは **`mujoco_rl_sim/runs/archive/<実験名>/` 基準**（`run_.../update_....pt`）。`visualize --checkpoint` は **`checkpoint.resolve_checkpoint_path` を使わず**実験フォルダ基準で解決するため、`../../../runs/archive/<実験名>/run_.../final.pt` 形式か絶対パスを使う。
 
 ## 報酬・終了・観測
 

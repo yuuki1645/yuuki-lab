@@ -1,25 +1,30 @@
-# exp_010: 進捗報酬 + 膝過屈曲ペナルティ + 足底摩擦
+# exp_013: 累積距離マイルストーン報酬
 
-## exp_009 からの変更
+## exp_010 からの変更
 
-| 項目 | exp_009 | exp_010 |
+| 項目 | exp_010 | exp_013 |
 |------|---------|---------|
-| 進捗報酬 | なし | **best_imu_x 更新分**（直立時） |
-| 膝 | — | **飛翔中の過屈曲ペナルティ** |
-| XML 足底 | 既定摩擦 | **friction 1.15** |
-| 転移起点 | exp_008 u1500 | **同左**（exp_009 u2500 は ~2 m で打ち切り） |
+| 進捗報酬 | `best_imu_x` 更新分 | **同一**（`PROGRESS_REWARD_SCALE=20.0`） |
+| マイルストーン | なし | **累積 IMU X 距離** `(1.0, 2.0, 3.5, 5.0, 7.5, 10.0) m` 通過ごとに `+4.0` |
+| 姿勢終了 | exp_010 同等 | **やや緩和**（`MIN_IMU_Z=0.39`, `MIN_IMU_UPRIGHT=0.52`） |
+| 転移起点 | exp_008 u1500 | **exp_010 final**（~3.1 m） |
 
-## 長時間 run 打ち切り（2026-05-24）
+## 背景
 
-- `run_20260524_180335`（+6000、u2460 付近）: u2000 評価 **~1.5 m** のため停止。
-- 採用チェックポイント: **`run_20260524_173035/final.pt`（~3.1 m）** → exp_011 転移元。
+exp_010 final が現状ベスト（~3.1 m）。10 m を明示的スパース報酬で狙う。
 
 ## 学習
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_010_2joint_ppo_hop_progress.train \
-  --resume "../exp_008_2joint_ppo_hop_shaping/run_20260524_110357/update_001500.pt" \
+cd mujoco-sim/mujoco_rl_sim/experiments/archive/exp_013_2joint_ppo_hop_milestones
+python train.py \
+  --resume "../archive/exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" \
   --lr 2e-4 --num-updates 2000
 ```
 
-途中で `analyze_rollout` を見て見込みがなければ学習を止めて exp_011 へ。
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_013_2joint_ppo_hop_milestones/run_YYYYMMDD_HHMMSS/`
+
+## 観測・制御
+
+- 観測 **25 次元** / 行動 **2 次元**（exp_010 と同一）
+- 制御 **50 Hz**（`FRAME_SKIP=10`）

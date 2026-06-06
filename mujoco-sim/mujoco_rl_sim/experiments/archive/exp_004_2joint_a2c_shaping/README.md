@@ -16,10 +16,10 @@
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_004_2joint_a2c_shaping.train
+python -m mujoco_rl_sim.experiments.archive.exp_004_2joint_a2c_shaping.train
 ```
 
-チェックポイント: `mujoco_rl_sim/runs/exp_004_2joint_a2c_shaping/run_YYYYMMDD_HHMMSS/`
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_004_2joint_a2c_shaping/run_YYYYMMDD_HHMMSS/`
 
 ## wandb で見る指標（shaping）
 

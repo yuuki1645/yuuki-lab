@@ -20,15 +20,15 @@
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_005_2joint_ppo_shaping.train
+python -m mujoco_rl_sim.experiments.archive.exp_005_2joint_ppo_shaping.train
 ```
 
-チェックポイント: `mujoco_rl_sim/runs/exp_005_2joint_ppo_shaping/run_YYYYMMDD_HHMMSS/`
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_005_2joint_ppo_shaping/run_YYYYMMDD_HHMMSS/`
 
 再開例:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_005_2joint_ppo_shaping.train \
+python -m mujoco_rl_sim.experiments.archive.exp_005_2joint_ppo_shaping.train \
   --resume run_YYYYMMDD_HHMMSS/update_005000.pt \
   --lr 1e-4 \
   --num-updates 1500
@@ -37,7 +37,7 @@ python -m mujoco_rl_sim.experiments.exp_005_2joint_ppo_shaping.train \
 ## 可視化
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_005_2joint_ppo_shaping.visualize \
+python -m mujoco_rl_sim.experiments.archive.exp_005_2joint_ppo_shaping.visualize \
   --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 

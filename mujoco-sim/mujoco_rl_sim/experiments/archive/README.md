@@ -7,7 +7,7 @@
 ## 実行
 
 ```bash
-cd experiments/archive/<exp_name>
+cd mujoco-sim/mujoco_rl_sim/experiments/archive/<exp_name>
 python train.py
 ```
 

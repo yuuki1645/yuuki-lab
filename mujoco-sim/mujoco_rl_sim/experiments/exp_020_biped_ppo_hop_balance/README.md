@@ -3,7 +3,7 @@
 ## 概要
 
 **exp_019 と同一の学習**（観測 42 / 行動 10 / 報酬 shaping・ハイパラ）を、  
-**`mujoco_rl_sim.contract`**（スキーマ `biped_ppo_v1`）で観測・テレメトリ・学習ループを共通化した実験です。
+**`contract（本フォルダ内）`**（スキーマ `biped_ppo_v1`）で観測・テレメトリ・学習ループを共通化した実験です。
 
 | 項目 | exp_019 | exp_020 |
 |------|---------|---------|
@@ -15,7 +15,7 @@
 契約の観測 idx 表は次で再生成できます:
 
 ```bash
-python -m mujoco_rl_sim.contract markdown
+python -m contract（本フォルダ内） markdown
 ```
 
 **exp_018 / 019 と同様**、次を既定で有効にします。
@@ -93,7 +93,7 @@ python -m mujoco_rl_sim.contract markdown
 
 - 観測組み立て: `observation.py`（`Observation.build`）
 - 正規化: `lib/obs_norm.py`
-- テレメトリ用スライス: `mujoco_rl_sim/telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
+- テレメトリ用スライス: `telemetry/biped_ppo.py` の `_obs_slices`（Hub 表示と idx 対応）
 
 ---
 
@@ -246,21 +246,21 @@ flowchart TD
 
 ```bash
 cd mujoco-sim
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train
+python train.py
 ```
 
 高速学習のみ（ビューア・実時間待ちオフ）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --no-viewer --step-wall-sleep 0
+python train.py --no-viewer --step-wall-sleep 0
 ```
 
 ビューアを表示したまま最速（毎ステップ sync のみ・sleep なし）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --viewer-fast
+python train.py --viewer-fast
 # または
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --step-wall-sleep 0
+python train.py --step-wall-sleep 0
 ```
 
 （既定の `ENABLE_VIEWER=True` なら `--viewer` は不要。実時間追従は `--step-wall-sleep` 省略時の既定どおり。）
@@ -268,13 +268,13 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --step-w
 ビューア表示 + テレメトリ OFF（Socket.IO 負荷を削減）:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --viewer-fast --no-telemetry
+python train.py --viewer-fast --no-telemetry
 ```
 
 wandb ログ OFF:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --no-wandb
+python train.py --no-wandb
 ```
 
 ## テレメトリ（robotics-hub）
@@ -292,8 +292,8 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.train --no-wan
 ## 可視化
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.visualize
-python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.visualize --checkpoint runs/.../latest.pt
+python visualize.py
+python visualize.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 
 ## exp_019 との違い
@@ -301,5 +301,5 @@ python -m mujoco_rl_sim.experiments.exp_020_biped_ppo_hop_balance.visualize --ch
 | 項目 | exp_019 | exp_020 |
 |------|---------|---------|
 | 学習・報酬・env | 基準 | **同一コピー** |
-| コード構成 | `train.py` 内にループ | **`mujoco_rl_sim.contract`** |
+| コード構成 | `train.py` 内にループ | **`contract（本フォルダ内）`** |
 | 観測の単一ソース | README + 手実装 | **`contract/biped_v1.py`** |

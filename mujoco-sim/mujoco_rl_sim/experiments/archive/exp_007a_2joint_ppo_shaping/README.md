@@ -16,24 +16,24 @@
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_007a_2joint_ppo_shaping.train
+python -m mujoco_rl_sim.experiments.archive.exp_007a_2joint_ppo_shaping.train
 ```
 
-チェックポイント: `mujoco_rl_sim/runs/exp_007a_2joint_ppo_shaping/run_YYYYMMDD_HHMMSS/`
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_007a_2joint_ppo_shaping/run_YYYYMMDD_HHMMSS/`
 
 **注意**: `obs_dim=25` の exp_006 チェックポイントはそのまま読み込めるが、報酬が変わるため **再学習が必要**。
 
 ## 可視化
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_007a_2joint_ppo_shaping.visualize \
+python -m mujoco_rl_sim.experiments.archive.exp_007a_2joint_ppo_shaping.visualize \
   --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 ```
 
 ## ロールアウト分析（任意）
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_007a_2joint_ppo_shaping.analyze_rollout \
+python -m mujoco_rl_sim.experiments.archive.exp_007a_2joint_ppo_shaping.analyze_rollout \
   --checkpoint run_YYYYMMDD_HHMMSS/latest.pt --stochastic --seed 42
 ```
 

@@ -32,15 +32,15 @@
 `mujoco-sim` ディレクトリで:
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_008_2joint_ppo_hop_shaping.train
+python -m mujoco_rl_sim.experiments.archive.exp_008_2joint_ppo_hop_shaping.train
 ```
 
-チェックポイント: `mujoco_rl_sim/runs/exp_008_2joint_ppo_hop_shaping/run_YYYYMMDD_HHMMSS/`
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_008_2joint_ppo_hop_shaping/run_YYYYMMDD_HHMMSS/`
 
 ## ロールアウト分析
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_008_2joint_ppo_hop_shaping.analyze_rollout \
+python -m mujoco_rl_sim.experiments.archive.exp_008_2joint_ppo_hop_shaping.analyze_rollout \
   --checkpoint run_YYYYMMDD_HHMMSS/latest.pt --seed 42
 ```
 

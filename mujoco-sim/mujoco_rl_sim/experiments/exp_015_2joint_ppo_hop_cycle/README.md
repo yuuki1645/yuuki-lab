@@ -6,15 +6,15 @@
 
 ## 変更（exp_010 比）
 
-- 着地時: `flight_steps >= 5` かつ周期 `dx >= 0.06 m` かつ直立・前傾制限 → `+4.0`（`HOP_CYCLE_BONUS`）
+- 着地時: `flight_steps >= 5` かつ周期 `dx >= 0.06 m` かつ直立・`|imu_zaxis_x| <= HOP_CYCLE_MAX_LANDING_LEAN` → `+4.0`（`HOP_CYCLE_BONUS`）
 - 観測・終了・XML は exp_010 と同一
 
 ## 転移
 
 ```powershell
-cd mujoco-sim
-python -m mujoco_rl_sim.experiments.exp_015_2joint_ppo_hop_cycle.train `
-  --resume "../exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" `
+cd mujoco-sim/mujoco_rl_sim/experiments/exp_015_2joint_ppo_hop_cycle
+python train.py `
+  --resume "../archive/exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" `
   --lr 1e-4 --num-updates 2000
 ```
 

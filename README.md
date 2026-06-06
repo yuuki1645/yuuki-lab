@@ -18,7 +18,7 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 **フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。**MuJoCo の PPO 学習**（`mujoco-sim` の `train_002_full_actuators`）と併用する場合は、ハブの **「RL 学習テレメトリ」**で Socket.IO（既定 **8791**）経由の観測・行動表示が利用できます。
+実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。**MuJoCo RL 学習**（`mujoco-sim/mujoco_rl_sim/experiments/exp_028_biped_ppo_walk` 等の `train.py`）と併用する場合は、ハブの **「学習テレメトリ」**（`/training-telemetry`）で Socket.IO（既定 **8791**）経由の観測・行動表示が利用できます。`--step-wall-sleep` で壁時計の遅延を調整できます。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
@@ -50,7 +50,7 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 ## ■ mujoco-sim
 
-MuJoCo の脚モデルを **実時間 HTTP サーバ**（`mujoco_realtime_sim`）と **強化学習用環境**（`mujoco_rl_sim`）に分けた Python パッケージ群です。起動例は `python -m mujoco_realtime_sim`。全アクチュエータ学習（`train_002_full_actuators`）では **Socket.IO テレメトリ**（既定ポート **8791**）や **`--step-wall-sleep`** による壁時計の遅延が選べます。**robotics-hub** の RL 学習テレメトリ画面と連携する手順は [mujoco-sim/README.md](mujoco-sim/README.md) を参照してください。
+MuJoCo の脚モデルを **実時間 HTTP サーバ**（`mujoco_realtime_sim`）と **強化学習用環境**（`mujoco_rl_sim`）に分けた Python パッケージ群です。起動例は `python -m mujoco_realtime_sim`。各 RL 実験の `train.py` では **Socket.IO テレメトリ**（既定ポート **8791**）や **`--step-wall-sleep`** による壁時計の遅延が選べます。**robotics-hub** の学習テレメトリ画面（`/training-telemetry`）と連携する手順は [mujoco-sim/README.md](mujoco-sim/README.md) を参照してください。
 
 ---
 

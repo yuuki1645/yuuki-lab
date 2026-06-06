@@ -1,6 +1,6 @@
 # exp_028: 交互片脚歩行 PPO（exp_027 コピー）
 
-**exp_027** と同一機能の作業用コピーです（報酬・観測・学習ループは同じ）。  
+**exp_027** をコピーした作業用 fork です。**既定 `config.py` はミニマル報酬 preset**（`REWARD_ENABLE_WALK_SHAPING` 等が無効）で、exp_027 の歩行 shaping 主線とは異なります。  
 設計の源流は **exp_026** の MLP を維持した **交互片脚歩行** タスクです。
 
 | 項目 | exp_026 | exp_028 |
@@ -22,7 +22,7 @@ python visualize.py
 補助 CLI:
 
 ```bash
-python scripts/analyze_rollout.py --checkpoint runs/.../final.pt
+python scripts/analyze_rollout.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 python scripts/preview_warmup.py
 .\scripts\launch_parallel.ps1
 ```

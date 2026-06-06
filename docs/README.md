@@ -11,8 +11,8 @@
 | [human_joint_kinematics.md](human_joint_kinematics.md) | 可動域・歩行時の角度・角速度 |
 | [sim_human_comparison.md](sim_human_comparison.md) | MuJoCo モデル（007 等）と人間・実機の対応表 |
 | [control_timing_human_rl.md](control_timing_human_rl.md) | 人体の制御タイミング（ms / Hz）と RL 環境 step 周波数の目安 |
-| [../mujoco-sim/mujoco_rl_sim/experiments/exp_001_2joint_a2c/README.md](../mujoco-sim/mujoco_rl_sim/experiments/exp_001_2joint_a2c/README.md) | exp_001: 2 関節 A2C 実験 |
-| [../mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/README.md](../mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/README.md) | exp_002: 2 関節 A2C 実験（exp_001 コピー・フォルダ内完結） |
+| [../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c/README.md](../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c/README.md) | exp_001: 2 関節 A2C 実験（アーカイブ） |
+| [../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_002_2joint_a2c/README.md](../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_002_2joint_a2c/README.md) | exp_002: 2 関節 A2C 実験（アーカイブ・exp_001 コピー） |
 
 ## 使い方の目安
 

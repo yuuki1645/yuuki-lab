@@ -10,7 +10,10 @@
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **テレメトリ** — 学習時は `train_002_full_actuators` の Socket.IO（観測・行動）に加え、`robot-daemon` の実機 IMU（`imu/sample`）を同一ページで表示
+- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）
+- **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
+- **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
+- **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
 
 ## 前提
 
@@ -44,7 +47,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 **`robot-daemon` について:** REST・Socket.IO のベース URL は **`window.location.hostname` + `:5000`**（`src/shared/constants.ts` の `SERVO_DAEMON_URL`。名前は歴史的経緯のためそのまま）です。タブレットなどから `http://192.168.x.x:5173` で開いた場合、フロントからは `http://192.168.x.x:5000` にリクエスト・WebSocket 相当の接続が飛びます。デーモンを動かしているマシンとポート 5000 が、他端末から届くようにファイアウォールで許可されているか確認してください（デーモンとハブを同一 PC で動かしているのが最も単純です）。
 
-**テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`）と **学習テレメトリ**（`/training-telemetry`）に分かれています。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（`train_002_full_actuators` の `--telemetry-port`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://<hostname>:5000`**（`SERVO_DAEMON_URL` と同じ）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
+**テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`）と **学習テレメトリ**（`/training-telemetry`）に分かれています。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://<hostname>:5000`**（`SERVO_DAEMON_URL` と同じ）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
 
 本番ビルドを LAN 向けにプレビューする場合の例:
 
@@ -69,6 +72,7 @@ npm run preview
 | `VITE_TELEMETRY_SOCKET_URL` | 学習テレメトリ用 Socket.IO（未設定時は `VITE_RL_TELEMETRY_SOCKET_URL` のあと `http://<hostname>:8791`） |
 | `VITE_RL_TELEMETRY_SOCKET_URL` | （非推奨）上記と同用途。`VITE_TELEMETRY_SOCKET_URL` を優先してください |
 | `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
+| `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
 
 ## 新しいツールを追加する手順
 

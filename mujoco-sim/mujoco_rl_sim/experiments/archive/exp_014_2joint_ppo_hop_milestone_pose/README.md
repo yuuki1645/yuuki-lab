@@ -1,25 +1,31 @@
-# exp_010: 進捗報酬 + 膝過屈曲ペナルティ + 足底摩擦
+# exp_014: マイルストーン + 生存ボーナス + 姿勢終了緩和
 
-## exp_009 からの変更
+## exp_010 からの変更
 
-| 項目 | exp_009 | exp_010 |
+| 項目 | exp_010 | exp_014 |
 |------|---------|---------|
-| 進捗報酬 | なし | **best_imu_x 更新分**（直立時） |
-| 膝 | — | **飛翔中の過屈曲ペナルティ** |
-| XML 足底 | 既定摩擦 | **friction 1.15** |
-| 転移起点 | exp_008 u1500 | **同左**（exp_009 u2500 は ~2 m で打ち切り） |
+| マイルストーン | なし | `(1.0, 2.5, 4.0, 6.0, 8.0, 10.0) m` 通過ごとに `+5.0` |
+| 生存ボーナス | なし | **`SURVIVAL_BONUS_SCALE=0.12`**（直立・高さ条件付き） |
+| 進捗報酬 | `PROGRESS_REWARD_SCALE=20.0` | **`22.0`** |
+| push/landing | exp_010 同等 | **係数を弱める**（`PUSH_OFF=0.25`, `LANDING=0.55`） |
+| 姿勢終了 | exp_010 同等 | **さらに緩和**（`MIN_IMU_Z=0.37`, `MIN_IMU_UPRIGHT=0.50`） |
 
-## 長時間 run 打ち切り（2026-05-24）
+## 背景
 
-- `run_20260524_180335`（+6000、u2460 付近）: u2000 評価 **~1.5 m** のため停止。
-- 採用チェックポイント: **`run_20260524_173035/final.pt`（~3.1 m）** → exp_011 転移元。
+exp_010 ベスト（~3.1 m）から 10 m 直達のスパース報酬と早期終了緩和を試行。
 
 ## 学習
 
 ```bash
-python -m mujoco_rl_sim.experiments.exp_010_2joint_ppo_hop_progress.train \
-  --resume "../exp_008_2joint_ppo_hop_shaping/run_20260524_110357/update_001500.pt" \
+cd mujoco-sim/mujoco_rl_sim/experiments/archive/exp_014_2joint_ppo_hop_milestone_pose
+python train.py \
+  --resume "../archive/exp_010_2joint_ppo_hop_progress/run_20260524_173035/final.pt" \
   --lr 2e-4 --num-updates 2000
 ```
 
-途中で `analyze_rollout` を見て見込みがなければ学習を止めて exp_011 へ。
+チェックポイント: `mujoco_rl_sim/runs/archive/exp_014_2joint_ppo_hop_milestone_pose/run_YYYYMMDD_HHMMSS/`
+
+## 観測・制御
+
+- 観測 **25 次元** / 行動 **2 次元**（exp_010 と同一）
+- 制御 **50 Hz**（`FRAME_SKIP=10`）

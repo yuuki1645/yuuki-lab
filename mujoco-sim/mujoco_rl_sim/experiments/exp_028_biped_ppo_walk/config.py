@@ -117,8 +117,22 @@ EFFORT_PENALTY_SCALE = 3.0
 # 後方互換。実際の ON/OFF は REWARD_ENABLE_EFFORT を参照（sim/reward.py）。
 APPLY_EFFORT_PENALTY = REWARD_ENABLE_EFFORT
 
-CONTACT_SHANK_TERMINATES = False
+#endregion
+
+#region 終了 — 姿勢（sim/termination.py の done_reason_pose）
+# imu_site の世界 Z [m]。これ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
+MIN_IMU_Z = 0.3
+# 足が床についているときの imu_z 下限 [m]（Viewer 参考平面と同じ高さ）。
+MIN_IMU_Z_STANCE = 0.3
+# imu_zaxis の Z 成分（上向き成分）。1 に近いほど直立。これ未満で姿勢不良終了。
+MIN_IMU_UPRIGHT = 0.52
+# ボディ +X への前傾射影がこれ未満（後傾）で終了。ヨーで imu_zaxis_x に逃げられない。
 MAX_BACKWARD_LEAN_BODY = 0.38
+# 上記いずれかの理由でエピソード終了したときに報酬へ加算するペナルティ。
+POSE_TERMINATION_PENALTY = -30.0
+
+# すね geom の床接触でエピソード終了するか（False ならステップペナルティのみ）。
+CONTACT_SHANK_TERMINATES = False
 #endregion
 
 #region 観測・行動（contract/biped_walk_v1.py と一致、51 次元）
@@ -180,7 +194,7 @@ STEP_WALL_SLEEP_SEC = CONTROL_TIMESTEP_S
 
 # passive viewer user_scn オーバーレイ: (z [m], rgba) — IMU 転倒下限の参考用薄赤平面
 VIEWER_TARGET_HEIGHT_PLANES: tuple[tuple[float, tuple[float, float, float, float]], ...] = (
-  (0.3, (1.0, 0.25, 0.25, 0.28)),
+  (MIN_IMU_Z_STANCE, (1.0, 0.25, 0.25, 0.28)),
 )
 VIEWER_HEIGHT_PLANE_HALF_XY = (3.0, 3.0)  # 薄板 X/Y 半サイズ [m]
 VIEWER_HEIGHT_PLANE_THICKNESS = 0.001  # 薄板厚 [m]
@@ -255,6 +269,12 @@ def training_config_dict() -> dict:
     "progress_reward_scale": PROGRESS_REWARD_SCALE,
     "aerial_duration_penalty_after_steps": AERIAL_DURATION_PENALTY_AFTER_STEPS,
     "heading_align_min": HEADING_ALIGN_MIN,
+    "min_imu_z": MIN_IMU_Z,
+    "min_imu_z_stance": MIN_IMU_Z_STANCE,
+    "min_imu_upright": MIN_IMU_UPRIGHT,
+    "max_backward_lean_body": MAX_BACKWARD_LEAN_BODY,
+    "pose_termination_penalty": POSE_TERMINATION_PENALTY,
+    "contact_shank_terminates": CONTACT_SHANK_TERMINATES,
     "obs_dim": OBS_DIM,
     "action_dim": ACTION_DIM,
     "policy_hidden_sizes": POLICY_HIDDEN_SIZES,

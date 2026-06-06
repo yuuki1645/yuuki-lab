@@ -209,18 +209,7 @@ class Termination:
   def done_reason_pose(
     self, data: mujoco.MjData
   ) -> TerminationOutcome:
-    # ここだけ読めば「何を見て、どの閾値で落とすか」が分かるようにする。
-
-    # imu_site の世界 Z [m]。これ未満で転倒終了（低すぎ＝しゃがみすぎ／倒れ）。
-    MIN_IMU_Z = 0.3
-    # 足が床についているときの imu_z 下限 [m]（Viewer 参考平面と同じ高さ）。
-    MIN_IMU_Z_STANCE = 0.3
-    # imu_zaxis の Z 成分（上向き成分）。1 に近いほど直立。これ未満で姿勢不良終了。
-    MIN_IMU_UPRIGHT = 0.52
-    # ボディ +X への前傾射影がこれ未満（後傾）で終了。ヨーで imu_zaxis_x に逃げられない。
-    MAX_BACKWARD_LEAN_BODY = config.MAX_BACKWARD_LEAN_BODY
-    # 上記いずれかの理由でエピソード終了したときに報酬へ加算するペナルティ。
-    POSE_TERMINATION_PENALTY = -30.0
+    # 閾値・ペナルティの正本は config.py（--set / dispatch でも上書き可）。
 
     imu_z = float(data.site("imu_site").xpos[WORLD_Z])
     imu_zaxis = data.sensor("imu_zaxis").data
@@ -233,18 +222,20 @@ class Termination:
       data, self._right_foot_geom_id, self._floor_geom_id
     )
 
-    min_imu_z = MIN_IMU_Z_STANCE if any_foot_on_floor else MIN_IMU_Z
+    min_imu_z = config.MIN_IMU_Z_STANCE if any_foot_on_floor else config.MIN_IMU_Z
     if imu_z < min_imu_z:
-      return TerminationOutcome(REASON_IMU_Z, POSE_TERMINATION_PENALTY, None)
-
-    if upright < MIN_IMU_UPRIGHT:
       return TerminationOutcome(
-        REASON_LOW_UPRIGHT, POSE_TERMINATION_PENALTY, None
+        REASON_IMU_Z, config.POSE_TERMINATION_PENALTY, None
       )
 
-    if lean_fwd_body < -MAX_BACKWARD_LEAN_BODY:
+    if upright < config.MIN_IMU_UPRIGHT:
       return TerminationOutcome(
-        REASON_BACKWARD_LEAN, POSE_TERMINATION_PENALTY, None
+        REASON_LOW_UPRIGHT, config.POSE_TERMINATION_PENALTY, None
+      )
+
+    if lean_fwd_body < -config.MAX_BACKWARD_LEAN_BODY:
+      return TerminationOutcome(
+        REASON_BACKWARD_LEAN, config.POSE_TERMINATION_PENALTY, None
       )
 
     return NOT_TERMINATED

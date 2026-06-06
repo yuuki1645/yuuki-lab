@@ -7,6 +7,7 @@
 
   python train.py
   python train.py --resume path/to/latest.pt
+  python train.py --set forward_reward_scale=55 --set reward_enable_walk_shaping=true
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ import json
 import os
 
 from contract import TELEMETRY_CONTRACT, PpoTrainBindings, run_ppo_train
-from lib.dispatch_config import apply_dispatch_config_overrides
+from lib.config_overrides import apply_cli_set_overrides, apply_dispatch_env_overrides
 from package_meta import EXP_NAME
 import rl.checkpoint as checkpoint
 import rl.wandb_logging as wandb_logging
@@ -34,7 +35,7 @@ from sim.env import EnvBipedPPO
 
 
 def _dispatch_overrides_for_logging() -> dict[str, Any]:
-  """W&B に記録する sweep 上書き内容（apply_dispatch_config_overrides と同じ env）。"""
+  """W&B 用: 環境変数 DISPATCH_CONFIG_OVERRIDES_JSON の内容（未適用の生 dict）。"""
   raw = os.environ.get("DISPATCH_CONFIG_OVERRIDES_JSON", "").strip()
   if not raw:
     return {}
@@ -62,7 +63,12 @@ def _create_agent(run: TrainRunConfig) -> tuple[AgentPPO, dict[str, Any] | None]
   return agent, payload
 
 
-def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
+def _wandb_init(
+  run: TrainRunConfig,
+  payload: dict[str, Any] | None,
+  *,
+  applied_config_overrides: dict[str, Any],
+) -> None:
   extra_config: dict[str, Any] | None = None
   extra_tags: tuple[str, ...] | None = None
   run_name = run.wandb_run_name
@@ -97,10 +103,14 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
     }
     extra_tags = ("contract",)
 
-  logged = _dispatch_overrides_for_logging()
-  if logged:
+  if applied_config_overrides:
     extra_config = dict(extra_config)
-    extra_config["dispatch_config_overrides"] = logged
+    extra_config["config_overrides"] = applied_config_overrides
+    if run.config_set_args:
+      extra_config["cli_config_set_args"] = list(run.config_set_args)
+    dispatch_raw = _dispatch_overrides_for_logging()
+    if dispatch_raw:
+      extra_config["dispatch_config_overrides_env"] = dispatch_raw
 
   wandb_logging.init(
     extra_config=extra_config,
@@ -110,10 +120,25 @@ def _wandb_init(run: TrainRunConfig, payload: dict[str, Any] | None) -> None:
   )
 
 
+def _apply_run_config_overrides(run: TrainRunConfig) -> dict[str, Any]:
+  """dispatch 環境変数 → CLI --set の順で config を上書き（後勝ち）。"""
+  applied: dict[str, Any] = {}
+  applied.update(apply_dispatch_env_overrides())
+  applied.update(apply_cli_set_overrides(run.config_set_args))
+  return applied
+
+
 def main() -> None:
   run = parse_train_args()
-  # 並列 sweep 起動時: 環境変数経由で報酬係数などを config に反映
-  apply_dispatch_config_overrides()
+  applied_overrides = _apply_run_config_overrides(run)
+
+  def init_wandb(run_cfg: TrainRunConfig, payload: dict[str, Any] | None) -> None:
+    _wandb_init(
+      run_cfg,
+      payload,
+      applied_config_overrides=applied_overrides,
+    )
+
   bindings = PpoTrainBindings(
     config=config,
     checkpoint=checkpoint,
@@ -123,7 +148,7 @@ def main() -> None:
     telemetry=TELEMETRY_CONTRACT,
     env_factory=lambda viewer: EnvBipedPPO(enable_viewer=viewer),
     create_agent=_create_agent,
-    init_wandb=_wandb_init,
+    init_wandb=init_wandb,
     train_run_config=run,
   )
   run_ppo_train(bindings)

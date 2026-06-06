@@ -32,6 +32,11 @@ wandb を無効にする例:
 
   python train.py --no-wandb
 
+config 定数を run ごとに上書きする例（``lib/config_overrides.OVERRIDABLE_CONFIG_KEYS`` 参照）:
+
+  python train.py --set forward_reward_scale=55.0 --set reward_enable_walk_shaping=true
+  python train.py --set min_imu_z=0.35 --set min_imu_upright=0.55 --no-viewer
+
 チェックポイント run ディレクトリ: wandb 有効時は Run Name（例: lunar-pond-4）、
 --no-wandb 時は run_YYYYMMDD_HHMMSS。同名フォルダがある場合は _2, _3 …
 保存先: {CHECKPOINT_REL_FROM_EXP}/
@@ -71,6 +76,7 @@ class TrainRunConfig:
   telemetry_host: str
   telemetry_port: int
   step_wall_sleep_sec: float | None
+  config_set_args: tuple[str, ...]
 
 
 def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
@@ -128,6 +134,20 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     "--no-wandb",
     action="store_true",
     help="Weights & Biases ロギングを無効化（config.USE_WANDB を上書き）",
+  )
+
+  # --- config.py 上書き（run 単位） ---
+  p.add_argument(
+    "--set",
+    dest="config_sets",
+    action="append",
+    default=None,
+    metavar="KEY=VALUE",
+    help=(
+      "config.py の定数を上書き（snake_case キー。複数指定可）。"
+      "例: --set forward_reward_scale=55 --set reward_enable_walk_shaping=true。"
+      "利用可能キーは lib/config_overrides.OVERRIDABLE_CONFIG_KEYS"
+    ),
   )
 
   # --- 可視化・実時間化 ---
@@ -219,6 +239,8 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
   if args.viewer_fast and step_wall_sleep_sec is None:
     step_wall_sleep_sec = 0.0
 
+  config_set_args = tuple(args.config_sets or ())
+
   return TrainRunConfig(
     resume_path=resume_path,
     lr=args.lr,
@@ -231,4 +253,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     telemetry_host=str(args.telemetry_host),
     telemetry_port=int(args.telemetry_port),
     step_wall_sleep_sec=step_wall_sleep_sec,
+    config_set_args=config_set_args,
   )

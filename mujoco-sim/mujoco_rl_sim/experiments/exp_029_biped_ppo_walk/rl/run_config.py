@@ -84,6 +84,7 @@ class TrainRunConfig:
   post_train_eval: bool
   training_seed: int | None
   training_dr: bool  # False のとき --no-training-dr（config.TRAINING_DR_ENABLED は別途参照）
+  num_envs: int | None  # CLI --num-envs（省略時は config.NUM_ENVS / --set）
 
 
 def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
@@ -160,6 +161,15 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     "--no-training-dr",
     action="store_true",
     help="学習時 Domain Randomization を無効化（既定は config.TRAINING_DR_ENABLED）",
+  )
+  p.add_argument(
+    "--num-envs",
+    type=int,
+    default=None,
+    help=(
+      f"Subproc VecEnv の並列 env 数（省略時は config.NUM_ENVS={config.NUM_ENVS}）。"
+      "1=単一 env、8 などでロールアウト物理を並列化"
+    ),
   )
 
   # --- config.py 上書き（run 単位） ---
@@ -267,6 +277,9 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
 
   config_set_args = tuple(args.config_sets or ())
 
+  if args.num_envs is not None and args.num_envs < 1:
+    raise SystemExit("--num-envs は 1 以上にしてください")
+
   return TrainRunConfig(
     resume_path=resume_path,
     lr=args.lr,
@@ -283,4 +296,5 @@ def parse_train_args(argv: list[str] | None = None) -> TrainRunConfig:
     post_train_eval=not args.no_eval,
     training_seed=args.seed,
     training_dr=not args.no_training_dr,
+    num_envs=args.num_envs,
   )

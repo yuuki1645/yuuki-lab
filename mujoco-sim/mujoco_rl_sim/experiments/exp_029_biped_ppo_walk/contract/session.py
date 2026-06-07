@@ -17,6 +17,7 @@ from contract.telemetry import build_reset_payload, build_step_payload
 from contract.spec import TelemetryContract
 from lib.train_throughput import ThroughputTracker, UpdateTiming, pacing_warnings
 from mujoco_sim_common.telemetry import HubTelemetrySocketIoServer
+from sim.subproc_vec_env import SubprocVecEnvBiped
 
 
 class _EnvProtocol(Protocol):
@@ -122,12 +123,19 @@ def _print_run_banner(
     print("[training-dr] disabled")
 
   wall_sleep = _effective_step_wall_sleep_sec(run, config)
+  num_envs = int(getattr(config, "NUM_ENVS", 1))
   for msg in pacing_warnings(
     viewer=bool(run.viewer),
     telemetry=bool(run.telemetry),
     step_wall_sleep_sec=wall_sleep,
+    num_envs=num_envs,
   ):
     print(msg)
+  if num_envs > 1:
+    print(
+      f"[subproc-vec] enabled: {num_envs} env workers "
+      f"(rollout_steps={config.ROLLOUT_STEPS} total per update)"
+    )
 
 
 def _run_warmup_step(
@@ -224,6 +232,104 @@ def _viewer_visualize_realtime(run: Any, config: Any, wall_sleep_sec: float) -> 
   return wall_sleep_sec > 0.0
 
 
+def _collect_rollout_subproc(
+  *,
+  vec_env: SubprocVecEnvBiped,
+  agent: Any,
+  config: Any,
+  obs_list: list[tuple[float, ...]],
+  episode_steps: list[int],
+  next_episode_index: int,
+  episode_metrics: Any,
+  total_env_steps: int,
+  episodes_finished: int,
+) -> tuple[
+  list[tuple[float, ...]],
+  list[int],
+  int,
+  int,
+  int,
+  Any,
+  float,
+  float,
+]:
+  """Subproc VecEnv で ``ROLLOUT_STEPS`` 分のロールアウトを収集する。"""
+  num_envs = vec_env.num_envs
+  policy_steps = 0
+  last_obs: Any = obs_list[0]
+  sum_ipc_s = 0.0
+  sum_act_batch_s = 0.0
+
+  while policy_steps < config.ROLLOUT_STEPS:
+    obs_batch = np.asarray(obs_list, dtype=np.float64)
+
+    t_act = time.perf_counter()
+    actions, values, log_probs = agent.act_batch(obs_batch)
+    sum_act_batch_s += time.perf_counter() - t_act
+
+    t_ipc = time.perf_counter()
+    batch = vec_env.step(actions)
+    sum_ipc_s += time.perf_counter() - t_ipc
+
+    for env_id in range(num_envs):
+      obs_before = obs_list[env_id]
+      action_row = actions[env_id]
+      action_tuple = tuple(float(x) for x in action_row)
+      reward = float(batch.rewards[env_id])
+      terminated = bool(batch.terminated[env_id])
+      step_info = batch.infos[env_id]
+
+      episode_steps[env_id] += 1
+      total_env_steps += 1
+      episode_metrics.on_step(reward, step_info)
+
+      truncated = episode_steps[env_id] >= config.MAX_STEPS_PER_EPISODE
+      done = terminated or truncated
+
+      agent.store(
+        obs_before,
+        action_tuple,
+        reward,
+        values[env_id],
+        done,
+        log_probs[env_id],
+      )
+      policy_steps += 1
+      obs_list[env_id] = batch.observations[env_id]
+      last_obs = obs_list[env_id]
+
+      if policy_steps >= config.ROLLOUT_STEPS:
+        break
+
+      if done:
+        episode_metrics.on_episode_end(
+          episode_step=episode_steps[env_id],
+          terminated=terminated,
+          truncated=truncated,
+          step_info=step_info,
+          env_step=total_env_steps,
+        )
+        episodes_finished += 1
+        obs_list[env_id] = vec_env.reset_env(
+          env_id,
+          episode_index=next_episode_index,
+        )
+        next_episode_index += 1
+        episode_steps[env_id] = 0
+        last_obs = obs_list[env_id]
+
+  return (
+    obs_list,
+    episode_steps,
+    next_episode_index,
+    total_env_steps,
+    episodes_finished,
+    last_obs,
+    sum_ipc_s,
+    sum_act_batch_s,
+  )
+
+
 def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   """PPO 学習のメインループ。
 
@@ -243,13 +349,34 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   bindings.init_wandb(run, payload)
 
   episode_metrics = wandb_logging.episode_collector()
-  env = bindings.env_factory(run.viewer)
+  num_envs = int(getattr(config, "NUM_ENVS", 1))
+  use_subproc = num_envs > 1
   wall_sleep_sec = _effective_step_wall_sleep_sec(run, config)
-  env.set_step_wall_sleep_sec(wall_sleep_sec)
 
-  tel = _start_telemetry(env, run)
-  visualize_steps = _viewer_visualize_realtime(run, config, wall_sleep_sec)
-  if run.viewer:
+  env = None
+  vec_env: SubprocVecEnvBiped | None = None
+  tel: HubTelemetrySocketIoServer | None = None
+  visualize_steps = False
+
+  if use_subproc:
+    if config.WARMUP_ENABLED:
+      print(
+        "[subproc-vec] warmup disabled for num_envs>1 "
+        f"(config.WARMUP_ENABLED={config.WARMUP_ENABLED})"
+      )
+    vec_env = SubprocVecEnvBiped(
+      num_envs,
+      training_dr_enabled=bool(bindings.training_dr_enabled),
+      training_seed=bindings.training_seed_resolved,
+      step_wall_sleep_sec=wall_sleep_sec,
+    )
+  else:
+    env = bindings.env_factory(run.viewer)
+    env.set_step_wall_sleep_sec(wall_sleep_sec)
+    tel = _start_telemetry(env, run)
+    visualize_steps = _viewer_visualize_realtime(run, config, wall_sleep_sec)
+
+  if run.viewer and not use_subproc:
     if visualize_steps:
       print(
         f"[viewer] realtime pacing ({config.CONTROL_TIMESTEP_S:.3f}s/step); "
@@ -263,19 +390,32 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   episode_index = int(payload.get("episodes_finished", 0)) if payload is not None else 0
   end_update = start_update + run.num_updates
 
-  obs = env.reset(episode_index=episode_index)
-  obs_vec = tuple(obs)
-  if tel is not None:
-    tel.publish_reset(
-      build_reset_payload(
-        contract,
-        obs_vector=obs_vec,
-        num_timesteps=total_env_steps,
-        exp_name=exp_name,
-      )
-    )
-
+  obs_list: list[tuple[float, ...]] = []
+  episode_steps: list[int] = []
+  next_episode_index = episode_index
+  obs_vec: tuple[float, ...] = ()
+  obs = None
   episode_step = 0
+
+  if use_subproc:
+    assert vec_env is not None
+    obs_list = vec_env.reset_all(start_episode_index=episode_index)
+    next_episode_index = episode_index + num_envs
+    episode_steps = [0] * num_envs
+    obs_vec = obs_list[0]
+  else:
+    assert env is not None
+    obs = env.reset(episode_index=episode_index)
+    obs_vec = tuple(obs)
+    if tel is not None:
+      tel.publish_reset(
+        build_reset_payload(
+          contract,
+          obs_vector=obs_vec,
+          num_timesteps=total_env_steps,
+          exp_name=exp_name,
+        )
+      )
   last_update = start_update
   updates_done_this_run = 0
   throughput = ThroughputTracker(rollout_steps_per_update=int(config.ROLLOUT_STEPS))
@@ -312,81 +452,110 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
   try:
     for u in range(start_update, end_update):
       t_rollout_start = time.perf_counter()
-      policy_steps = 0
+      ipc_s = 0.0
+      act_batch_s = 0.0
 
-      # --- ロールアウト収集: ROLLOUT_STEPS 分 interact → バッファ ---
-      while policy_steps < config.ROLLOUT_STEPS:
-        if warmup.in_episode_warmup(episode_step):
-          # ウォームアップ中は agent.store しない（方策学習データに混ぜない）
-          obs, obs_vec, episode_step, total_env_steps, episode_index = _run_warmup_step(
-            obs,
-            obs_vec,
-            env=env,
-            warmup_mod=warmup,
-            config_mod=config,
-            contract_mod=contract,
-            tel=tel,
-            episode_metrics=episode_metrics,
-            exp_name_str=exp_name,
-            episode_step_val=episode_step,
-            total_env_steps_val=total_env_steps,
-            episode_index_val=episode_index,
-            visualize_steps_flag=visualize_steps,
-          )
-          continue
-
-        action, value, log_prob = agent.act(obs)
-        obs_before = obs_vec
-        obs_next, reward, terminated, step_info = env.step(
-          action,
-          visualize=visualize_steps,
-          episode_step=episode_step,
+      if use_subproc:
+        assert vec_env is not None
+        (
+          obs_list,
+          episode_steps,
+          next_episode_index,
+          total_env_steps,
+          episode_index,
+          last_obs,
+          ipc_s,
+          act_batch_s,
+        ) = _collect_rollout_subproc(
+          vec_env=vec_env,
+          agent=agent,
+          config=config,
+          obs_list=obs_list,
+          episode_steps=episode_steps,
+          next_episode_index=next_episode_index,
+          episode_metrics=episode_metrics,
+          total_env_steps=total_env_steps,
+          episodes_finished=episode_index,
         )
-        obs_vec = tuple(obs_next)
-        episode_step += 1
-        total_env_steps += 1
-        if tel is not None:
-          tel.publish_step(
-            build_step_payload(
-              contract,
-              obs_before=np.asarray(obs_before, dtype=np.float64),
-              action_norm=action,
-              obs_after=np.asarray(obs_vec, dtype=np.float64),
-              info=step_info,
-              episode_step=episode_step,
-              num_timesteps=total_env_steps,
-              exp_name=exp_name,
+        obs = last_obs
+      else:
+        policy_steps = 0
+
+        # --- ロールアウト収集: ROLLOUT_STEPS 分 interact → バッファ ---
+        while policy_steps < config.ROLLOUT_STEPS:
+          if warmup.in_episode_warmup(episode_step):
+            # ウォームアップ中は agent.store しない（方策学習データに混ぜない）
+            obs, obs_vec, episode_step, total_env_steps, episode_index = (
+              _run_warmup_step(
+                obs,
+                obs_vec,
+                env=env,
+                warmup_mod=warmup,
+                config_mod=config,
+                contract_mod=contract,
+                tel=tel,
+                episode_metrics=episode_metrics,
+                exp_name_str=exp_name,
+                episode_step_val=episode_step,
+                total_env_steps_val=total_env_steps,
+                episode_index_val=episode_index,
+                visualize_steps_flag=visualize_steps,
+              )
             )
-          )
-        episode_metrics.on_step(reward, step_info)
-        truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
-        done = terminated or truncated
+            continue
 
-        agent.store(obs, action, reward, value, done, log_prob)
-        policy_steps += 1
-
-        obs = obs_next
-        if done:
-          episode_metrics.on_episode_end(
+          action, value, log_prob = agent.act(obs)
+          obs_before = obs_vec
+          obs_next, reward, terminated, step_info = env.step(
+            action,
+            visualize=visualize_steps,
             episode_step=episode_step,
-            terminated=terminated,
-            truncated=truncated,
-            step_info=step_info,
-            env_step=total_env_steps,
           )
-          episode_index += 1
-          obs = env.reset(episode_index=episode_index)
-          obs_vec = tuple(obs)
+          obs_vec = tuple(obs_next)
+          episode_step += 1
+          total_env_steps += 1
           if tel is not None:
-            tel.publish_reset(
-              build_reset_payload(
+            tel.publish_step(
+              build_step_payload(
                 contract,
-                obs_vector=obs_vec,
+                obs_before=np.asarray(obs_before, dtype=np.float64),
+                action_norm=action,
+                obs_after=np.asarray(obs_vec, dtype=np.float64),
+                info=step_info,
+                episode_step=episode_step,
                 num_timesteps=total_env_steps,
                 exp_name=exp_name,
               )
             )
-          episode_step = 0
+          episode_metrics.on_step(reward, step_info)
+          truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+          done = terminated or truncated
+
+          agent.store(obs, action, reward, value, done, log_prob)
+          policy_steps += 1
+
+          obs = obs_next
+          if done:
+            episode_metrics.on_episode_end(
+              episode_step=episode_step,
+              terminated=terminated,
+              truncated=truncated,
+              step_info=step_info,
+              env_step=total_env_steps,
+            )
+            episode_index += 1
+            obs = env.reset(episode_index=episode_index)
+            obs_vec = tuple(obs)
+            if tel is not None:
+              tel.publish_reset(
+                build_reset_payload(
+                  contract,
+                  obs_vector=obs_vec,
+                  num_timesteps=total_env_steps,
+                  exp_name=exp_name,
+                )
+              )
+            episode_step = 0
 
       t_rollout_s = time.perf_counter() - t_rollout_start
 
@@ -399,6 +568,9 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
         rollout_s=t_rollout_s,
         ppo_update_s=t_ppo_s,
         rollout_steps=int(config.ROLLOUT_STEPS),
+        ipc_s=ipc_s,
+        act_batch_s=act_batch_s,
+        num_envs=num_envs,
       )
       throughput.record(timing)
 
@@ -465,6 +637,8 @@ def run_ppo_train(bindings: PpoTrainBindings) -> TrainRunResult:
     # wandb.finish() は train.py が post-train eval 後に呼ぶ（eval 主指標を summary に載せるため）
     if tel is not None:
       tel.stop()
+    if vec_env is not None:
+      vec_env.close()
 
   return TrainRunResult(
     checkpoint_run_dir=checkpoint_run_dir,

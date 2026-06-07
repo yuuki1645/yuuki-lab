@@ -186,6 +186,8 @@ WARMUP_ACTION_FN = default_warmup_action
 NUM_UPDATES = 5_000
 MAX_STEPS_PER_EPISODE = 15_000 // FRAME_SKIP
 LOG_EVERY = 5
+# Subproc VecEnv の並列 env 数（1=従来の単一 env。>1 で子プロセス並列ロールアウト）
+NUM_ENVS = 1
 #endregion
 
 #region ビューア・実時間 pacing
@@ -297,6 +299,7 @@ def training_config_dict() -> dict:
     "rollout_steps": ROLLOUT_STEPS,
     "entropy_coef": ENTROPY_COEF,
     "num_updates": NUM_UPDATES,
+    "num_envs": NUM_ENVS,
     "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
     "warmup_enabled": WARMUP_ENABLED,
     "save_checkpoints": SAVE_CHECKPOINTS,

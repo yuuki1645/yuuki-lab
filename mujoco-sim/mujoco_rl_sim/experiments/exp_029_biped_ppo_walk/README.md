@@ -210,6 +210,23 @@ python scripts/eval_compare.py --csv compare.csv
 最速設定: ``--no-viewer --step-wall-sleep 0 --no-telemetry``（`launch_parallel.ps1` 既定）。
 W&B には ``train/rollout_fraction`` 等も記録（``fav/*`` エイリアスあり）。
 
+### Subproc VecEnv（レベル2・ロールアウト物理並列）
+
+``NUM_ENVS > 1`` のとき、子プロセスが MuJoCo ``step``、親プロセスが方策推論 + PPO 更新を担当する（SB3 ``SubprocVecEnv`` 相当）。
+
+```powershell
+python train.py --no-viewer --no-telemetry --num-envs 8
+python train.py --set num_envs=4
+```
+
+| 項目 | 内容 |
+|------|------|
+| 既定 | ``NUM_ENVS=1``（従来どおり単一 env） |
+| 1 update のサンプル数 | ``ROLLOUT_STEPS``（512）固定 |
+| 制約 | ``num_envs>1`` では viewer / telemetry 無効 |
+| 通信 | ``multiprocessing.Pipe`` + pickle（軽量 ``step_info``） |
+| ログ | ``ipc_s`` / ``num_envs`` をコンソール・W&B に追加 |
+
 学習 seed の優先順位: CLI `--seed` > 環境変数 `DISPATCH_SEED` > 未指定（非決定的）。
 
 ## 実行

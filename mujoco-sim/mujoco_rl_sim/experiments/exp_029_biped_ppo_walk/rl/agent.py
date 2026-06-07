@@ -164,6 +164,10 @@ class AgentPPO:
       list(self.actor.parameters()) + list(self.critic.parameters()),
       lr=config.LR,
     )
+    # CUDA が使えるときはバッチ推論に利用（Subproc VecEnv 向け）
+    self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    self.actor.to(self._device)
+    self.critic.to(self._device)
     # 1 ロールアウト分の一時バッファ（update の最後でクリア）
     self._reset_rollout_storage()
 
@@ -182,7 +186,7 @@ class AgentPPO:
     self._log_probs = []
 
   def _obs_tensor(self, obs):
-    return torch.tensor([list(obs)], dtype=torch.float32)
+    return torch.tensor([list(obs)], dtype=torch.float32, device=self._device)
 
   @staticmethod
   def _action_tuple(action_tensor: torch.Tensor) -> tuple[float, ...]:
@@ -213,7 +217,24 @@ class AgentPPO:
     action = dist.rsample()
     log_prob = self._squashed_log_prob(dist, action)
     value = self.critic(o)
-    return self._action_tuple(action), value.squeeze(0), log_prob.squeeze(0).detach()
+    return (
+      self._action_tuple(action.cpu()),
+      value.squeeze(0).cpu(),
+      log_prob.squeeze(0).detach().cpu(),
+    )
+
+  def act_batch(self, obs_batch: np.ndarray):
+    """Subproc VecEnv 用: ``[N, obs_dim]`` をまとめて推論する。"""
+    o = torch.as_tensor(obs_batch, dtype=torch.float32, device=self._device)
+    dist = self.actor.squashed_dist(o)
+    action = dist.rsample()
+    log_prob = self._squashed_log_prob(dist, action)
+    value = self.critic(o)
+    return (
+      action.detach().cpu().numpy(),
+      value.detach().cpu().reshape(-1),
+      log_prob.detach().cpu().reshape(-1),
+    )
 
   def act_eval(self, obs):
     """評価・可視化用: 平均行動 tanh(loc)（ノイズなし）。"""
@@ -266,8 +287,16 @@ class AgentPPO:
     adv = (advantages - advantages.mean()) / adv_std
     adv = adv.clamp(-config.ADV_CLIP, config.ADV_CLIP)
 
-    obs_batch = torch.tensor([list(o) for o in obs_list], dtype=torch.float32)
-    actions_batch = torch.tensor(self._actions, dtype=torch.float32)
+    obs_batch = torch.tensor(
+      [list(o) for o in obs_list],
+      dtype=torch.float32,
+      device=self._device,
+    )
+    actions_batch = torch.tensor(
+      self._actions,
+      dtype=torch.float32,
+      device=self._device,
+    )
     # tanh の端 (+/-1) 付近では log_prob が発散しやすいので少し内側に寄せる
     mb_actions = actions_batch.clamp(
       -1.0 + config.ACTION_LOG_PROB_EPS,

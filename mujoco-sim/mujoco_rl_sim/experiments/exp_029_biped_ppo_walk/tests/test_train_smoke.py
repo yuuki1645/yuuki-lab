@@ -55,3 +55,37 @@ def test_train_one_update_smoke() -> None:
   assert cfg_path.is_file(), f"missing {cfg_path}"
   snapshot = json.loads(cfg_path.read_text(encoding="utf-8"))
   assert snapshot.get("training_seed") == 0
+
+
+@pytest.mark.slow
+def test_train_one_update_subproc_smoke() -> None:
+  """Subproc VecEnv (num_envs=2) で 1 update が完走する。"""
+  env = os.environ.copy()
+  env["WANDB_MODE"] = "disabled"
+
+  result = subprocess.run(
+    [
+      sys.executable,
+      "train.py",
+      "--seed",
+      "0",
+      "--num-updates",
+      "1",
+      "--num-envs",
+      "2",
+      "--no-viewer",
+      "--no-telemetry",
+      "--no-wandb",
+      "--no-eval",
+    ],
+    cwd=_EXP_ROOT,
+    env=env,
+    capture_output=True,
+    text=True,
+    timeout=300,
+    check=False,
+  )
+  assert result.returncode == 0, (
+    f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+  )
+  assert "[subproc-vec] enabled: 2 env workers" in result.stdout

@@ -44,6 +44,8 @@ OVERRIDABLE_CONFIG_KEYS: dict[str, str] = {
   # 学習 DR（sim/domain_randomization.py）
   "training_dr_enabled": "TRAINING_DR_ENABLED",
   "training_dr_pose_scale": "TRAINING_DR_POSE_SCALE",
+  # ロールアウト並列（sim/subproc_vec_env.py）
+  "num_envs": "NUM_ENVS",
 }
 
 # 後方互換（README / sweep 文書の旧名称）

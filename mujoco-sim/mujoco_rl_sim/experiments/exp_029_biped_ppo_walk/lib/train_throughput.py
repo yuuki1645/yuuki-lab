@@ -16,6 +16,9 @@ class UpdateTiming:
   rollout_s: float
   ppo_update_s: float
   rollout_steps: int
+  ipc_s: float = 0.0
+  act_batch_s: float = 0.0
+  num_envs: int = 1
 
   @property
   def total_s(self) -> float:
@@ -83,16 +86,25 @@ class ThroughputTracker:
       "train/avg_update_wall_s": self.avg_update_s,
       "train/avg_rollout_fraction": self.avg_rollout_fraction,
       "train/avg_steps_per_sec": self.avg_steps_per_sec,
+      "train/ipc_wall_s": timing.ipc_s,
+      "train/act_batch_wall_s": timing.act_batch_s,
+      "train/num_envs": float(timing.num_envs),
     }
 
   def format_interval_suffix(self, timing: UpdateTiming) -> str:
     """コンソール 1 行ログ用の追加サフィックス。"""
-    return (
+    suffix = (
       f" | rollout_s: {timing.rollout_s:7.3f}"
       f" ppo_s: {timing.ppo_update_s:6.3f}"
       f" | rollout_frac: {timing.rollout_fraction:4.2f}"
       f" | steps/s: {timing.steps_per_sec:6.1f}"
     )
+    if timing.num_envs > 1:
+      suffix += (
+        f" | num_envs: {timing.num_envs}"
+        f" ipc_s: {timing.ipc_s:6.3f}"
+      )
+    return suffix
 
   def format_run_summary(self) -> str:
     """学習 run 終了時のサマリ 1 行。"""
@@ -111,6 +123,7 @@ def pacing_warnings(
   viewer: bool,
   telemetry: bool,
   step_wall_sleep_sec: float,
+  num_envs: int = 1,
 ) -> list[str]:
   """学習スループットを落とす設定が有効なときの警告メッセージ。"""
   warnings: list[str] = []
@@ -126,5 +139,13 @@ def pacing_warnings(
     warnings.append(
       f"[throughput] step_wall_sleep={step_wall_sleep_sec:g}s "
       "→ use --step-wall-sleep 0 for max collection speed"
+    )
+  if num_envs > 1 and viewer:
+    warnings.append(
+      "[throughput] subproc vec env does not support viewer; use --no-viewer"
+    )
+  if num_envs > 1 and telemetry:
+    warnings.append(
+      "[throughput] subproc vec env does not support telemetry; use --no-telemetry"
     )
   return warnings

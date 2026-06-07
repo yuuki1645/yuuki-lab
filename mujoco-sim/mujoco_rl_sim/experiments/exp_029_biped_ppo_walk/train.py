@@ -16,6 +16,7 @@ from _paths import install
 
 install()
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -171,6 +172,17 @@ def _make_on_checkpoint_run_dir(
 def main() -> None:
   run = parse_train_args()
   applied_overrides = _apply_run_config_overrides(run)
+  if run.num_envs is not None:
+    config.NUM_ENVS = int(run.num_envs)
+  if config.NUM_ENVS < 1:
+    raise SystemExit("NUM_ENVS は 1 以上にしてください")
+  if config.NUM_ENVS > 1:
+    if run.viewer or run.telemetry:
+      print(
+        "[subproc-vec] num_envs>1: viewer/telemetry を無効化します "
+        "(--no-viewer --no-telemetry 推奨)"
+      )
+      run = replace(run, viewer=False, telemetry=False)
   training_dr_effective = bool(config.TRAINING_DR_ENABLED) and bool(run.training_dr)
 
   training_seed = resolve_training_seed(cli_seed=run.training_seed)

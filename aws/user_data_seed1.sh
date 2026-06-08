@@ -2,6 +2,9 @@
 set -euxo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
+apt-get update -y
+apt-get install -y awscli curl
+
 export SEED=1
 export RUN_NAME="aws_smoke_seed1_$(date +%Y%m%d)"
 export BUCKET=yuuki-lab-runs-dev

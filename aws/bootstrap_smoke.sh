@@ -19,15 +19,21 @@ git clone --branch "${BRANCH}" --depth 1 "${REPO_URL}" /opt/yuuki-lab
 
 cd /opt/yuuki-lab/mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
 
-pip3 install --upgrade pip
-pip3 install -r requirements.txt
+python3 -m venv /opt/yuuki-venv
+source /opt/yuuki-venv/bin/activate
 
-python3 -m contract validate
+pip install --upgrade pip
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+grep -v '^torch' requirements.txt | pip install -r /dev/stdin
+pip install gymnasium
 
-python3 train.py \
+python -m contract validate
+
+python train.py \
   training.num_updates=50 \
   runtime=fast \
   wandb=disabled \
+  training.post_train_eval=false \
   training.seed="${SEED}"
 
 RUNS_DIR="/opt/yuuki-lab/mujoco-sim/mujoco_rl_sim/runs/exp_030_biped_ppo_walk"

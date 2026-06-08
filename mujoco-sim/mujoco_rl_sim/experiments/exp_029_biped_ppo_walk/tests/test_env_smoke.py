@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import config
 import pytest
 from contract import TELEMETRY_CONTRACT
 from contract.validate import assert_obs_vector
@@ -10,11 +9,11 @@ from sim.env import EnvBipedPPO
 
 
 @pytest.mark.slow
-def test_env_reset_obs_matches_contract() -> None:
-  env = EnvBipedPPO(enable_viewer=False)
+def test_env_reset_obs_matches_contract(default_ctx) -> None:
+  env = EnvBipedPPO(default_ctx, enable_viewer=False)
   try:
     obs = env.reset()
-    assert len(obs) == config.OBS_DIM
+    assert len(obs) == default_ctx.cfg.sim.obs_dim
     assert_obs_vector(obs, TELEMETRY_CONTRACT)
   finally:
     if env.viewer is not None:

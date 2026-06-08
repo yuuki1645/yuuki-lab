@@ -1,0 +1,17 @@
+gamma_per_physics_step: 0.99
+gae_lambda: 0.95
+lr: 0.00025
+rollout_steps: 512
+value_coef: 0.5
+entropy_coef: 0.05
+max_grad_norm: 0.5
+minibatch_size: 256
+std_min: 0.08
+clip_eps: 0.2
+ppo_epochs: 8
+target_kl: 0.02
+reward_clip: 20.0
+adv_clip: 10.0
+adv_std_min: 0.1
+action_log_prob_eps: 0.000001
+log_prob_clip: 20.0

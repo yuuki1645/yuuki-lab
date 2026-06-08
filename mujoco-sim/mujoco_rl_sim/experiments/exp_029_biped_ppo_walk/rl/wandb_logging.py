@@ -7,6 +7,7 @@ from collections import Counter, deque
 from pathlib import Path
 from typing import Any
 
+from lib.experiment_context import ExperimentContext
 from lib.episode_rolling import (
   EpisodeIntervalBuffer,
   EpisodeRollingWindow,
@@ -14,9 +15,9 @@ from lib.episode_rolling import (
   format_interval_log_suffix,
   rolling_summary_to_wandb,
 )
+from lib.hydra_compose import cfg_to_dict
 from lib.run_dir import wandb_active_run_name
 
-import config
 from sim.termination import (
   REASON_BACKWARD_LEAN,
   REASON_CONTACT_BASKET,
@@ -56,11 +57,19 @@ _termination_tracker: TerminationTracker | None = None
 _best_train_ep_return_mean: float | None = None
 _checkpoint_run_dir: Path | None = None
 _eval_report: dict[str, Any] | None = None
+_ctx: ExperimentContext | None = None
+
+
+def _require_ctx() -> ExperimentContext:
+  if _ctx is None:
+    raise RuntimeError("wandb_logging.init(ctx=...) を先に呼んでください")
+  return _ctx
 
 
 class EpisodeMetricsCollector:
   def __init__(self) -> None:
-    self._rolling = EpisodeRollingWindow(window=config.EPISODE_ROLLING_WINDOW)
+    window = int(_require_ctx().cfg.wandb.episode_rolling_window)
+    self._rolling = EpisodeRollingWindow(window=window)
     self._interval = EpisodeIntervalBuffer()
     self.reset()
 
@@ -314,8 +323,8 @@ class TerminationTracker:
     return metrics
 
 
-def is_enabled() -> bool:
-  if not config.USE_WANDB:
+def is_enabled(ctx: ExperimentContext) -> bool:
+  if not ctx.cfg.wandb.enabled:
     return False
   if os.environ.get("WANDB_MODE", "").lower() == "disabled":
     return False
@@ -323,14 +332,15 @@ def is_enabled() -> bool:
 
 
 def init(
+  ctx: ExperimentContext,
   *,
   extra_config: dict[str, Any] | None = None,
   extra_tags: tuple[str, ...] | None = None,
   run_name: str | None = None,
-  enabled: bool = True,
 ) -> bool:
-  global _active, _termination_tracker
-  if not enabled:
+  global _active, _termination_tracker, _ctx
+  _ctx = ctx
+  if not bool(ctx.cfg.wandb.enabled):
     print("[wandb] disabled")
     return False
   if os.environ.get("WANDB_MODE", "").lower() == "disabled":
@@ -342,11 +352,11 @@ def init(
     print("[wandb] 未インストールです: pip install wandb  または USE_WANDB=False")
     return False
 
-  run_config = config.training_config_dict()
+  run_config = cfg_to_dict(ctx.cfg)
   if extra_config:
     run_config.update(extra_config)
 
-  tags = list(config.WANDB_TAGS)
+  tags = list(ctx.cfg.wandb.tags)
   if extra_tags:
     tags.extend(extra_tags)
   extra_tag_env = os.environ.get("DISPATCH_WANDB_EXTRA_TAGS", "").strip()
@@ -354,7 +364,7 @@ def init(
     tags.extend(t.strip() for t in extra_tag_env.split(",") if t.strip())
 
   init_kwargs: dict[str, Any] = {
-    "project": config.WANDB_PROJECT,
+    "project": ctx.cfg.wandb.project,
     "config": run_config,
     "tags": tags,
   }
@@ -368,18 +378,18 @@ def init(
   if dispatch_run:
     run_config["dispatch_run_id"] = dispatch_run
 
-  name = run_name if run_name is not None else config.WANDB_RUN_NAME
+  name = run_name if run_name is not None else ctx.cfg.wandb.run_name
   if name:
     init_kwargs["name"] = name
-  if config.WANDB_ENTITY:
-    init_kwargs["entity"] = config.WANDB_ENTITY
+  if ctx.cfg.wandb.entity:
+    init_kwargs["entity"] = ctx.cfg.wandb.entity
 
   global _best_train_ep_return_mean
   _best_train_ep_return_mean = None
   wandb.init(**init_kwargs)
   _active = True
   _termination_tracker = TerminationTracker(
-    rolling_window=config.WANDB_TERMINATION_ROLLING_WINDOW,
+    rolling_window=int(ctx.cfg.wandb.termination_rolling_window),
   )
   return True
 
@@ -576,7 +586,7 @@ def _write_dispatch_summary() -> None:
 
 def finish() -> None:
   global _active, _termination_tracker, _best_train_ep_return_mean
-  global _checkpoint_run_dir, _eval_report
+  global _checkpoint_run_dir, _eval_report, _ctx
   if _active:
     import wandb
 
@@ -591,3 +601,4 @@ def finish() -> None:
   _best_train_ep_return_mean = None
   _checkpoint_run_dir = None
   _eval_report = None
+  _ctx = None

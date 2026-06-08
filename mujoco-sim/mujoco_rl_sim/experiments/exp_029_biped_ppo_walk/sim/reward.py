@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-import config
+from lib.experiment_context import ExperimentContext
 from sim.effort import EffortBreakdown
 from sim.episode_state import BipedStepContext, EpisodeState
 from lib.actuators import (
@@ -58,7 +58,8 @@ class RewardResult:
 
 
 class Reward:
-  def __init__(self, model: mujoco.MjModel):
+  def __init__(self, model: mujoco.MjModel, ctx: ExperimentContext):
+    self._ctx = ctx
     self._imu_site_id = model.site("imu_site").id
     self._left_foot_site_id = model.site(LEFT_FOOT_SITE).id
     self._right_foot_site_id = model.site(RIGHT_FOOT_SITE).id
@@ -77,79 +78,74 @@ class Reward:
         return True
     return False
 
-  @staticmethod
-  def _aerial_duration_penalty(*, any_foot_on_floor: bool, aerial_steps: int) -> float:
+  def _aerial_duration_penalty(self, *, any_foot_on_floor: bool, aerial_steps: int) -> float:
     """両足非接地が AERIAL_DURATION_PENALTY_AFTER_STEPS を超えるとホップ抑制ペナルティ。"""
     if any_foot_on_floor:
       return 0.0
-    over = aerial_steps - config.AERIAL_DURATION_PENALTY_AFTER_STEPS
+    over = aerial_steps - self._ctx.cfg.reward.aerial_duration_penalty_after_steps
     if over <= 0:
       return 0.0
-    return over * config.AERIAL_DURATION_PENALTY_SCALE
+    return over * self._ctx.cfg.reward.aerial_duration_penalty_scale
 
-  @staticmethod
-  def _progress_bonus(progress_m: float) -> float:
+  def _progress_bonus(self, progress_m: float) -> float:
     """エピソード内で IMU +X が過去最高を更新した分だけボーナス（片足支持時のみ加算）。"""
-    return float(progress_m) * config.PROGRESS_REWARD_SCALE
+    return float(progress_m) * self._ctx.cfg.reward.progress_reward_scale
 
-  @staticmethod
   def _knee_hyperflex_penalty(
+    self,
     left_knee_angle: float,
     right_knee_angle: float,
     *,
     any_foot_on_floor: bool,
   ) -> float:
-    if config.KNEE_HYPERFLEX_AERIAL_ONLY and any_foot_on_floor:
+    if self._ctx.cfg.reward.knee_hyperflex_aerial_only and any_foot_on_floor:
       return 0.0
     knee = max(left_knee_angle, right_knee_angle)
-    excess = float(np.clip(float(knee) - config.KNEE_HYPERFLEX_MAX_RAD, 0.0, np.inf))
-    return excess * config.KNEE_HYPERFLEX_PENALTY_SCALE
+    excess = float(
+      np.clip(float(knee) - self._ctx.cfg.reward.knee_hyperflex_max_rad, 0.0, np.inf)
+    )
+    return excess * self._ctx.cfg.reward.knee_hyperflex_penalty_scale
 
-  @staticmethod
-  def _upright_bonus(upright: float, *, dx: float) -> float:
-    if dx < config.UPRIGHT_BONUS_MIN_DX:
+  def _upright_bonus(self, upright: float, *, dx: float) -> float:
+    if dx < self._ctx.cfg.reward.upright_bonus_min_dx:
       return 0.0
     return (
-      float(np.clip(float(upright) - config.UPRIGHT_BONUS_THRESH, 0.0, np.inf))
-      * config.UPRIGHT_BONUS_SCALE
+      float(np.clip(float(upright) - self._ctx.cfg.reward.upright_bonus_thresh, 0.0, np.inf))
+      * self._ctx.cfg.reward.upright_bonus_scale
     )
 
-  @staticmethod
-  def _backward_lean_penalty(lean_fwd_body: float) -> float:
+  def _backward_lean_penalty(self, lean_fwd_body: float) -> float:
     excess = float(
-      np.clip(-float(lean_fwd_body) - config.LEAN_BACKWARD_THRESH, 0.0, np.inf)
+      np.clip(-float(lean_fwd_body) - self._ctx.cfg.reward.lean_backward_thresh, 0.0, np.inf)
     )
-    return excess * config.LEAN_BACKWARD_PENALTY_SCALE
+    return excess * self._ctx.cfg.reward.lean_backward_penalty_scale
 
-  @staticmethod
   def _forward_lean_penalty(
-    lean_fwd_body: float, *, any_foot_on_floor: bool, aerial_steps: int
+    self, lean_fwd_body: float, *, any_foot_on_floor: bool, aerial_steps: int
   ) -> float:
     if any_foot_on_floor:
       return 0.0
-    if aerial_steps < config.LEAN_FORWARD_MIN_AERIAL_STEPS:
+    if aerial_steps < self._ctx.cfg.reward.lean_forward_min_aerial_steps:
       return 0.0
     excess = float(
-      np.clip(float(lean_fwd_body) - config.LEAN_FORWARD_THRESH, 0.0, np.inf)
+      np.clip(float(lean_fwd_body) - self._ctx.cfg.reward.lean_forward_thresh, 0.0, np.inf)
     )
-    return excess * config.LEAN_FORWARD_PENALTY_SCALE
+    return excess * self._ctx.cfg.reward.lean_forward_penalty_scale
 
-  @staticmethod
-  def _heading_misalign_penalty(heading_align: float) -> float:
+  def _heading_misalign_penalty(self, heading_align: float) -> float:
     excess = float(
-      np.clip(config.HEADING_ALIGN_MIN - float(heading_align), 0.0, np.inf)
+      np.clip(self._ctx.cfg.reward.heading_align_min - float(heading_align), 0.0, np.inf)
     )
-    return excess * config.HEADING_MISALIGN_PENALTY_SCALE
+    return excess * self._ctx.cfg.reward.heading_misalign_penalty_scale
 
-  @staticmethod
-  def _lateral_tilt_penalty(tilt_horiz: float) -> float:
+  def _lateral_tilt_penalty(self, tilt_horiz: float) -> float:
     excess = float(
-      np.clip(float(tilt_horiz) - config.LATERAL_TILT_THRESH, 0.0, np.inf)
+      np.clip(float(tilt_horiz) - self._ctx.cfg.reward.lateral_tilt_thresh, 0.0, np.inf)
     )
-    return excess * config.LATERAL_TILT_PENALTY_SCALE
+    return excess * self._ctx.cfg.reward.lateral_tilt_penalty_scale
 
-  @staticmethod
   def _height_penalty(
+    self,
     imu_z: float,
     *,
     single_support: bool,
@@ -157,22 +153,22 @@ class Reward:
     any_foot_on_floor: bool,
   ) -> float:
     if not any_foot_on_floor:
-      if float(imu_z) < config.HEIGHT_PENALTY_AERIAL_CRASH_Z:
-        deficit = float(np.clip(config.TARGET_IMU_Z - float(imu_z), 0.0, np.inf))
-        return deficit * config.IMU_HEIGHT_PENALTY_SCALE * 1.5
-      deficit = float(np.clip(config.TARGET_IMU_Z - float(imu_z), 0.0, np.inf))
-      return deficit * config.IMU_HEIGHT_PENALTY_SCALE
+      if float(imu_z) < self._ctx.cfg.reward.height_penalty_aerial_crash_z:
+        deficit = float(np.clip(self._ctx.cfg.reward.target_imu_z - float(imu_z), 0.0, np.inf))
+        return deficit * self._ctx.cfg.reward.imu_height_penalty_scale * 1.5
+      deficit = float(np.clip(self._ctx.cfg.reward.target_imu_z - float(imu_z), 0.0, np.inf))
+      return deficit * self._ctx.cfg.reward.imu_height_penalty_scale
     if single_support:
-      target = config.TARGET_IMU_Z_SINGLE_STANCE
+      target = self._ctx.cfg.reward.target_imu_z_single_stance
     elif both_feet_on_floor:
-      target = config.TARGET_IMU_Z_DOUBLE_STANCE
+      target = self._ctx.cfg.reward.target_imu_z_double_stance
     else:
-      target = config.TARGET_IMU_Z
+      target = self._ctx.cfg.reward.target_imu_z
     deficit = float(np.clip(target - float(imu_z), 0.0, np.inf))
-    return deficit * config.IMU_HEIGHT_PENALTY_SCALE
+    return deficit * self._ctx.cfg.reward.imu_height_penalty_scale
 
-  @staticmethod
   def _double_support_penalty(
+    self,
     *,
     both_feet_on_floor: bool,
     dx: float,
@@ -187,12 +183,12 @@ class Reward:
       float(np.clip(left_foot_dx, 0.0, np.inf)),
       float(np.clip(right_foot_dx, 0.0, np.inf)),
     )
-    if forward_motion < config.DOUBLE_SUPPORT_MIN_FORWARD:
-      return config.DOUBLE_SUPPORT_PENALTY_SCALE * 0.25
-    return forward_motion * config.DOUBLE_SUPPORT_PENALTY_SCALE
+    if forward_motion < self._ctx.cfg.reward.double_support_min_forward:
+      return self._ctx.cfg.reward.double_support_penalty_scale * 0.25
+    return forward_motion * self._ctx.cfg.reward.double_support_penalty_scale
 
-  @staticmethod
   def _swing_clearance_bonus(
+    self,
     *,
     single_support: bool,
     single_support_side: int,
@@ -205,17 +201,17 @@ class Reward:
     if not single_support:
       return 0.0
     if single_support_side == 1 and not right_foot_on_floor:
-      clearance = float(right_foot_z) - config.SWING_MIN_FOOT_Z
+      clearance = float(right_foot_z) - self._ctx.cfg.reward.swing_min_foot_z
     elif single_support_side == -1 and not left_foot_on_floor:
-      clearance = float(left_foot_z) - config.SWING_MIN_FOOT_Z
+      clearance = float(left_foot_z) - self._ctx.cfg.reward.swing_min_foot_z
     else:
       return 0.0
     return (
-      float(np.clip(clearance, 0.0, np.inf)) * config.SWING_CLEARANCE_BONUS_SCALE
+      float(np.clip(clearance, 0.0, np.inf)) * self._ctx.cfg.reward.swing_clearance_bonus_scale
     )
 
-  @staticmethod
   def _push_off_bonus(
+    self,
     physics: StepPhysics,
     *,
     biped: BipedStepContext,
@@ -230,16 +226,16 @@ class Reward:
     else:
       foot_dx = physics.right_foot_dx
       knee_vel = physics.right_knee_vel
-    if foot_dx < config.PUSH_OFF_MIN_FOOT_DX:
+    if foot_dx < self._ctx.cfg.reward.push_off_min_foot_dx:
       return 0.0
-    extending = knee_vel < -config.PUSH_OFF_MIN_KNEE_EXT_VEL
-    rising = imu_dz >= config.PUSH_OFF_MIN_IMU_DZ
+    extending = knee_vel < -self._ctx.cfg.reward.push_off_min_knee_ext_vel
+    rising = imu_dz >= self._ctx.cfg.reward.push_off_min_imu_dz
     if not (extending or rising):
       return 0.0
-    return config.PUSH_OFF_BONUS_SCALE
+    return self._ctx.cfg.reward.push_off_bonus_scale
 
-  @staticmethod
   def _landing_bonus(
+    self,
     physics: StepPhysics,
     *,
     biped: BipedStepContext,
@@ -253,20 +249,19 @@ class Reward:
       heel_z = physics.right_heel_z
     else:
       return 0.0
-    if toe_z > config.LANDING_MAX_TOE_Z:
+    if toe_z > self._ctx.cfg.reward.landing_max_toe_z:
       return 0.0
-    if heel_z > config.LANDING_MAX_HEEL_Z:
+    if heel_z > self._ctx.cfg.reward.landing_max_heel_z:
       return 0.0
-    if physics.lean_fwd_body > config.LANDING_MAX_FORWARD_LEAN:
+    if physics.lean_fwd_body > self._ctx.cfg.reward.landing_max_forward_lean:
       return 0.0
-    return config.LANDING_BONUS_SCALE
+    return self._ctx.cfg.reward.landing_bonus_scale
 
-  @staticmethod
-  def _alternating_landing_bonus(*, biped: BipedStepContext) -> float:
+  def _alternating_landing_bonus(self, *, biped: BipedStepContext) -> float:
     """反対脚支持からの着地（左右交互）を検出したステップにボーナス。"""
     if not biped.alternating_landing:
       return 0.0
-    return config.ALTERNATING_LANDING_BONUS_SCALE
+    return self._ctx.cfg.reward.alternating_landing_bonus_scale
 
   def compute(
     self,
@@ -280,7 +275,7 @@ class Reward:
   ) -> RewardResult:
     # 報酬合成: forward = IMU/支持脚前進, shaping = 歩行 shaping ± ペナルティ
 
-    MAX_DX_PER_STEP = config.MAX_DX_PER_STEP
+    max_dx_per_step = self._ctx.cfg.sim.max_dx_per_step
 
     #region 生値読み出し（位置・速度差分）
     imu_x = float(data.site_xpos[self._imu_site_id, WORLD_X])
@@ -310,37 +305,37 @@ class Reward:
     #endregion
 
     #region 前進ゲート（片足支持・直立・接地）
-    forward_allowed = upright >= config.FORWARD_MIN_UPRIGHT
-    if config.FORWARD_REQUIRE_FOOT_CONTACT and not any_foot_on_floor:
+    forward_allowed = upright >= self._ctx.cfg.reward.forward_min_upright
+    if self._ctx.cfg.reward.forward_require_foot_contact and not any_foot_on_floor:
       forward_allowed = False
-    if config.FORWARD_REQUIRE_SINGLE_SUPPORT and not single_support:
+    if self._ctx.cfg.reward.forward_require_single_support and not single_support:
       forward_allowed = False
 
     imu_forward_scale = 1.0
     if (
-      config.FORWARD_IMU_LEAN_GATE
+      self._ctx.cfg.reward.forward_imu_lean_gate
       and not any_foot_on_floor
       and forward_allowed
     ):
       lean_excess = float(
-        np.clip(lean_fwd_body - config.FORWARD_IMU_LEAN_GATE_THRESH, 0.0, np.inf)
+        np.clip(lean_fwd_body - self._ctx.cfg.reward.forward_imu_lean_gate_thresh, 0.0, np.inf)
       )
       imu_forward_scale = float(
         np.clip(
-          1.0 - config.FORWARD_IMU_LEAN_GATE_SCALE * lean_excess,
-          config.FORWARD_IMU_LEAN_GATE_MIN_MULT,
+          1.0 - self._ctx.cfg.reward.forward_imu_lean_gate_scale * lean_excess,
+          self._ctx.cfg.reward.forward_imu_lean_gate_min_mult,
           np.inf,
         )
       )
     #endregion
 
     #region 前進報酬 forward_imu / forward_foot
-    dx_clipped = float(np.clip(dx, -MAX_DX_PER_STEP, MAX_DX_PER_STEP))
+    dx_clipped = float(np.clip(dx, -max_dx_per_step, max_dx_per_step))
     forward_imu = 0.0
     if forward_allowed:
       forward_imu = (
         float(np.clip(dx_clipped, 0.0, np.inf))
-        * config.FORWARD_REWARD_SCALE
+        * self._ctx.cfg.reward.forward_reward_scale
         * imu_forward_scale
       )
 
@@ -350,14 +345,14 @@ class Reward:
       stance_foot_dx = float(np.clip(left_foot_dx, 0.0, np.inf))
     elif single_support and biped.single_support_side == -1:
       stance_foot_dx = float(np.clip(right_foot_dx, 0.0, np.inf))
-    foot_dx_clipped = float(np.clip(stance_foot_dx, -MAX_DX_PER_STEP, MAX_DX_PER_STEP))
+    foot_dx_clipped = float(np.clip(stance_foot_dx, -max_dx_per_step, max_dx_per_step))
     forward_foot = 0.0
     if forward_allowed:
-      forward_foot = foot_dx_clipped * config.FORWARD_REWARD_SCALE
+      forward_foot = foot_dx_clipped * self._ctx.cfg.reward.forward_reward_scale
     #endregion
 
     #region effort
-    effort_penalty = effort.penalty if config.REWARD_ENABLE_EFFORT else 0.0
+    effort_penalty = effort.penalty if self._ctx.cfg.reward.enable_effort else 0.0
     #endregion
 
     #region shaping — 歩行ボーナス
@@ -408,29 +403,29 @@ class Reward:
     #endregion
 
     #region ENABLE 群による項の無効化（config.REWARD_ENABLE_*）
-    if not config.REWARD_ENABLE_FORWARD:
+    if not self._ctx.cfg.reward.enable_forward:
       forward_imu = 0.0
-    if not config.REWARD_ENABLE_FORWARD_FOOT:
+    if not self._ctx.cfg.reward.enable_forward_foot:
       forward_foot = 0.0
-    if not config.REWARD_ENABLE_PROGRESS:
+    if not self._ctx.cfg.reward.enable_progress:
       progress_bonus = 0.0
-    if not config.REWARD_ENABLE_WALK_SHAPING:
+    if not self._ctx.cfg.reward.enable_walk_shaping:
       push_off_bonus = 0.0
       landing_bonus = 0.0
       alternating_landing_bonus = 0.0
       swing_clearance_bonus = 0.0
-    if not config.REWARD_ENABLE_UPRIGHT_BONUS:
+    if not self._ctx.cfg.reward.enable_upright_bonus:
       upright_bonus = 0.0
-    if not config.REWARD_ENABLE_POSTURE_PENALTIES:
+    if not self._ctx.cfg.reward.enable_posture_penalties:
       backward_lean_penalty = 0.0
       forward_lean_penalty = 0.0
       heading_misalign_penalty = 0.0
       lateral_tilt_penalty = 0.0
       height_penalty = 0.0
       knee_hyperflex_penalty = 0.0
-    if not config.REWARD_ENABLE_DOUBLE_SUPPORT:
+    if not self._ctx.cfg.reward.enable_double_support:
       double_support_penalty = 0.0
-    if not config.REWARD_ENABLE_FLIGHT_DURATION:
+    if not self._ctx.cfg.reward.enable_flight_duration:
       flight_duration_penalty = 0.0
     #endregion
 

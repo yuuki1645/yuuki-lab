@@ -38,6 +38,7 @@ def _subproc_env_worker(
   training_dr_enabled: bool,
   training_seed: int | None,
   step_wall_sleep_sec: float,
+  hydra_config_path: str | None,
 ) -> None:
   """子プロセス: Pipe 経由で step / reset を受け、MuJoCo env を実行する。"""
   _install_exp_root(exp_root)
@@ -46,6 +47,7 @@ def _subproc_env_worker(
   from sim.env import EnvBipedPPO
 
   env = EnvBipedPPO(
+    hydra_config_path=hydra_config_path,
     enable_viewer=False,
     training_dr_enabled=training_dr_enabled,
     training_seed=training_seed,
@@ -124,6 +126,7 @@ class SubprocVecEnvBiped:
     training_dr_enabled: bool,
     training_seed: int | None,
     step_wall_sleep_sec: float,
+    hydra_config_path: str | None = None,
   ):
     if num_envs < 1:
       raise ValueError(f"num_envs must be >= 1, got {num_envs}")
@@ -141,6 +144,7 @@ class SubprocVecEnvBiped:
           "training_dr_enabled": training_dr_enabled,
           "training_seed": training_seed,
           "step_wall_sleep_sec": step_wall_sleep_sec,
+          "hydra_config_path": hydra_config_path,
         },
         daemon=True,
       )

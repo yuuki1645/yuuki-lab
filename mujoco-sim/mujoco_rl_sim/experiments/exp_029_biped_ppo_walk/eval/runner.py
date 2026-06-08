@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-import config
 from eval.metrics import EpisodeEvalRecord
 from eval.spec import (
   EPISODES_PER_SEED,
@@ -13,6 +12,7 @@ from eval.spec import (
   make_episode_rng,
   iter_eval_trials,
 )
+from lib.load_run_context import ctx_from_checkpoint, eval_ctx
 from rl.agent import AgentPPO
 from sim.env import EnvBipedPPO
 from sim.termination import REASON_TRUNCATED
@@ -23,16 +23,13 @@ def _episode_stop_state(
   terminated: bool,
   step_info: dict,
   episode_step: int,
+  max_steps_per_episode: int,
 ) -> tuple[bool, str, bool]:
-  """エピソードを終了すべきか、理由、truncated かを返す。
-
-  Returns:
-    (should_stop, termination_reason, truncated)
-  """
+  """エピソードを終了すべきか、理由、truncated かを返す。"""
   if terminated:
     reason = step_info.get("termination_reason") or "terminated"
     return True, str(reason), False
-  if (episode_step + 1) >= int(config.MAX_STEPS_PER_EPISODE):
+  if (episode_step + 1) >= int(max_steps_per_episode):
     return True, REASON_TRUNCATED, True
   return False, "", False
 
@@ -44,6 +41,7 @@ def run_eval_episode(
   eval_seed: int,
   ep_index: int,
   trial_index: int,
+  max_steps_per_episode: int,
 ) -> EpisodeEvalRecord:
   """1 試行分の eval rollout。"""
   rng = make_episode_rng(eval_seed, ep_index)
@@ -60,7 +58,7 @@ def run_eval_episode(
   truncated = False
   episode_length = 0
 
-  for step in range(int(config.MAX_STEPS_PER_EPISODE)):
+  for step in range(int(max_steps_per_episode)):
     action = act_eval(obs)
     obs, reward, terminated, step_info = env.step(action, episode_step=step)
     ep_return += float(reward)
@@ -81,6 +79,7 @@ def run_eval_episode(
       terminated=bool(terminated),
       step_info=step_info,
       episode_step=step,
+      max_steps_per_episode=max_steps_per_episode,
     )
     if should_stop:
       termination_reason = stop_reason
@@ -116,11 +115,19 @@ def run_checkpoint_eval(
   episodes_per_seed: int = EPISODES_PER_SEED,
 ) -> list[EpisodeEvalRecord]:
   """全 eval 試行を実行して per-episode 記録を返す。"""
-  agent = AgentPPO.from_checkpoint(checkpoint_path, map_location=device)
+  # 重みは ckpt run の Hydra 設定、環境は eval 固定 preset
+  policy_ctx = ctx_from_checkpoint(checkpoint_path)
+  eval_context = eval_ctx()
+  agent = AgentPPO.from_checkpoint(policy_ctx, checkpoint_path, map_location=device)
   act_eval = agent.act_eval
 
-  env = EnvBipedPPO(enable_viewer=False, training_dr_enabled=False)
+  env = EnvBipedPPO(
+    eval_context,
+    enable_viewer=False,
+    training_dr_enabled=False,
+  )
   env.set_step_wall_sleep_sec(0.0)
+  max_steps = int(eval_context.cfg.training.max_steps_per_episode)
 
   records: list[EpisodeEvalRecord] = []
   for plan in iter_eval_trials(
@@ -134,6 +141,7 @@ def run_checkpoint_eval(
         eval_seed=plan.eval_seed,
         ep_index=plan.ep_index,
         trial_index=plan.trial_index,
+        max_steps_per_episode=max_steps,
       )
     )
   return records

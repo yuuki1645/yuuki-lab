@@ -1,0 +1,174 @@
+sim:
+  robot_morphology: biped_legs_only
+  robot_leg_count: 2
+  robot_actuated_dof: 12
+  xml_relative: model/main.xml
+  physics_timestep_s: 0.002
+  control_hz: 50
+  obs_dim: 51
+  action_dim: 12
+  max_dx_per_step_base: 0.05
+  max_foot_dx_per_step_base: 0.04
+  max_gyro_rad_s: 10.0
+  max_joint_vel_rad_s: 10.0
+  max_imu_z: 1.2
+  min_imu_z_norm: 0.0
+  min_foot_z_norm: 0.0
+  max_foot_z_norm: 0.35
+  policy_hidden_sizes:
+  - 256
+  - 256
+  - 128
+  viewer_height_plane_half_xy:
+  - 3.0
+  - 3.0
+  viewer_height_plane_thickness: 0.001
+reward:
+  enable_forward: true
+  enable_forward_foot: false
+  enable_progress: false
+  enable_walk_shaping: false
+  enable_upright_bonus: false
+  enable_posture_penalties: false
+  enable_double_support: false
+  enable_flight_duration: false
+  enable_effort: true
+  forward_reward_scale: 50.0
+  forward_min_upright: 0.5
+  forward_require_foot_contact: true
+  forward_require_single_support: false
+  forward_imu_lean_gate: false
+  forward_imu_lean_gate_thresh: 0.1
+  forward_imu_lean_gate_scale: 4.0
+  forward_imu_lean_gate_min_mult: 0.15
+  double_support_penalty_scale: 8.0
+  double_support_min_forward: 0.001
+  push_off_bonus_scale: 0.22
+  push_off_min_foot_dx: 0.002
+  push_off_min_imu_dz: 0.003
+  push_off_min_knee_ext_vel: 0.12
+  landing_bonus_scale: 0.35
+  landing_max_toe_z: 0.07
+  landing_max_heel_z: 0.07
+  landing_max_forward_lean: 0.3
+  alternating_landing_bonus_scale: 0.45
+  swing_clearance_bonus_scale: 0.12
+  swing_min_foot_z: 0.04
+  upright_bonus_scale: 0.8
+  upright_bonus_thresh: 0.6
+  upright_bonus_require_flight: false
+  upright_bonus_min_dx: 0.0
+  lean_backward_penalty_scale: 3.0
+  lean_backward_thresh: 0.12
+  lean_forward_penalty_scale: 4.0
+  lean_forward_thresh: 0.14
+  lean_forward_min_aerial_steps: 2
+  heading_align_min: 0.85
+  heading_misalign_penalty_scale: 1.5
+  lateral_tilt_thresh: 0.12
+  lateral_tilt_penalty_scale: 2.5
+  aerial_duration_penalty_scale: 0.18
+  aerial_duration_penalty_after_steps: 4
+  progress_reward_scale: 20.0
+  progress_min_upright: 0.6
+  progress_require_single_support: true
+  knee_hyperflex_max_rad: 0.95
+  knee_hyperflex_penalty_scale: 2.5
+  knee_hyperflex_aerial_only: true
+  imu_height_penalty_scale: 2.0
+  target_imu_z: 0.55
+  target_imu_z_single_stance: 0.5
+  target_imu_z_double_stance: 0.52
+  height_penalty_aerial_crash_z: 0.42
+  knee_human_flex_bonus_scale: 0.0
+  effort_penalty_scale: 3.0
+ppo:
+  gamma_per_physics_step: 0.99
+  gae_lambda: 0.95
+  lr: 0.00025
+  rollout_steps: 512
+  value_coef: 0.5
+  entropy_coef: 0.05
+  max_grad_norm: 0.5
+  minibatch_size: 256
+  std_min: 0.08
+  clip_eps: 0.2
+  ppo_epochs: 8
+  target_kl: 0.02
+  reward_clip: 20.0
+  adv_clip: 10.0
+  adv_std_min: 0.1
+  action_log_prob_eps: 1.0e-06
+  log_prob_clip: 20.0
+termination:
+  min_imu_z: 0.3
+  min_imu_z_stance: 0.3
+  min_imu_upright: 0.52
+  max_backward_lean_body: 0.38
+  pose_termination_penalty: -30.0
+  contact_shank_terminates: false
+training:
+  warmup_enabled: false
+  warmup_duration_s: 1.0
+  num_updates: 1
+  max_steps_per_episode: 1500
+  log_every: 5
+  seed: 0
+  training_dr: true
+  post_train_eval: false
+  training_dr_pose_scale: 1.0
+  training_dr_foot_friction_geoms:
+  - foot_plate
+  - right_foot_plate
+  training_dr_friction_slide_mult_range:
+  - 0.85
+  - 1.15
+  training_dr_actuator_kp_mult_range:
+  - 0.9
+  - 1.1
+  training_dr_actuator_kv_mult_range:
+  - 0.9
+  - 1.1
+runtime:
+  viewer: false
+  telemetry: true
+  num_envs: 1
+  step_wall_sleep_sec: 0.0
+  telemetry_host: 0.0.0.0
+  telemetry_port: 8791
+wandb:
+  enabled: false
+  run_name: ''
+  project: exp_029_biped_ppo_walk
+  entity: ''
+  tags: []
+  termination_rolling_window: 100
+  episode_rolling_window: 100
+resume:
+  checkpoint: null
+  lr: null
+  load_optimizer: false
+checkpoint:
+  save_checkpoints: true
+  checkpoint_dir: ''
+  checkpoint_every: 500
+  save_latest: true
+  save_final: true
+eval:
+  spec_id: biped_walk_eval_v0
+  eval_seeds:
+  - 101
+  - 102
+  - 103
+  - 104
+  - 105
+  - 106
+  - 107
+  - 108
+  - 109
+  - 110
+  episodes_per_seed: 5
+  primary_metric_name: eval/displacement_x_mean
+exp_name: exp_029_biped_ppo_walk
+xml_path: model/main.xml
+compare_baseline_exp: exp_028_biped_ppo_walk

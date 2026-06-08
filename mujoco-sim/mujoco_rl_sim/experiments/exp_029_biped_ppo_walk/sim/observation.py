@@ -5,7 +5,6 @@ from typing import NamedTuple
 
 import mujoco
 
-import config
 from sim.episode_state import EpisodeState
 from lib.actuators import (
   JOINT_NAMES,
@@ -17,6 +16,7 @@ from lib.actuators import (
 from contract.validate import assert_obs_vector
 
 from contract import TELEMETRY_CONTRACT
+from lib.experiment_context import ExperimentContext
 from lib.obs_norm import clip_scale, height_to_norm, range_to_norm
 from lib.pose import pose_metrics
 
@@ -129,7 +129,8 @@ class StepPhysics:
 class Observation:
   """MuJoCo 状態から PolicyObs（正規化済み）と StepPhysics（生値）を構築する。"""
 
-  def __init__(self, model: mujoco.MjModel):
+  def __init__(self, model: mujoco.MjModel, ctx: ExperimentContext):
+    self._ctx = ctx
     self._floor_id = model.geom("floor").id
     self._left_foot_id = model.geom(LEFT_FOOT_GEOM).id
     self._right_foot_id = model.geom(RIGHT_FOOT_GEOM).id
@@ -205,7 +206,7 @@ class Observation:
       joint_qvel.append(qv)
       lo, hi = float(q_range[0]), float(q_range[1])
       joint_q_norm.append(range_to_norm(q, lo, hi))
-      joint_qvel_norm.append(clip_scale(qv, config.MAX_JOINT_VEL_RAD_S))
+      joint_qvel_norm.append(clip_scale(qv, self._ctx.cfg.sim.max_joint_vel_rad_s))
 
     left_knee = float(data.joint("left_knee_pitch").qpos[0])
     right_knee = float(data.joint("right_knee_pitch").qpos[0])
@@ -219,24 +220,24 @@ class Observation:
       else:
         foot_dx = right_foot_dx
 
-    z_min = config.MIN_IMU_Z_NORM
-    z_max = config.MAX_IMU_Z
-    fz_min = config.MIN_FOOT_Z_NORM
-    fz_max = config.MAX_FOOT_Z_NORM
+    z_min = self._ctx.cfg.sim.min_imu_z_norm
+    z_max = self._ctx.cfg.sim.max_imu_z
+    fz_min = self._ctx.cfg.sim.min_foot_z_norm
+    fz_max = self._ctx.cfg.sim.max_foot_z_norm
 
     obs = PolicyObs(
-      clip_scale(dx, config.MAX_DX_PER_STEP),
-      clip_scale(float(imu_gyro[0]), config.MAX_GYRO_RAD_S),
-      clip_scale(float(imu_gyro[1]), config.MAX_GYRO_RAD_S),
-      clip_scale(float(imu_gyro[2]), config.MAX_GYRO_RAD_S),
+      clip_scale(dx, self._ctx.cfg.sim.max_dx_per_step),
+      clip_scale(float(imu_gyro[0]), self._ctx.cfg.sim.max_gyro_rad_s),
+      clip_scale(float(imu_gyro[1]), self._ctx.cfg.sim.max_gyro_rad_s),
+      clip_scale(float(imu_gyro[2]), self._ctx.cfg.sim.max_gyro_rad_s),
       float(imu_zaxis[0]),
       float(imu_zaxis[1]),
       float(imu_zaxis[2]),
       height_to_norm(imu_z, z_min, z_max),
       1.0 if left_on else -1.0,
       1.0 if right_on else -1.0,
-      clip_scale(left_foot_dx, config.MAX_FOOT_DX_PER_STEP),
-      clip_scale(right_foot_dx, config.MAX_FOOT_DX_PER_STEP),
+      clip_scale(left_foot_dx, self._ctx.cfg.sim.max_foot_dx_per_step),
+      clip_scale(right_foot_dx, self._ctx.cfg.sim.max_foot_dx_per_step),
       height_to_norm(left_foot_z, fz_min, fz_max),
       height_to_norm(right_foot_z, fz_min, fz_max),
       1.0 if single_support else -1.0,

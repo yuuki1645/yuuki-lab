@@ -5,8 +5,8 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-import config
 from lib.actuators import LEFT_FOOT_GEOM, RIGHT_FOOT_GEOM, SHANK_GEOM_IDS, THIGH_GEOM_IDS
+from lib.experiment_context import ExperimentContext
 from lib.pose import pose_metrics
 
 REASON_TRUNCATED = "truncated"
@@ -48,7 +48,8 @@ NOT_TERMINATED = TerminationOutcome(None, 0.0, None)
 
 
 class Termination:
-  def __init__(self, model: mujoco.MjModel):
+  def __init__(self, model: mujoco.MjModel, ctx: ExperimentContext):
+    self._ctx = ctx
     self._model = model
     self._floor_geom_id = model.geom("floor").id
     self._basket_geom_id = model.geom("basket").id
@@ -177,7 +178,7 @@ class Termination:
       if outcome is not None:
         return outcome
 
-    if config.CONTACT_SHANK_TERMINATES:
+    if self._ctx.cfg.termination.contact_shank_terminates:
       for shank_id in self._shank_geom_ids:
         outcome = self._floor_contact_outcome(
           data,
@@ -190,7 +191,7 @@ class Termination:
     return NOT_TERMINATED
 
   def shank_contact_step_penalty(self, data: mujoco.MjData) -> float:
-    if config.CONTACT_SHANK_TERMINATES:
+    if self._ctx.cfg.termination.contact_shank_terminates:
       return 0.0
 
     total = 0.0
@@ -222,20 +223,24 @@ class Termination:
       data, self._right_foot_geom_id, self._floor_geom_id
     )
 
-    min_imu_z = config.MIN_IMU_Z_STANCE if any_foot_on_floor else config.MIN_IMU_Z
+    min_imu_z = (
+      self._ctx.cfg.termination.min_imu_z_stance
+      if any_foot_on_floor
+      else self._ctx.cfg.termination.min_imu_z
+    )
     if imu_z < min_imu_z:
       return TerminationOutcome(
-        REASON_IMU_Z, config.POSE_TERMINATION_PENALTY, None
+        REASON_IMU_Z, self._ctx.cfg.termination.pose_termination_penalty, None
       )
 
-    if upright < config.MIN_IMU_UPRIGHT:
+    if upright < self._ctx.cfg.termination.min_imu_upright:
       return TerminationOutcome(
-        REASON_LOW_UPRIGHT, config.POSE_TERMINATION_PENALTY, None
+        REASON_LOW_UPRIGHT, self._ctx.cfg.termination.pose_termination_penalty, None
       )
 
-    if lean_fwd_body < -config.MAX_BACKWARD_LEAN_BODY:
+    if lean_fwd_body < -self._ctx.cfg.termination.max_backward_lean_body:
       return TerminationOutcome(
-        REASON_BACKWARD_LEAN, config.POSE_TERMINATION_PENALTY, None
+        REASON_BACKWARD_LEAN, self._ctx.cfg.termination.pose_termination_penalty, None
       )
 
     return NOT_TERMINATED

@@ -17,13 +17,15 @@ from mujoco_sim_common.viewer_visual_presets import (
   apply_passive_viewer_options,
 )
 
-import config
 import rl.checkpoint as checkpoint
+from lib.experiment_context import ExperimentContext
+from lib.load_run_context import ctx_from_checkpoint, default_ctx
 from package_meta import CHECKPOINT_REL_FROM_EXP
 from rl.agent import AgentPPO
 from sim.env import EnvBipedPPO
 from sim.warmup import (
   WarmupContext,
+  default_warmup_action,
   episode_sim_elapsed_s,
   in_episode_warmup,
   resolve_warmup_action,
@@ -42,6 +44,7 @@ train.py と同じ EnvBipedPPO・warmup 設定を使う可視化専用入口。
 
 _EXP_DIR = Path(__file__).resolve().parent
 ActionFn = Callable[[Any], tuple[float, ...]]
+_DEFAULT_CTX = default_ctx()
 
 
 def _parse_args() -> argparse.Namespace:
@@ -99,30 +102,33 @@ def _print_checkpoint_info(path: Path, payload: dict) -> None:
   )
 
 
-def _print_warmup_config() -> None:
-  steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S)
+def _print_warmup_config(ctx: ExperimentContext) -> None:
+  sim = ctx.cfg.sim
+  training = ctx.cfg.training
+  steps = int(training.warmup_duration_s / sim.control_timestep_s)
   print(
-    f"[visualize] warmup: {config.WARMUP_DURATION_S:.3f}s sim-time "
-    f"({steps} steps @ {config.CONTROL_HZ} Hz), "
-    f"action_fn={config.WARMUP_ACTION_FN.__name__}"
+    f"[visualize] warmup: {training.warmup_duration_s:.3f}s sim-time "
+    f"({steps} steps @ {sim.control_hz} Hz), "
+    f"action_fn={default_warmup_action.__name__}"
   )
 
 
-def _make_action_fn(args: argparse.Namespace) -> ActionFn | None:
+def _make_action_fn(args: argparse.Namespace) -> tuple[ActionFn | None, ExperimentContext]:
   if args.checkpoint is None:
     print("[visualize] mode: xml only (biped model, keyframe stand, ctrl from keyframe)")
-    print(f"[visualize] xml: {config.XML_PATH}")
-    return None
+    print(f"[visualize] xml: {_DEFAULT_CTX.xml_path}")
+    return None, _DEFAULT_CTX
 
   ckpt_path = _resolve_checkpoint(args.checkpoint)
-  agent = AgentPPO.from_checkpoint(ckpt_path, map_location=args.device)
+  ctx = ctx_from_checkpoint(ckpt_path)
+  agent = AgentPPO.from_checkpoint(ctx, ckpt_path, map_location=args.device)
   payload = getattr(agent, "checkpoint_payload", None) or {}
   _print_checkpoint_info(ckpt_path, payload)
   if args.stochastic:
     print("[visualize] policy: stochastic (act)")
-    return lambda obs: agent.act(obs)[0]
+    return lambda obs: agent.act(obs)[0], ctx
   print("[visualize] policy: deterministic (act_eval)")
-  return agent.act_eval
+  return agent.act_eval, ctx
 
 
 def _reset_biped_stand(model: mujoco.MjModel, data: mujoco.MjData) -> None:
@@ -135,14 +141,14 @@ def _reset_biped_stand(model: mujoco.MjModel, data: mujoco.MjData) -> None:
   mujoco.mj_forward(model, data)
 
 
-def _launch_biped_viewer() -> tuple[mujoco.MjModel, mujoco.MjData, mujoco.viewer.Handle]:
-  model = mujoco.MjModel.from_xml_path(config.XML_PATH)
+def _launch_biped_viewer(ctx: ExperimentContext) -> tuple[mujoco.MjModel, mujoco.MjData, mujoco.viewer.Handle]:
+  model = mujoco.MjModel.from_xml_path(ctx.xml_path)
   apply_model_visual_preset(model)
   physics_dt = float(model.opt.timestep)
-  if abs(physics_dt - config.PHYSICS_TIMESTEP_S) > 1e-9:
+  expected = ctx.cfg.sim.physics_timestep_s
+  if abs(physics_dt - expected) > 1e-9:
     raise ValueError(
-      f"model.opt.timestep={physics_dt} != config.PHYSICS_TIMESTEP_S="
-      f"{config.PHYSICS_TIMESTEP_S}"
+      f"model.opt.timestep={physics_dt} != cfg.sim.physics_timestep_s={expected}"
     )
   data = mujoco.MjData(model)
   viewer = mujoco.viewer.launch_passive(model, data)
@@ -154,17 +160,20 @@ def _step_physics_only(
   model: mujoco.MjModel,
   data: mujoco.MjData,
   viewer: mujoco.viewer.Handle,
+  *,
+  ctx: ExperimentContext,
 ) -> None:
-  for _ in range(config.FRAME_SKIP):
+  sim = ctx.cfg.sim
+  for _ in range(sim.frame_skip):
     mujoco.mj_step(model, data)
-    sync_viewer_with_height_overlay(viewer)
-  time.sleep(config.CONTROL_TIMESTEP_S)
+    sync_viewer_with_height_overlay(viewer, ctx=ctx)
+  time.sleep(sim.control_timestep_s)
 
 
-def _run_biped_xml_only(*, print_every: int) -> None:
-  model, data, viewer = _launch_biped_viewer()
+def _run_biped_xml_only(*, print_every: int, ctx: ExperimentContext) -> None:
+  model, data, viewer = _launch_biped_viewer(ctx)
   _reset_biped_stand(model, data)
-  sync_viewer_with_height_overlay(viewer)
+  sync_viewer_with_height_overlay(viewer, ctx=ctx)
   print(
     f"[visualize] actuators: {model.nu} | "
     f"feet z: L={data.site('foot_site').xpos[2]:.3f} "
@@ -173,7 +182,7 @@ def _run_biped_xml_only(*, print_every: int) -> None:
   step = 0
   try:
     while viewer.is_running():
-      _step_physics_only(model, data, viewer)
+      _step_physics_only(model, data, viewer, ctx=ctx)
       step += 1
       if print_every > 0 and step % print_every == 0:
         imu_z = float(data.site("imu_site").xpos[2])
@@ -187,11 +196,12 @@ def _run_biped_xml_only(*, print_every: int) -> None:
 
 def _step_physics_only_env(env: EnvBipedPPO) -> None:
   """ctrl を書き換えず、物理ステップのみ進める（reset 後の ctrl=0 を維持）。"""
-  for _ in range(config.FRAME_SKIP):
+  sim = env._ctx.cfg.sim
+  for _ in range(sim.frame_skip):
     mujoco.mj_step(env.model, env.data)
     if env.viewer is not None:
-      sync_viewer_with_height_overlay(env.viewer)
-  time.sleep(config.CONTROL_TIMESTEP_S)
+      sync_viewer_with_height_overlay(env.viewer, ctx=env._ctx)
+  time.sleep(sim.control_timestep_s)
 
 
 def _run_physics_only(
@@ -218,6 +228,7 @@ def _run_episodes(
   env: EnvBipedPPO,
   action_fn: ActionFn,
   *,
+  ctx: ExperimentContext,
   max_episodes: int,
   print_every: int,
 ) -> int:
@@ -226,14 +237,15 @@ def _run_episodes(
   episode_index = 0
   episode_return = 0.0
   total_env_steps = 0
-  use_warmup = config.WARMUP_ENABLED
+  use_warmup = ctx.cfg.training.warmup_enabled
+  max_steps = int(ctx.cfg.training.max_steps_per_episode)
   warmup_announced = False
 
   while env.viewer.is_running():
-    if use_warmup and in_episode_warmup(episode_step):
-      elapsed_s = episode_sim_elapsed_s(episode_step)
+    if use_warmup and in_episode_warmup(episode_step, ctx):
+      elapsed_s = episode_sim_elapsed_s(episode_step, ctx)
       action = resolve_warmup_action(
-        config.WARMUP_ACTION_FN,
+        default_warmup_action,
         WarmupContext(
           obs=obs,
           elapsed_s=elapsed_s,
@@ -259,7 +271,7 @@ def _run_episodes(
           f"upright={step_info['upright']:.3f}"
         )
 
-      truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+      truncated = episode_step >= max_steps
       done = terminated or truncated
       if not done:
         continue
@@ -305,7 +317,7 @@ def _run_episodes(
         f"reason={step_info['termination_reason']!r}"
       )
 
-    truncated = episode_step >= config.MAX_STEPS_PER_EPISODE
+    truncated = episode_step >= max_steps
     done = terminated or truncated
     if not done:
       continue
@@ -330,31 +342,33 @@ def _run_episodes(
 
 def main() -> None:
   args = _parse_args()
-  action_fn = _make_action_fn(args)
+  action_fn, ctx = _make_action_fn(args)
+  sim = ctx.cfg.sim
 
   print("[visualize] ビューアを閉じると終了します。")
   print(
-    f"[visualize] 制御レート: {config.CONTROL_HZ} Hz "
-    f"({config.CONTROL_TIMESTEP_S:.3f} s/step)"
+    f"[visualize] 制御レート: {sim.control_hz} Hz "
+    f"({sim.control_timestep_s:.3f} s/step)"
   )
 
   if action_fn is None:
-    _run_biped_xml_only(print_every=args.print_every)
+    _run_biped_xml_only(print_every=args.print_every, ctx=ctx)
     print("[visualize] finished")
     return
 
-  env = EnvBipedPPO(enable_viewer=True, training_dr_enabled=False)
+  env = EnvBipedPPO(ctx, enable_viewer=True, training_dr_enabled=False)
   if env.viewer is None:
     raise SystemExit("[visualize] MuJoCo ビューアを起動できませんでした。")
 
-  if config.WARMUP_ENABLED:
-    _print_warmup_config()
+  if ctx.cfg.training.warmup_enabled:
+    _print_warmup_config(ctx)
   else:
-    print("[visualize] warmup: disabled (config.WARMUP_ENABLED=False)")
+    print("[visualize] warmup: disabled (training.warmup_enabled=false)")
 
   episode_index = _run_episodes(
     env,
     action_fn,
+    ctx=ctx,
     max_episodes=args.episodes,
     print_every=args.print_every,
   )

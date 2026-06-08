@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import config
+import pytest
+
 from sim.episode_state import BipedStepContext
-from sim.reward import Reward
+from sim.env import EnvBipedPPO
 
 
 def _biped_ctx(**kwargs) -> BipedStepContext:
@@ -22,43 +23,48 @@ def _biped_ctx(**kwargs) -> BipedStepContext:
   return BipedStepContext(**defaults)
 
 
-def test_aerial_duration_penalty_zero_when_foot_on_floor() -> None:
-  penalty = Reward._aerial_duration_penalty(
+@pytest.fixture
+def reward(default_ctx):
+  env = EnvBipedPPO(default_ctx, enable_viewer=False, training_dr_enabled=False)
+  return env._reward
+
+
+def test_aerial_duration_penalty_zero_when_foot_on_floor(reward) -> None:
+  penalty = reward._aerial_duration_penalty(
     any_foot_on_floor=True,
     aerial_steps=999,
   )
   assert penalty == 0.0
 
 
-def test_aerial_duration_penalty_after_threshold() -> None:
-  over = config.AERIAL_DURATION_PENALTY_AFTER_STEPS + 2
-  penalty = Reward._aerial_duration_penalty(
+def test_aerial_duration_penalty_after_threshold(reward, default_ctx) -> None:
+  over = default_ctx.cfg.reward.aerial_duration_penalty_after_steps + 2
+  penalty = reward._aerial_duration_penalty(
     any_foot_on_floor=False,
     aerial_steps=over,
   )
   assert penalty > 0.0
 
 
-def test_alternating_landing_bonus_requires_flag() -> None:
-  off = Reward._alternating_landing_bonus(biped=_biped_ctx(alternating_landing=False))
-  on = Reward._alternating_landing_bonus(biped=_biped_ctx(alternating_landing=True))
+def test_alternating_landing_bonus_requires_flag(reward, default_ctx) -> None:
+  off = reward._alternating_landing_bonus(biped=_biped_ctx(alternating_landing=False))
+  on = reward._alternating_landing_bonus(biped=_biped_ctx(alternating_landing=True))
   assert off == 0.0
-  assert on == config.ALTERNATING_LANDING_BONUS_SCALE
+  assert on == default_ctx.cfg.reward.alternating_landing_bonus_scale
 
 
-def test_double_support_penalty_only_when_both_feet_down() -> None:
-  none = Reward._double_support_penalty(
+def test_double_support_penalty_only_when_both_feet_down(reward) -> None:
+  none = reward._double_support_penalty(
     both_feet_on_floor=False,
     dx=0.1,
     left_foot_dx=0.1,
     right_foot_dx=0.1,
   )
-  yes = Reward._double_support_penalty(
+  yes = reward._double_support_penalty(
     both_feet_on_floor=True,
     dx=0.1,
     left_foot_dx=0.1,
     right_foot_dx=0.1,
   )
   assert none == 0.0
-  # ペナルティ項は正のスカラー（合成時に減算される）
   assert yes > 0.0

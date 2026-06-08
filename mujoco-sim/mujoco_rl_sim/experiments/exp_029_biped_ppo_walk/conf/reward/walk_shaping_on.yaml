@@ -1,0 +1,10 @@
+defaults:
+  - baseline
+
+enable_forward_foot: true
+enable_progress: true
+enable_walk_shaping: true
+enable_upright_bonus: true
+enable_posture_penalties: true
+enable_double_support: true
+enable_flight_duration: true

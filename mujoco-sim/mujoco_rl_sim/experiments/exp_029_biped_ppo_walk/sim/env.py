@@ -9,7 +9,9 @@ import mujoco.viewer
 from mujoco_sim_common.viewer_height_overlay import sync_viewer_with_height_overlay
 from mujoco_sim_common.viewer_visual_presets import apply_model_visual_preset, apply_passive_viewer_options
 
-import config
+from lib.experiment_context import ExperimentContext, build_experiment_context
+from lib.hydra_checkpoint import load_cfg_from_yaml
+from conf.schema import build_app_config
 from sim.episode_state import EpisodeState
 from telemetry.biped_ppo import (
   actuator_names,
@@ -45,25 +47,37 @@ class EnvBipedPPO:
 
   def __init__(
     self,
+    ctx: ExperimentContext | None = None,
     *,
     enable_viewer: bool = True,
     training_dr_enabled: bool | None = None,
     training_seed: int | None = None,
+    hydra_config_path: str | None = None,
   ):
-    self.model = mujoco.MjModel.from_xml_path(config.XML_PATH)
+    if ctx is None:
+      if hydra_config_path is None:
+        # 既存の単体利用（scripts/tests）向けに default AppConfig から組み立てる。
+        ctx = build_experiment_context(build_app_config())
+      else:
+        # subprocess 側では YAML だけを受け取り、この場で Context を再構築する。
+        loaded_cfg = load_cfg_from_yaml(hydra_config_path)
+        ctx = build_experiment_context(loaded_cfg)
+    self._ctx = ctx
+
+    self.model = mujoco.MjModel.from_xml_path(self._ctx.xml_path)
     apply_model_visual_preset(self.model)
     self.data = mujoco.MjData(self.model)
 
     if training_dr_enabled is None:
-      training_dr_enabled = bool(config.TRAINING_DR_ENABLED)
+      training_dr_enabled = bool(self._ctx.cfg.training.training_dr)
     self._training_dr_enabled = bool(training_dr_enabled)
     self._training_seed = training_seed
-    self._training_dr = TrainingDomainRandomization(self.model)
+    self._training_dr = TrainingDomainRandomization(self.model, self._ctx)
 
     physics_dt = float(self.model.opt.timestep)
-    if abs(physics_dt - config.PHYSICS_TIMESTEP_S) > 1e-9:
+    if abs(physics_dt - self._ctx.cfg.sim.physics_timestep_s) > 1e-9:
       raise ValueError(
-        f"model.opt.timestep={physics_dt} != config.PHYSICS_TIMESTEP_S={config.PHYSICS_TIMESTEP_S}"
+        f"model.opt.timestep={physics_dt} != cfg.sim.physics_timestep_s={self._ctx.cfg.sim.physics_timestep_s}"
       )
 
     self.viewer = None
@@ -71,16 +85,16 @@ class EnvBipedPPO:
       self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
       apply_passive_viewer_options(self.viewer)
 
-    self._episode = EpisodeState()
+    self._episode = EpisodeState(ctx=self._ctx)
     self._action = ActionBinding(self.model)
-    self._observation = Observation(self.model)
-    self._reward = Reward(self.model)
-    self._effort = EffortTracker(self.model)
-    self._termination = Termination(self.model)
+    self._observation = Observation(self.model, self._ctx)
+    self._reward = Reward(self.model, self._ctx)
+    self._effort = EffortTracker(self.model, self._ctx)
+    self._termination = Termination(self.model, self._ctx)
     self._stand_key_id = mujoco.mj_name2id(
       self.model, mujoco.mjtObj.mjOBJ_KEY, "stand"
     )
-    self._step_wall_sleep_sec = float(config.STEP_WALL_SLEEP_SEC)
+    self._step_wall_sleep_sec = float(self._ctx.cfg.runtime.step_wall_sleep_sec)
 
   def _apply_stand_keyframe(self) -> None:
     if self._stand_key_id >= 0:
@@ -96,7 +110,7 @@ class EnvBipedPPO:
       (obs_vector, origin_imu_x) … origin はノイズ適用後の IMU 世界 X [m]。
     """
     if self.viewer is not None:
-      sync_viewer_with_height_overlay(self.viewer)
+      sync_viewer_with_height_overlay(self.viewer, self._ctx)
 
     imu_x = float(self.data.site("imu_site").xpos[0])
     imu_z = float(self.data.site("imu_site").xpos[2])
@@ -107,7 +121,7 @@ class EnvBipedPPO:
       left_foot_x=left_foot_x,
       right_foot_x=right_foot_x,
       imu_z=imu_z,
-      n_action=config.ACTION_DIM,
+      n_action=self._ctx.cfg.sim.action_dim,
     )
 
     policy_obs, _ = self._observation.build(
@@ -163,7 +177,7 @@ class EnvBipedPPO:
     self._effort.reset_control_step()
 
     # --- 物理積分（50 Hz 制御 = 10 × 500 Hz 物理）---
-    for _ in range(config.FRAME_SKIP):
+    for _ in range(self._ctx.cfg.sim.frame_skip):
       mujoco.mj_step(self.model, self.data)
       self._effort.record_physics_step(self.data)
       
@@ -176,9 +190,9 @@ class EnvBipedPPO:
     effort = self._effort.control_step_breakdown()
 
     if self.viewer is not None:
-      sync_viewer_with_height_overlay(self.viewer)
+      sync_viewer_with_height_overlay(self.viewer, self._ctx)
     if visualize:
-      time.sleep(config.CONTROL_TIMESTEP_S)
+      time.sleep(self._ctx.cfg.sim.control_timestep_s)
     elif self._step_wall_sleep_sec > 0.0:
       time.sleep(self._step_wall_sleep_sec)
 

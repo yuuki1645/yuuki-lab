@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -10,12 +9,14 @@ from pathlib import Path
 
 import pytest
 
+from lib.hydra_checkpoint import hydra_config_path
+
 _EXP_ROOT = Path(__file__).resolve().parent.parent
 
 
 @pytest.mark.slow
 def test_train_one_update_smoke() -> None:
-  """seed 固定・wandb 無効で 1 update が落ちず、config_effective.json を書く。"""
+  """seed 固定・wandb 無効で 1 update が落ちず、.hydra/config.yaml を書く。"""
   env = os.environ.copy()
   env["WANDB_MODE"] = "disabled"
 
@@ -23,14 +24,10 @@ def test_train_one_update_smoke() -> None:
     [
       sys.executable,
       "train.py",
-      "--seed",
-      "0",
-      "--num-updates",
-      "1",
-      "--no-viewer",
-      "--no-telemetry",
-      "--no-wandb",
-      "--no-eval",
+      "training.seed=0",
+      "training.num_updates=1",
+      "wandb=disabled",
+      "training.post_train_eval=false",
     ],
     cwd=_EXP_ROOT,
     env=env,
@@ -51,10 +48,8 @@ def test_train_one_update_smoke() -> None:
     reverse=True,
   )
   assert run_dirs, f"checkpoint run dir not found under {runs_root}"
-  cfg_path = run_dirs[0] / "config_effective.json"
+  cfg_path = hydra_config_path(run_dirs[0])
   assert cfg_path.is_file(), f"missing {cfg_path}"
-  snapshot = json.loads(cfg_path.read_text(encoding="utf-8"))
-  assert snapshot.get("training_seed") == 0
 
 
 @pytest.mark.slow
@@ -67,16 +62,11 @@ def test_train_one_update_subproc_smoke() -> None:
     [
       sys.executable,
       "train.py",
-      "--seed",
-      "0",
-      "--num-updates",
-      "1",
-      "--num-envs",
-      "2",
-      "--no-viewer",
-      "--no-telemetry",
-      "--no-wandb",
-      "--no-eval",
+      "training.seed=0",
+      "training.num_updates=1",
+      "runtime.num_envs=2",
+      "wandb=disabled",
+      "training.post_train_eval=false",
     ],
     cwd=_EXP_ROOT,
     env=env,

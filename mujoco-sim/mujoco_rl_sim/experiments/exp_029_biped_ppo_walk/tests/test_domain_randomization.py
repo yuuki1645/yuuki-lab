@@ -5,11 +5,11 @@ from __future__ import annotations
 import mujoco
 import numpy as np
 
-import config
 from sim.domain_randomization import (
   TrainingDomainRandomization,
   make_episode_dr_rng,
 )
+from sim.env import EnvBipedPPO
 
 
 def test_make_episode_dr_rng_is_deterministic() -> None:
@@ -20,10 +20,10 @@ def test_make_episode_dr_rng_is_deterministic() -> None:
   assert r1.random() != r3.random()
 
 
-def test_apply_changes_friction_and_restores_nominal() -> None:
-  model = mujoco.MjModel.from_xml_path(config.XML_PATH)
+def test_apply_changes_friction_and_restores_nominal(default_ctx) -> None:
+  model = mujoco.MjModel.from_xml_path(default_ctx.xml_path)
   data = mujoco.MjData(model)
-  dr = TrainingDomainRandomization(model)
+  dr = TrainingDomainRandomization(model, default_ctx)
   foot_id = int(model.geom("foot_plate").id)
   nominal = float(model.geom_friction[foot_id, 0])
 
@@ -37,10 +37,13 @@ def test_apply_changes_friction_and_restores_nominal() -> None:
   assert model.geom_friction[foot_id, 0] == nominal
 
 
-def test_reset_eval_path_restores_after_training_dr() -> None:
-  from sim.env import EnvBipedPPO
-
-  env = EnvBipedPPO(enable_viewer=False, training_dr_enabled=True, training_seed=7)
+def test_reset_eval_path_restores_after_training_dr(default_ctx) -> None:
+  env = EnvBipedPPO(
+    default_ctx,
+    enable_viewer=False,
+    training_dr_enabled=True,
+    training_seed=7,
+  )
   model = env.model
   foot_id = int(model.geom("foot_plate").id)
   nominal = float(model.geom_friction[foot_id, 0])

@@ -13,16 +13,17 @@ install()
 
 import argparse
 
-import config
+from lib.load_run_context import default_ctx
 from sim.env import EnvBipedPPO
 from sim.warmup import (
   WarmupContext,
+  default_warmup_action,
   episode_sim_elapsed_s,
   in_episode_warmup,
   resolve_warmup_action,
 )
 
-__doc__ = """config.WARMUP_ACTION_FN を MuJoCo ビューアで実時間プレビューする。
+__doc__ = """training.warmup 設定を MuJoCo ビューアで実時間プレビューする。
 
 実行例（本フォルダで）:
 
@@ -47,27 +48,31 @@ def _parse_args() -> argparse.Namespace:
   return p.parse_args()
 
 
-def _warmup_control_steps() -> int:
-  return int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S)
+def _warmup_control_steps(ctx) -> int:
+  sim = ctx.cfg.sim
+  return int(ctx.cfg.training.warmup_duration_s / sim.control_timestep_s)
 
 
-def _print_warmup_config() -> None:
-  steps = _warmup_control_steps()
+def _print_warmup_config(ctx) -> None:
+  sim = ctx.cfg.sim
+  training = ctx.cfg.training
+  steps = _warmup_control_steps(ctx)
   print(
-    f"[preview_warmup] action_fn={config.WARMUP_ACTION_FN.__name__} | "
-    f"duration={config.WARMUP_DURATION_S:.3f}s sim-time "
-    f"({steps} control steps @ {config.CONTROL_HZ} Hz)"
+    f"[preview_warmup] action_fn={default_warmup_action.__name__} | "
+    f"duration={training.warmup_duration_s:.3f}s sim-time "
+    f"({steps} control steps @ {sim.control_hz} Hz)"
   )
-  if not config.WARMUP_ENABLED:
+  if not training.warmup_enabled:
     print(
-      "[preview_warmup] note: config.WARMUP_ENABLED=False（学習では warmup 無効）。"
-      " プレビューは WARMUP_ACTION_FN をそのまま再生します。"
+      "[preview_warmup] note: training.warmup_enabled=false（学習では warmup 無効）。"
+      " プレビューは default_warmup_action をそのまま再生します。"
     )
 
 
 def _run_warmup_preview(
   env: EnvBipedPPO,
   *,
+  ctx,
   max_episodes: int,
   print_every: int,
 ) -> int:
@@ -77,7 +82,7 @@ def _run_warmup_preview(
   episode_return = 0.0
 
   while env.viewer.is_running():
-    if not in_episode_warmup(episode_step):
+    if not in_episode_warmup(episode_step, ctx):
       print(
         f"[preview_warmup] episode {episode_index + 1} warmup end | "
         f"return={episode_return:.3f} | steps={episode_step}"
@@ -90,9 +95,9 @@ def _run_warmup_preview(
       episode_return = 0.0
       continue
 
-    elapsed_s = episode_sim_elapsed_s(episode_step)
+    elapsed_s = episode_sim_elapsed_s(episode_step, ctx)
     action = resolve_warmup_action(
-      config.WARMUP_ACTION_FN,
+      default_warmup_action,
       WarmupContext(
         obs=obs,
         elapsed_s=elapsed_s,
@@ -135,20 +140,23 @@ def _run_warmup_preview(
 
 def main() -> None:
   args = _parse_args()
-  _print_warmup_config()
+  ctx = default_ctx()
+  _print_warmup_config(ctx)
 
-  env = EnvBipedPPO(enable_viewer=True, training_dr_enabled=False)
+  env = EnvBipedPPO(ctx, enable_viewer=True, training_dr_enabled=False)
   if env.viewer is None:
     raise SystemExit("[preview_warmup] MuJoCo ビューアを起動できませんでした。")
 
+  sim = ctx.cfg.sim
   print("[preview_warmup] ビューアを閉じると終了します。")
   print(
-    f"[preview_warmup] 制御レート: {config.CONTROL_HZ} Hz "
-    f"({config.CONTROL_TIMESTEP_S:.3f} s/step, 実時間 sleep)"
+    f"[preview_warmup] 制御レート: {sim.control_hz} Hz "
+    f"({sim.control_timestep_s:.3f} s/step, 実時間 sleep)"
   )
 
   episode_index = _run_warmup_preview(
     env,
+    ctx=ctx,
     max_episodes=args.episodes,
     print_every=args.print_every,
   )

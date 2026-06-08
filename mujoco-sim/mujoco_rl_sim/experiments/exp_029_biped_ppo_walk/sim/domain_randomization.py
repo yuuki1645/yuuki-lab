@@ -13,8 +13,9 @@ from typing import Any
 import mujoco
 import numpy as np
 
-import config
 from lib.actuators import ACTUATOR_NAMES
+from lib.experiment_context import ExperimentContext, build_experiment_context
+from conf.schema import build_app_config
 
 # eval RNG 系列と区別するための第三成分
 _DR_RNG_TAG = 0x4452
@@ -52,25 +53,40 @@ def make_episode_dr_rng(
   return np.random.default_rng()
 
 
-def training_dr_spec_dict() -> dict[str, Any]:
+_DEFAULT_CTX: ExperimentContext | None = None
+
+
+def _resolve_ctx(ctx: ExperimentContext | None) -> ExperimentContext:
+  global _DEFAULT_CTX
+  if ctx is not None:
+    return ctx
+  if _DEFAULT_CTX is None:
+    # 既存 API 互換: ctx 省略時は既定 AppConfig を使う。
+    _DEFAULT_CTX = build_experiment_context(build_app_config())
+  return _DEFAULT_CTX
+
+
+def training_dr_spec_dict(ctx: ExperimentContext | None = None) -> dict[str, Any]:
   """config_effective / W&B 用の DR 仕様サマリ。"""
+  resolved = _resolve_ctx(ctx)
   return {
-    "enabled": bool(config.TRAINING_DR_ENABLED),
-    "pose_scale": float(config.TRAINING_DR_POSE_SCALE),
-    "foot_friction_geom_names": list(config.TRAINING_DR_FOOT_FRICTION_GEOMS),
-    "friction_slide_mult_range": list(config.TRAINING_DR_FRICTION_SLIDE_MULT_RANGE),
-    "actuator_kp_mult_range": list(config.TRAINING_DR_ACTUATOR_KP_MULT_RANGE),
-    "actuator_kv_mult_range": list(config.TRAINING_DR_ACTUATOR_KV_MULT_RANGE),
+    "enabled": bool(resolved.cfg.training.training_dr),
+    "pose_scale": float(resolved.cfg.training.training_dr_pose_scale),
+    "foot_friction_geom_names": list(resolved.cfg.training.training_dr_foot_friction_geoms),
+    "friction_slide_mult_range": list(resolved.cfg.training.training_dr_friction_slide_mult_range),
+    "actuator_kp_mult_range": list(resolved.cfg.training.training_dr_actuator_kp_mult_range),
+    "actuator_kv_mult_range": list(resolved.cfg.training.training_dr_actuator_kv_mult_range),
   }
 
 
 class TrainingDomainRandomization:
   """MuJoCo model の名目物理パラメータを保持し、エピソードごとにサンプルする。"""
 
-  def __init__(self, model: mujoco.MjModel) -> None:
+  def __init__(self, model: mujoco.MjModel, ctx: ExperimentContext) -> None:
+    self._ctx = ctx
     self._foot_friction: tuple[_FootFrictionNominal, ...] = tuple(
       self._snapshot_foot_friction(model, name)
-      for name in config.TRAINING_DR_FOOT_FRICTION_GEOMS
+      for name in self._ctx.cfg.training.training_dr_foot_friction_geoms
     )
     self._actuators: tuple[_ActuatorNominal, ...] = tuple(
       self._snapshot_actuator(model, name) for name in ACTUATOR_NAMES
@@ -115,15 +131,15 @@ class TrainingDomainRandomization:
     applied: dict[str, Any] = {}
 
     foot_mult: dict[str, float] = {}
-    lo_f, hi_f = config.TRAINING_DR_FRICTION_SLIDE_MULT_RANGE
+    lo_f, hi_f = self._ctx.cfg.training.training_dr_friction_slide_mult_range
     for foot in self._foot_friction:
       mult = float(rng.uniform(lo_f, hi_f))
       model.geom_friction[foot.geom_id, 0] = foot.slide * mult
       foot_mult[foot.geom_name] = mult
     applied["foot_friction_slide_mult"] = foot_mult
 
-    lo_kp, hi_kp = config.TRAINING_DR_ACTUATOR_KP_MULT_RANGE
-    lo_kv, hi_kv = config.TRAINING_DR_ACTUATOR_KV_MULT_RANGE
+    lo_kp, hi_kp = self._ctx.cfg.training.training_dr_actuator_kp_mult_range
+    lo_kv, hi_kv = self._ctx.cfg.training.training_dr_actuator_kv_mult_range
     actuator_mult: list[dict[str, float | str]] = []
     for act in self._actuators:
       kp_mult = float(rng.uniform(lo_kp, hi_kp))
@@ -147,6 +163,6 @@ class TrainingDomainRandomization:
       model,
       data,
       rng,
-      scale=float(config.TRAINING_DR_POSE_SCALE),
+      scale=float(self._ctx.cfg.training.training_dr_pose_scale),
     )
     return applied

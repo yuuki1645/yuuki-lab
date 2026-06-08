@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import config
 from eval.metrics import EpisodeEvalRecord, episode_to_dict, summarize_episodes
+from lib.load_run_context import ctx_from_checkpoint
 from eval.spec import (
   EPISODES_PER_SEED,
   EVAL_SEEDS,
@@ -45,6 +45,7 @@ def build_eval_report(
 ) -> dict[str, Any]:
   """eval_report.json 用 dict を組み立てる。"""
   summary = summarize_episodes(records)
+  ctx = ctx_from_checkpoint(checkpoint_path)
   return {
     "schema_version": _REPORT_SCHEMA_VERSION,
     "eval_spec_id": EVAL_SPEC_ID,
@@ -53,8 +54,8 @@ def build_eval_report(
     "git_commit": _git_commit(),
     "checkpoint": str(checkpoint_path.resolve()),
     "policy": "act_eval",
-    "warmup_enabled": bool(config.WARMUP_ENABLED),
-    "max_steps_per_episode": int(config.MAX_STEPS_PER_EPISODE),
+    "warmup_enabled": bool(ctx.cfg.training.warmup_enabled),
+    "max_steps_per_episode": int(ctx.cfg.training.max_steps_per_episode),
     "eval_seeds": list(eval_seeds),
     "episodes_per_seed": int(episodes_per_seed),
     "total_trials": len(records),

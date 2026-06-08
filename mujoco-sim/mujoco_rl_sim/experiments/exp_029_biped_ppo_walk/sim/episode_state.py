@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 
 import numpy as np
+from lib.experiment_context import ExperimentContext
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class EpisodeState:
   aerial_steps: int = 0
   best_imu_x: float = 0.0
   prev_single_support_side: int = 0
+  ctx: ExperimentContext | None = field(default=None, repr=False)
   prev_action: tuple[float, ...] = field(default_factory=tuple)
 
   def reset_forward_tracking(
@@ -75,11 +77,11 @@ class EpisodeState:
     self, imu_x: float, *, upright: float, single_support: bool
   ) -> float:
     """IMU +X のエピソード内最高更新量 [m]。片足支持・直立時のみカウント。"""
-    import config
-
-    if upright < config.PROGRESS_MIN_UPRIGHT:
+    if self.ctx is None:
+      raise ValueError("EpisodeState.ctx must be set before advance_progress")
+    if upright < self.ctx.cfg.reward.progress_min_upright:
       return 0.0
-    if config.PROGRESS_REQUIRE_SINGLE_SUPPORT and not single_support:
+    if self.ctx.cfg.reward.progress_require_single_support and not single_support:
       return 0.0
     progress = float(np.clip(float(imu_x) - self.best_imu_x, 0.0, np.inf))
     if progress > 0.0:

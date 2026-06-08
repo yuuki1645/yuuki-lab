@@ -1,0 +1,13 @@
+warmup_enabled: false
+warmup_duration_s: 1.0
+num_updates: 5000
+max_steps_per_episode: 1500
+log_every: 5
+seed: null
+training_dr: true
+post_train_eval: true
+training_dr_pose_scale: 1.0
+training_dr_foot_friction_geoms: [foot_plate, right_foot_plate]
+training_dr_friction_slide_mult_range: [0.85, 1.15]
+training_dr_actuator_kp_mult_range: [0.9, 1.1]
+training_dr_actuator_kv_mult_range: [0.9, 1.1]

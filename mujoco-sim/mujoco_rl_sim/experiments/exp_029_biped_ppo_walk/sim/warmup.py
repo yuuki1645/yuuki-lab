@@ -5,9 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-import config
 from lib.actuators import ACTUATOR_NAMES
 from lib.ctrl import clip_policy_action
+from lib.experiment_context import ExperimentContext, build_experiment_context
+from conf.schema import build_app_config
 
 WarmupActionFn = Callable[["WarmupContext"], tuple[float, ...]]
 
@@ -21,15 +22,30 @@ class WarmupContext:
   episode_index: int
 
 
-def episode_sim_elapsed_s(episode_step: int) -> float:
-  return episode_step * config.CONTROL_TIMESTEP_S
+_DEFAULT_CTX: ExperimentContext | None = None
 
 
-def in_episode_warmup(episode_step: int) -> bool:
+def _resolve_ctx(ctx: ExperimentContext | None) -> ExperimentContext:
+  global _DEFAULT_CTX
+  if ctx is not None:
+    return ctx
+  if _DEFAULT_CTX is None:
+    # 既存呼び出し互換: ctx 未指定なら既定 AppConfig から 1 回だけ生成する。
+    _DEFAULT_CTX = build_experiment_context(build_app_config())
+  return _DEFAULT_CTX
+
+
+def episode_sim_elapsed_s(episode_step: int, ctx: ExperimentContext | None = None) -> float:
+  resolved = _resolve_ctx(ctx)
+  return episode_step * resolved.cfg.sim.control_timestep_s
+
+
+def in_episode_warmup(episode_step: int, ctx: ExperimentContext | None = None) -> bool:
   """エピソード開始から WARMUP_DURATION_S 未満なら True（方策学習前の安定化期間）。"""
-  if not config.WARMUP_ENABLED:
+  resolved = _resolve_ctx(ctx)
+  if not resolved.cfg.training.warmup_enabled:
     return False
-  return episode_sim_elapsed_s(episode_step) < config.WARMUP_DURATION_S
+  return episode_sim_elapsed_s(episode_step, resolved) < resolved.cfg.training.warmup_duration_s
 
 
 def default_warmup_action(ctx: WarmupContext) -> tuple[float, ...]:

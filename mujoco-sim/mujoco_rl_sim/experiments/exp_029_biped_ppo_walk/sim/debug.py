@@ -6,7 +6,6 @@ observation.maybe_print_debug から呼ばれる（通常は env 側でコメン
 
 import math
 
-import config
 from lib.terminal_bar import terminal_bar
 
 
@@ -45,6 +44,8 @@ def print_step_overlay(
   com_z: float,
   prev_knee_action: float,
   prev_ankle_action: float,
+  max_dx_per_step: float,
+  max_rel_heel_offset: float,
 ) -> None:
   """StepPhysics / EpisodeState の生値をターミナルにバー付きで表示する。"""
   bar = terminal_bar
@@ -75,16 +76,16 @@ def print_step_overlay(
     f"\033[2K\n"
     f"\033[2K[IMU Position]\n"
     f"\033[2K  imu_x      : {imu_x: 8.3f} (rel {rel_imu_x: 8.3f}) {bar(-5.0, 5.0, imu_x)}\n"
-    f"\033[2K  dx         : {dx: 8.3f} {bar(-config.MAX_DX_PER_STEP, config.MAX_DX_PER_STEP, dx)}\n"
+    f"\033[2K  dx         : {dx: 8.3f} {bar(-max_dx_per_step, max_dx_per_step, dx)}\n"
     f"\033[2K  imu_z      : {imu_z: 8.3f} {bar(0.0, 1.0, imu_z)}\n"
     f"\033[2K\n"
     f"\033[2Kfoot_z       : {foot_z: 8.3f} {bar(0.0, 1.0, foot_z)}\n"
     f"\033[2Ktoe_z        : {toe_z: 8.3f} {bar(0.0, 1.0, toe_z)}\n"
     f"\033[2Kheel_z       : {heel_z: 8.3f} {bar(0.0, 1.0, heel_z)}\n"
-    f"\033[2Kknee-heel dx : {knee_heel_dx: 8.3f} {bar(-config.MAX_REL_HEEL_OFFSET, config.MAX_REL_HEEL_OFFSET, knee_heel_dx)}\n"
-    f"\033[2Kknee-heel dz : {knee_heel_dz: 8.3f} {bar(-config.MAX_REL_HEEL_OFFSET, config.MAX_REL_HEEL_OFFSET, knee_heel_dz)}\n"
-    f"\033[2Kimu-heel dx  : {imu_heel_dx: 8.3f} {bar(-config.MAX_REL_HEEL_OFFSET, config.MAX_REL_HEEL_OFFSET, imu_heel_dx)}\n"
-    f"\033[2Kimu-heel dz  : {imu_heel_dz: 8.3f} {bar(-config.MAX_REL_HEEL_OFFSET, config.MAX_REL_HEEL_OFFSET, imu_heel_dz)}\n"
+    f"\033[2Kknee-heel dx : {knee_heel_dx: 8.3f} {bar(-max_rel_heel_offset, max_rel_heel_offset, knee_heel_dx)}\n"
+    f"\033[2Kknee-heel dz : {knee_heel_dz: 8.3f} {bar(-max_rel_heel_offset, max_rel_heel_offset, knee_heel_dz)}\n"
+    f"\033[2Kimu-heel dx  : {imu_heel_dx: 8.3f} {bar(-max_rel_heel_offset, max_rel_heel_offset, imu_heel_dx)}\n"
+    f"\033[2Kimu-heel dz  : {imu_heel_dz: 8.3f} {bar(-max_rel_heel_offset, max_rel_heel_offset, imu_heel_dz)}\n"
     f"\033[2Kfoot_xaxis_x : {foot_xaxis_z: 8.3f} {bar(-1.0, 1.0, foot_xaxis_z)}\n"
     f"\033[2K[Joints]\n"
     f"\033[2K  knee       : {knee_deg: 6.1f}°  ({knee_angle: 8.3f}) {bar(-180.0, 180.0, knee_deg)}\n"

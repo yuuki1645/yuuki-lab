@@ -19,7 +19,6 @@ install()
 
 import argparse
 
-import config
 from eval.compare import (
   build_compare_result,
   discover_reports_in_runs_dir,
@@ -28,6 +27,7 @@ from eval.compare import (
   write_compare_csv,
 )
 from eval.spec import EVAL_SPEC_ID
+from package_meta import CHECKPOINT_ROOT
 
 
 def _parse_args() -> argparse.Namespace:
@@ -42,7 +42,7 @@ def _parse_args() -> argparse.Namespace:
     "--runs-dir",
     type=str,
     default=None,
-    help=f"run 親ディレクトリ（省略時: config.CHECKPOINT_DIR = {config.CHECKPOINT_DIR}）",
+    help=f"run 親ディレクトリ（省略時: {CHECKPOINT_ROOT}）",
   )
   p.add_argument(
     "--csv",
@@ -66,7 +66,7 @@ def _collect_report_paths(args: argparse.Namespace) -> tuple[int, list[Path]]:
     # 位置引数指定時は走査数 = 指定した run 数（情報表示用）
     return len(paths), paths
 
-  runs_dir = Path(args.runs_dir or config.CHECKPOINT_DIR).expanduser()
+  runs_dir = Path(args.runs_dir or CHECKPOINT_ROOT).expanduser()
   return discover_reports_in_runs_dir(runs_dir)
 
 

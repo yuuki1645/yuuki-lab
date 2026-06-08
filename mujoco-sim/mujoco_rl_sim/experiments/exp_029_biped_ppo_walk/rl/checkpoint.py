@@ -13,7 +13,7 @@ from lib.run_dir import (
   wandb_active_run_name,
 )
 
-import config
+from lib.experiment_context import ExperimentContext
 from package_meta import CHECKPOINT_FORMAT, CHECKPOINT_ROOT
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def resolve_checkpoint_path(path_str: str) -> Path:
   return path
 
 
-def make_run_dir(*, wandb_run_name: str | None = None) -> Path:
+def make_run_dir(ctx: ExperimentContext, *, wandb_run_name: str | None = None) -> Path:
   """1 回の train 実行用ディレクトリを作成して返す（CWD 非依存）。
 
   wandb 有効時は Run の Name（例: lunar-pond-4）をフォルダ名に使う。
@@ -53,7 +53,8 @@ def make_run_dir(*, wandb_run_name: str | None = None) -> Path:
   """
   if wandb_run_name is None:
     wandb_run_name = wandb_active_run_name()
-  base = Path(config.CHECKPOINT_DIR)
+  checkpoint_base = str(ctx.checkpoint_root).strip() or str(ctx.cfg.checkpoint.checkpoint_dir)
+  base = Path(checkpoint_base)
   label = resolve_run_dir_label(wandb_run_name=wandb_run_name)
   return make_unique_run_dir(base, label)
 

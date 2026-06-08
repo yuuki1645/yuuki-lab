@@ -21,8 +21,10 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-import config
+from lib.load_run_context import ctx_from_checkpoint
+from sim.warmup import default_warmup_action
 from lib.actuators import JOINT_NAMES
+from lib.experiment_context import build_experiment_context
 from rl.agent import AgentPPO
 from sim.env import EnvBipedPPO
 from sim.warmup import WarmupContext, in_episode_warmup, resolve_warmup_action
@@ -126,13 +128,21 @@ def main() -> None:
   frames_dir = out_dir / "frames"
   frames_dir.mkdir(parents=True, exist_ok=True)
 
-  agent = AgentPPO.from_checkpoint(ckpt, map_location=args.device)
+  ctx = ctx_from_checkpoint(ckpt)
+  agent = AgentPPO.from_checkpoint(ctx, ckpt, map_location=args.device)
   act = (lambda obs: agent.act(obs)[0]) if args.stochastic else agent.act_eval
 
-  env = EnvBipedPPO(enable_viewer=False, training_dr_enabled=False)
+  env = EnvBipedPPO(ctx, enable_viewer=False, training_dr_enabled=False)
   renderer = mujoco.Renderer(env.model, height=args.height, width=args.width)
   track_camera = _make_track_camera(env.model)
-  warmup_steps = int(config.WARMUP_DURATION_S / config.CONTROL_TIMESTEP_S) if config.WARMUP_ENABLED else 0
+  training = ctx.cfg.training
+  sim = ctx.cfg.sim
+  warmup_steps = (
+    int(training.warmup_duration_s / sim.control_timestep_s)
+    if training.warmup_enabled
+    else 0
+  )
+  max_steps = int(training.max_steps_per_episode)
 
   episode_summaries: list[dict] = []
 
@@ -145,16 +155,20 @@ def main() -> None:
     first_low_upright_step: int | None = None
     prev_foot_on_floor = 1.0
 
-    for step in range(config.MAX_STEPS_PER_EPISODE):
+    for step in range(max_steps):
       imu_x_before = float(env.data.site("imu_site").xpos[0])
-      phase = "warmup" if config.WARMUP_ENABLED and in_episode_warmup(step) else "policy"
+      phase = (
+        "warmup"
+        if training.warmup_enabled and in_episode_warmup(step, ctx)
+        else "policy"
+      )
 
       if phase == "warmup":
         action = resolve_warmup_action(
-          config.WARMUP_ACTION_FN,
+          default_warmup_action,
           WarmupContext(
             obs=obs,
-            elapsed_s=step * config.CONTROL_TIMESTEP_S,
+            elapsed_s=step * sim.control_timestep_s,
             total_env_steps=0,
             episode_step=step,
             episode_index=ep,
@@ -185,7 +199,7 @@ def main() -> None:
       if phase == "policy" and rec.upright < 0.60 and first_low_upright_step is None:
         first_low_upright_step = step
 
-      truncated = (step + 1) >= config.MAX_STEPS_PER_EPISODE
+      truncated = (step + 1) >= max_steps
       done = terminated or truncated
 
       def _save(tag: str) -> None:

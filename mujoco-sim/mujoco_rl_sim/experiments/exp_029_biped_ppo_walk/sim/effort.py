@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import mujoco
 
-import config
 from lib.actuators import ACTUATOR_NAMES
+from lib.experiment_context import ExperimentContext
 
 
 @dataclass(frozen=True)
@@ -15,7 +15,8 @@ class EffortBreakdown:
 
 
 class EffortTracker:
-  def __init__(self, model: mujoco.MjModel):
+  def __init__(self, model: mujoco.MjModel, ctx: ExperimentContext):
+    self._ctx = ctx
     self._dt = float(model.opt.timestep)
     self._act_ids: list[int] = []
     self._dof_adr: list[int] = []
@@ -42,5 +43,5 @@ class EffortTracker:
       self._power_cost += abs(tau * qvel) / tau_max * self._dt
 
   def control_step_breakdown(self) -> EffortBreakdown:
-    penalty = self._power_cost * config.EFFORT_PENALTY_SCALE
+    penalty = self._power_cost * self._ctx.cfg.reward.effort_penalty_scale
     return EffortBreakdown(power_cost=self._power_cost, penalty=penalty)

@@ -29,7 +29,7 @@ import torch.optim as optim
 from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.transforms import TanhTransform
 
-import config
+from lib.experiment_context import ExperimentContext
 
 
 def _build_mlp(
@@ -56,17 +56,19 @@ class Actor(nn.Module):
     obs_dim: int,
     action_dim: int,
     *,
-    hidden_sizes: tuple[int, ...] = config.POLICY_HIDDEN_SIZES,
+    hidden_sizes: tuple[int, ...],
+    std_min: float,
   ):
     super().__init__()
     self.action_dim = action_dim
     self.hidden_sizes = hidden_sizes
+    self.std_min = float(std_min)
     self.net = _build_mlp(obs_dim, hidden_sizes, action_dim)
     self.log_std = nn.Parameter(torch.full((action_dim,), -1.0))
 
   def forward(self, obs):
     loc = self.net(obs)
-    std = self.log_std.exp().expand_as(loc).clamp(min=config.STD_MIN)
+    std = self.log_std.exp().expand_as(loc).clamp(min=self.std_min)
     return loc, std
 
   def squashed_dist(self, obs):
@@ -87,7 +89,7 @@ class Critic(nn.Module):
     self,
     obs_dim: int,
     *,
-    hidden_sizes: tuple[int, ...] = config.POLICY_HIDDEN_SIZES,
+    hidden_sizes: tuple[int, ...],
   ):
     super().__init__()
     self.hidden_sizes = hidden_sizes
@@ -102,6 +104,9 @@ def _compute_gae(
   values: torch.Tensor,
   dones: torch.Tensor,
   last_v: torch.Tensor,
+  *,
+  gamma: float,
+  gae_lambda: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
   """GAE(λ): 各ステップの advantage（行動の良し悪し）と return（価値の教師信号）を求める。
 
@@ -124,9 +129,9 @@ def _compute_gae(
       next_v = values[t + 1]
     # done=1 のときは次価値を使わない（転倒・終了で打ち切り）
     non_terminal = 1.0 - dones[t]
-    delta = rewards[t] + config.GAMMA * next_v * non_terminal - values[t]
+    delta = rewards[t] + float(gamma) * next_v * non_terminal - values[t]
     last_gae = float(
-      delta + config.GAMMA * config.GAE_LAMBDA * non_terminal * last_gae
+      delta + float(gamma) * float(gae_lambda) * non_terminal * last_gae
     )
     advantages[t] = last_gae
   returns = advantages + values
@@ -144,25 +149,33 @@ class AgentPPO:
 
   def __init__(
     self,
-    obs_dim: int = config.OBS_DIM,
-    action_dim: int = config.ACTION_DIM,
-    *,
-    hidden_sizes: tuple[int, ...] = config.POLICY_HIDDEN_SIZES,
+    ctx: ExperimentContext,
   ):
+    self._ctx = ctx
+    sim_cfg = self._ctx.cfg.sim
+    ppo_cfg = self._ctx.cfg.ppo
+    obs_dim = int(sim_cfg.obs_dim)
+    action_dim = int(sim_cfg.action_dim)
+    hidden_sizes = tuple(int(x) for x in sim_cfg.policy_hidden_sizes)
     self.obs_dim = obs_dim
     self.action_dim = action_dim
     self.hidden_sizes = hidden_sizes
     print(
-      f"[PPO {config.EXP_NAME}] obs_dim={self.obs_dim}, "
+      f"[PPO {self._ctx.exp_name}] obs_dim={self.obs_dim}, "
       f"action_dim={self.action_dim}, "
       f"hidden={list(hidden_sizes)} (continuous)"
     )
 
-    self.actor = Actor(obs_dim, action_dim, hidden_sizes=hidden_sizes)
+    self.actor = Actor(
+      obs_dim,
+      action_dim,
+      hidden_sizes=hidden_sizes,
+      std_min=float(ppo_cfg.std_min),
+    )
     self.critic = Critic(obs_dim, hidden_sizes=hidden_sizes)
     self.optimizer = optim.Adam(
       list(self.actor.parameters()) + list(self.critic.parameters()),
-      lr=config.LR,
+      lr=float(ppo_cfg.lr),
     )
     # CUDA が使えるときはバッチ推論に利用（Subproc VecEnv 向け）
     self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -193,12 +206,14 @@ class AgentPPO:
     a = action_tensor.detach().reshape(-1)
     return tuple(float(x.item()) for x in a)
 
-  @staticmethod
-  def _squashed_log_prob(dist, action: torch.Tensor) -> torch.Tensor:
+  def _squashed_log_prob(self, dist, action: torch.Tensor) -> torch.Tensor:
     """log π(a|s)。各次元の log_prob を足し合わせる。"""
+    # tanh 変換後の log_prob は外れ値で暴れやすいので、安全域でクリップする。
+    # しきい値は Hydra 側（ppo.log_prob_clip）で一元管理する。
+    log_prob_clip = float(self._ctx.cfg.ppo.log_prob_clip)
     return dist.log_prob(action).sum(dim=-1).clamp(
-      -config.LOG_PROB_CLIP,
-      config.LOG_PROB_CLIP,
+      -log_prob_clip,
+      log_prob_clip,
     )
 
   def value_at(self, obs):
@@ -272,20 +287,28 @@ class AgentPPO:
       return self._empty_stats()
 
     # --- フェーズ A: テンソル化・GAE ---
+    ppo_cfg = self._ctx.cfg.ppo
     rewards = torch.tensor(self._rewards, dtype=torch.float32).clamp(
-      -config.REWARD_CLIP,
-      config.REWARD_CLIP,
+      -float(ppo_cfg.reward_clip),
+      float(ppo_cfg.reward_clip),
     )
     values = torch.stack(self._values).squeeze(-1)
     dones = torch.tensor(self._dones, dtype=torch.float32)
     # 収集時に保存した log π_old（この update 中は定数として扱う）
     old_log_probs = torch.stack(self._log_probs).squeeze(-1)
 
-    advantages, returns = _compute_gae(rewards, values, dones, last_v)
+    advantages, returns = _compute_gae(
+      rewards,
+      values,
+      dones,
+      last_v,
+      gamma=float(ppo_cfg.gamma),
+      gae_lambda=float(ppo_cfg.gae_lambda),
+    )
     # advantage を正規化すると学習が安定しやすい（平均 0・分散 ≈ 1）
-    adv_std = max(float(advantages.std().item()), config.ADV_STD_MIN)
+    adv_std = max(float(advantages.std().item()), float(ppo_cfg.adv_std_min))
     adv = (advantages - advantages.mean()) / adv_std
-    adv = adv.clamp(-config.ADV_CLIP, config.ADV_CLIP)
+    adv = adv.clamp(-float(ppo_cfg.adv_clip), float(ppo_cfg.adv_clip))
 
     obs_batch = torch.tensor(
       [list(o) for o in obs_list],
@@ -299,8 +322,8 @@ class AgentPPO:
     )
     # tanh の端 (+/-1) 付近では log_prob が発散しやすいので少し内側に寄せる
     mb_actions = actions_batch.clamp(
-      -1.0 + config.ACTION_LOG_PROB_EPS,
-      1.0 - config.ACTION_LOG_PROB_EPS,
+      -1.0 + float(ppo_cfg.action_log_prob_eps),
+      1.0 - float(ppo_cfg.action_log_prob_eps),
     )
 
     with torch.no_grad():
@@ -318,14 +341,15 @@ class AgentPPO:
     n_mb = 0
 
     # --- フェーズ B: 同じロールアウトを PPO_EPOCHS 回学習（データ効率と clip のため）---
-    for _epoch in range(config.PPO_EPOCHS):
+    for _epoch in range(int(ppo_cfg.ppo_epochs)):
       idx = np.arange(t_len)
       np.random.shuffle(idx)
       epoch_kl = 0.0
       epoch_mb = 0
 
-      for start in range(0, t_len, config.MINIBATCH_SIZE):
-        mb = idx[start : start + config.MINIBATCH_SIZE]
+      minibatch_size = int(ppo_cfg.minibatch_size)
+      for start in range(0, t_len, minibatch_size):
+        mb = idx[start : start + minibatch_size]
         mb_obs = obs_batch[mb]
         if not torch.isfinite(mb_obs).all():
           continue
@@ -350,7 +374,12 @@ class AgentPPO:
         # A<0（悪い行動）: r を小さくしすぎない（1-ε で床）
         surr1 = ratio * mb_adv
         surr2 = (
-          torch.clamp(ratio, 1.0 - config.CLIP_EPS, 1.0 + config.CLIP_EPS) * mb_adv
+          torch.clamp(
+            ratio,
+            1.0 - float(ppo_cfg.clip_eps),
+            1.0 + float(ppo_cfg.clip_eps),
+          )
+          * mb_adv
         )
         policy_loss = -torch.min(surr1, surr2).mean()
 
@@ -364,8 +393,8 @@ class AgentPPO:
 
         loss = (
           policy_loss
-          + config.VALUE_COEF * value_loss
-          - config.ENTROPY_COEF * entropy
+          + float(ppo_cfg.value_coef) * value_loss
+          - float(ppo_cfg.entropy_coef) * entropy
         )
         if not torch.isfinite(loss):
           continue
@@ -374,7 +403,7 @@ class AgentPPO:
         loss.backward()
         nn.utils.clip_grad_norm_(
           list(self.actor.parameters()) + list(self.critic.parameters()),
-          config.MAX_GRAD_NORM,
+          float(ppo_cfg.max_grad_norm),
         )
         if not all(
           torch.isfinite(p.grad).all()
@@ -389,7 +418,7 @@ class AgentPPO:
         with torch.no_grad():
           approx_kl = (mb_old_log_probs - new_log_probs).mean().item()
           clip_fraction = (
-            (torch.abs(ratio - 1.0) > config.CLIP_EPS).float().mean().item()
+            (torch.abs(ratio - 1.0) > float(ppo_cfg.clip_eps)).float().mean().item()
           )
 
         total_policy_loss += policy_loss.item()
@@ -403,9 +432,9 @@ class AgentPPO:
 
       # 方策が大きく変わりすぎた epoch 以降は打ち切り（過学習・崩壊の抑制）
       if (
-        config.TARGET_KL > 0.0
+        float(ppo_cfg.target_kl) > 0.0
         and epoch_mb > 0
-        and (epoch_kl / epoch_mb) > config.TARGET_KL
+        and (epoch_kl / epoch_mb) > float(ppo_cfg.target_kl)
       ):
         break
 
@@ -435,6 +464,7 @@ class AgentPPO:
   @classmethod
   def from_checkpoint(
     cls,
+    ctx: ExperimentContext,
     path: str | Path,
     *,
     lr: float | None = None,
@@ -450,23 +480,32 @@ class AgentPPO:
       raise ValueError(
         f"checkpoint format {fmt!r} not in {checkpoint.COMPATIBLE_CHECKPOINT_FORMATS!r}"
       )
+    sim_cfg = ctx.cfg.sim
+    expected_obs_dim = int(sim_cfg.obs_dim)
+    expected_action_dim = int(sim_cfg.action_dim)
+    expected_hidden_sizes = tuple(int(x) for x in sim_cfg.policy_hidden_sizes)
+
     obs_dim = int(payload["obs_dim"])
     action_dim = int(payload["action_dim"])
-    if obs_dim != config.OBS_DIM:
+    if obs_dim != expected_obs_dim:
       raise ValueError(
-        f"checkpoint obs_dim={obs_dim} does not match config.OBS_DIM={config.OBS_DIM}"
+        f"checkpoint obs_dim={obs_dim} does not match cfg.sim.obs_dim={expected_obs_dim}"
+      )
+    if action_dim != expected_action_dim:
+      raise ValueError(
+        f"checkpoint action_dim={action_dim} does not match cfg.sim.action_dim={expected_action_dim}"
       )
     raw_hidden = payload.get("policy_hidden_sizes")
     if raw_hidden is not None:
       hidden_sizes = tuple(int(x) for x in raw_hidden)
     else:
-      hidden_sizes = config.POLICY_HIDDEN_SIZES
-    if hidden_sizes != config.POLICY_HIDDEN_SIZES:
+      hidden_sizes = expected_hidden_sizes
+    if hidden_sizes != expected_hidden_sizes:
       raise ValueError(
         f"checkpoint policy_hidden_sizes={hidden_sizes} "
-        f"does not match config.POLICY_HIDDEN_SIZES={config.POLICY_HIDDEN_SIZES}"
+        f"does not match cfg.sim.policy_hidden_sizes={expected_hidden_sizes}"
       )
-    agent = cls(obs_dim=obs_dim, action_dim=action_dim, hidden_sizes=hidden_sizes)
+    agent = cls(ctx)
     agent.actor.load_state_dict(payload["actor"])
     agent.critic.load_state_dict(payload["critic"])
     if lr is not None:
@@ -476,6 +515,3 @@ class AgentPPO:
     return agent
 
 
-# train / visualize 用のエイリアス
-OBS_DIM = config.OBS_DIM
-ROLLOUT_STEPS = config.ROLLOUT_STEPS

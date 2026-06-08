@@ -1,0 +1,19 @@
+robot_morphology: biped_legs_only
+robot_leg_count: 2
+robot_actuated_dof: 12
+xml_relative: model/main.xml
+physics_timestep_s: 0.002
+control_hz: 50
+obs_dim: 51
+action_dim: 12
+max_dx_per_step_base: 0.05
+max_foot_dx_per_step_base: 0.04
+max_gyro_rad_s: 10.0
+max_joint_vel_rad_s: 10.0
+max_imu_z: 1.2
+min_imu_z_norm: 0.0
+min_foot_z_norm: 0.0
+max_foot_z_norm: 0.35
+policy_hidden_sizes: [256, 256, 128]
+viewer_height_plane_half_xy: [3.0, 3.0]
+viewer_height_plane_thickness: 0.001

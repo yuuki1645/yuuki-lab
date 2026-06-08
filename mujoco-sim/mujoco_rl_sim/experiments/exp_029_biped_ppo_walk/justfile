@@ -1,121 +1,104 @@
-# exp_029: 交互片脚歩行 PPO — just レシピ
-#
-# 使い方（本フォルダで）:
-#   just              # レシピ一覧
-#   just smoke --set forward_reward_scale=55
-#   just prod
-#   just compare
-#   just eval eager-valley-11/final.pt
-#   just viz eager-valley-11/final.pt
-#
-# インストール: https://github.com/casey/just#installation
-#   Windows: winget install --id Casey.Just --exact
-#   macOS:   brew install just
-
-# macOS / Linux
-set shell := ["bash", "-cu"]
-
-# Windows（PowerShell）
-set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
-
-# OS ごとの Python コマンド
-python := if os() == "windows" { "python" } else { "python3" }
-
-# --- 共通パラメータ（必要ならここだけ変更） ---
-
-# Subproc VecEnv の並列 env 数（README 推奨: 8）
-num_envs := "8"
-
-# スモーク学習の update 数
-smoke_updates := "300"
-
-# チェックポイントルート（package_meta.CHECKPOINT_REL_FROM_EXP と同じ）
-runs := "../../runs/exp_029_biped_ppo_walk"
-
-# 本番学習向けの共通フラグ（スループット優先）
-train_fast := "--no-viewer --no-telemetry --num-envs " + num_envs
-
-# 引数なしの `just` でレシピ一覧を表示
-default:
-    @just --list
-
-# 初回セットアップ（依存パッケージ）
-setup:
-    {{python}} -m pip install -r requirements.txt
-
-# 観測契約の検証
-validate:
-    {{python}} -m contract validate
-
-# スモーク学習（200〜500 updates 想定。追加は --set KEY=VAL）
-# 例: just smoke --set forward_reward_scale=55
-smoke *ARGS:
-    {{python}} train.py {{train_fast}} --num-updates {{smoke_updates}} {{ARGS}}
-
-# 本番学習（既定 NUM_UPDATES=5000。追加は --set / --resume 等）
-# 例: just prod --set reward_enable_walk_shaping=true
-prod *ARGS:
-    {{python}} train.py {{train_fast}} {{ARGS}}
-
-# 学習（update 数を明示したいとき）
-# 例: just train 500 --set forward_reward_scale=55
-# train NUM_UPDATES *ARGS:
-#     {{python}} train.py {{train_fast}} --num-updates {{NUM_UPDATES}} {{ARGS}}
-
-train SEED:
-    {{python}} train.py --wandb --seed {{SEED}} --num-envs 8 --no-viewer --step-wall-sleep 0 --no-telemetry
-
-# ビューア付き学習（感触確認・デバッグ用。遅い）
-# 例: just train-view 50
-train-view NUM_UPDATES="100" *ARGS:
-    {{python}} train.py --viewer --no-telemetry --num-envs 1 --num-updates {{NUM_UPDATES}} {{ARGS}}
-
-# W&B なし・ローカルのみ
-# 例: just local-smoke --set forward_reward_scale=55
-local-smoke *ARGS:
-    {{python}} train.py {{train_fast}} --no-wandb --num-updates {{smoke_updates}} {{ARGS}}
-
-# 学習のみ（自動 eval スキップ。非推奨）
-train-no-eval *ARGS:
-    {{python}} train.py {{train_fast}} --no-eval {{ARGS}}
-
-# 公式 eval（eval_report.json を出力）
-# 例: just eval eager-valley-11/final.pt
-eval CKPT:
-    {{python}} scripts/eval.py --checkpoint {{runs}}/{{CKPT}}
-
-# 横断比較（eval_report がある run のみ）
-compare:
-    {{python}} scripts/eval_compare.py
-
-# 横断比較 + CSV 出力
-compare-csv FILE="compare.csv":
-    {{python}} scripts/eval_compare.py --csv {{FILE}}
-
-# MuJoCo ビューアで再生（定性確認）
-# 例: just viz eager-valley-11/final.pt
-viz CKPT *ARGS:
-    {{python}} visualize.py --checkpoint {{runs}}/{{CKPT}} {{ARGS}}
-
-# ロールアウト時系列デバッグ（公式比較には使わない）
-# 例: just analyze eager-valley-11/final.pt
-analyze CKPT *ARGS:
-    {{python}} scripts/analyze_rollout.py --checkpoint {{runs}}/{{CKPT}} {{ARGS}}
-
-# pytest（高速のみ。MuJoCo / 1-update 学習は除外）
-[unix]
-test:
-    WANDB_MODE=disabled {{python}} -m pytest -m "not slow"
-
-[windows]
-test:
-    $env:WANDB_MODE='disabled'; {{python}} -m pytest -m 'not slow'
-
-# pytest（slow 含む全テスト）
-[unix]
-test-all:
-    WANDB_MODE=disabled {{python}} -m pytest
-
-[windows]
-test-all:
-    $env:WANDB_MODE='disabled'; {{python}} -m pytest
+# exp_029: 交互片脚歩行 PPO — just レシピ（Hydra）
+#
+# 使い方（本フォルダで）:
+#   just              # レシピ一覧
+#   just smoke reward=forward55
+#   just prod
+#   just compare
+#   just eval eager-valley-11/final.pt
+#   just viz eager-valley-11/final.pt
+#
+# インストール: https://github.com/casey/just#installation
+#   Windows: winget install --id Casey.Just --exact
+#   macOS:   brew install just
+
+# macOS / Linux
+set shell := ["bash", "-cu"]
+
+# Windows（PowerShell）
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+# OS ごとの Python コマンド
+python := if os() == "windows" { "python" } else { "python3" }
+
+# チェックポイントルート（package_meta.CHECKPOINT_REL_FROM_EXP と同じ）
+runs := "../../runs/exp_029_biped_ppo_walk"
+
+# 引数なしの `just` でレシピ一覧を表示
+default:
+    @just --list
+
+# 初回セットアップ（依存パッケージ）
+setup:
+    {{python}} -m pip install -r requirements.txt
+
+# 観測契約の検証
+validate:
+    {{python}} -m contract validate
+
+# スモーク学習（training=smoke。追加 override は引数で）
+# 例: just smoke reward=forward55
+smoke *ARGS:
+    {{python}} train.py training=smoke runtime=fast wandb=disabled {{ARGS}}
+
+# 本番学習（既定 training=prod runtime=fast）
+# 例: just prod reward=forward55
+prod *ARGS:
+    {{python}} train.py training=prod runtime=fast {{ARGS}}
+
+# seed 固定本番
+train SEED:
+    {{python}} train.py training=prod runtime=fast wandb=enabled training.seed={{SEED}}
+
+# ビューア付き学習（感触確認・デバッグ用。遅い）
+train-view *ARGS:
+    {{python}} train.py training=smoke runtime=debug_viewer wandb=disabled {{ARGS}}
+
+# W&B なし・ローカルのみスモーク
+local-smoke *ARGS:
+    {{python}} train.py training=smoke runtime=fast wandb=disabled {{ARGS}}
+
+# 学習のみ（自動 eval スキップ）
+train-no-eval *ARGS:
+    {{python}} train.py training=prod runtime=fast training.post_train_eval=false {{ARGS}}
+
+# 公式 eval（eval_report.json を出力）
+# 例: just eval eager-valley-11/final.pt
+eval CKPT:
+    {{python}} scripts/eval.py --checkpoint {{runs}}/{{CKPT}}
+
+# 横断比較（eval_report がある run のみ）
+compare:
+    {{python}} scripts/eval_compare.py
+
+# 横断比較 + CSV 出力
+compare-csv FILE="compare.csv":
+    {{python}} scripts/eval_compare.py --csv {{FILE}}
+
+# MuJoCo ビューアで再生（定性確認）
+# 例: just viz eager-valley-11/final.pt
+viz CKPT *ARGS:
+    {{python}} visualize.py --checkpoint {{runs}}/{{CKPT}} {{ARGS}}
+
+# ロールアウト時系列デバッグ（公式比較には使わない）
+# 例: just analyze eager-valley-11/final.pt
+analyze CKPT *ARGS:
+    {{python}} scripts/analyze_rollout.py --checkpoint {{runs}}/{{CKPT}} {{ARGS}}
+
+# pytest（高速のみ。MuJoCo / 1-update 学習は除外）
+[unix]
+test:
+    WANDB_MODE=disabled {{python}} -m pytest -m "not slow"
+
+[windows]
+test:
+    $env:WANDB_MODE='disabled'; {{python}} -m pytest -m 'not slow'
+
+# pytest（slow 含む全テスト）
+[unix]
+test-all:
+    WANDB_MODE=disabled {{python}} -m pytest
+
+[windows]
+test-all:
+    $env:WANDB_MODE='disabled'; {{python}} -m pytest

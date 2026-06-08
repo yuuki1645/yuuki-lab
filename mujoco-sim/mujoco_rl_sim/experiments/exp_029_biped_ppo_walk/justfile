@@ -59,8 +59,11 @@ prod *ARGS:
 
 # 学習（update 数を明示したいとき）
 # 例: just train 500 --set forward_reward_scale=55
-train NUM_UPDATES *ARGS:
-    {{python}} train.py {{train_fast}} --num-updates {{NUM_UPDATES}} {{ARGS}}
+# train NUM_UPDATES *ARGS:
+#     {{python}} train.py {{train_fast}} --num-updates {{NUM_UPDATES}} {{ARGS}}
+
+train SEED:
+    {{python}} train.py --wandb --seed {{SEED}} --num-envs 8 --no-viewer --step-wall-sleep 0 --no-telemetry
 
 # ビューア付き学習（感触確認・デバッグ用。遅い）
 # 例: just train-view 50

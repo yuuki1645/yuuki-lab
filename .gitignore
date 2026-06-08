@@ -48,6 +48,10 @@ mujoco-sim/checkpoints/
 mujoco-sim/mujoco_rl_sim/runs/
 mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/
 
+# Hydra 実行ログ（再現に必要な設定は runs/.../.hydra/ に保存）
+outputs/
+multirun/
+
 .cursor/skills/run-rl-experiment/
 .cursor/skills/rl-experiment-lifecycle/
 

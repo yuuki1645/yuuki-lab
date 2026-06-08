@@ -11,6 +11,10 @@ mujoco_rl_sim/dispatch_data/
 # RL checkpoints (existing convention)
 mujoco_rl_sim/runs/
 
+# Hydra 実行ログ（単発 run: outputs/、sweep: multirun/。正本は runs/.../.hydra/）
+outputs/
+multirun/
+
 __pycache__/
 *.py[cod]
 .pytest_cache/

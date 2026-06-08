@@ -1,0 +1,5 @@
+- training.seed=0
+- training.num_updates=1
+- runtime.num_envs=2
+- wandb=disabled
+- training.post_train_eval=false

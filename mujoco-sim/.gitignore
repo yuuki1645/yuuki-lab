@@ -16,3 +16,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 wandb/
+# Hydra の wandb config group（ランタイムの wandb/ ログは上記で引き続き無視）
+!**/conf/wandb/
+!**/conf/wandb/**

@@ -1,0 +1,15 @@
+enabled: true
+run_name: ""
+project: exp_029_biped_ppo_walk
+entity: ""
+tags:
+  - ppo
+  - biped
+  - biped_walk
+  - minimal_reward
+  - 12dof
+  - forward
+  - effort_penalty
+  - policy_mlp_256_256_128
+termination_rolling_window: 100
+episode_rolling_window: 100

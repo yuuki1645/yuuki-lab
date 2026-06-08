@@ -1,0 +1,6 @@
+viewer: false
+telemetry: false
+num_envs: 8
+step_wall_sleep_sec: 0.0
+telemetry_host: 0.0.0.0
+telemetry_port: 8791

@@ -28,7 +28,7 @@ jobs:
           cache: pip
           cache-dependency-path: |
             mujoco-sim/pyproject.toml
-            mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/requirements.txt
+            mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/requirements.txt
 
       - name: Install dependencies
         run: |
@@ -36,19 +36,19 @@ jobs:
           pip install -e ".[rl,dispatch]"
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install pytest
-          pip install -r mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/requirements.txt
+          pip install -r mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/requirements.txt
 
       - name: dispatch tests
         run: python -m pytest mujoco_rl_sim/dispatch/tests/ -q
 
-      - name: exp_029 fast tests
-        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk
+      - name: exp_030 fast tests
+        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
         env:
           WANDB_MODE: disabled
         run: python -m pytest tests/ -q -m "not slow"
 
-      - name: exp_029 slow tests (MuJoCo / train smoke)
-        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk
+      - name: exp_030 slow tests (MuJoCo / train smoke)
+        working-directory: mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
         env:
           WANDB_MODE: disabled
         run: python -m pytest tests/ -q -m slow

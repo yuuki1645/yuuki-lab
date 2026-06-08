@@ -1,0 +1,4 @@
+defaults:
+  - baseline
+
+forward_reward_scale: 55.0

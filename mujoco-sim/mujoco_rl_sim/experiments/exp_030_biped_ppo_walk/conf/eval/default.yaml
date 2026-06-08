@@ -1,0 +1,4 @@
+spec_id: biped_walk_eval_v0
+eval_seeds: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+episodes_per_seed: 5
+primary_metric_name: eval/displacement_x_mean

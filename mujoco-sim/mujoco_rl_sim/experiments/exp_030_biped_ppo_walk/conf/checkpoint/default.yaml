@@ -1,0 +1,5 @@
+save_checkpoints: true
+checkpoint_dir: ""
+checkpoint_every: 500
+save_latest: true
+save_final: true

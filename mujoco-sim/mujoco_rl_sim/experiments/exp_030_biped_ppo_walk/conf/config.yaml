@@ -1,0 +1,20 @@
+defaults:
+  - sim: default
+  - reward: baseline
+  - ppo: default
+  - termination: default
+  - training: prod
+  - runtime: fast
+  - wandb: enabled
+  - resume: none
+  - checkpoint: default
+  - eval: default
+  - _self_
+
+exp_name: exp_030_biped_ppo_walk
+xml_path: model/main.xml
+compare_baseline_exp: exp_029_biped_ppo_walk
+
+hydra:
+  job:
+    chdir: false

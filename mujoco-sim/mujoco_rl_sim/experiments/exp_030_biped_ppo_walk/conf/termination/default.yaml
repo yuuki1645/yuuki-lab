@@ -1,0 +1,6 @@
+min_imu_z: 0.3
+min_imu_z_stance: 0.3
+min_imu_upright: 0.52
+max_backward_lean_body: 0.38
+pose_termination_penalty: -30.0
+contact_shank_terminates: false

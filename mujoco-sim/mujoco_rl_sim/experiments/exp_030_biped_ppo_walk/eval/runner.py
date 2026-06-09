@@ -12,7 +12,7 @@ from eval.spec import (
   make_episode_rng,
   iter_eval_trials,
 )
-from lib.load_run_context import ctx_from_checkpoint, eval_ctx
+from lib.load_run_context import build_eval_context, ctx_from_checkpoint
 from rl.agent import AgentPPO
 from sim.env import EnvBipedPPO
 from sim.termination import REASON_TRUNCATED
@@ -115,9 +115,9 @@ def run_checkpoint_eval(
   episodes_per_seed: int = EPISODES_PER_SEED,
 ) -> list[EpisodeEvalRecord]:
   """全 eval 試行を実行して per-episode 記録を返す。"""
-  # 重みは ckpt run の Hydra 設定、環境は eval 固定 preset
+  # 重み・環境とも ckpt run の学習設定を引き継ぎ、eval 向け override のみ適用
   policy_ctx = ctx_from_checkpoint(checkpoint_path)
-  eval_context = eval_ctx()
+  eval_context = build_eval_context(policy_ctx.cfg)
   agent = AgentPPO.from_checkpoint(policy_ctx, checkpoint_path, map_location=device)
   act_eval = agent.act_eval
 

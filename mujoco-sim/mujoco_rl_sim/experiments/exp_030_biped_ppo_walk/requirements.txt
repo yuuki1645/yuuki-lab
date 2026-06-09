@@ -1,4 +1,5 @@
 # exp_026 スタンドアロン実行用（本フォルダだけを別マシンへコピーする場合）
+# EC2 Spot（CPU torch・ディスク節約）: requirements-cpu.txt を参照
 mujoco>=3.0
 gymnasium>=0.29
 numpy>=1.23

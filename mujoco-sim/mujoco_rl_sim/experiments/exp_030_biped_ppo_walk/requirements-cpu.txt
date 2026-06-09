@@ -1,0 +1,12 @@
+# AWS Spot / CPU-only 環境用（bootstrap_smoke.sh から使用）
+#
+# PyPI の既定 torch は CUDA 付き wheel（数 GB）になりやすく、30GB EBS でディスク不足になる。
+# CPU 専用 index を優先し、他パッケージは PyPI から取得する。
+#
+# 自宅 PC（通常）: pip install -r requirements.txt
+# EC2 bootstrap:  pip install -r requirements-cpu.txt
+
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
+-r requirements.txt

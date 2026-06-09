@@ -23,8 +23,7 @@ python3 -m venv /opt/yuuki-venv
 source /opt/yuuki-venv/bin/activate
 
 pip install --upgrade pip
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-grep -v '^torch' requirements.txt | pip install -r /dev/stdin
+pip install -r requirements-cpu.txt
 
 python -m contract validate
 

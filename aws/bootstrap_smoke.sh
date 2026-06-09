@@ -31,7 +31,6 @@ python train.py \
   training.num_updates=50 \
   runtime=fast \
   wandb=disabled \
-  training.post_train_eval=false \
   training.seed="${SEED}"
 
 RUNS_DIR="/opt/yuuki-lab/mujoco-sim/mujoco_rl_sim/runs/exp_030_biped_ppo_walk"

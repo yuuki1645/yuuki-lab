@@ -113,8 +113,8 @@ sequenceDiagram
   PC->>S3: 成果物確認
 ```
 
-VM 内では `training.post_train_eval=false` の smoke 設定（`bootstrap_smoke.sh`）で学習します。  
-本番 `training=prod` や W&B 有効化は bootstrap の調整で拡張します。
+VM 内では smoke 設定（50 updates・`bootstrap_smoke.sh`）で学習し、**post-train eval まで実行**します（`eval_report.json` を run ディレクトリに出力）。  
+本番 `training=smoke` / `training=prod` や W&B 有効化は bootstrap の調整で拡張します。
 
 ---
 

@@ -158,7 +158,7 @@ MVP 検証時に使った低レベル資産（`aws_launch.py` が置き換え可
 | `[abort] --confirm が必要` | 先に `--dry-run`、問題なければ `--confirm` |
 | `ServiceLinkedRoleCreationNotPermitted` | ルートで Spot 1 回、または IAM ポリシー追加 |
 | ディスク不足 | `ebs_volume_gb = 30`、bootstrap は CPU 版 torch |
-| `gymnasium` 不足 | bootstrap 内 `pip install gymnasium`（済） |
+| `gymnasium` 不足 | `exp_030/requirements.txt` に含まれる（`pip install -r requirements.txt`） |
 
 ---
 

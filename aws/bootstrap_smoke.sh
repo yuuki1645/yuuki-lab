@@ -25,7 +25,6 @@ source /opt/yuuki-venv/bin/activate
 pip install --upgrade pip
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 grep -v '^torch' requirements.txt | pip install -r /dev/stdin
-pip install gymnasium
 
 python -m contract validate
 

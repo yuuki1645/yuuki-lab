@@ -1,4 +1,7 @@
-# プロメテウス（Prometheus）— 分散強化学習システム
+# プロメテウス（Prometheus）— 分散強化学習システム（レガシー・LAN）
+
+> **現行（AWS）**: exp_030 の並列学習は [aws/README.md](../aws/README.md) の `aws_launch.py`（EC2 Spot）を使用してください。  
+> 本文書は **自宅 LAN 向け旧実装**（`mujoco_rl_sim.dispatch`）の設計メモです。AWS 向けにゼロから書き直す方針です。
 
 等身大ロボット向けの AI 学習を、**自宅 LAN 上の複数 PC で並列に回す**ための仕組みです。  
 システム名は **プロメテウス（Prometheus）**、実装パッケージ名は `mujoco_rl_sim.dispatch` です。

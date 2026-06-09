@@ -48,7 +48,7 @@ flowchart TD
   R --> D{次の仮説}
   D --> H
   F -.->|必要時| DBG[analyze_rollout で原因調査]
-  F -.->|並列時| SW[sweep + dispatch]
+  F -.->|並列時| SW[aws_launch.py<br/>Spot × N]
 ```
 
 ### フェーズ別手順
@@ -150,18 +150,37 @@ python scripts/analyze_rollout.py --checkpoint <run>/final.pt
 python visualize.py --checkpoint <run>/final.pt
 ```
 
-#### 6. 並列 sweep（任意・LAN 複数 PC）
+#### 6. 並列 sweep（AWS EC2 Spot・推奨）
 
-単発探索が主なら後回しでよい。報酬 3 軸の本線 sweep:
+**1 seed = 1 Spot VM**。自宅 PC から `scripts/aws_launch.py` で起動する（新プロメテウス v0）。  
+詳細・初回セットアップ: リポジトリルート [aws/README.md](../../../../aws/README.md)。
 
-```bash
-# Coordinator 側（mujoco-sim ルート等）
-python -m mujoco_rl_sim.dispatch.coordinator.cli plan --file \
-  experiments/exp_030_biped_ppo_walk/sweeps/walk_reward_sweep_48.yaml
+```powershell
+# exp_030 ルートで（自宅 PC）
+pip install -r ../../../../aws/requirements.txt
+copy ..\..\..\..\aws\aws_launch.config.example.toml ..\..\..\..\aws\aws_launch.config.toml
+# aws_launch.config.toml を編集（security_group_id 等）し enabled = true
+
+# 1) 計画確認（課金なし）
+python scripts/aws_launch.py --dry-run
+
+# 2) seed 1〜4 を 4 台並列（--parallel 既定 4）
+python scripts/aws_launch.py --confirm --upload-bootstrap
+
+# 3) sweep YAML から（先頭 4 seed）
+python scripts/aws_launch.py --sweep sweeps/baseline_10seed.yaml --confirm --upload-bootstrap
 ```
 
-各 job 完了後も **eval はローカル `eval_report.json`**。主指標は `dispatch_summary.json` にも載るが、**sweep 横断のリーダーボード UI は未実装**（比較は `eval_compare`）。  
-詳細: `mujoco_rl_sim/dispatch/README.md`。
+| 安全装置 | 内容 |
+|---------|------|
+| `enabled = true` | 設定ファイルで明示 opt-in（うっかり課金防止） |
+| `--confirm` | 本番 EC2 起動に必須 |
+| `--dry-run` | サマリのみ（AWS API 未呼び出し） |
+
+成果物は S3 `aws-test/<run_name>/`（`final.pt`・`bootstrap.log`）。比較は W&B または S3 から ckpt を取得して `eval_compare` / `visualize.py`。
+
+**レガシー（LAN 複数 PC）**: 旧 `mujoco_rl_sim.dispatch`（Coordinator / Worker）は参照用。  
+`python -m mujoco_rl_sim.dispatch.coordinator.cli plan --file sweeps/walk_reward_sweep_48.yaml` 等。詳細: `mujoco_rl_sim/dispatch/README.md`。
 
 ### 典型 1 サイクル（コピペ用）
 
@@ -193,6 +212,7 @@ python scripts/eval_compare.py --csv compare.csv
 | スループット計測（レベル1） | `lib/train_throughput.py` |
 | Subproc VecEnv（レベル2） | `sim/subproc_vec_env.py`、`runtime.num_envs` |
 | Hydra 設定・run 再現 | `conf/`、`.hydra/config.yaml`、`lib/experiment_context.py` |
+| AWS Spot 並列（v0） | `scripts/aws_launch.py`、`aws/bootstrap_smoke.sh`、[aws/README.md](../../../../aws/README.md) |
 
 #### 次の ROI（優先順）
 
@@ -315,9 +335,15 @@ python train.py --config-path ../../runs/exp_030_biped_ppo_walk/<run>/.hydra --c
 
 `justfile` に同等レシピあり（`just smoke`、`just train-fast` 等）。
 
-### dispatch 連携
+### AWS 並列（`aws_launch.py`）
 
-dispatch 本体は未改修。job 起動時は次の 2 経路で Hydra cfg に反映される（**後勝ち**）:
+自宅 PC から EC2 Spot を起動するランチャー。`--dry-run` → `enabled=true` + `--confirm` の順で使う。  
+手順・課金注意・トラブルシュート: [aws/README.md](../../../../aws/README.md)。
+
+### dispatch 連携（レガシー・LAN）
+
+旧 LAN 向け `mujoco_rl_sim.dispatch` 用。AWS 並列の本線は上記 `aws_launch.py`。  
+dispatch job 起動時は次の 2 経路で Hydra cfg に反映される（**後勝ち**）:
 
 1. **legacy argv ブリッジ** — 旧 `--set` / `--num-envs` 等を Hydra override に変換（`lib/dispatch_argv_bridge.py`）
 2. **`DISPATCH_CONFIG_OVERRIDES_JSON`** — sweep キーをネストパスへマージ（`lib/dispatch_cfg_merge.py`）
@@ -351,10 +377,14 @@ slow テストには **Subproc VecEnv**（`tests/subproc_vec_env_smoke_main.py` 
 python scripts/analyze_rollout.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 python scripts/eval.py --checkpoint run_YYYYMMDD_HHMMSS/final.pt
 python scripts/preview_warmup.py
-.\scripts\launch_parallel.ps1
+.\scripts\launch_parallel.ps1          # ローカル PC 上のプロセス並列
+python scripts/aws_launch.py --dry-run # AWS Spot 並列（計画確認）
 ```
 
 契約表: `python -m contract markdown`
+
+AWS 本番起動: `python scripts/aws_launch.py --confirm --upload-bootstrap`（要 `aws/aws_launch.config.toml` の `enabled=true`）。  
+詳細: [aws/README.md](../../../../aws/README.md)。
 
 ## 評価仕様（evaluation setup）
 
@@ -503,7 +533,9 @@ action [-1,1]^12
 | `python train.py` | `train.py` → `run_ppo_train` | `contract/session.py` |
 | `python visualize.py` | `visualize.py` → `EnvBipedPPO` | `sim/env.py` |
 | `python -m contract markdown` | `contract/codegen.py` | `contract/biped_walk_v1.py` |
-| sweep 並列 | `scripts/launch_parallel.ps1` | `lib/dispatch_cfg_merge.py` |
+| AWS Spot 並列 | `scripts/aws_launch.py` | [aws/README.md](../../../../aws/README.md) |
+| ローカル並列 | `scripts/launch_parallel.ps1` | `runtime.num_envs` |
+| sweep（LAN レガシー） | `dispatch` CLI | `lib/dispatch_cfg_merge.py` |
 
 ### 前後 exp との差分を追うとき
 
@@ -516,6 +548,11 @@ action [-1,1]^12
 観測 51 次元の idx 表は `contract/biped_walk_v1.py` か `python -m contract markdown` が正本。README の報酬節と併せて読む。
 
 ## sweep（約 50 run）
+
+**AWS（推奨）**: `python scripts/aws_launch.py --sweep sweeps/walk_reward_sweep_48.yaml --confirm`（`param_grid` 付き YAML は v0 未対応。seed 列のみの YAML を使用）。  
+詳細: [aws/README.md](../../../../aws/README.md)。
+
+**LAN レガシー（dispatch）**:
 
 ```bash
 python -m mujoco_rl_sim.dispatch.coordinator.cli plan --file sweeps/walk_reward_sweep_48.yaml

@@ -1,0 +1,3 @@
+# 自宅 PC 用（exp_030/scripts/aws_launch.py）
+boto3>=1.34
+pyyaml>=6

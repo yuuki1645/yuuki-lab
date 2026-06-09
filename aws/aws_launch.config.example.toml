@@ -1,0 +1,29 @@
+# aws_launch.py 用ローカル設定（コピーして aws_launch.config.toml を作成）
+#
+#   cp aws/aws_launch.config.example.toml aws/aws_launch.config.toml
+#   # ami_id / security_group_id を編集し、起動するときだけ enabled = true
+#
+# aws_launch.config.toml は git 管理外（.gitignore）
+#
+# 安全のため、enabled = true かつ実行時 --confirm が無いと EC2 は起動しません。
+# 初回は: python scripts/aws_launch.py --dry-run
+
+# 意図的に true にするまで EC2 / S3 upload を実行しない（うっかり課金防止）
+enabled = false
+
+region = "ap-northeast-1"
+
+# 空文字のときは起動直前に Ubuntu 22.04 最新 AMI を自動取得
+ami_id = ""
+
+instance_type = "c7i.2xlarge"
+security_group_id = "sg-xxxxxxxx"
+key_name = "yuuki-lab-key"
+iam_instance_profile = "yuuki-lab-worker-role"
+
+s3_bucket = "yuuki-lab-runs-dev"
+bootstrap_s3_key = "scripts/bootstrap_smoke.sh"
+bootstrap_local_path = "aws/bootstrap_smoke.sh"
+
+ebs_volume_gb = 30
+repo_branch = "main"

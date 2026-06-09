@@ -59,4 +59,7 @@ multirun/
 
 rsync.sh
 
+# AWS launcher ローカル設定（AMI / SG 等）
+aws/aws_launch.config.toml
+
 .DS_Store

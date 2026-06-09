@@ -7,8 +7,34 @@
 #
 # 安全のため、enabled = true かつ実行時 --confirm が無いと EC2 は起動しません。
 # 初回は: python scripts/aws_launch.py --dry-run
+#
+# ---------------------------------------------------------------------------
+# ⚠️  課金警告（enabled = true で aws_launch.py を --confirm 付き実行すると課金）
+# ---------------------------------------------------------------------------
+# 本設定の instance_type（c7i.2xlarge Spot）は無料枠の対象外です。
+# 実行した人の AWS アカウント（aws sts get-caller-identity の Account）に
+# 次の料金が発生します。
+#
+#   - EC2 Spot（c7i.2xlarge）… 稼働時間に応じた従量課金（東京でおおよそ $0.15〜0.20/時間/台）
+#   - EBS（gp3, ebs_volume_gb）… ディスク容量（停止中も課金。30GB で月数ドル程度）
+#   - S3 … バケット保存・リクエスト（--upload-bootstrap 時も PUT 課金）
+#   - データ転送 … git clone / pip / S3 アップロード量に応じて（少量なら誤差程度）
+#
+# 既定の --parallel 4 かつ seed 4 本なら、同時に最大 4 台の Spot VM が起動します。
+# 1 ジョブが 2 時間かかる場合の目安: 約 $0.3〜0.5/seed × 台数（Spot 単価は変動）。
+#
+# 課金が発生しない操作:
+#   - enabled = false のまま
+#   - python scripts/aws_launch.py --dry-run（AWS API 未呼び出し）
+#   - --confirm なしで実行（abort され EC2 は起動しない）
+#
+# 課金が発生する操作:
+#   - enabled = true かつ python scripts/aws_launch.py --confirm ...
+#   - 上記に --upload-bootstrap を付けた場合は S3 への upload も実行
+# ---------------------------------------------------------------------------
 
 # 意図的に true にするまで EC2 / S3 upload を実行しない（うっかり課金防止）
+# true に変更して --confirm 付きで実行すると、上記のとおり AWS 課金が発生します。
 enabled = false
 
 region = "ap-northeast-1"
@@ -16,6 +42,7 @@ region = "ap-northeast-1"
 # 空文字のときは起動直前に Ubuntu 22.04 最新 AMI を自動取得
 ami_id = ""
 
+# 無料枠外。Spot でも稼働時間に応じて課金（上記「課金警告」参照）
 instance_type = "c7i.2xlarge"
 security_group_id = "sg-xxxxxxxx"
 key_name = "yuuki-lab-key"
@@ -25,5 +52,6 @@ s3_bucket = "yuuki-lab-runs-dev"
 bootstrap_s3_key = "scripts/bootstrap_smoke.sh"
 bootstrap_local_path = "aws/bootstrap_smoke.sh"
 
+# インスタンス停止後もディスク課金が続く（terminate すれば解消）
 ebs_volume_gb = 30
 repo_branch = "main"

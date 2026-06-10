@@ -4,6 +4,7 @@
 
 | ファイル | 内容 |
 |---------|------|
+| [experiments/](experiments/README.md) | **強化学習実験の詳細解説**（ワークフロー・報酬・終了条件・実装） |
 | [prometheus.md](prometheus.md) | **プロメテウス（レガシー）** — 自宅 LAN 分散強化学習（旧 `dispatch`） |
 | [../aws/README.md](../aws/README.md) | **AWS 並列学習（現行 v0）** — `aws_launch.py`・EC2 Spot・S3 |
 | [robot_spec.md](robot_spec.md) | 実機ロボット（カゴ・サーボ・バッテリー等）の寸法・重量 |

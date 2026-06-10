@@ -7,11 +7,12 @@
 - **差分**: ホップ/すり足ではなく **交互片脚歩行** 向けの報酬・観測（`biped_walk_v1`、51 次元）
 - **実行**: 本フォルダで `python train.py`（`@hydra.main`）/ `python visualize.py --checkpoint <run>/final.pt`
 - **レイアウト**: 本体は `sim/`（環境・報酬・観測）と `rl/`（PPO・ckpt）。設定は **`conf/` + `lib/experiment_context.py`（DI）**。補助は `scripts/`。ルートは `train.py` / `visualize.py` など入口のみ。**`config.py` は廃止**
-- **ワークフロー**: [README.md](README.md) の「強化学習実験ワークフロー（exp_030）」が標準手順の正本
-- **Hydra**: [README.md](README.md) の「Hydra 設定」節が config groups・override・再現の正本
-- **コードリーディング**: 詳細手引きは [README.md](README.md) の「コードリーディングの手引き」（本 AGENTS.md には落とし穴のみ）
-- **報酬設計**: 全文は [README.md](README.md) の「報酬設計」節（`sim/reward.py` + `conf/reward/`）
-- **終了条件**: 全文は [README.md](README.md) の「終了条件と終了ペナルティ」節（`sim/termination.py` + `conf/termination/`）
+- **詳細ドキュメント（正本）**: [../../../../docs/experiments/exp_030_biped_ppo_walk/README.md](../../../../docs/experiments/exp_030_biped_ppo_walk/README.md)
+- **ワークフロー**: [workflow.md](../../../../docs/experiments/exp_030_biped_ppo_walk/workflow.md)
+- **Hydra**: [hydra.md](../../../../docs/experiments/exp_030_biped_ppo_walk/hydra.md)
+- **コードリーディング**: [code-reading.md](../../../../docs/experiments/exp_030_biped_ppo_walk/code-reading.md)（本 AGENTS.md には落とし穴のみ）
+- **報酬設計**: [reward.md](../../../../docs/experiments/exp_030_biped_ppo_walk/reward.md)（`sim/reward.py` + `conf/reward/`）
+- **終了条件**: [termination.md](../../../../docs/experiments/exp_030_biped_ppo_walk/termination.md)（`sim/termination.py` + `conf/termination/`）
 - **契約**: `contract.TELEMETRY_CONTRACT`（= `BIPED_WALK_V1`）
 - **チェックポイント**: `mujoco_rl_sim/runs/exp_030_biped_ppo_walk/`（**新規。exp_029 の runs は参照しない**）
 - **run 再現**: `runs/<run>/.hydra/config.yaml`（旧 `config_effective.json` は廃止・再現対象外）
@@ -44,7 +45,7 @@
 
 ## 変更時の注意
 
-- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README.md に書くこと」に従い README を更新（**報酬設計・終了条件節を必ず**、AGENTS へ長文を複製しない）
+- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README と docs に書くこと」に従う（**報酬・終了は docs の `reward.md` / `termination.md` を必ず更新**、AGENTS へ長文を複製しない）
 - 観測次元を変える場合は `contract/biped_walk_v1.py` + `conf/sim/default.yaml`（`obs_dim`）+ `contract validate`
 - sweep に載せるキーは `lib/dispatch_cfg_merge.DISPATCH_KEY_TO_CFG_PATH` に追加
 - exp_026 / exp_028 のチェックポイントは **観測 48→51** のためそのまま読めない（同一 51 次元なら exp_029 ckpt は resume 可）

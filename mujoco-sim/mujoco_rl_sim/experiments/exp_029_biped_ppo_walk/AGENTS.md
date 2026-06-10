@@ -45,7 +45,7 @@
 
 ## 変更時の注意
 
-- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README.md に書くこと」に従い README を更新（**報酬設計・終了条件節を必ず**、AGENTS へ長文を複製しない）
+- 新 exp 派生時: [experiments/AGENTS.md](../AGENTS.md) の「新 exp 作成時 — README と docs に書くこと」に従う（exp_030 以降は docs 分離運用）
 - 観測次元を変える場合は `contract/biped_walk_v1.py` + `conf/sim/default.yaml`（`obs_dim`）+ `contract validate`
 - sweep に載せるキーは `lib/dispatch_cfg_merge.DISPATCH_KEY_TO_CFG_PATH` に追加
 - exp_026 / exp_028 のチェックポイントは **観測 48→51** のためそのまま読めない（同一 51 次元なら exp_028 ckpt は resume 可）

@@ -57,31 +57,49 @@ python visualize.py
 2. `config.ROBOT_MORPHOLOGY` または実験 `README.md` を読む
 3. ホッパ実験では飛翔中 `dx` を殺す変更を提案しない
 
-## 新 exp 作成時 — README.md に書くこと
+## ドキュメント運用（README + docs）
 
-**詳細なコードリーディング手引きは各 exp の `README.md` に置く**（人間・AI 共通の正本）。  
-`AGENTS.md` には実験固有の落とし穴・変更注意のみ（README の重複を避ける）。
+| 場所 | 役割 |
+|------|------|
+| `experiments/<exp_name>/README.md` | **入口**（概要・最短手順・docs へのリンク表） |
+| `docs/experiments/<exp_name>/`（リポジトリルート `yuuki-lab/docs/`） | **詳細正本**（ワークフロー・報酬・終了・コードリーディング・実装） |
+| `experiments/<exp_name>/AGENTS.md` | 実験固有の落とし穴・変更注意のみ（長文は docs へ） |
 
-新規 `exp_*` または exp コピー直後に、README に次の節を含める（テンプレート）:
+実験 README から docs への相対パス例: `../../../../docs/experiments/<exp_name>/`（`mujoco-sim/mujoco_rl_sim/experiments/<exp_name>/` から）
+
+**移行状況**: **exp_030** から本運用。それ以前の exp（exp_029 等）は README 内に詳細が残っている場合がある。新規・コピー先は docs 分離を優先する。
+
+## 新 exp 作成時 — README と docs に書くこと
+
+新規 `exp_*` または exp コピー直後:
+
+### 実験 README（簡略）
 
 1. **概要** … 由来 exp・タスク・exp 間 diff 表
-2. **実行** … `train.py` / `visualize.py` / 補助 CLI
-3. **ディレクトリ構成** … 表形式
-4. **コードリーディングの手引き**（必須）
-   - 最初に押さえる 3 点（config / タスク本体 / contract）
-   - 推奨読み順（5〜8 ファイル、目的付き）
-   - 1 制御ステップ（または 1 update）の処理フロー
-   - 「変更したい内容 → 触るファイル」対応表
-   - エントリポイント早見（train / visualize / contract / sweep）
-   - 前後 exp との diff の追い方（該当する場合）
-5. **報酬設計**（必須・人間・AI 共通の正本）… 下記テンプレに従い **過不足なく** 書く。AGENTS.md へ長文を複製しない
-6. **終了条件と終了ペナルティ**（必須・人間・AI 共通の正本）… 下記テンプレに従い **過不足なく** 書く。`sim/termination.py`（または相当）を読んだうえで記述
-7. **観測の要点** … idx 表は `python -m contract markdown` が正本。README には差分・追加次元の説明
-8. **sweep / チェックポイント** … パスと YAML 名
+2. **最短手順** … `train.py` / 代表的な override
+3. **詳細ドキュメント** … `docs/experiments/<exp_name>/README.md` へのリンク表
+4. **AGENTS.md** へのリンク
 
-コピー元 exp の README 手引きをベースに、**diff したファイルだけ**読み順・対応表を更新する。
+### docs/experiments/<exp_name>/（詳細・ファイル分割推奨）
 
-### README「報酬設計」節のテンプレ（新 exp / コピー直後）
+少なくとも次を **別 md に分けて** 整備する（1 ファイルに詰め込まない）:
+
+| ファイル（例） | 内容 |
+|---------------|------|
+| `README.md` | 目次・コード正本への参照 |
+| `quickstart.md` | 実行・pytest・補助 CLI |
+| `workflow.md` | 実験ワークフロー（スモーク→本番→eval） |
+| `hydra.md` | 設定・override・再現（Hydra 利用 exp） |
+| `code-reading.md` | 読み順・処理フロー・変更対応表 |
+| `architecture.md` | ディレクトリ構成・レイヤー |
+| `reward.md` | **報酬設計の正本**（下記テンプレ） |
+| `termination.md` | **終了条件の正本**（下記テンプレ） |
+| `evaluation.md` | eval 仕様（あれば） |
+| `sweep.md` | sweep（あれば） |
+
+コピー元 exp の docs をベースに、**diff したファイルだけ**更新する。
+
+### docs「報酬設計」のテンプレ（`reward.md`）
 
 `sim/reward.py`（または相当モジュール）を読んだうえで、少なくとも次を含める:
 
@@ -95,9 +113,9 @@ python visualize.py
 8. **sweep 対象** … `dispatch_config` や YAML で上書きされる係数があれば列挙
 
 観測だけ変えて報酬が同じ exp をコピーした場合も、「変更なし（コピー元と同一）」と明記する。  
-報酬を変えたのに README が古いまま、は **作業未完了** とみなす。
+報酬を変えたのに `reward.md` が古いまま、は **作業未完了** とみなす。
 
-### README「終了条件と終了ペナルティ」節のテンプレ（新 exp / コピー直後）
+### docs「終了条件と終了ペナルティ」のテンプレ（`termination.md`）
 
 `sim/termination.py`（または相当モジュール）と `sim/env.py` の合成を読んだうえで、少なくとも次を含める:
 
@@ -113,4 +131,4 @@ python visualize.py
 10. **変更ガイド** … 「変えたい内容 → 触るファイル」対応表
 
 終了条件がコピー元と同一の exp でも、「変更なし（コピー元と同一）」と明記する。  
-終了条件を変えたのに README が古いまま、は **作業未完了** とみなす。
+終了条件を変えたのに `termination.md` が古いまま、は **作業未完了** とみなす。

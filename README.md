@@ -12,13 +12,50 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 <br>
 
+# 強化学習実験（本線・更新中）
+
+MuJoCo 上の **両脚・交互片脚歩行 PPO** を、いま最も活発に更新しているのが **exp_030** です（2026-06〜）。  
+exp_029 の fork で runs を整理し、**Hydra 設定**・**Subproc VecEnv**（並列ロールアウト）・**pytest / GitHub Actions**・**eval 横断比較**まで一通り揃えた本線実験です。
+
+| 項目 | 内容 |
+|------|------|
+| タスク | 交互片脚歩行（観測 51 次元 `biped_walk_v1`） |
+| アルゴリズム | PPO（MLP 256→256→128、exp_026 系を継承） |
+| 採点 | 固定プロトコル eval の **`displacement_x_mean`**（前進量） |
+| チェックポイント | `mujoco-sim/mujoco_rl_sim/runs/exp_030_biped_ppo_walk/` |
+
+### 導線（読む順・実行の入口）
+
+| 目的 | リンク |
+|------|--------|
+| **いま触る実験フォルダ** | [mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) |
+| **最短手順（README 入口）** | [exp_030 README](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/README.md) |
+| **詳細ドキュメント（正本）** | [docs/experiments/exp_030_biped_ppo_walk/](docs/experiments/exp_030_biped_ppo_walk/README.md) — ワークフロー・報酬・終了条件・コードリーディング |
+| **実験ドキュメント一覧** | [docs/experiments/](docs/experiments/README.md) |
+| **MuJoCo / RL パッケージ全体** | [mujoco-sim/README.md](mujoco-sim/README.md) |
+| **AWS Spot 並列学習** | [aws/README.md](aws/README.md) |
+| **AI エージェント向け** | [experiments/AGENTS.md](mujoco-sim/mujoco_rl_sim/experiments/AGENTS.md) / [exp_030 AGENTS.md](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/AGENTS.md) |
+
+```bash
+cd mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
+pip install -r requirements.txt
+python train.py training=smoke runtime=fast   # スモーク
+python train.py runtime=fast                # 本番（既定 5000 updates）
+python scripts/eval_compare.py              # run 横断比較
+```
+
+直前の系統（参照用）: [exp_029](mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/)（コピー元） / [exp_026](mujoco-sim/mujoco_rl_sim/experiments/exp_026_biped_ppo_hop_balance/)（歩行報酬設計の源流）。  
+それ以前の片脚ホッパ等は `mujoco-sim/mujoco_rl_sim/experiments/archive/` にあります。
+
+<br>
+
 # ディレクトリ解説
 
 ## ■ robotics-hub（メイン）
 
 **フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。**MuJoCo RL 学習**（`mujoco-sim/mujoco_rl_sim/experiments/exp_028_biped_ppo_walk` 等の `train.py`）と併用する場合は、ハブの **「学習テレメトリ」**（`/training-telemetry`）で Socket.IO（既定 **8791**）経由の観測・行動表示が利用できます。`--step-wall-sleep` で壁時計の遅延を調整できます。
+実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。**MuJoCo RL 学習**（本線は [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) の `train.py`）と併用する場合は、ハブの **「学習テレメトリ」**（`/training-telemetry`）で Socket.IO（既定 **8791**）経由の観測・行動表示が利用できます。`runtime.step_wall_sleep`（Hydra）や `--step-wall-sleep` で壁時計の遅延を調整できます。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
@@ -50,7 +87,9 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 ## ■ mujoco-sim
 
-MuJoCo の脚モデルを **実時間 HTTP サーバ**（`mujoco_realtime_sim`）と **強化学習用環境**（`mujoco_rl_sim`）に分けた Python パッケージ群です。起動例は `python -m mujoco_realtime_sim`。各 RL 実験の `train.py` では **Socket.IO テレメトリ**（既定ポート **8791**）や **`--step-wall-sleep`** による壁時計の遅延が選べます。**robotics-hub** の学習テレメトリ画面（`/training-telemetry`）と連携する手順は [mujoco-sim/README.md](mujoco-sim/README.md) を参照してください。
+MuJoCo の脚モデルを **実時間 HTTP サーバ**（`mujoco_realtime_sim`）と **強化学習用環境**（`mujoco_rl_sim`）に分けた Python パッケージ群です。起動例は `python -m mujoco_realtime_sim`。
+
+**強化学習の本線**は [exp_030_biped_ppo_walk](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/)（詳細は上記 [強化学習実験](#強化学習実験本線更新中) 節）。各 RL 実験の `train.py` では **Socket.IO テレメトリ**（既定ポート **8791**）や壁時計遅延が選べます。**robotics-hub** の学習テレメトリ画面（`/training-telemetry`）と連携する手順は [mujoco-sim/README.md](mujoco-sim/README.md) を参照してください。
 
 ---
 

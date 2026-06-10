@@ -1,6 +1,7 @@
 # 強化学習ドキュメント（yuuki-lab）
 
 MuJoCo 歩行実験で使う **強化学習の汎用解説** です。  
+数式は GitHub 向けに `$...$`（インライン）・`$$...$$`（ブロック）で記述しています。  
 実験固有の詳細（報酬係数・終了条件・ワークフロー）は [experiments/](../experiments/README.md) に、人体・実機の数値は [human_joint_kinematics.md](../human_joint_kinematics.md) 等に置きます。
 
 ## この docs の位置づけ

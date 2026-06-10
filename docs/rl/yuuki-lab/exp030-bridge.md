@@ -6,11 +6,11 @@
 
 | RL 概念 | exp_030 |
 |---------|---------|
-| 状態 \(s\) | MuJoCo 内部状態（質点・関節・接触） |
+| 状態 $s$ | MuJoCo 内部状態（質点・関節・接触） |
 | 観測 | 51 次元 `biped_walk_v1`（`sim/observation.py`） |
-| 行動 \(a\) | 関節トルク（方策 MLP 出力） |
-| 報酬 \(r\) | `sim/reward.py` + `env.py` の終了・接触項 |
-| \(\gamma\) | `ppo.gamma_per_physics_step` = 0.99 |
+| 行動 $a$ | 関節トルク（方策 MLP 出力） |
+| 報酬 $r$ | `sim/reward.py` + `env.py` の終了・接触項 |
+| $\gamma$ | `ppo.gamma_per_physics_step` = 0.99 |
 | エピソード終了 | `sim/termination.py` + 30 s truncation |
 
 → [foundations/01-mdp.md](../foundations/01-mdp.md)

@@ -19,24 +19,24 @@ exp_030 では actor / critic とも MLP 256→256→128 です（`conf/sim/defa
 
 ## Advantage の役割
 
-\[
+$$
 A_t \approx Q(s_t, a_t) - V(s_t)
-\]
+$$
 
 「この行動は、その状態での平均よりどれだけ良かったか」を表します。
 
-- \(A_t > 0\) … この行動を強化  
-- \(A_t < 0\) … この行動を弱化  
+- $A_t > 0$ … この行動を強化  
+- $A_t < 0$ … この行動を弱化  
 
-PPO では GAE で \(A_t\) を推定します → [ppo.md](ppo.md)
+PPO では GAE で $A_t$ を推定します → [ppo.md](ppo.md)
 
 ## Critic 損失
 
 TD 目標に近づける回帰損失が一般的です。
 
-\[
+$$
 L_\text{value} = (V(s_t) - G_t^\text{target})^2
-\]
+$$
 
 exp_030 では `value_coef: 0.5` で actor 損失とのバランスを取ります。
 

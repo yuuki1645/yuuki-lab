@@ -25,7 +25,7 @@ flowchart LR
   P --> R
 ```
 
-1. 現在の方策 \(\pi_{\theta_\text{old}}\) で `rollout_steps` 分のデータを集める  
+1. 現在の方策 $\pi_{\theta_\text{old}}$ で `rollout_steps` 分のデータを集める  
 2. GAE で advantage を計算  
 3. 同じデータで `ppo_epochs` 回、minibatch に分けて更新  
 4. 次の update へ（新しい rollout を収集）
@@ -34,22 +34,22 @@ exp_030 既定: `rollout_steps=512`, `ppo_epochs=8`, `minibatch_size=256`, `num_
 
 ## クリップされた目的関数（直感）
 
-重要度比 \(r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}\) を使い、
+重要度比 $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}$ を使い、
 
-\[
+$$
 L^\text{CLIP} = \mathbb{E}\left[ \min\left( r_t(\theta) A_t,\ \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
-\]
+$$
 
-- \(A_t > 0\)（良い行動）… \(r_t\) が大きくなりすぎる更新を clip で抑える  
-- \(A_t < 0\)（悪い行動）… 同様に急激な確率低下を抑える  
+- $A_t > 0$（良い行動）… $r_t$ が大きくなりすぎる更新を clip で抑える  
+- $A_t < 0$（悪い行動）… 同様に急激な確率低下を抑える  
 
-\(\epsilon\) = `clip_eps: 0.2`（exp_030）
+$\epsilon$ = `clip_eps: 0.2`（exp_030）
 
 ## 全体損失
 
-\[
+$$
 L = -L^\text{CLIP} + c_v L^\text{value} - c_e H(\pi)
-\]
+$$
 
 | 項 | 係数（exp_030） | 意味 |
 |----|----------------|------|
@@ -59,14 +59,14 @@ L = -L^\text{CLIP} + c_v L^\text{value} - c_e H(\pi)
 
 ## GAE
 
-\[
+$$
 A_t^\text{GAE} = \sum_{l=0}^{\infty} (\gamma\lambda)^l \delta_{t+l}
-\]
+$$
 
 | パラメータ | 既定 | 効果 |
 |-----------|------|------|
-| \(\gamma\) | 0.99 | 将来報酬の重み |
-| \(\lambda\) | 0.95 | MC に近いほど分散↑ |
+| $\gamma$ | 0.99 | 将来報酬の重み |
+| $\lambda$ | 0.95 | MC に近いほど分散↑ |
 
 ## 主要ハイパラと症状
 

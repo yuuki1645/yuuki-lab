@@ -1,0 +1,24 @@
+# walk_v0 実行設定（シード固定で再現可能）
+
+seed: 42
+max_steps: 1500  # 50 Hz × 30 s
+
+# exp_030 の MuJoCo モデル・物理（RL 実験と同一）
+exp030_dir: null  # null なら walk_meta.EXP030_DIR を使用
+
+controller_config: conf/controller.yaml
+
+# ログ
+log_every: 1
+save_trajectory_csv: true
+save_trajectory_jsonl: true
+save_step_snapshots_on_incident: true
+
+# インシデント検出（AI が問題箇所を特定しやすくする）
+incident:
+  enabled: true
+  min_upright: 0.55
+  min_imu_z: 0.35
+  max_aerial_steps: 40
+  min_forward_dx_per_step: -0.08
+  record_cooldown_steps: 25

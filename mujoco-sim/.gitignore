@@ -11,6 +11,9 @@ mujoco_rl_sim/dispatch_data/
 # RL checkpoints (existing convention)
 mujoco_rl_sim/runs/
 
+# 明示制御 walk 実験の run ログ
+runs/mujoco_biped_control/
+
 # Hydra 実行ログ（単発 run: outputs/、sweep: multirun/。正本は runs/.../.hydra/）
 **/outputs/
 **/multirun/

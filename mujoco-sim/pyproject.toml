@@ -41,6 +41,7 @@ where = ["."]
 include = [
   "mujoco_realtime_sim*",
   "mujoco_rl_sim*",
+  "mujoco_biped_control*",
   "mujoco_sim_assets*",
   "mujoco_sim_common*",
 ]

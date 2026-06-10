@@ -1,0 +1,18 @@
+# 制御パラメータ（コードを変えずに AI / 人間が調整可能）
+# walk.py が読み込む。アルゴリズム本体は controller/walk.py
+
+cycle_period_s: 1.2
+phase_offset: 0.0
+
+# 左右脚の hip_pitch / knee / ankle_pitch への action オフセット振幅 [-1, 1]
+swing_hip_pitch: 0.25
+swing_knee: 0.35
+swing_ankle_pitch: 0.15
+
+# 支持脚の微調整
+stance_hip_pitch: -0.05
+stance_knee: 0.05
+
+# 胴体（balance）— 直立維持の弱いフィードバック
+torso_balance_gain: 0.12
+torso_roll_damp: 0.05

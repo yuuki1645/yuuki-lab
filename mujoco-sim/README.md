@@ -1,11 +1,12 @@
 # mujoco-sim
 
-このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **4 つの Python パッケージ**があります。
+このディレクトリは **pip プロジェクト名 `mujoco-sim`**（配布・インストール単位）で、中に **5 つの Python パッケージ**があります。
 
 - **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも試用スクリプトもここを参照します。
 - **`mujoco_sim_common`** — 論理角 kinematics、Hub 向け Socket.IO テレメトリ、ビュワー補助 HTTP などの共有部品。
 - **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。
 - **`mujoco_rl_sim`** — **PPO 実験**（`experiments/`）と各 exp 内の共有コード。wandb や SB3 サンプル利用時は **`pip install -e ".[rl]"`**。実験の学習には **PyTorch** を別途インストール。
+- **`mujoco_biped_control`** — **明示制御** による両脚歩行（非 RL）。[walk_v0](mujoco_biped_control/walk_v0/) が exp_030 と同一 MJCF を使用。
 
 サーバーは起動時にバックグラウンドで `mj_step` を回し続け（`model.opt.timestep` 周期、既定 500 Hz）、HTTP API は **サーボの目標角度（`ctrl`）の更新** を主に担当します。
 

@@ -48,6 +48,24 @@ python scripts/eval_compare.py              # run 横断比較
 直前の系統（参照用）: [exp_029](mujoco-sim/mujoco_rl_sim/experiments/exp_029_biped_ppo_walk/)（コピー元） / [exp_026](mujoco-sim/mujoco_rl_sim/experiments/exp_026_biped_ppo_hop_balance/)（歩行報酬設計の源流）。  
 それ以前の片脚ホッパ等は `mujoco-sim/mujoco_rl_sim/experiments/archive/` にあります。
 
+### 明示制御による歩行（非 RL・並行実験）
+
+RL とは別に、**制御プログラム + AI 改善ループ** 用のパッケージがあります（exp_030 と同一 MuJoCo モデル）。
+
+| 項目 | 内容 |
+|------|------|
+| パッケージ | [mujoco-sim/mujoco_biped_control/](mujoco-sim/mujoco_biped_control/) |
+| 実験 | [walk_v0](mujoco-sim/mujoco_biped_control/walk_v0/) |
+| 編集対象 | `controller/walk.py` / `conf/controller.yaml` |
+| ログ | `runs/mujoco_biped_control/walk_v0/`（軌道 CSV・incidents・スナップショット） |
+
+```bash
+cd mujoco-sim/mujoco_biped_control/walk_v0
+pip install -r requirements.txt
+python run.py
+python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_YYYYMMDD_HHMMSS --incident-index 0
+```
+
 <br>
 
 # ディレクトリ解説

@@ -1,0 +1,8 @@
+# walk_v0 — 明示制御歩行（非 RL）
+
+mujoco>=3.0
+numpy>=1.23
+pyyaml>=6
+
+# インシデント PNG（省略時は .npy にフォールバック）
+imageio>=2.34

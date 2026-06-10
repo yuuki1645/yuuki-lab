@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -38,15 +38,44 @@ class RunConfig:
 class ControlParams:
   """controller/walk.py が参照する tunable パラメータ。"""
 
-  cycle_period_s: float = 1.2
-  phase_offset: float = 0.0
-  swing_hip_pitch: float = 0.25
-  swing_knee: float = 0.35
-  swing_ankle_pitch: float = 0.15
-  stance_hip_pitch: float = -0.05
-  stance_knee: float = 0.05
+  # 周期歩行（現行）
+  cycle_period_s: float = 1.40
+  double_support_s: float = 0.08
+  base_hip_pitch: float = -0.32
+  base_knee: float = 0.06
+  base_ankle_pitch: float = -0.10
+  base_torso_pitch: float = 0.08
+  stance_hip_delta: float = -0.02
+  stance_knee_delta: float = -0.01
+  stance_ankle_delta: float = -0.06
+  stance_roll: float = 0.08
+  swing_hip_delta: float = 0.08
+  swing_knee_amp: float = 0.26
+  swing_ankle_lift: float = 0.10
+  swing_roll_scale: float = 0.75
   torso_balance_gain: float = 0.12
-  torso_roll_damp: float = 0.05
+  torso_roll_damp: float = 0.08
+
+  # 旧 FSM キー（YAML 互換・未使用）
+  swing_duration_s: float = 0.50
+  landing_subphase_min: float = 0.58
+  stance_hip_pitch: float = -0.32
+  stance_knee: float = 0.06
+  stance_ankle_pitch: float = -0.10
+  stance_hip_roll: float = 0.08
+  ds_hip_pitch: float = -0.32
+  swing_hip_pitch: float = 0.08
+  swing_knee_peak: float = 0.32
+  swing_hip_roll: float = 0.08
+  push_off_hip_pitch: float = -0.02
+  push_off_knee: float = -0.01
+  push_off_ankle: float = -0.06
+  swing_torso_pitch: float = 0.08
+  ds_torso_pitch: float = 0.08
+  cycle_period_s_old: float = 1.2
+  phase_offset: float = 0.0
+  swing_knee: float = 0.26
+  swing_ankle_pitch: float = 0.10
 
   @classmethod
   def from_mapping(cls, data: dict[str, Any]) -> ControlParams:

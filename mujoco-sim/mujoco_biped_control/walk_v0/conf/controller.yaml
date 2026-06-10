@@ -1,18 +1,48 @@
-# 制御パラメータ（コードを変えずに AI / 人間が調整可能）
-# walk.py が読み込む。アルゴリズム本体は controller/walk.py
+# 制御パラメータ — 周期歩行（walk.py / grid search 調整値）
 
-cycle_period_s: 1.2
-phase_offset: 0.0
+# 周期 [s]（70 step @ 50Hz ≒ 1.4 s / 左右1周期）
+cycle_period_s: 1.40
+double_support_s: 0.08
 
-# 左右脚の hip_pitch / knee / ankle_pitch への action オフセット振幅 [-1, 1]
-swing_hip_pitch: 0.25
-swing_knee: 0.35
-swing_ankle_pitch: 0.15
+# 両足支持のベース（action オフセット、0=stand）
+base_hip_pitch: -0.32
+base_knee: 0.06
+base_ankle_pitch: -0.10
+base_torso_pitch: 0.08
 
-# 支持脚の微調整
-stance_hip_pitch: -0.05
-stance_knee: 0.05
+# 片足支持時の支持脚オフセット
+stance_hip_delta: -0.02
+stance_knee_delta: -0.01
+stance_ankle_delta: -0.06
+stance_roll: 0.08
 
-# 胴体（balance）— 直立維持の弱いフィードバック
+# 遊脚
+swing_hip_delta: 0.08
+swing_knee_amp: 0.26
+swing_ankle_lift: 0.10
+swing_roll_scale: 0.75
+
+# 胴体 IMU 補正
 torso_balance_gain: 0.12
-torso_roll_damp: 0.05
+torso_roll_damp: 0.08
+
+# 旧 FSM キー（互換・未使用）
+swing_duration_s: 0.50
+landing_subphase_min: 0.55
+stance_hip_pitch: -0.32
+stance_knee: 0.06
+stance_ankle_pitch: -0.10
+stance_hip_roll: 0.08
+ds_hip_pitch: -0.32
+swing_hip_pitch: 0.08
+swing_knee_peak: 0.32
+swing_hip_roll: 0.08
+push_off_hip_pitch: -0.02
+push_off_knee: -0.01
+push_off_ankle: -0.06
+swing_torso_pitch: 0.08
+ds_torso_pitch: 0.08
+cycle_period_s_old: 1.2
+phase_offset: 0.0
+swing_knee: 0.26
+swing_ankle_pitch: 0.10

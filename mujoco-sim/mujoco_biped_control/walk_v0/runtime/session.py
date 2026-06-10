@@ -64,6 +64,10 @@ def run_session(
   termination_reason: str | None = None
   last_step_info: dict[str, Any] = {}
   step = -1
+  left_landings = 0
+  right_landings = 0
+  prev_left_on_floor = True
+  prev_right_on_floor = True
 
   try:
     for step in range(run_cfg.max_steps):
@@ -82,6 +86,15 @@ def run_session(
       last_step_info = step_info
       time_s = float(step + 1) * control_dt
 
+      left_on = float(step_info.get("left_foot_on_floor", 0.0)) > 0.5
+      right_on = float(step_info.get("right_foot_on_floor", 0.0)) > 0.5
+      if left_on and not prev_left_on_floor:
+        left_landings += 1
+      if right_on and not prev_right_on_floor:
+        right_landings += 1
+      prev_left_on_floor = left_on
+      prev_right_on_floor = right_on
+
       row = {
         "step": step,
         "time_s": time_s,
@@ -95,9 +108,11 @@ def run_session(
         "reward_total": float(step_info.get("reward_total", 0.0)),
         "termination_reason": step_info.get("termination_reason") or "",
         **{f"action_{i}": action[i] for i in range(len(action))},
-        "ctrl_phase": float(ctrl_debug.get("phase", 0.0)),
-        "ctrl_swing_left": float(bool(ctrl_debug.get("swing_left", False))),
-        "ctrl_wave": float(ctrl_debug.get("wave", 0.0)),
+        "ctrl_phase": str(ctrl_debug.get("phase", "")),
+        "ctrl_subphase": float(ctrl_debug.get("subphase", 0.0)),
+        "ctrl_phase_step": float(ctrl_debug.get("phase_step", 0.0)),
+        "ctrl_step_count": float(ctrl_debug.get("step_count", 0.0)),
+        "ctrl_last_swing": str(ctrl_debug.get("last_swing", "")),
       }
       if step % run_cfg.log_every == 0:
         logger.log_step(row)
@@ -146,6 +161,11 @@ def run_session(
     "terminated": terminated,
     "termination_reason": termination_reason,
     "incident_count": len(detector.records),
+    "final_step_count": float(controller.state.step_count),
+    "alternating_landings": min(left_landings, right_landings),
+    "left_landings": left_landings,
+    "right_landings": right_landings,
+    "final_gait_phase": controller.state.phase.value,
     "controller_params": asdict(params),
   }
   write_json(run_dir / "summary.json", summary)

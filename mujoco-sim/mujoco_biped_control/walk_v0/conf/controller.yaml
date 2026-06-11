@@ -1,48 +1,90 @@
-# 制御パラメータ — 周期歩行（walk.py / grid search 調整値）
+# 制御パラメータ — 前進周期歩行（+X 2m 目標）
+# 開ループは scripts/tune_forward.py と同一（period=1.0, reach=-0.10 が長距離向け）
 
-# 周期 [s]（70 step @ 50Hz ≒ 1.4 s / 左右1周期）
-cycle_period_s: 1.40
-double_support_s: 0.08
+cycle_period_s: 1.00
+double_support_s: 0.06
 
-# 両足支持のベース（action オフセット、0=stand）
-base_hip_pitch: -0.32
-base_knee: 0.06
-base_ankle_pitch: -0.10
-base_torso_pitch: 0.08
+base_hip_pitch: -0.34
+base_knee: 0.05
+base_ankle_pitch: -0.12
+base_torso_pitch: 0.14
 
-# 片足支持時の支持脚オフセット
-stance_hip_delta: -0.02
-stance_knee_delta: -0.01
-stance_ankle_delta: -0.06
-stance_roll: 0.08
+stance_hip_delta: -0.03
+stance_knee_delta: -0.02
+stance_ankle_delta: -0.08
+stance_roll: 0.07
 
-# 遊脚
-swing_hip_delta: 0.08
-swing_knee_amp: 0.26
-swing_ankle_lift: 0.10
-swing_roll_scale: 0.75
+push_off_hip: 0.06
+push_off_knee: -0.04
+push_off_ankle: -0.15
+push_off_frac: 0.25
 
-# 胴体 IMU 補正
-torso_balance_gain: 0.12
+swing_lift_hip: 0.05
+swing_reach_hip: -0.10
+swing_knee_amp: 0.18
+swing_ankle_lift: 0.08
+swing_roll_scale: 0.70
+swing_torso_bias: 0.04
+
+# IMU バランス（支持脚サーボ）
+balance_ankle_gain: 1.0
+balance_gyro_damp: 0.06
+balance_ankle_clip: 0.16
+balance_torso_tilt_gain: 0.6
+balance_upright_gain: 0.4
+balance_upright_target: 0.62
+balance_torso_clip: 0.12
+balance_height_gain: 0.18
+balance_height_clip: 0.10
+balance_hip_follow: 0.30
+balance_tilt_deadband: 0.0
+balance_upright_activate: 0.0
+balance_imu_z_target: 0.34
+balance_imu_z_gain: 2.5
+
+# 長距離：upright が下がったら歩幅縮小 + 体幹起こし
+survival_recovery_enabled: true
+survival_upright_thresh: 0.56
+survival_upright_floor: 0.48
+survival_hip_scale_min: 0.55
+survival_torso_gain: 0.30
+
+emergency_ds_enabled: true
+emergency_upright_thresh: 0.54
+emergency_hold_steps: 10
+emergency_torso_extra: 0.10
+
+foot_place_gain: 0.0
+step_length_target: 0.14
+
+upright_swing_min: 0.50
+upright_swing_floor: 1.0
+
+target_dx_per_step: 0.0045
+forward_dx_gain: 0.0
 torso_roll_damp: 0.08
 
-# 旧 FSM キー（互換・未使用）
+# 旧キー（互換）
+torso_balance_gain: 0.04
+upright_torso_thresh: 0.72
+upright_torso_gain: 0.0
 swing_duration_s: 0.50
 landing_subphase_min: 0.55
-stance_hip_pitch: -0.32
-stance_knee: 0.06
-stance_ankle_pitch: -0.10
-stance_hip_roll: 0.08
-ds_hip_pitch: -0.32
-swing_hip_pitch: 0.08
-swing_knee_peak: 0.32
-swing_hip_roll: 0.08
-push_off_hip_pitch: -0.02
-push_off_knee: -0.01
-push_off_ankle: -0.06
-swing_torso_pitch: 0.08
-ds_torso_pitch: 0.08
-cycle_period_s_old: 1.2
+stance_hip_pitch: -0.34
+stance_knee: 0.05
+stance_ankle_pitch: -0.12
+stance_hip_roll: 0.07
+ds_hip_pitch: -0.34
+swing_hip_pitch: 0.05
+swing_knee_peak: 0.18
+swing_hip_roll: 0.07
+push_off_hip_pitch: 0.06
+push_off_knee: -0.04
+push_off_ankle: -0.15
+swing_torso_pitch: 0.04
+ds_torso_pitch: 0.14
+cycle_period_s_old: 1.0
 phase_offset: 0.0
-swing_knee: 0.26
-swing_ankle_pitch: 0.10
+swing_knee: 0.18
+swing_ankle_pitch: 0.08
+swing_hip_delta: 0.05

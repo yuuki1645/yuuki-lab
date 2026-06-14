@@ -26,7 +26,7 @@ export function MetricLineChart({
   const layout = useMemo(() => {
     const w = 640;
     const h = compact ? 160 : 200;
-    const pad = { top: 12, right: 12, bottom: 28, left: 52 };
+    const pad = { top: 12, right: 12, bottom: 28, left: 58 };
     const innerW = w - pad.left - pad.right;
     const innerH = h - pad.top - pad.bottom;
 
@@ -118,7 +118,7 @@ export function MetricLineChart({
                     y2={y}
                     stroke="rgba(200,210,255,0.08)"
                   />
-                  <text x={layout.pad.left - 6} y={y + 4} textAnchor="end" className="isaac-log-chart__axis">
+                  <text x={layout.pad.left - 6} y={y + 4} textAnchor="end" className="isaac-log-chart__axis-y">
                     {yt.toFixed(valueDecimals)}
                   </text>
                 </g>

@@ -61,7 +61,7 @@ export function MetricLineChart({
     return { w, h, pad, innerW, innerH, path, yTicks, xMin, xMax, yMin, yMax, xScale, yScale };
   }, [data, compact]);
 
-  const hoverPoint = hoverIdx !== null && data[hoverIdx] ? data[hoverIdx] : data[data.length - 1];
+  const hoverPoint = hoverIdx !== null && data[hoverIdx] ? data[hoverIdx] : null;
   const latest = data[data.length - 1];
 
   return (
@@ -85,13 +85,16 @@ export function MetricLineChart({
       {data.length === 0 ? (
         <p className="isaac-log-chart__empty">データなし</p>
       ) : (
-        <div className="isaac-log-chart__svg-wrap">
+        <div
+          className="isaac-log-chart__svg-wrap"
+          onMouseLeave={() => setHoverIdx(null)}
+          onTouchEnd={() => setHoverIdx(null)}
+        >
           <svg
             viewBox={`0 0 ${layout.w} ${layout.h}`}
             className="isaac-log-chart__svg"
             role="img"
             aria-label={`${title} の折れ線グラフ`}
-            onMouseLeave={() => setHoverIdx(null)}
           >
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -182,11 +185,11 @@ export function MetricLineChart({
             </text>
           </svg>
 
-          {hoverPoint && (
-            <div className="isaac-log-chart__tooltip">
+          {hoverPoint ? (
+            <div className="isaac-log-chart__tooltip" role="status">
               iter {Math.round(hoverPoint.step)} · {hoverPoint.value.toFixed(valueDecimals)}
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </figure>

@@ -14,6 +14,7 @@
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
+- **Isaac 学習進捗** — test-isaac-project の TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
 
 ## 前提
 
@@ -73,6 +74,61 @@ npm run preview
 | `VITE_RL_TELEMETRY_SOCKET_URL` | （非推奨）上記と同用途。`VITE_TELEMETRY_SOCKET_URL` を優先してください |
 | `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
 | `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
+| `VITE_ISAAC_RL_LOG_API_URL` | Isaac 学習ログ API（未設定時は `http://<hostname>:8792`） |
+
+## Isaac 学習進捗（TensorBoard ログ）
+
+test-isaac-project の RSL-RL 学習ログ（`logs/rsl_rl/<experiment>/<run>/events.out.tfevents.*`）を、Robotics Hub 上でグラフ表示します。**20 秒ごと**に自動更新されます。
+
+**ログルート（この環境）:**
+
+```
+C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl
+```
+
+### 1. ログ API サーバーを起動（学習 PC）
+
+```powershell
+cd robotics-hub\server
+pip install -r requirements.txt
+.\start.ps1
+```
+
+または:
+
+```powershell
+$env:ISAAC_RL_LOG_ROOT = "C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl"
+python isaac_rl_log_server.py
+```
+
+環境変数（任意）:
+
+| 名前 | 説明 |
+|------|------|
+| `ISAAC_RL_LOG_ROOT` | TensorBoard ログのルート（未設定時は `%USERPROFILE%\test-isaac-project\TestIsaacProject\logs\rsl_rl` を推定） |
+| `ISAAC_RL_LOG_PORT` | 待ち受けポート（既定 **8792**） |
+
+### 2. Hub を開く
+
+```bash
+cd robotics-hub
+npm run dev
+```
+
+ナビの **Isaac 学習進捗**（`/isaac-rl-log`）を開き、experiment / run を選びます。
+
+### スマホから Tailscale 経由で見る
+
+1. PC・iPhone 両方で Tailscale を **Connected** にする
+2. PC で API サーバー: `cd robotics-hub\server` → `.\start.ps1`  
+   起動ログに `Tailscale (外出先スマホ向け): http://100.x.x.x:8792` が出ます
+3. PC で Hub: `npx vite --host 0.0.0.0 --port 5173`
+4. iPhone Safari で Hub を開く: `http://100.x.x.x:5173/isaac-rl-log`（PC の Tailscale IP）
+5. **ログ API URL** に `http://100.x.x.x:8792` を入力 →「URL を保存」  
+   （localhost 接続時は画面上部に **Tailscale API** と「この URL を適用」ボタンも表示されます）
+
+同一 LAN 内のみなら LAN IP（例: `http://192.168.x.x:8792`）でも可です。
+
 
 ## 新しいツールを追加する手順
 

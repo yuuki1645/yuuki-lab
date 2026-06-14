@@ -12,4 +12,6 @@ interface ImportMetaEnv {
   readonly VITE_RL_TELEMETRY_SOCKET_URL?: string;
   /** テレメトリページの実機 IMU（robot-daemon）Socket.IO（未設定時は hostname:5000） */
   readonly VITE_TELEMETRY_IMU_SOCKET_URL?: string;
+  /** Isaac Lab 学習ログ API（``isaac_rl_log_server.py``、未設定時は hostname:8792） */
+  readonly VITE_ISAAC_RL_LOG_API_URL?: string;
 }

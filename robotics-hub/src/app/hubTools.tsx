@@ -28,6 +28,7 @@ const TrainingTelemetryPage = lazy(
 );
 const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
 const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
+const IsaacRlLogPage = lazy(() => import("@/features/isaac-rl-log/IsaacRlLogPage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -88,5 +89,13 @@ export const hubTools: HubTool[] = [
     description:
       "mujoco_test_009 と連携し、パッシブ viewer の状態をリアルタイム表示し、再生・リセット・表示オプションを操作します。",
     LazyPage: MujocoViewerAuxPage,
+  },
+  {
+    id: "isaac-rl-log",
+    path: "/isaac-rl-log",
+    label: "Isaac 学習進捗",
+    description:
+      "test-isaac-project の TensorBoard ログを読み取り、平均報酬・エピソード長などの学習曲線を PC / スマホで表示します。",
+    LazyPage: IsaacRlLogPage,
   },
 ];

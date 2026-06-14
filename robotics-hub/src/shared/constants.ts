@@ -119,6 +119,22 @@ export function getTrainingTelemetrySocketUrl(): string {
 }
 
 /**
+ * Isaac Lab RSL-RL の TensorBoard ログ API（``server/isaac_rl_log_server.py``、既定 :8792）。
+ * ``VITE_ISAAC_RL_LOG_API_URL`` があれば優先。
+ */
+export function getIsaacRlLogApiUrl(): string {
+  const fromEnv = import.meta.env.VITE_ISAAC_RL_LOG_API_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8792"
+  );
+}
+
+/**
  * テレメトリページ用の IMU（robot-daemon）Socket.IO。
  * 未設定時は ``SERVO_DAEMON_URL`` と同じ（通常 ``http://<hostname>:5000``）。
  */

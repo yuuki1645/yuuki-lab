@@ -1,0 +1,396 @@
+.isaac-log {
+  padding: 1rem 1.25rem 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.isaac-log__header {
+  margin-bottom: 1.25rem;
+}
+
+.isaac-log__title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  font-weight: 650;
+}
+
+.isaac-log__lead {
+  margin: 0;
+  color: #a8b0d6;
+  font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+  line-height: 1.55;
+}
+
+.isaac-log__lead strong {
+  color: #cfd6ff;
+  font-weight: 600;
+}
+
+.isaac-log__panel {
+  background: #12182e;
+  border: 1px solid rgba(200, 210, 255, 0.12);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.isaac-log__panel--status {
+  padding: 0.75rem 1rem;
+}
+
+.isaac-log__section-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #cfd6ff;
+}
+
+.isaac-log__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.isaac-log__badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a8b0d6;
+}
+
+.isaac-log__badge--ok {
+  background: rgba(63, 185, 80, 0.18);
+  color: #7ee787;
+}
+
+.isaac-log__badge--err {
+  background: rgba(248, 81, 73, 0.18);
+  color: #ff7b72;
+}
+
+.isaac-log__meta {
+  font-size: 0.78rem;
+  color: #8b949e;
+}
+
+.isaac-log__log-root {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #8b949e;
+  word-break: break-all;
+}
+
+.isaac-log__log-root code {
+  color: #a8b0d6;
+}
+
+.isaac-log__tailscale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(110, 168, 255, 0.08);
+  border: 1px solid rgba(110, 168, 255, 0.25);
+}
+
+.isaac-log__tailscale-label {
+  font-size: 0.78rem;
+  color: #6ea8ff;
+  font-weight: 600;
+}
+
+.isaac-log__tailscale-url {
+  font-size: 0.8rem;
+  color: #cfd6ff;
+  word-break: break-all;
+}
+
+.isaac-log__btn--sm {
+  min-height: 36px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.isaac-log__error {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.12);
+  color: #ff7b72;
+  font-size: 0.85rem;
+}
+
+.isaac-log__config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .isaac-log__config {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+}
+
+.isaac-log__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: min(100%, 280px);
+  font-size: 0.82rem;
+  color: #a8b0d6;
+}
+
+.isaac-log__field input,
+.isaac-log__field select {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.18);
+  background: #0b1020;
+  color: #e8ecff;
+  font: inherit;
+  min-height: 44px;
+}
+
+.isaac-log__config-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.isaac-log__btn {
+  padding: 0.55rem 0.9rem;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(110, 168, 255, 0.45);
+  background: rgba(110, 168, 255, 0.2);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.isaac-log__btn--ghost {
+  background: transparent;
+  border-color: rgba(200, 210, 255, 0.2);
+  color: #cfd6ff;
+}
+
+.isaac-log__hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: #8b949e;
+  line-height: 1.5;
+}
+
+.isaac-log__selectors {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 560px) {
+  .isaac-log__selectors {
+    grid-template-columns: 1fr 1.4fr;
+  }
+}
+
+.isaac-log__run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #a8b0d6;
+}
+
+/* サマリーカード — スマホ 2 列、PC 4 列 */
+.isaac-log__summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 720px) {
+  .isaac-log__summary {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.isaac-log__summary-card {
+  background: #12182e;
+  border: 1px solid rgba(200, 210, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.85rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 88px;
+}
+
+.isaac-log__summary-label {
+  font-size: 0.72rem;
+  color: #8b949e;
+  text-transform: none;
+}
+
+.isaac-log__summary-value {
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.isaac-log__summary-step {
+  font-size: 0.72rem;
+  color: #8b949e;
+}
+
+/* チャートグリッド */
+.isaac-log__charts {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.isaac-log__charts--primary {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .isaac-log__charts--primary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.isaac-log__charts--secondary {
+  margin-top: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .isaac-log__charts--secondary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.isaac-log__collapse-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(200, 210, 255, 0.25);
+  background: transparent;
+  color: #a8b0d6;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.isaac-log__collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* MetricLineChart */
+.isaac-log-chart {
+  margin: 0;
+  background: #12182e;
+  border: 1px solid rgba(200, 210, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.85rem 0.9rem 0.65rem;
+}
+
+.isaac-log-chart__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .isaac-log-chart__head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+
+.isaac-log-chart__title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.isaac-log-chart__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+.isaac-log-chart__latest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.isaac-log-chart__latest-label {
+  color: #8b949e;
+}
+
+.isaac-log-chart__latest-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.isaac-log-chart__latest-step {
+  color: #8b949e;
+}
+
+.isaac-log-chart__empty {
+  margin: 1rem 0;
+  text-align: center;
+  color: #8b949e;
+  font-size: 0.85rem;
+}
+
+.isaac-log-chart__svg-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.isaac-log-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.isaac-log-chart__axis {
+  fill: #8b949e;
+  font-size: 10px;
+}
+
+.isaac-log-chart__tooltip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(11, 16, 32, 0.92);
+  border: 1px solid rgba(200, 210, 255, 0.2);
+  font-size: 0.72rem;
+  color: #cfd6ff;
+  pointer-events: none;
+}

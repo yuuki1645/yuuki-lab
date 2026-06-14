@@ -109,21 +109,37 @@ export default function IsaacRlLogPage() {
   const loadScalars = useCallback(async () => {
     if (!experiment || !runId) return;
     setLoading(true);
+    let scalarError: string | null = null;
+    let metaError: string | null = null;
+
     try {
-      const [sc, mt] = await Promise.all([
-        isaacRlLogFetchScalars(experiment, runId, b),
-        isaacRlLogFetchRunMeta(experiment, runId, b),
-      ]);
+      const sc = await isaacRlLogFetchScalars(experiment, runId, b);
       setScalars(sc);
-      setMeta(mt);
       setLastFetchedAt(new Date());
       setErr(null);
       setConnected(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
+      scalarError = e instanceof Error ? e.message : String(e);
+      setScalars(null);
     }
+
+    try {
+      const mt = await isaacRlLogFetchRunMeta(experiment, runId, b);
+      setMeta(mt);
+    } catch (e) {
+      metaError = e instanceof Error ? e.message : String(e);
+      setMeta(null);
+    }
+
+    if (scalarError) {
+      setErr(scalarError);
+      setConnected(false);
+    } else if (metaError) {
+      // グラフ表示は scalar のみで可能。meta 失敗は警告程度に留める。
+      setErr(`メタ情報の取得に失敗（グラフは表示可能）: ${metaError}`);
+    }
+
+    setLoading(false);
   }, [b, experiment, runId]);
 
   useEffect(() => {

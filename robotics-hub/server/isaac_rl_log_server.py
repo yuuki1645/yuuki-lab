@@ -42,22 +42,40 @@ DEFAULT_SCALAR_TAGS: tuple[str, ...] = (
 
 _TFEvents_RE = re.compile(r"^events\.out\.tfevents\.")
 
-# test-isaac-project の train.py が書き込む logs/rsl_rl（環境変数未設定時の既定）
-# 例: C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl
+# 同梱の既定パス（1 行目のみ使用）。環境変数 ``ISAAC_RL_LOG_ROOT`` が最優先。
+_DEFAULT_LOG_ROOT_FILE = Path(__file__).resolve().parent / "log_root.default.txt"
+
+
+def _read_default_log_root_file() -> Path | None:
+    if not _DEFAULT_LOG_ROOT_FILE.is_file():
+        return None
+    line = _DEFAULT_LOG_ROOT_FILE.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+    if not line or line.startswith("#"):
+        return None
+    return Path(line).expanduser()
+
+
 def _standard_log_root_candidates() -> list[Path]:
     robotics_hub = Path(__file__).resolve().parent.parent
     yuuki_lab = robotics_hub.parent
     home = Path.home()
-    return [
-        home / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
-        yuuki_lab.parent / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
-        yuuki_lab / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
-        Path.cwd() / "logs" / "rsl_rl",
-    ]
+    from_file = _read_default_log_root_file()
+    candidates: list[Path] = []
+    if from_file is not None:
+        candidates.append(from_file)
+    candidates.extend(
+        [
+            home / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
+            yuuki_lab.parent / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
+            yuuki_lab / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
+        ]
+    )
+    # cwd 相対は robotics-hub/logs/rsl_rl 等の誤検出を招くため使わない
+    return candidates
 
 
 def _default_log_root() -> Path:
-    """環境変数 ``ISAAC_RL_LOG_ROOT`` または test-isaac-project の logs/rsl_rl を推定。"""
+    """環境変数 → log_root.default.txt → 既存ディレクトリの順で決定。"""
     env = os.environ.get("ISAAC_RL_LOG_ROOT", "").strip()
     if env:
         return Path(env).expanduser().resolve()
@@ -65,8 +83,11 @@ def _default_log_root() -> Path:
     for candidate in _standard_log_root_candidates():
         if candidate.is_dir():
             return candidate.resolve()
-    # 存在しなくても home 配下の典型パスを返す（起動時に warning）
-    return _standard_log_root_candidates()[0].resolve()
+
+    from_file = _read_default_log_root_file()
+    if from_file is not None:
+        return from_file.resolve()
+    return _standard_log_root_candidates()[-1].resolve()
 
 
 def _find_tfevents_file(run_dir: Path) -> Path | None:
@@ -120,10 +141,23 @@ def _list_checkpoints(run_dir: Path) -> list[str]:
 
 
 def _read_yaml_if_exists(path: Path) -> dict[str, Any] | None:
+    """Isaac Lab が dump した params/*.yaml を読む。
+
+    env.yaml には ``!!python/tuple`` 等が含まれるため、safe_load 失敗時は
+    ローカルログ向けに UnsafeLoader で再試行する。
+    """
     if not path.is_file():
         return None
-    with path.open(encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    raw = path.read_text(encoding="utf-8")
+    try:
+        data = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        LOG.debug("safe_load failed for %s: %s — retry with UnsafeLoader", path, exc)
+        try:
+            data = yaml.load(raw, Loader=yaml.UnsafeLoader)
+        except yaml.YAMLError as exc2:
+            LOG.warning("Could not parse YAML %s: %s", path, exc2)
+            return None
     return data if isinstance(data, dict) else None
 
 

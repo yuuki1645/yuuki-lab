@@ -28,6 +28,8 @@ python scripts/list_envs.py --headless
 | `YuukiLab-BipedPpoWalk-Direct-v0` | 学習 |
 | `YuukiLab-BipedPpoWalk-Direct-Play-v0` | 再生・録画 |
 
+**タスクの詳細解説**: [source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md)（観測・報酬・終了・exp_030 対応表）
+
 ## 学習
 
 **1行で書く（PowerShell / bash 共通・おすすめ）**

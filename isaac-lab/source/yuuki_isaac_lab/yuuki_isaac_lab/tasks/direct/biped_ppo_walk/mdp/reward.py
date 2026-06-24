@@ -414,6 +414,18 @@ def compute_step_reward(
             alive_scale = alive_scale * (1.0 + episode_step.float() / float(max_episode_steps))
         alive_bonus = torch.where(alive_ok, alive_scale, torch.zeros_like(dx))
 
+    # v19: エピソード累積位移が大きいほど毎ステップ追加報酬（長距離歩行を直接最適化）
+    displacement_progress_bonus = torch.zeros_like(dx)
+    if getattr(cfg, "enable_displacement_progress_bonus", False) and total_displacement is not None:
+        disp_prog_scale = getattr(cfg, "displacement_progress_scale", 0.0)
+        if disp_prog_scale > 0.0:
+            disp_ok = forward_allowed & (total_displacement > 0.0)
+            displacement_progress_bonus = torch.where(
+                disp_ok,
+                torch.clamp(total_displacement, min=0.0, max=15.0) * disp_prog_scale,
+                torch.zeros_like(dx),
+            )
+
     shaping = (
         upright_bonus
         + push_off_bonus
@@ -428,6 +440,7 @@ def compute_step_reward(
         + swing_clearance_bonus
         + progress_bonus
         + alive_bonus
+        + displacement_progress_bonus
         - backward_lean_penalty
         - forward_lean_penalty
         - ds_forward_lean_penalty

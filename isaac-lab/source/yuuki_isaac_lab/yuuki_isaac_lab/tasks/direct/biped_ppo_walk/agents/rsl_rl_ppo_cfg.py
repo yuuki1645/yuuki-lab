@@ -39,7 +39,7 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
         use_clipped_value_loss=True,
         clip_param=0.2,
         # v17: entropy を下げて学習可能な std に収束させる（v16 では std>11 に発散）
-        entropy_coef=0.01,
+        entropy_coef=0.005,
         num_learning_epochs=8,
         num_mini_batches=32,
         learning_rate=2.5e-4,

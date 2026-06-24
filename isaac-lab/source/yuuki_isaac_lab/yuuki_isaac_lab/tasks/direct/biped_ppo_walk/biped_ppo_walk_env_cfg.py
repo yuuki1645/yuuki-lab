@@ -59,7 +59,10 @@ class BipedRewardCfg:
     survival_milestone_targets: tuple[int, ...] = (40, 100, 200, 400, 800)
     survival_milestone_scales: tuple[float, ...] = (5.0, 8.0, 14.0, 22.0, 35.0)
 
-    forward_reward_scale: float = 60.0
+    forward_reward_scale: float = 70.0
+    # v19: 累積 +X 位移に比例するステップ報酬（5 m 到達を直接促す）
+    enable_displacement_progress_bonus: bool = True
+    displacement_progress_scale: float = 0.12
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.15
 

@@ -53,7 +53,7 @@ class BipedRewardCfg:
     enable_displacement_milestones: bool = True
     displacement_milestone_targets: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0, 15.0)
     # 5 m 到達を主目標とするため 5 m ボーナスを強化
-      displacement_milestone_scales: tuple[float, ...] = (2.0, 4.0, 20.0, 24.0, 28.0)
+    displacement_milestone_scales: tuple[float, ...] = (2.0, 4.0, 20.0, 24.0, 28.0)
     # v16: 早期に生存・前進の達成感を与える（閾値を下げ、5 m マイルストーンを強化）
     enable_survival_milestones: bool = True
     survival_milestone_targets: tuple[int, ...] = (40, 100, 200, 400, 800)

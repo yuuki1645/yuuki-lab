@@ -62,7 +62,7 @@ class BipedRewardCfg:
     forward_reward_scale: float = 70.0
     # v19: 累積 +X 位移に比例するステップ報酬（5 m 到達を直接促す）
     enable_displacement_progress_bonus: bool = True
-    displacement_progress_scale: float = 0.12
+    displacement_progress_scale: float = 0.20
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.15
 
@@ -70,8 +70,9 @@ class BipedRewardCfg:
     forward_min_upright: float = 0.50
     forward_min_dx: float = 0.0005
     forward_require_foot_contact: bool = True
-    # 片脚支持でのみ前進報酬（前転ハック防止）
-    forward_require_single_support: bool = True
+    # v20 カリキュラム: 初期は両脚支持でも前進報酬を許可（MuJoCo baseline 同様）
+    # double_support ペナルティですり足は抑制しつつ、長距離歩行の学習信号を濃くする
+    forward_require_single_support: bool = False
     # 両足支持かつ前傾が大きいときは前進報酬を遮断
     forward_block_lean_both_feet: float = 0.07
 
@@ -126,7 +127,7 @@ class BipedRewardCfg:
     aerial_duration_penalty_after_steps: int = 4
     progress_reward_scale: float = 50.0
     progress_min_upright: float = 0.6
-    progress_require_single_support: bool = True
+    progress_require_single_support: bool = False
     knee_hyperflex_max_rad: float = 0.95
     knee_hyperflex_penalty_scale: float = 2.5
     knee_hyperflex_aerial_only: bool = True

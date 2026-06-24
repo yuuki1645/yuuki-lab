@@ -347,8 +347,29 @@ def compute_step_reward(
             torch.zeros_like(dx),
         )
 
-    # 左右接地の偏り: 定常ペナルティは使わず same_side_streak の段階ペナルティに統一
+    # 左右接地の偏り: 左片脚ピボットが続く degenerate gait を段階ペナルティ
     contact_imbalance_penalty = torch.zeros_like(dx)
+    imb_scale = getattr(cfg, "contact_imbalance_penalty_scale", 0.0)
+    imb_after = getattr(cfg, "contact_imbalance_streak_after", 0)
+    if imb_scale > 0.0 and imb_after > 0:
+        left_pivot = biped.single_support & (biped.single_support_side == 1)
+        streak_over = biped.same_side_streak.float() - float(imb_after)
+        contact_imbalance_penalty = torch.where(
+            left_pivot & (streak_over > 0.0),
+            streak_over * imb_scale,
+            torch.zeros_like(dx),
+        )
+
+    # 直立姿勢での後退ペナルティ（前進学習の方向性を固定）
+    backward_dx_penalty = torch.zeros_like(dx)
+    bwd_scale = getattr(cfg, "backward_dx_penalty_scale", 0.0)
+    bwd_thresh = getattr(cfg, "backward_dx_thresh", 0.0)
+    if bwd_scale > 0.0:
+        backward_dx_penalty = torch.where(
+            (upright >= cfg.forward_min_upright) & (dx < -bwd_thresh),
+            (-dx) * bwd_scale,
+            torch.zeros_like(dx),
+        )
 
     # 横方向ドリフト・姿勢角速度（転倒前のふらつき抑制）
     lateral_vel_penalty = torch.zeros_like(dx)
@@ -413,6 +434,7 @@ def compute_step_reward(
         - fall_forward_penalty
         - same_side_streak_penalty
         - contact_imbalance_penalty
+        - backward_dx_penalty
         - lateral_vel_penalty
         - ang_vel_penalty
         - action_rate_penalty

@@ -59,7 +59,7 @@ class BipedRewardCfg:
     survival_milestone_targets: tuple[int, ...] = (40, 80, 150, 300, 600)
     survival_milestone_scales: tuple[float, ...] = (5.0, 6.0, 10.0, 14.0, 20.0)
 
-    forward_reward_scale: float = 35.0
+    forward_reward_scale: float = 45.0
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.15
 
@@ -95,9 +95,14 @@ class BipedRewardCfg:
     # v16: 同側連続を早めに抑制し、右片脚支持ボーナスを強化
     same_side_streak_penalty_after: int = 12
     same_side_streak_penalty_scale: float = 0.25
-    # 極端な degenerate のみ前進報酬遮断（早期学習では緩め）
-    forward_block_same_side_streak: int = 48
-    # 右足片脚支持＋前進を明示的に報酬（交互歩行フェーズ誘導）
+    # v17: 同側片脚が続いたら前進報酬を遮断（スモークで streak ~4、旧 48 は機能していなかった）
+    forward_block_same_side_streak: int = 22
+    # v17: 左足ピボット degenerate gait の直接抑制
+    contact_imbalance_penalty_scale: float = 0.35
+    contact_imbalance_streak_after: int = 6
+    # v17: 直立時の後退を罰して前進方向を固定
+    backward_dx_penalty_scale: float = 12.0
+    backward_dx_thresh: float = 0.0003
     right_single_support_bonus_scale: float = 0.90
     right_single_support_min_dx: float = 0.0005
     swing_clearance_bonus_scale: float = 0.30

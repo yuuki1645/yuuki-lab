@@ -30,17 +30,25 @@ python scripts/list_envs.py --headless
 
 ## 学習
 
-```bash
+**1行で書く（PowerShell / bash 共通・おすすめ）**
+
+```powershell
 # スモーク
-python scripts/rsl_rl/train.py \
-  --task YuukiLab-BipedPpoWalk-Direct-v0 \
-  --headless --num_envs 64 --max_iterations 5
+python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 64 --max_iterations 5
 
 # 本番（例）
-python scripts/rsl_rl/train.py \
-  --task YuukiLab-BipedPpoWalk-Direct-v0 \
-  --headless --num_envs 4096
+python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 4096
 ```
+
+**PowerShell で複数行に分ける場合**は行末に **バッククォート `` ` ``**（`\` ではない）:
+
+```powershell
+python scripts/rsl_rl/train.py `
+  --task YuukiLab-BipedPpoWalk-Direct-v0 `
+  --headless --num_envs 64 --max_iterations 5
+```
+
+※ `` ` `` の直後にスペースを入れないこと。bash の `\` 継続は PowerShell では使えません。
 
 - ログ: `logs/rsl_rl/biped_ppo_walk/<run>/`
 - WandB: デフォルトオンライン（`--wandb_mode offline` でローカルのみ）

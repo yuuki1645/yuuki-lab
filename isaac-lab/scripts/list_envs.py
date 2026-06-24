@@ -22,11 +22,13 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="List Isaac Lab environments.")
 parser.add_argument("--keyword", type=str, default=None, help="Keyword to filter environments.")
+# Isaac Sim 起動オプション（--headless 等）。他スクリプトと同じ CLI を揃える。
+AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 
 # launch omniverse app
-app_launcher = AppLauncher(headless=True)
+app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
 
@@ -58,15 +60,11 @@ def main():
             # increment count
             index += 1
 
-    print(table)
+    print(table, flush=True)
 
 
 if __name__ == "__main__":
-    try:
-        # run the main function
-        main()
-    except Exception as e:
-        raise e
-    finally:
-        # close the app
-        simulation_app.close()
+    # run the main function
+    main()
+    # close sim app
+    simulation_app.close()

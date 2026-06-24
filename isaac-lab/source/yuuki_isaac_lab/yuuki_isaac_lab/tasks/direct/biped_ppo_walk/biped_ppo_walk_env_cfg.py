@@ -21,7 +21,11 @@ from .mdp.actuators import ACTION_DIM, FOOT_CONTACT_Z_OFF, FOOT_CONTACT_Z_ON, JO
 
 @configclass
 class BipedRewardCfg:
-    """exp_030 conf/reward/baseline.yaml 相当。"""
+    """exp_030 conf/reward/baseline.yaml 相当。
+
+    v16 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
+    早期の転倒多発（ep ~40 step）対策として生存報酬を強化し、報酬ゲートを緩和。
+    """
 
     # ENABLE 群（exp_030 conf/reward/baseline.yaml）
     enable_forward: bool = True
@@ -30,37 +34,38 @@ class BipedRewardCfg:
     enable_forward_foot: bool = True
     enable_progress: bool = True
     enable_walk_shaping: bool = True
-    # shaping / upright は forward_allowed かつ最小前進量を満たすときのみ（報酬ハック抑制）
+    # v16: 初期は微小な前進でも shaping を許可（静止立位ハックは alive 条件で抑制）
     shaping_require_forward_motion: bool = True
-    shaping_min_dx: float = 0.0003
+    shaping_min_dx: float = 0.00005
     enable_upright_bonus: bool = True
     enable_posture_penalties: bool = True
     enable_double_support: bool = True
     enable_flight_duration: bool = True
     enable_effort: bool = True
-    # 転倒前の生存を促す小さなボーナス（早期エピソード終了対策）
+    # v16: 転倒前の生存を強く促す（5 m 到達には長寿命エピソードが前提）
     enable_alive_bonus: bool = True
-    # v15: v14 の 0.22 は fine-tune 不安定化、v12 付近に戻し duration で生存を強化
-    alive_bonus_scale: float = 0.20
-    alive_min_upright: float = 0.75
-    alive_min_imu_z: float = 0.50
+    alive_bonus_scale: float = 0.40
+    alive_min_upright: float = 0.68
+    alive_min_imu_z: float = 0.48
     enable_duration_bonus: bool = True
-    duration_bonus_scale: float = 0.24
+    duration_bonus_scale: float = 0.30
     # 累積 +X 移動距離マイルストーン（1 / 2 / 5 / 10 / 15 m）
     enable_displacement_milestones: bool = True
     displacement_milestone_targets: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0, 15.0)
-    displacement_milestone_scales: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0, 16.0)
-    # エピソード生存ステップ数マイルストーン（v12 平均 ep ~132 のため最初の閾値を 80 に）
+    # 5 m 到達を主目標とするため 5 m ボーナスを強化
+    displacement_milestone_scales: tuple[float, ...] = (1.0, 2.0, 10.0, 12.0, 16.0)
+    # v16: 早期に生存・前進の達成感を与える（閾値を下げ、5 m マイルストーンを強化）
     enable_survival_milestones: bool = True
-    survival_milestone_targets: tuple[int, ...] = (80, 150, 300, 600, 1200)
-    survival_milestone_scales: tuple[float, ...] = (3.5, 4.0, 8.0, 12.0, 18.0)
+    survival_milestone_targets: tuple[int, ...] = (40, 80, 150, 300, 600)
+    survival_milestone_scales: tuple[float, ...] = (5.0, 6.0, 10.0, 14.0, 20.0)
 
     forward_reward_scale: float = 35.0
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.15
 
-    forward_min_upright: float = 0.55
-    forward_min_dx: float = 0.001
+    # v16: 初期学習では前進ゲートをやや緩め（片脚支持は維持して歩行定義は保持）
+    forward_min_upright: float = 0.50
+    forward_min_dx: float = 0.0005
     forward_require_foot_contact: bool = True
     # 片脚支持でのみ前進報酬（前転ハック防止）
     forward_require_single_support: bool = True
@@ -85,15 +90,15 @@ class BipedRewardCfg:
     # v12 相当（v14 の過剰強化は fine-tune 不安定化の原因）
     alternating_landing_bonus_scale: float = 1.20
     foot_swap_bonus_scale: float = 0.65
-    # 右足着地を明示的に促す（v5 で右 contact ~0.02 の degenerate gait 対策）
-    right_landing_bonus_scale: float = 0.75
-    # 同じ片脚側が長く続くと段階ペナルティ（定常ペナルティは前進学習を阻害するため streak 連動のみ）
-    same_side_streak_penalty_after: int = 18
-    same_side_streak_penalty_scale: float = 0.18
+    # v16: 右足着地を強化（スモークで right_contact ~0.07 の左偏重を確認）
+    right_landing_bonus_scale: float = 1.20
+    # v16: 同側連続を早めに抑制し、右片脚支持ボーナスを強化
+    same_side_streak_penalty_after: int = 12
+    same_side_streak_penalty_scale: float = 0.25
     # 極端な degenerate のみ前進報酬遮断（早期学習では緩め）
     forward_block_same_side_streak: int = 48
     # 右足片脚支持＋前進を明示的に報酬（交互歩行フェーズ誘導）
-    right_single_support_bonus_scale: float = 0.55
+    right_single_support_bonus_scale: float = 0.90
     right_single_support_min_dx: float = 0.0005
     swing_clearance_bonus_scale: float = 0.30
     swing_min_foot_z: float = 0.04
@@ -122,27 +127,29 @@ class BipedRewardCfg:
     target_imu_z_single_stance: float = 0.5
     target_imu_z_double_stance: float = 0.52
     height_penalty_aerial_crash_z: float = 0.42
-    effort_penalty_scale: float = 3.0
-    # v15: 転倒回復のため action rate / 横方向速度ペナルティを緩和
-    action_rate_penalty_scale: float = 0.22
-    lateral_vel_penalty_scale: float = 0.32
+    effort_penalty_scale: float = 2.5
+    # v16: 転倒回復のため action rate / 横方向速度ペナルティをさらに緩和
+    action_rate_penalty_scale: float = 0.15
+    lateral_vel_penalty_scale: float = 0.25
     ang_vel_penalty_scale: float = 0.04
 
 
 @configclass
 class BipedTerminationCfg:
-    """exp_030 conf/termination/default.yaml 相当。"""
+    """exp_030 conf/termination/default.yaml 相当。
+
+    v16: 姿勢回復猶予を延長し、初期学習での早期終了を減らす。
+    """
 
     min_imu_z: float = 0.25
-    # v15: わずかに緩めて転倒判定を減らし、生存 step 延伸を優先
-    min_imu_upright: float = 0.46
+    # v16: わずかに緩めて転倒判定を減らし、生存 step 延伸を優先
+    min_imu_upright: float = 0.44
     max_backward_lean_body: float = 0.40
     # 両足支持のままの過度前傾で早期終了（前転歩行のハックを遮断）
     max_forward_lean_both_feet: float = 0.22
-    # 瞬間的な姿勢悪化では即終了せず、連続 N ステップで終了（転倒回復の猶予）
-    # v15: 姿勢回復猶予をさらに延長（v14 の 10 でも v12 未達のため）
-    bad_pose_consecutive_steps: int = 12
-    pose_termination_penalty: float = -30.0
+    # v16: 姿勢回復猶予をさらに延長（Isaac 初期学習では ep ~40 step で落ちるため）
+    bad_pose_consecutive_steps: int = 20
+    pose_termination_penalty: float = -20.0
     foot_contact_z_on: float = FOOT_CONTACT_Z_ON
     foot_contact_z_off: float = FOOT_CONTACT_Z_OFF
 
@@ -204,8 +211,8 @@ class BipedPpoWalkEnvCfg(DirectRLEnvCfg):
 
     reward: BipedRewardCfg = BipedRewardCfg()
     termination: BipedTerminationCfg = BipedTerminationCfg()
-    # リセット時の関節角ランダム化 [rad]（転倒耐性・汎化）
-    reset_joint_noise_rad: float = 0.025
+    # v16: リセット時ノイズを抑えて初期転倒を減らす
+    reset_joint_noise_rad: float = 0.010
 
 
 def get_max_dx_per_step(cfg: BipedPpoWalkEnvCfg) -> float:

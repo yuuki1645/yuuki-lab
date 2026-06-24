@@ -3,7 +3,11 @@
 
 # type: ignore
 
-"""exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。"""
+"""exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
+
+v16 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
+v15 の低 LR / 低 entropy は fine-tune 用のため、MuJoCo exp_030 既定値に戻す。
+"""
 
 from isaaclab.utils import configclass
 
@@ -22,7 +26,8 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     empirical_normalization = True
 
     policy = RslRlPpoActorCriticCfg(
-        init_noise_std=0.6,
+        # v16: 探索を強めて初期の転倒ループから脱出しやすくする
+        init_noise_std=0.7,
         actor_obs_normalization=True,
         critic_obs_normalization=True,
         actor_hidden_dims=[256, 256, 128],
@@ -33,12 +38,11 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
-        # entropy_coef=0.05,
-        # v15 fine-tune: v14 より低 LR + やや高 entropy で安定微調整
-        entropy_coef=0.008,
-        num_learning_epochs=5,
+        # v16: MuJoCo exp_030 conf/ppo/default.yaml 準拠（ゼロから学習）
+        entropy_coef=0.05,
+        num_learning_epochs=8,
         num_mini_batches=32,
-        learning_rate=1.0e-4,
+        learning_rate=2.5e-4,
         schedule="adaptive",
         # exp_030: gamma_per_physics_step=0.99, decimation=10 → 0.99^10
         gamma=0.904,

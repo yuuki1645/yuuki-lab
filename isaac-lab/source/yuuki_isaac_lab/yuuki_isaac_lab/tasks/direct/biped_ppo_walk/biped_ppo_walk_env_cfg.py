@@ -23,8 +23,8 @@ from .mdp.actuators import ACTION_DIM, FOOT_CONTACT_Z_OFF, FOOT_CONTACT_Z_ON, JO
 class BipedRewardCfg:
     """exp_030 conf/reward/baseline.yaml 相当。
 
-    v16 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
-    早期の転倒多発（ep ~40 step）対策として生存報酬を強化し、報酬ゲートを緩和。
+    v16-v18 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
+    v18: 0.9 m 付近の停滞対策として生存 step 延伸と前進速度報酬を強化。
     """
 
     # ENABLE 群（exp_030 conf/reward/baseline.yaml）
@@ -44,22 +44,22 @@ class BipedRewardCfg:
     enable_effort: bool = True
     # v16: 転倒前の生存を強く促す（5 m 到達には長寿命エピソードが前提）
     enable_alive_bonus: bool = True
-    alive_bonus_scale: float = 0.40
+    alive_bonus_scale: float = 0.60
     alive_min_upright: float = 0.68
     alive_min_imu_z: float = 0.48
     enable_duration_bonus: bool = True
-    duration_bonus_scale: float = 0.30
+    duration_bonus_scale: float = 0.50
     # 累積 +X 移動距離マイルストーン（1 / 2 / 5 / 10 / 15 m）
     enable_displacement_milestones: bool = True
     displacement_milestone_targets: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0, 15.0)
     # 5 m 到達を主目標とするため 5 m ボーナスを強化
-    displacement_milestone_scales: tuple[float, ...] = (1.0, 2.0, 10.0, 12.0, 16.0)
+      displacement_milestone_scales: tuple[float, ...] = (2.0, 4.0, 20.0, 24.0, 28.0)
     # v16: 早期に生存・前進の達成感を与える（閾値を下げ、5 m マイルストーンを強化）
     enable_survival_milestones: bool = True
-    survival_milestone_targets: tuple[int, ...] = (40, 80, 150, 300, 600)
-    survival_milestone_scales: tuple[float, ...] = (5.0, 6.0, 10.0, 14.0, 20.0)
+    survival_milestone_targets: tuple[int, ...] = (40, 100, 200, 400, 800)
+    survival_milestone_scales: tuple[float, ...] = (5.0, 8.0, 14.0, 22.0, 35.0)
 
-    forward_reward_scale: float = 45.0
+    forward_reward_scale: float = 60.0
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.15
 
@@ -121,7 +121,7 @@ class BipedRewardCfg:
     lateral_tilt_penalty_scale: float = 2.5
     aerial_duration_penalty_scale: float = 0.18
     aerial_duration_penalty_after_steps: int = 4
-    progress_reward_scale: float = 35.0
+    progress_reward_scale: float = 50.0
     progress_min_upright: float = 0.6
     progress_require_single_support: bool = True
     knee_hyperflex_max_rad: float = 0.95
@@ -132,7 +132,7 @@ class BipedRewardCfg:
     target_imu_z_single_stance: float = 0.5
     target_imu_z_double_stance: float = 0.52
     height_penalty_aerial_crash_z: float = 0.42
-    effort_penalty_scale: float = 2.5
+    effort_penalty_scale: float = 2.0
     # v16: 転倒回復のため action rate / 横方向速度ペナルティをさらに緩和
     action_rate_penalty_scale: float = 0.15
     lateral_vel_penalty_scale: float = 0.25
@@ -148,13 +148,13 @@ class BipedTerminationCfg:
 
     min_imu_z: float = 0.25
     # v16: わずかに緩めて転倒判定を減らし、生存 step 延伸を優先
-    min_imu_upright: float = 0.44
+    min_imu_upright: float = 0.40
     max_backward_lean_body: float = 0.40
     # 両足支持のままの過度前傾で早期終了（前転歩行のハックを遮断）
     max_forward_lean_both_feet: float = 0.22
     # v16: 姿勢回復猶予をさらに延長（Isaac 初期学習では ep ~40 step で落ちるため）
-    bad_pose_consecutive_steps: int = 20
-    pose_termination_penalty: float = -20.0
+    bad_pose_consecutive_steps: int = 35
+    pose_termination_penalty: float = -12.0
     foot_contact_z_on: float = FOOT_CONTACT_Z_ON
     foot_contact_z_off: float = FOOT_CONTACT_Z_OFF
 

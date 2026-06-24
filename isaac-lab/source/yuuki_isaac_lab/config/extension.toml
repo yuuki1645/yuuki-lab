@@ -1,0 +1,27 @@
+[package]
+
+# Semantic Versioning is used: https://semver.org/
+version = "0.1.0"
+
+# Description
+category = "isaaclab"
+readme  = "README.md"
+
+title = "Yuuki Lab Isaac RL"
+author = "Yuuki Lab"
+maintainer = "Yuuki Lab"
+description = "Isaac Lab extension for yuuki-lab biped PPO walking (exp_030 port)"
+repository = "https://github.com/yuuki1645/yuuki-lab"
+keywords = ["extension", "isaaclab", "yuuki-lab", "biped", "rl"]
+
+[dependencies]
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_mimic" = {}
+"isaaclab_rl" = {}
+"isaaclab_tasks" = {}
+
+[[python.module]]
+name = "yuuki_isaac_lab"
+
+[isaac_lab_settings]

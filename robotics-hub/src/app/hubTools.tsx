@@ -95,7 +95,7 @@ export const hubTools: HubTool[] = [
     path: "/isaac-rl-log",
     label: "Isaac 学習進捗",
     description:
-      "test-isaac-project の TensorBoard ログを読み取り、平均報酬・エピソード長などの学習曲線を PC / スマホで表示します。",
+      "isaac-lab の TensorBoard ログを読み取り、平均報酬・エピソード長などの学習曲線を PC / スマホで表示します。",
     LazyPage: IsaacRlLogPage,
   },
 ];

@@ -41,7 +41,15 @@ MJMODEL.TXT
 
 *.npy
 
-wandb/
+# Isaac Lab 学習ログ（TensorBoard / WandB 併用時のローカルログ）
+isaac-lab/logs/
+isaac-lab/wandb/
+isaac-lab/outputs/
+isaac-lab/**/*.pt
+isaac-lab/**/*.pth
+
+# robotics-hub: ローカルログルート上書き（必要時のみ各環境で作成）
+robotics-hub/server/log_root.default.txt
 
 # 学習チェックポイント（torch.save）
 mujoco-sim/checkpoints/

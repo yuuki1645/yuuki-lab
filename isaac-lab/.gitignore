@@ -1,0 +1,29 @@
+# Python
+**/__pycache__/
+**/*.egg-info/
+**/.pytest_cache/
+**/*.pyc
+
+# 学習・実験の生成物（公開リポジトリには含めない）
+logs/
+wandb/
+outputs/
+**/videos/
+**/*.pt
+**/*.pth
+**/*.ckpt
+*.log
+*.tmp
+
+# IDE（Isaac Sim ローカルパスを含む可能性）
+.vscode/.python.env
+
+# Omniverse / Isaac
+**/*.dmp
+**/*.usd
+**/*.usda
+**/*.usdc
+**/*.usdz
+_isaac_sim*
+_repo
+_build

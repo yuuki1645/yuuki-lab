@@ -14,7 +14,7 @@
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
-- **Isaac 学習進捗** — test-isaac-project の TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
+- **Isaac 学習進捗** — [isaac-lab](../isaac-lab/) の RSL-RL TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
 
 ## 前提
 
@@ -78,13 +78,9 @@ npm run preview
 
 ## Isaac 学習進捗（TensorBoard ログ）
 
-test-isaac-project の RSL-RL 学習ログ（`logs/rsl_rl/<experiment>/<run>/events.out.tfevents.*`）を、Robotics Hub 上でグラフ表示します。**20 秒ごと**に自動更新されます。
+[isaac-lab](../isaac-lab/) の RSL-RL 学習ログ（`logs/rsl_rl/<experiment>/<run>/events.out.tfevents.*`）を、Robotics Hub 上でグラフ表示します。**20 秒ごと**に自動更新されます。
 
-**ログルート（この環境）:**
-
-```
-C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl
-```
+**ログルート（既定）:** リポジトリ内 `isaac-lab/logs/rsl_rl`（存在する場合は自動検出）
 
 ### 1. ログ API サーバーを起動（学習 PC）
 
@@ -97,7 +93,7 @@ pip install -r requirements.txt
 または:
 
 ```powershell
-$env:ISAAC_RL_LOG_ROOT = "C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl"
+$env:ISAAC_RL_LOG_ROOT = "Z:\Projects\yuuki-lab\isaac-lab\logs\rsl_rl"
 python isaac_rl_log_server.py
 ```
 
@@ -105,7 +101,7 @@ python isaac_rl_log_server.py
 
 | 名前 | 説明 |
 |------|------|
-| `ISAAC_RL_LOG_ROOT` | TensorBoard ログのルート（未設定時は `%USERPROFILE%\test-isaac-project\TestIsaacProject\logs\rsl_rl` を推定） |
+| `ISAAC_RL_LOG_ROOT` | TensorBoard ログのルート（未設定時は `yuuki-lab/isaac-lab/logs/rsl_rl` を自動検出） |
 | `ISAAC_RL_LOG_PORT` | 待ち受けポート（既定 **8792**） |
 
 ### 2. Hub を開く

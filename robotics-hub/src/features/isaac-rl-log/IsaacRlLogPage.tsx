@@ -188,7 +188,7 @@ export default function IsaacRlLogPage() {
         <div>
           <h1 className="isaac-log__title">Isaac 学習進捗</h1>
           <p className="isaac-log__lead">
-            test-isaac-project の RSL-RL ログ（TensorBoard）を読み取り、学習曲線を表示します。
+            isaac-lab の RSL-RL ログ（TensorBoard）を読み取り、学習曲線を表示します。
             画面は <strong>{ISAAC_RL_LOG_POLL_MS / 1000} 秒</strong>ごとに自動更新されます。
           </p>
         </div>

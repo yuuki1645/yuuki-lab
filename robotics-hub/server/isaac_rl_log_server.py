@@ -65,6 +65,8 @@ def _standard_log_root_candidates() -> list[Path]:
         candidates.append(from_file)
     candidates.extend(
         [
+            yuuki_lab / "isaac-lab" / "logs" / "rsl_rl",
+            home / "yuuki-lab" / "isaac-lab" / "logs" / "rsl_rl",
             home / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
             yuuki_lab.parent / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",
             yuuki_lab / "test-isaac-project" / "TestIsaacProject" / "logs" / "rsl_rl",

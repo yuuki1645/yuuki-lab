@@ -1,1 +1,1 @@
-C:\Users\yuukilab\test-isaac-project\TestIsaacProject\logs\rsl_rl
+# Copy to log_root.default.txt and set one line to your logs/rsl_rl directory if auto-detection fails.

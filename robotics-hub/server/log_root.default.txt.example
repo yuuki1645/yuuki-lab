@@ -1,0 +1,3 @@
+# Isaac Lab 学習ログ（TensorBoard）のルート。
+# 未設定時は isaac_rl_log_server.py が yuuki-lab/isaac-lab/logs/rsl_rl を自動検出します。
+# 別の場所にログがある場合のみ、このファイルを log_root.default.txt にコピーしてパスを1行で指定してください。

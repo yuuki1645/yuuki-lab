@@ -5,7 +5,7 @@
 
 """exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
 
-v23: 1 run あたり max 3000 iter（resume 時は ckpt iter + 残り）。
+v24: v23 ckpt から fine-tune（max 3000 iter/run）。
 """
 
 from isaaclab.utils import configclass

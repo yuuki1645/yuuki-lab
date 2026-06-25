@@ -101,6 +101,12 @@ def compute_step_reward(
     block_streak = getattr(cfg, "forward_block_same_side_streak", 0)
     if block_streak > 0:
         forward_allowed = forward_allowed & (biped.same_side_streak <= block_streak)
+    # v24: 右足ピボット継続時は前進報酬を遮断（交互歩行を強制）
+    rp_block_after = getattr(cfg, "forward_block_right_pivot_streak", 0)
+    if rp_block_after > 0:
+        right_pivot_block = biped.single_support & (biped.single_support_side == -1)
+        right_pivot_block = right_pivot_block & (biped.same_side_streak > float(rp_block_after))
+        forward_allowed = forward_allowed & (~right_pivot_block)
 
     dx_clipped = torch.clamp(dx, -max_dx, max_dx)
     forward_imu = torch.zeros_like(dx)
@@ -122,11 +128,13 @@ def compute_step_reward(
         torch.clamp(left_foot_dx, min=0.0),
         stance_foot_dx,
     )
-    stance_foot_dx = torch.where(
-        biped.single_support & (biped.single_support_side == -1),
-        torch.clamp(right_foot_dx, min=0.0),
-        stance_foot_dx,
-    )
+    # v24: 右片脚支持時の足前進は forward_foot に含めない（右ピボット degenerate gait 抑制）
+    if not getattr(cfg, "forward_foot_left_stance_only", False):
+        stance_foot_dx = torch.where(
+            biped.single_support & (biped.single_support_side == -1),
+            torch.clamp(right_foot_dx, min=0.0),
+            stance_foot_dx,
+        )
     forward_foot = torch.zeros_like(dx)
     if cfg.enable_forward_foot:
         foot_dx_clipped = torch.clamp(stance_foot_dx, -max_dx, max_dx)

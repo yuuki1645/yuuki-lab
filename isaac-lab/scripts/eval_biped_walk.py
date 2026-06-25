@@ -44,7 +44,9 @@ def main(env_cfg, agent_cfg):
     env_cfg.scene.num_envs = args_cli.num_envs
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
 
-    log_root = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
+    # Hydra が cwd を変えるため、isaac-lab ルートからログパスを解決する
+    isaac_lab_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    log_root = os.path.join(isaac_lab_root, "logs", "rsl_rl", agent_cfg.experiment_name)
     resume_path = get_checkpoint_path(log_root, args_cli.load_run, args_cli.checkpoint)
     print(f"[INFO] Loading checkpoint: {resume_path}")
 

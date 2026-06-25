@@ -23,14 +23,14 @@ from .mdp.actuators import ACTION_DIM, FOOT_CONTACT_Z_OFF, FOOT_CONTACT_Z_ON, JO
 class BipedRewardCfg:
     """exp_030 conf/reward/baseline.yaml 相当。
 
-    v16-v18 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
-    v18: 0.9 m 付近の停滞対策として生存 step 延伸と前進速度報酬を強化。
+    v21 (exp/biped-walk-5m-stable): v20 カリキュラム後の品質低下を修正。
+    片脚支持ゲートを復帰し、長寿命 step・持続前進・速度報酬で 5 m を狙う。
     """
 
     # ENABLE 群（exp_030 conf/reward/baseline.yaml）
     enable_forward: bool = True
-    # 前転時の root 速度報酬は前転ハックの温床のため無効化
-    enable_forward_vel: bool = False
+    # v21: 片脚支持かつ前進中のみ root 速度を報酬（前転ハックは forward_allowed で抑制）
+    enable_forward_vel: bool = True
     enable_forward_foot: bool = True
     enable_progress: bool = True
     enable_walk_shaping: bool = True
@@ -56,23 +56,22 @@ class BipedRewardCfg:
     displacement_milestone_scales: tuple[float, ...] = (2.0, 4.0, 20.0, 24.0, 28.0)
     # v16: 早期に生存・前進の達成感を与える（閾値を下げ、5 m マイルストーンを強化）
     enable_survival_milestones: bool = True
-    survival_milestone_targets: tuple[int, ...] = (40, 100, 200, 400, 800)
-    survival_milestone_scales: tuple[float, ...] = (5.0, 8.0, 14.0, 22.0, 35.0)
+    survival_milestone_targets: tuple[int, ...] = (80, 160, 320, 640, 1000, 1400)
+    survival_milestone_scales: tuple[float, ...] = (6.0, 12.0, 20.0, 35.0, 55.0, 80.0)
 
-    forward_reward_scale: float = 70.0
-    # v19: 累積 +X 位移に比例するステップ報酬（5 m 到達を直接促す）
+    forward_reward_scale: float = 65.0
     enable_displacement_progress_bonus: bool = True
-    displacement_progress_scale: float = 0.20
-    forward_vel_reward_scale: float = 8.0
-    forward_vel_max: float = 0.15
+    displacement_progress_scale: float = 0.15
+    # v21: 持続的な前進速度を直接報酬（5 m には歩行速度の向上が必要）
+    forward_vel_reward_scale: float = 6.0
+    forward_vel_max: float = 0.40
 
     # v16: 初期学習では前進ゲートをやや緩め（片脚支持は維持して歩行定義は保持）
     forward_min_upright: float = 0.50
     forward_min_dx: float = 0.0005
     forward_require_foot_contact: bool = True
-    # v20 カリキュラム: 初期は両脚支持でも前進報酬を許可（MuJoCo baseline 同様）
-    # double_support ペナルティですり足は抑制しつつ、長距離歩行の学習信号を濃くする
-    forward_require_single_support: bool = False
+    # v21: 交互片脚歩行の品質ゲートを復帰（v20 の緩和は ~1 m で頭打ち）
+    forward_require_single_support: bool = True
     # 両足支持かつ前傾が大きいときは前進報酬を遮断
     forward_block_lean_both_feet: float = 0.07
 
@@ -127,7 +126,11 @@ class BipedRewardCfg:
     aerial_duration_penalty_after_steps: int = 4
     progress_reward_scale: float = 50.0
     progress_min_upright: float = 0.6
-    progress_require_single_support: bool = False
+    progress_require_single_support: bool = True
+    # v21: 一定 step 超の持続歩行ボーナス（転倒せず長く歩くことを直接促す）
+    enable_long_horizon_bonus: bool = True
+    long_horizon_step_threshold: int = 120
+    long_horizon_bonus_scale: float = 0.40
     knee_hyperflex_max_rad: float = 0.95
     knee_hyperflex_penalty_scale: float = 2.5
     knee_hyperflex_aerial_only: bool = True
@@ -147,18 +150,18 @@ class BipedRewardCfg:
 class BipedTerminationCfg:
     """exp_030 conf/termination/default.yaml 相当。
 
-    v16: 姿勢回復猶予を延長し、初期学習での早期終了を減らす。
+    v21: 長寿命エピソードを優先（5 m には転倒前の step 延伸がボトルネック）。
     """
 
     min_imu_z: float = 0.25
     # v16: わずかに緩めて転倒判定を減らし、生存 step 延伸を優先
-    min_imu_upright: float = 0.40
+    min_imu_upright: float = 0.38
     max_backward_lean_body: float = 0.40
     # 両足支持のままの過度前傾で早期終了（前転歩行のハックを遮断）
     max_forward_lean_both_feet: float = 0.22
     # v16: 姿勢回復猶予をさらに延長（Isaac 初期学習では ep ~40 step で落ちるため）
-    bad_pose_consecutive_steps: int = 35
-    pose_termination_penalty: float = -12.0
+    bad_pose_consecutive_steps: int = 50
+    pose_termination_penalty: float = -10.0
     foot_contact_z_on: float = FOOT_CONTACT_Z_ON
     foot_contact_z_off: float = FOOT_CONTACT_Z_OFF
 

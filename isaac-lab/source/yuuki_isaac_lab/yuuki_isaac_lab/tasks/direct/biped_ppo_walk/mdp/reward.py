@@ -426,6 +426,17 @@ def compute_step_reward(
                 torch.zeros_like(dx),
             )
 
+    # v21: 一定 step 以上の持続歩行ボーナス（長距離歩行＝転倒せず step を伸ばす）
+    long_horizon_bonus = torch.zeros_like(dx)
+    if getattr(cfg, "enable_long_horizon_bonus", False) and episode_step is not None:
+        lh_thresh = getattr(cfg, "long_horizon_step_threshold", 0)
+        lh_scale = getattr(cfg, "long_horizon_bonus_scale", 0.0)
+        if lh_thresh > 0 and lh_scale > 0.0:
+            lh_ok = forward_allowed & (episode_step > lh_thresh) & (dx >= cfg.shaping_min_dx)
+            # 閾値超過後は step が進むほどボーナス増（5 m 到達まで生存を促す）
+            step_over = (episode_step.float() - float(lh_thresh)).clamp(min=0.0)
+            long_horizon_bonus = torch.where(lh_ok, step_over * lh_scale / 400.0, torch.zeros_like(dx))
+
     shaping = (
         upright_bonus
         + push_off_bonus
@@ -441,6 +452,7 @@ def compute_step_reward(
         + progress_bonus
         + alive_bonus
         + displacement_progress_bonus
+        + long_horizon_bonus
         - backward_lean_penalty
         - forward_lean_penalty
         - ds_forward_lean_penalty

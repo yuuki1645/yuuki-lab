@@ -5,8 +5,7 @@
 
 """exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
 
-v16-v17 (exp/biped-walk-5m-stable): Isaac Lab ゼロから学習向け。
-v17 で左足偏重・後退・ノイズ爆発を修正。
+v21: v18 ckpt からの fine-tune（低ノイズ・低 LR）。
 """
 
 from isaaclab.utils import configclass
@@ -26,8 +25,8 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     empirical_normalization = True
 
     policy = RslRlPpoActorCriticCfg(
-        # v17: ノイズ爆発を抑えつつ探索は維持
-        init_noise_std=0.45,
+        # v21: 既存歩行ポリシーの微調整向けに探索を抑える
+        init_noise_std=0.32,
         actor_obs_normalization=True,
         critic_obs_normalization=True,
         actor_hidden_dims=[256, 256, 128],
@@ -39,10 +38,10 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
         use_clipped_value_loss=True,
         clip_param=0.2,
         # v17: entropy を下げて学習可能な std に収束させる（v16 では std>11 に発散）
-        entropy_coef=0.005,
+        entropy_coef=0.004,
         num_learning_epochs=8,
         num_mini_batches=32,
-        learning_rate=2.5e-4,
+        learning_rate=1.2e-4,
         schedule="adaptive",
         # exp_030: gamma_per_physics_step=0.99, decimation=10 → 0.99^10
         gamma=0.904,

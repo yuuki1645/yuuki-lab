@@ -5,7 +5,7 @@
 
 """exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
 
-v21: v18 ckpt からの fine-tune（低ノイズ・低 LR）。
+v23: 1 run あたり max 3000 iter（resume 時は ckpt iter + 残り）。
 """
 
 from isaaclab.utils import configclass
@@ -16,7 +16,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 @configclass
 class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 5000
+    max_iterations = 3000
     save_interval = 400
     experiment_name = "biped_ppo_walk"
     # 学習メトリクスは WandB に記録（--logger tensorboard で上書き可能）
@@ -25,8 +25,8 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     empirical_normalization = True
 
     policy = RslRlPpoActorCriticCfg(
-        # v21: 既存歩行ポリシーの微調整向けに探索を抑える
-        init_noise_std=0.32,
+        # v23: 探索をさらに抑えて fine-tune 安定化（v22 で std が 0.59 まで増大）
+        init_noise_std=0.28,
         actor_obs_normalization=True,
         critic_obs_normalization=True,
         actor_hidden_dims=[256, 256, 128],
@@ -38,7 +38,7 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
         use_clipped_value_loss=True,
         clip_param=0.2,
         # v17: entropy を下げて学習可能な std に収束させる（v16 では std>11 に発散）
-        entropy_coef=0.004,
+        entropy_coef=0.003,
         num_learning_epochs=8,
         num_mini_batches=32,
         learning_rate=1.2e-4,

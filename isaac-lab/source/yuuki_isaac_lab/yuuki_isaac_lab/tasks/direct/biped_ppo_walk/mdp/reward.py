@@ -155,7 +155,9 @@ def compute_step_reward(
     landing_bonus = torch.zeros_like(dx)
     alternating_landing_bonus = torch.zeros_like(dx)
     right_landing_bonus = torch.zeros_like(dx)
+    left_landing_bonus = torch.zeros_like(dx)
     right_ss_bonus = torch.zeros_like(dx)
+    left_ss_bonus = torch.zeros_like(dx)
     foot_swap_bonus = torch.zeros_like(dx)
     duration_bonus = torch.zeros_like(dx)
     milestone_bonus = torch.zeros_like(dx)
@@ -191,7 +193,7 @@ def compute_step_reward(
             torch.zeros_like(dx),
         )
 
-        # 右足着地ボーナス（交互歩行の右側フェーズを強化）
+        # 右足着地ボーナス（交互歩行の右側フェーズ）
         if getattr(cfg, "right_landing_bonus_scale", 0.0) > 0.0:
             right_land_ok = shaping_allowed & biped.right_landed
             right_land_ok = right_land_ok & (right_toe_z <= cfg.landing_max_toe_z) & (right_heel_z <= cfg.landing_max_heel_z)
@@ -201,8 +203,17 @@ def compute_step_reward(
                 torch.zeros_like(dx),
             )
 
-        # 右足片脚支持中の前進ボーナス（左ピボット偏重からの脱却）
-        right_ss_bonus = torch.zeros_like(dx)
+        # 左足着地ボーナス（右ピボット偏重からの脱却）
+        if getattr(cfg, "left_landing_bonus_scale", 0.0) > 0.0:
+            left_land_ok = shaping_allowed & biped.left_landed
+            left_land_ok = left_land_ok & (left_toe_z <= cfg.landing_max_toe_z) & (left_heel_z <= cfg.landing_max_heel_z)
+            left_landing_bonus = torch.where(
+                left_land_ok,
+                torch.full_like(dx, cfg.left_landing_bonus_scale),
+                torch.zeros_like(dx),
+            )
+
+        # 右足片脚支持中の前進ボーナス
         if getattr(cfg, "right_single_support_bonus_scale", 0.0) > 0.0:
             rss_min_dx = getattr(cfg, "right_single_support_min_dx", cfg.forward_min_dx)
             rss_ok = shaping_allowed & biped.single_support & (biped.single_support_side == -1)
@@ -210,6 +221,17 @@ def compute_step_reward(
             right_ss_bonus = torch.where(
                 rss_ok,
                 torch.full_like(dx, cfg.right_single_support_bonus_scale),
+                torch.zeros_like(dx),
+            )
+
+        # 左足片脚支持中の前進ボーナス（右ピボット偏重の鏡像）
+        if getattr(cfg, "left_single_support_bonus_scale", 0.0) > 0.0:
+            lss_min_dx = getattr(cfg, "left_single_support_min_dx", cfg.forward_min_dx)
+            lss_ok = shaping_allowed & biped.single_support & (biped.single_support_side == 1)
+            lss_ok = lss_ok & (dx >= lss_min_dx)
+            left_ss_bonus = torch.where(
+                lss_ok,
+                torch.full_like(dx, cfg.left_single_support_bonus_scale),
                 torch.zeros_like(dx),
             )
 
@@ -347,16 +369,29 @@ def compute_step_reward(
             torch.zeros_like(dx),
         )
 
-    # 左右接地の偏り: 左片脚ピボットが続く degenerate gait を段階ペナルティ
+    # 左右接地の偏り: 同側片脚ピボットが続く degenerate gait を左右対称に段階ペナルティ
     contact_imbalance_penalty = torch.zeros_like(dx)
     imb_scale = getattr(cfg, "contact_imbalance_penalty_scale", 0.0)
     imb_after = getattr(cfg, "contact_imbalance_streak_after", 0)
     if imb_scale > 0.0 and imb_after > 0:
-        left_pivot = biped.single_support & (biped.single_support_side == 1)
+        pivot_streak = biped.single_support
         streak_over = biped.same_side_streak.float() - float(imb_after)
         contact_imbalance_penalty = torch.where(
-            left_pivot & (streak_over > 0.0),
+            pivot_streak & (streak_over > 0.0),
             streak_over * imb_scale,
+            torch.zeros_like(dx),
+        )
+
+    # 右足ピボット専用ペナルティ（右偏重 degenerate gait の直接抑制）
+    right_pivot_penalty = torch.zeros_like(dx)
+    rp_scale = getattr(cfg, "right_pivot_penalty_scale", 0.0)
+    rp_after = getattr(cfg, "right_pivot_streak_after", 0)
+    if rp_scale > 0.0 and rp_after > 0:
+        right_pivot = biped.single_support & (biped.single_support_side == -1)
+        streak_over = biped.same_side_streak.float() - float(rp_after)
+        right_pivot_penalty = torch.where(
+            right_pivot & (streak_over > 0.0),
+            streak_over * rp_scale,
             torch.zeros_like(dx),
         )
 
@@ -443,7 +478,9 @@ def compute_step_reward(
         + landing_bonus
         + alternating_landing_bonus
         + right_landing_bonus
+        + left_landing_bonus
         + right_ss_bonus
+        + left_ss_bonus
         + foot_swap_bonus
         + duration_bonus
         + milestone_bonus
@@ -459,6 +496,7 @@ def compute_step_reward(
         - fall_forward_penalty
         - same_side_streak_penalty
         - contact_imbalance_penalty
+        - right_pivot_penalty
         - backward_dx_penalty
         - lateral_vel_penalty
         - ang_vel_penalty

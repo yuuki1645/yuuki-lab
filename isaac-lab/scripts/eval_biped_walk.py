@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import sys
 
 from isaaclab.app import AppLauncher
 
@@ -16,7 +17,9 @@ parser.add_argument("--load_run", type=str, default=None, help="logs/rsl_rl/bipe
 parser.add_argument("--checkpoint", type=str, default=None, help="チェックポイントファイル名（省略時は最新）。")
 parser.add_argument("--seed", type=int, default=42)
 AppLauncher.add_app_launcher_args(parser)
-args_cli = parser.parse_args()
+# Hydra に渡す引数と分離（train.py / play.py と同様）
+args_cli, hydra_args = parser.parse_known_args()
+sys.argv = [sys.argv[0]] + hydra_args
 
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app

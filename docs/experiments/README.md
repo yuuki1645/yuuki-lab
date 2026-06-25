@@ -12,5 +12,6 @@
 | 実験 | 入口 | 実験フォルダ |
 |------|------|--------------|
 | exp_030_biped_ppo_walk | [README](exp_030_biped_ppo_walk/README.md) | [experiments/exp_030_biped_ppo_walk/](../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) |
+| isaac_biped_ppo_walk | [README](isaac_biped_ppo_walk/README.md) | [isaac-lab/source/yuuki_isaac_lab/.../biped_ppo_walk/](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/) |
 
 新規 `exp_*` を追加するときは、本ディレクトリに `<exp_name>/` を作成し、実験 README からリンクする。

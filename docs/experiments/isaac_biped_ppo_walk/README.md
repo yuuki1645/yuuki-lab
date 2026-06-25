@@ -8,7 +8,7 @@ Isaac Sim 上の二足歩行 PPO（`YuukiLab-BipedPpoWalk-Direct-v0`）の実験
 |--------------|------|
 | [iterations.md](iterations.md) | **反復改善ログ**（分析・判断・実装・結果） |
 | タスク README | `isaac-lab/source/yuuki_isaac_lab/.../biped_ppo_walk/README.md` |
-| MuJoCo 本線（参照） | [exp_030_biped_ppo_walk](../exp_030_biped_ppo_walk/README.md) |
+| 報酬設計の背景（参照のみ） | [exp_030 reward.md](../exp_030_biped_ppo_walk/reward.md) |
 
 ## 現在の目的（例）
 

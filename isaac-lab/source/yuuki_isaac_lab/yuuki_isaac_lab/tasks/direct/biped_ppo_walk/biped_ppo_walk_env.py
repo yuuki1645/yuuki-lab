@@ -94,6 +94,8 @@ class BipedPpoWalkEnv(DirectRLEnv):
         self.prev_step_action = torch.zeros(n, self.cfg.action_space, device=self.device)
         # エピソード開始時 IMU X（移動距離計測用）
         self.episode_start_imu_x = torch.zeros(n, device=self.device)
+        # 直近終了エピソードの +X 移動距離（eval_biped_walk.py 用）
+        self.last_episode_displacement = torch.zeros(n, device=self.device)
         # 累積移動距離マイルストーン（2/5/10/15 m）の到達済みレベル
         self.milestone_level = torch.zeros(n, device=self.device, dtype=torch.long)
         self.survival_milestone_level = torch.zeros(n, device=self.device, dtype=torch.long)
@@ -385,6 +387,7 @@ class BipedPpoWalkEnv(DirectRLEnv):
                 reset_ids = torch.as_tensor(list(env_ids), device=self.device, dtype=torch.long)
             if reset_ids.numel() > 0:
                 displacement = self._last_physics["imu_x"][reset_ids] - self.episode_start_imu_x[reset_ids]
+                self.last_episode_displacement[reset_ids] = displacement
                 self.extras.setdefault("log", {})
                 self.extras["log"]["Metrics/episode_displacement_x"] = displacement.mean()
 

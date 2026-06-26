@@ -23,8 +23,8 @@ from .mdp.actuators import ACTION_DIM, FOOT_CONTACT_Z_OFF, FOOT_CONTACT_Z_ON, JO
 class BipedRewardCfg:
     """exp_030 conf/reward/baseline.yaml 相当。
 
-    v24 (exp/biped-walk-5m-stable): v23 の ~1.5 m プラトー突破。
-    右ピボット時の前進遮断・左支持のみ足前進・歩行速度強化で 5 m を狙う。
+    v25 (exp/biped-walk-5m-stable): v24 No-Go 後、v23 報酬に戻し長寿命ボーナスのみ強化。
+    ep ~160 step 転倒ボトルネックを緩和して累積 5 m を狙う（1 軸変更）。
     """
 
     # ENABLE 群（exp_030 conf/reward/baseline.yaml）
@@ -62,9 +62,9 @@ class BipedRewardCfg:
     forward_reward_scale: float = 70.0
     enable_displacement_progress_bonus: bool = True
     displacement_progress_scale: float = 0.25
-    # v24: 歩行速度を上げて 5 m を短い ep 長で到達しやすくする
-    forward_vel_reward_scale: float = 10.0
-    forward_vel_max: float = 0.55
+    # v23 ベース（v24 の速度強化は fine-tune 崩壊のため戻す）
+    forward_vel_reward_scale: float = 8.0
+    forward_vel_max: float = 0.4
 
     # v16: 初期学習では前進ゲートをやや緩め（片脚支持は維持して歩行定義は保持）
     forward_min_upright: float = 0.50
@@ -91,19 +91,19 @@ class BipedRewardCfg:
     landing_max_heel_z: float = 0.07
     landing_max_forward_lean: float = 0.3
     # v12 相当（v14 の過剰強化は fine-tune 不安定化の原因）
-    # v24: 交互歩行・foot_swap をさらに強化
-    alternating_landing_bonus_scale: float = 2.50
-    foot_swap_bonus_scale: float = 1.50
+    # v23 ベース（v24 の過剰強化を戻す）
+    alternating_landing_bonus_scale: float = 2.00
+    foot_swap_bonus_scale: float = 1.20
     # v23: 右足フェーズの報酬を廃止し、左足フェーズを強化
     right_landing_bonus_scale: float = 0.0
     left_landing_bonus_scale: float = 1.80
     same_side_streak_penalty_after: int = 6
     same_side_streak_penalty_scale: float = 0.40
-    forward_block_same_side_streak: int = 10
-    # v24: 右ピボット継続時は前進報酬を即遮断（交互歩行を強制）
-    forward_block_right_pivot_streak: int = 2
-    # v24: 右片脚支持時の足前進は forward_foot に含めない
-    forward_foot_left_stance_only: bool = True
+    forward_block_same_side_streak: int = 12
+    # v24 の右ピボット即遮断は無効化（v25 は v23 ベース）
+    forward_block_right_pivot_streak: int = 0
+    # v24 の左支持限定は無効化
+    forward_foot_left_stance_only: bool = False
     # v23: 左右対称の片脚ピボット抑制（ベース）
     contact_imbalance_penalty_scale: float = 0.35
     contact_imbalance_streak_after: int = 4
@@ -137,10 +137,10 @@ class BipedRewardCfg:
     progress_reward_scale: float = 50.0
     progress_min_upright: float = 0.6
     progress_require_single_support: bool = True
-    # v23: 長寿命ボーナスをさらに強化（ep ~165 step の転倒ボトルネック対策）
+    # v25: 長寿命ボーナスのみ強化（1 軸）— ep 延伸で 5 m 累積距離を狙う
     enable_long_horizon_bonus: bool = True
     long_horizon_step_threshold: int = 50
-    long_horizon_bonus_scale: float = 1.00
+    long_horizon_bonus_scale: float = 1.40
     knee_hyperflex_max_rad: float = 0.95
     knee_hyperflex_penalty_scale: float = 2.5
     knee_hyperflex_aerial_only: bool = True
@@ -160,7 +160,7 @@ class BipedRewardCfg:
 class BipedTerminationCfg:
     """exp_030 conf/termination/default.yaml 相当。
 
-    v24: 転倒緩和を維持し長寿命 step を最優先。
+    v25: v23 相当の転倒緩和を維持。
     """
 
     min_imu_z: float = 0.18

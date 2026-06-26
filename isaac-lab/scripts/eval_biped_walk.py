@@ -57,37 +57,31 @@ def main(env_cfg, agent_cfg):
     runner.load(resume_path)
     policy = runner.get_inference_policy(device=env.unwrapped.device)
 
+    # play.py と同様: reset は呼ばず get_observations から開始
     obs = env.get_observations()
     num_envs = env.unwrapped.num_envs
     max_steps = env.unwrapped.max_episode_length
 
-    # 各 env のエピソード統計
-    ep_lengths = torch.zeros(num_envs, device=env.unwrapped.device)
-    ep_rewards = torch.zeros(num_envs, device=env.unwrapped.device)
-    ep_displacements = torch.zeros(num_envs, device=env.unwrapped.device)
-    ep_single_support = torch.zeros(num_envs, device=env.unwrapped.device)
+    # 完了エピソードごとの移動距離を蓄積（env スロットの上書きを避ける）
+    completed_displacements: list[float] = []
+    completed_single_support: list[float] = []
     ep_steps = torch.zeros(num_envs, device=env.unwrapped.device)
-    completed = 0
-    start_imu_x = torch.zeros(num_envs, device=env.unwrapped.device)
+    ep_single_support = torch.zeros(num_envs, device=env.unwrapped.device)
 
-    env.reset()
-    start_imu_x[:] = env.unwrapped.extras.get("log", {}).get("Metrics/mean_imu_x", 0.0)
-    # 直接 env から IMU X を取得
-    if hasattr(env.unwrapped, "_last_physics") and env.unwrapped._last_physics:
-        start_imu_x[:] = env.unwrapped._last_physics["imu_x"]
+    # 各 env のエピソード開始 IMU X（環境が episode_start_imu_x を保持）
+    unwrapped = env.unwrapped
 
-    total_control_steps = args_cli.episodes * max_steps
-    for step_idx in range(total_control_steps):
+    # 各 env が episodes 回終了するか、安全上限に達するまで実行
+    target_episodes = args_cli.episodes * num_envs
+    max_control_steps = args_cli.episodes * max_steps
+    for step_idx in range(max_control_steps):
         with torch.inference_mode():
             actions = policy(obs)
-        obs, rewards, dones, _ = env.step(actions)
+        obs, _, dones, _ = env.step(actions)
 
         unwrapped = env.unwrapped
         if unwrapped._last_physics:
-            physics = unwrapped._last_physics
             biped = unwrapped._last_biped_ctx
-            ep_rewards += rewards
-            ep_lengths += 1.0
             ep_steps += 1.0
             if biped is not None:
                 ep_single_support += biped.single_support.float()
@@ -97,36 +91,38 @@ def main(env_cfg, agent_cfg):
             if done_ids.ndim == 0:
                 done_ids = done_ids.unsqueeze(0)
             for env_id in done_ids.tolist():
-                if ep_steps[env_id] > 0 and completed < args_cli.episodes * num_envs:
-                    if unwrapped._last_physics:
-                        disp = unwrapped._last_physics["imu_x"][env_id] - start_imu_x[env_id]
-                        ep_displacements[env_id] = disp
-                    completed += 1
-                ep_lengths[env_id] = 0.0
-                ep_rewards[env_id] = 0.0
+                if ep_steps[env_id] > 0 and len(completed_displacements) < target_episodes:
+                    # リセット直前に環境が記録した移動距離（学習ログと同一定義）
+                    disp = unwrapped.last_episode_displacement[env_id].item()
+                    completed_displacements.append(disp)
+                    ss = (ep_single_support[env_id] / ep_steps[env_id]).item()
+                    completed_single_support.append(ss)
                 ep_steps[env_id] = 0.0
                 ep_single_support[env_id] = 0.0
-                if unwrapped._last_physics:
-                    start_imu_x[env_id] = unwrapped._last_physics["imu_x"][env_id]
 
-        if (step_idx + 1) % 500 == 0:
-            print(f"[eval step {step_idx + 1}] completed_episodes={completed}")
+        if (step_idx + 1) % 200 == 0:
+            print(
+                f"[eval step {step_idx + 1}] completed_episodes={len(completed_displacements)}/{target_episodes}",
+                flush=True,
+            )
+        if len(completed_displacements) >= target_episodes:
+            break
 
-    # 集計（完了エピソードのみ）
+    disp_tensor = torch.tensor(completed_displacements, device=env.unwrapped.device)
     print("\n========== BIPED WALK EVALUATION ==========")
     print(f"Checkpoint: {resume_path}")
-    print(f"Envs: {num_envs}, target episodes/env: {args_cli.episodes}")
-    if unwrapped._last_physics and unwrapped._last_biped_ctx:
-        ss_ratio = (
-            ep_single_support / torch.clamp(ep_steps, min=1.0)
-        ).mean()
-        print(f"Mean single_support ratio: {ss_ratio.item():.3f}")
-    print(f"Mean episode displacement +X: {ep_displacements.mean().item():.3f} m")
-    print(f"Max episode displacement +X: {ep_displacements.max().item():.3f} m")
-    success_15m = (ep_displacements >= 15.0).float().mean().item()
-    success_5m = (ep_displacements >= 5.0).float().mean().item()
-    print(f"Success rate >= 5 m: {success_5m * 100:.1f}%")
-    print(f"Success rate >= 15 m: {success_15m * 100:.1f}%")
+    print(f"Envs: {num_envs}, episodes/env: {args_cli.episodes}, completed: {len(completed_displacements)}")
+    if completed_single_support:
+        print(f"Mean single_support ratio: {sum(completed_single_support) / len(completed_single_support):.3f}")
+    if len(disp_tensor) == 0:
+        print("WARNING: No completed episodes recorded.")
+    else:
+        print(f"Mean episode displacement +X: {disp_tensor.mean().item():.3f} m")
+        print(f"Max episode displacement +X: {disp_tensor.max().item():.3f} m")
+        success_15m = (disp_tensor >= 15.0).float().mean().item()
+        success_5m = (disp_tensor >= 5.0).float().mean().item()
+        print(f"Success rate >= 5 m: {success_5m * 100:.1f}%")
+        print(f"Success rate >= 15 m: {success_15m * 100:.1f}%")
     print("==========================================\n")
 
     env.close()

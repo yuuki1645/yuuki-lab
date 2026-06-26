@@ -5,7 +5,7 @@
 
 """exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
 
-    v25: v23 ckpt から fine-tune（v24 No-Go 後、long_horizon 強化）。
+    v27: v25 ckpt から fine-tune（displacement_progress 強化）。
 """
 
 from isaaclab.utils import configclass

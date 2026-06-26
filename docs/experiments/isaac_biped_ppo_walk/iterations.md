@@ -12,6 +12,119 @@
 |---|-----------|----------|----------------|------|
 | 0 | v24 | `v24_5m_alternating` | 0.0% | No-Go（v23 より悪化） |
 | 1 | v25 | `v25_5m_longhorizon` | 0.0% | Go（微改善、目標未達） |
+| 2 | v26 | `v26_5m_milestone` | 0.0% | No-Go（v25 より悪化） |
+| 3 | v27 | `v27_5m_progress` | （学習中） | 進行中 |
+
+---
+
+## Iteration 3 — v27_5m_progress（2026-06-26）
+
+### メタデータ
+
+| 項目 | 値 |
+|------|-----|
+| 目的 | 5 m 安定歩行（Success rate >= 80%） |
+| ベースライン run | `2026-06-26_08-14-43_v25_5m_longhorizon` / `model_2999.pt` |
+| 備考 | v26 は採用せず v25 ckpt から継続 |
+
+### 1. 前回結果の分析（v26）
+
+| 指標 | v26 値 | 所見 |
+|------|--------|------|
+| `episode_displacement_x` (train) | 1.10 m | v25 比悪化 |
+| `mean_milestone_level` | 0.31 | v25 の 0.42 から低下 |
+| Success rate >= 5 m (eval) | 0% | mean 1.35 m, max 2.40 m（v25 max 3.41 m） |
+
+**観察**: スパースな 5 m マイルストーン強化は value 不安定化（終盤 loss ~157）を招き、連続的前進 shaping より劣る。
+
+### 2. 改善判断（実装前）
+
+| 項目 | 内容 |
+|------|------|
+| **仮説** | 3〜4 m 区間では毎ステップの `displacement_progress` 報酬を強化すれば、スパース milestone より安定して 5 m に近づける |
+| **提案変更** | `displacement_progress_scale`: 0.25 → 0.40（**1 軸のみ**）。v26 の milestone 変更は v25 値（35.0）へ戻す |
+| **期待効果** | `episode_displacement_x` 1.5 m → 2.5 m+、eval max 3.4 m → 5 m 付近 |
+| **リスク** | 前進ハック（小刻みすり足）への偏り |
+
+### 3. 実際の変更
+
+| ファイル | 変更内容 | 根拠 |
+|----------|----------|------|
+| `biped_ppo_walk_env_cfg.py` | `displacement_progress_scale` 0.25→0.40、milestone[2] 55→35 復帰 | 連続前進 shaping 強化（1 軸） |
+
+**スモーク結果**: `v27_smoke_progress` 5 iter — **Go**（クラッシュなし）
+
+### 4. 学習・評価結果
+
+**学習**: 進行中 — `v27_5m_progress`（v25 `model_2999.pt` から resume, +600 iter）
+
+---
+
+## Iteration 2 — v26_5m_milestone（2026-06-26）
+
+### メタデータ
+
+| 項目 | 値 |
+|------|-----|
+| 目的 | 5 m 安定歩行（Success rate >= 80%） |
+| ベースライン run | `2026-06-26_08-14-43_v25_5m_longhorizon` / `model_2999.pt` |
+| W&B ベース | `0uhyabl8` |
+
+### 1. 前回結果の分析（v25）
+
+| 指標 | v25 値 | 所見 |
+|------|--------|------|
+| `episode_displacement_x` (train) | 1.23 m | v23 同等、プラトー継続 |
+| `mean_milestone_level` | ~0.42 | 2 m 到達は安定、5 m（level 2）手前 |
+| `alternating_landing_ratio` | 0.006 | 依然として低い |
+| `mean_episode_length` | 170 step | v23 比 +12 step（long_horizon 効果） |
+| Success rate >= 5 m (eval) | 0% | mean 1.51 m, **max 3.41 m** |
+
+**観察**: long_horizon で ep 長は伸びたが、5 m 到達のスパース報酬が弱く、3〜4 m で頭打ち。`mean_milestone_level` が 0.5 前後で停滞。
+
+### 2. 改善判断（実装前）
+
+| 項目 | 内容 |
+|------|------|
+| **仮説** | 5 m マイルストーン報酬が希薄で、3 m 付近の歩行で学習信号が不足している |
+| **提案変更** | `displacement_milestone_scales[2]`（5 m ティア）: 35.0 → 55.0（**1 軸のみ**） |
+| **期待効果** | `mean_milestone_level`↑, eval max displacement 3.4 m → 5 m+ |
+| **リスク** | マイルストーン報酬への過学習（転倒直前のラッシュ） |
+
+### 3. 実際の変更
+
+| ファイル | 変更内容 | 根拠 |
+|----------|----------|------|
+| `biped_ppo_walk_env_cfg.py` | `displacement_milestone_scales[2]` 35.0→55.0 | 5 m 到達インセンティブ強化（1 軸） |
+
+**スモーク結果**: `v26_smoke_milestone` 5 iter — **Go**（クラッシュなし）
+
+### 4. 学習・評価結果
+
+**学習**: `2026-06-26_14-50-54_v26_5m_milestone`、iter 3598、`model_3598.pt`、所要 ~85 min
+
+**eval** (`model_3598.pt`, 640 ep):
+
+| 指標 | v26 | v25 比 |
+|------|-----|--------|
+| Mean displacement +X | 1.35 m | **-0.16 m** |
+| Max displacement +X | 2.40 m | **-1.01 m** |
+| Success rate >= 5 m | 0.0% | — |
+| single_support_ratio | 0.48 | -0.02 |
+
+**W&B 終盤**: `episode_displacement_x` 1.10 m（v25: 1.23）、`mean_milestone_level` 0.31（v25: 0.42）— 全面悪化
+
+### 5. 判定
+
+| 項目 | 結果 |
+|------|------|
+| 本番 Go/No-Go | **No-Go** — v25 ベースラインより悪化 |
+| **目的達成** | **未達** |
+
+### 6. 次イテレーション（v27）
+
+- **次の仮説**: スパース マイルストーン強化は value 不安定化を招く。v25 `model_2999.pt` に戻し、`displacement_progress_scale` 0.25→0.40 で連続的前進 shaping を強化（1 軸）
+- **ベース**: v25（v26 は採用しない）
 
 ---
 

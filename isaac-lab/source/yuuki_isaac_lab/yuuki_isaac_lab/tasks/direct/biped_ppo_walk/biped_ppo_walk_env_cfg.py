@@ -23,8 +23,8 @@ from .mdp.actuators import ACTION_DIM, FOOT_CONTACT_Z_OFF, FOOT_CONTACT_Z_ON, JO
 class BipedRewardCfg:
     """exp_030 conf/reward/baseline.yaml 相当。
 
-    v25 (exp/biped-walk-5m-stable): v24 No-Go 後、v23 報酬に戻し長寿命ボーナスのみ強化。
-    ep ~160 step 転倒ボトルネックを緩和して累積 5 m を狙う（1 軸変更）。
+    v27 (exp/biped-walk-5m-stable): v25 ベースに連続前進 shaping のみ強化。
+    v26 のスパース milestone 強化は No-Go のため戻し、progress 報酬で 5 m を狙う（1 軸変更）。
     """
 
     # ENABLE 群（exp_030 conf/reward/baseline.yaml）
@@ -52,7 +52,7 @@ class BipedRewardCfg:
     # 累積 +X 移動距離マイルストーン（1 / 2 / 5 / 10 / 15 m）
     enable_displacement_milestones: bool = True
     displacement_milestone_targets: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0, 15.0)
-    # 5 m 到達を主目標とするため 5 m ボーナスを強化
+    # v25 ベース（v26 の 5 m ティア 55.0 は No-Go のため 35.0 に復帰）
     displacement_milestone_scales: tuple[float, ...] = (2.0, 6.0, 35.0, 40.0, 45.0)
     # v16: 早期に生存・前進の達成感を与える（閾値を下げ、5 m マイルストーンを強化）
     enable_survival_milestones: bool = True
@@ -61,7 +61,8 @@ class BipedRewardCfg:
 
     forward_reward_scale: float = 70.0
     enable_displacement_progress_bonus: bool = True
-    displacement_progress_scale: float = 0.25
+    # v27: 連続的前進 shaping を強化（スパース milestone の代替、1 軸変更）
+    displacement_progress_scale: float = 0.40
     # v23 ベース（v24 の速度強化は fine-tune 崩壊のため戻す）
     forward_vel_reward_scale: float = 8.0
     forward_vel_max: float = 0.4

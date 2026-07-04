@@ -136,4 +136,5 @@ def step_reward(env: ManagerBasedRLEnv) -> torch.Tensor:
         pose_termination_penalty=cfg.termination.pose_termination_penalty,
     )
     terminal_penalty = torch.where(pose_done, pose_penalty, torch.zeros_like(reward))
+    
     return reward + terminal_penalty

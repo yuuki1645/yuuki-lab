@@ -20,12 +20,11 @@ def bad_pose(env: ManagerBasedRLEnv, min_imu_z: float, min_imu_upright: float) -
     """
     snap = ensure_step_updated(env)
     physics = snap.physics
-    return termination_mdp.is_bad_pose(
-        imu_z=physics["imu_z"],
-        upright=physics["upright"],
-        min_imu_z=min_imu_z,
-        min_imu_upright=min_imu_upright,
-    )
+
+    low_height = physics["imu_z"] < min_imu_z
+    too_tilted = physics["upright"] < min_imu_upright
+
+    return low_height | too_tilted
 
 
 def time_out(env: ManagerBasedRLEnv) -> torch.Tensor:

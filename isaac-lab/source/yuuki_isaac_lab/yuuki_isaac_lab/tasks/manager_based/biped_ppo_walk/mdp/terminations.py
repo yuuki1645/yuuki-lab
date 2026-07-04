@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Termination terms (same as Direct _get_dones)."""
+"""Termination terms for the biped walk task."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from isaaclab.envs import ManagerBasedRLEnv
 from .episode_state import ensure_step_updated, get_biped_state
 
 
-def bad_pose(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """Terminate when consecutive bad-pose steps exceed threshold."""
+def bad_pose(env: ManagerBasedRLEnv, consecutive_steps: int) -> torch.Tensor:
+    """Terminate when consecutive bad-pose steps exceed ``consecutive_steps``."""
     ensure_step_updated(env)
     state = get_biped_state(env)
-    return state.bad_pose_steps >= env.cfg.termination.bad_pose_consecutive_steps
+    return state.bad_pose_steps >= consecutive_steps
 
 
 def time_out(env: ManagerBasedRLEnv) -> torch.Tensor:

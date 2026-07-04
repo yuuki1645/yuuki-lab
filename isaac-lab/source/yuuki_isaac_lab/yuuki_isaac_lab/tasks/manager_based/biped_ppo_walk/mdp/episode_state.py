@@ -26,6 +26,7 @@ from .actuators import (
     TOE_SITE_OFFSET,
     ctrl_ranges_tensor,
 )
+from .env_params import get_max_dx_per_step
 from .reward_utils import compute_effort_penalty, compute_forward_allowed, compute_shaping_allowed
 
 if TYPE_CHECKING:
@@ -131,7 +132,7 @@ class BipedEpisodeState:
         lean_fwd_body, heading_align, tilt_horiz = pose_mdp.pose_metrics(imu_zaxis, body_x)
         upright = imu_zaxis[:, 2]
 
-        term_cfg = self._env.cfg.termination  # type: ignore[attr-defined]
+        term_cfg = self._env.cfg.termination_params  # type: ignore[attr-defined]
         left_on = termination_mdp.foot_contact_from_heights(
             left_foot[:, 2], left_toe[:, 2], left_heel[:, 2], term_cfg.foot_contact_z_on, term_cfg.foot_contact_z_off
         )
@@ -170,7 +171,7 @@ class BipedEpisodeState:
 
     def _update_bad_pose_counter(self, physics: dict[str, torch.Tensor], biped: gait_mdp.BipedStepContext) -> None:
         """Advance consecutive bad-pose counter used by termination and terminal penalty."""
-        term_cfg = self._env.cfg.termination  # type: ignore[attr-defined]
+        term_cfg = self._env.cfg.termination_params  # type: ignore[attr-defined]
         pose_bad, _ = termination_mdp.compute_pose_termination(
             imu_z=physics["imu_z"],
             upright=physics["upright"],
@@ -223,8 +224,8 @@ class BipedEpisodeState:
             self.best_imu_x,
             upright=physics["upright"],
             single_support=biped_ctx.single_support,
-            progress_min_upright=cfg.reward.progress_min_upright,
-            progress_require_single_support=cfg.reward.progress_require_single_support,
+            progress_min_upright=cfg.walk_params.progress_min_upright,
+            progress_require_single_support=cfg.walk_params.progress_require_single_support,
         )
         imu_dz = physics["imu_z"] - self.prev_imu_z
 
@@ -233,12 +234,12 @@ class BipedEpisodeState:
         self.prev_action = action_mdp.clip_policy_action(raw).clone()
 
         forward_allowed = compute_forward_allowed(
-            cfg.reward,
+            cfg.walk_params,
             biped_ctx,
             upright=physics["upright"],
             lean_fwd_body=physics["lean_fwd_body"],
         )
-        shaping_allowed = compute_shaping_allowed(cfg.reward, forward_allowed, dx)
+        shaping_allowed = compute_shaping_allowed(cfg.walk_params, forward_allowed, dx)
         total_displacement = physics["imu_x"] - self.episode_start_imu_x
 
         robot = self._env.scene["robot"]
@@ -246,12 +247,12 @@ class BipedEpisodeState:
             robot.data.applied_torque[:, self.joint_ids],
             robot.data.joint_vel[:, self.joint_ids],
             dt=cfg.sim.dt * float(cfg.decimation),
-            scale=cfg.reward.effort_penalty_scale if cfg.reward.enable_effort else 0.0,
+            scale=1.0,
         )
 
         self._update_bad_pose_counter(physics, biped_ctx)
 
-        max_dx = cfg.max_dx_per_step_base * float(cfg.decimation)
+        max_dx = get_max_dx_per_step(cfg.observation_params, cfg.decimation)
         self.snapshot = BipedStepSnapshot(
             physics=physics,
             biped=biped_ctx,

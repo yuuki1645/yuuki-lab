@@ -3,7 +3,7 @@
 
 # type: ignore
 
-"""PPO hyperparameters for Manager-Based BipedPpoWalk (same as Direct)."""
+"""PPO hyperparameters for Manager-Based BipedPpoWalk."""
 
 from isaaclab.utils import configclass
 

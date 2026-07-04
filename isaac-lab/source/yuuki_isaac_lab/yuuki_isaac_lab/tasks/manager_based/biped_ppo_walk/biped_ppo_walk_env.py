@@ -30,7 +30,7 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         super().__init__(cfg, render_mode, **kwargs)
 
     def load_managers(self) -> None:
-        """Initialize biped episode state before observation manager probes ``policy_obs``."""
+        """Initialize biped episode state before observation manager probes policy terms."""
         self.biped_state = BipedEpisodeState(self)
         super().load_managers()
 

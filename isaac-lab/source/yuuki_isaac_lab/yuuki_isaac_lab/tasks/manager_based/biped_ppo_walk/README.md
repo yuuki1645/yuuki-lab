@@ -1,7 +1,7 @@
 # BipedPpoWalk — Manager-Based 版
 
 **Yuuki Lab 両脚交互片脚歩行 PPO** の Isaac Lab **ManagerBasedRLEnv** 実装です。  
-MDP は manager-based ワークフローに沿って **項ごとの `RewTerm`** に分解され、Direct 版とは独立したコードベースです。
+Direct 版とは独立したコードベースで、Isaac Lab の Manager ワークフローに沿って MDP を構成しています。
 
 ---
 
@@ -18,11 +18,11 @@ MDP は manager-based ワークフローに沿って **項ごとの `RewTerm`** 
 
 | 項目 | 内容 |
 |------|------|
-| 環境クラス | `ManagerBasedRLEnv` |
-| 報酬 | `RewardsCfg` の個別 `RewTerm`（`mdp/rewards.py`） |
-| 係数 | `BipedRewardCfg` → `_sync_reward_weights_from_cfg()` で weight に反映 |
-| 共有状態 | `mdp/episode_state.py`（歩行位相・ゲート・マイルストーン） |
-| Direct 版 | 別タスクとして残存（コード共有なし） |
+| 環境クラス | `ManagerBasedRLEnv` + `BipedEpisodeState`（歩行位相バッファ） |
+| 報酬 | `RewardsCfg` の個別 `RewTerm`（weight が係数） |
+| 観測 | `ObservationsCfg` の 17 個の `ObsTerm`（連結で 54 次元） |
+| 閾値 | `walk_params` / `observation_params` / `termination_params` |
+| Direct 版 | 別タスク（コード共有なし） |
 
 ---
 
@@ -30,49 +30,57 @@ MDP は manager-based ワークフローに沿って **項ごとの `RewTerm`** 
 
 ```
 biped_ppo_walk/
-├── biped_ppo_walk_env.py       # BipedPpoWalkEnv + episode state
-├── biped_ppo_walk_env_cfg.py   # Scene / RewardsCfg / BipedRewardCfg
+├── biped_ppo_walk_env.py
+├── biped_ppo_walk_env_cfg.py   # Scene / Obs / Reward / Event / Termination
 ├── agents/rsl_rl_ppo_cfg.py
 └── mdp/
-    ├── actuators.py            # 関節名・ctrlrange
-    ├── action.py               # [-1,1] → 関節位置目標
-    ├── gait.py                 # 着地エッジ・交互歩行コンテキスト
-    ├── pose.py / obs_norm.py
+    ├── walk_params.py          # 報酬ロジック用閾値
+    ├── observation_params.py   # 観測正規化スケール
     ├── episode_state.py        # スナップショット + バッファ
-    ├── rewards.py              # Manager 報酬項（1 関数 = 1 RewTerm）
-    ├── reward_utils.py         # マイルストーン・forward ゲート
-    ├── observations.py
-    ├── terminations.py
-    └── events.py
+    ├── observations.py         # 17 ObsTerm 関数
+    ├── rewards.py              # RewTerm 関数
+    ├── events.py               # reset + joint noise
+    └── ...
 ```
 
 ---
 
-## 報酬の変更方法
+## 設定の触り方
 
-1. **係数だけ変える** → `biped_ppo_walk_env_cfg.py` の `BipedRewardCfg` を編集（`__post_init__` が weight を同期）
-2. **項を無効化** → 対応する `enable_*` を `False`、または `self.rewards.<term> = None`
-3. **ロジックを変える** → `mdp/rewards.py` の該当関数を編集
-4. **新項を追加** → `mdp/rewards.py` に関数追加 + `RewardsCfg` に `RewTerm` 追加
+| 変更内容 | 編集先 |
+|----------|--------|
+| 報酬の強度 | `RewardsCfg.<term>.weight` |
+| 報酬ロジックの閾値 | `walk_params` |
+| 観測の正規化 | `observation_params` |
+| 観測項の ON/OFF | `ObservationsCfg.policy.<term> = None` |
+| 終了条件 | `termination_params` + `TerminationsCfg` |
+| リセット | `EventsCfg`（`reset_robot` / `reset_joint_noise`） |
+
+---
+
+## 観測レイアウト（54 次元）
+
+`ObservationsCfg.PolicyCfg` の **宣言順** で連結されます。
+
+| 項 | 次元 |
+|----|------|
+| imu_dx | 1 |
+| imu_gyro | 3 |
+| imu_zaxis | 3 |
+| imu_height | 1 |
+| left/right foot contact, dx, height | 6 |
+| single_support | 1 |
+| joint_pos / joint_vel / actions | 36 |
+| support_side / same_side_streak / episode_progress | 3 |
 
 ---
 
 ## 実行例
 
 ```powershell
-# スモーク
 python scripts/manager_based/smoke.py --headless --num_envs 4 --steps 200
-
-# 学習
-python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --num_envs 64 --max_iterations 5
-
-# 本番
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --num_envs 4096
-
-# 評価
 python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run <run_dir_name>
-
-# 再生
 python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name>
 ```
 
@@ -80,5 +88,6 @@ python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <r
 
 ## 変更時の注意
 
-- 観測次元を変えた場合は PPO 設定（`agents/rsl_rl_ppo_cfg.py`）も更新する
-- 報酬 sweep は `RewardsCfg` の weight または `BipedRewardCfg` の係数を 1 軸ずつ変更するのが推奨
+- 観測次元を変えた場合は PPO 設定とネットワーク入力次元を更新する
+- 報酬 ablation は `self.rewards.<term>.weight = 0.0` または `= None`
+- 観測 ablation は `self.observations.policy.<term> = None`

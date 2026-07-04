@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Reset events (Direct _write_robot_default_pose + joint noise)."""
+"""Reset events for the biped walk task."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def reset_robot_to_default(
     env_ids: torch.Tensor,
     asset_name: str = "robot",
 ) -> None:
-    """Write stand keyframe to sim and set joint position targets."""
+    """Write default stand keyframe to sim and set joint position targets."""
     robot = env.scene[asset_name]
     joint_pos = robot.data.default_joint_pos[env_ids]
     joint_vel = robot.data.default_joint_vel[env_ids]
@@ -38,14 +38,13 @@ def reset_robot_to_default(
     env.sim.forward()
 
 
-def reset_robot_with_joint_noise(
+def apply_reset_joint_noise(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor,
     asset_name: str = "robot",
     noise_rad: float = 0.010,
 ) -> None:
-    """Stand keyframe plus small joint-angle noise on reset."""
-    reset_robot_to_default(env, env_ids, asset_name=asset_name)
+    """Apply uniform joint-angle noise after the default reset pose."""
     if noise_rad <= 0.0:
         return
 

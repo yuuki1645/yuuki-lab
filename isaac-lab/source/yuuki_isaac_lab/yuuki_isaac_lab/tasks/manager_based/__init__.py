@@ -1,4 +1,4 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Manager-based タスク群（Isaac Lab ManagerBasedRLEnv ワークフロー）。"""
+"""Manager-based tasks (Isaac Lab ManagerBasedRLEnv workflow)."""

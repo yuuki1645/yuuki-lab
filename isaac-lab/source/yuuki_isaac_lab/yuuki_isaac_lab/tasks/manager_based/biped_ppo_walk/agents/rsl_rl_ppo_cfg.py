@@ -3,7 +3,7 @@
 
 # type: ignore
 
-"""Manager-Based 版 PPO ハイパーパラメータ（Direct 版と同一設定）。"""
+"""PPO hyperparameters for Manager-Based BipedPpoWalk (same as Direct)."""
 
 from isaaclab.utils import configclass
 
@@ -15,7 +15,7 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 3000
     save_interval = 400
-    # Direct 版ログと区別するため experiment_name を分離
+    # Separate log dir from Direct runs
     experiment_name = "biped_ppo_walk_manager"
     logger = "wandb"
     wandb_project = "biped_ppo_walk"

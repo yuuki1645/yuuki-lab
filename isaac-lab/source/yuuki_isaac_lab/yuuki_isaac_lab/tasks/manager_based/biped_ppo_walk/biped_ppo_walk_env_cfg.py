@@ -131,9 +131,9 @@ class RewardsCfg:
     """Reward terms for +X alternating biped walk."""
 
     forward_imu = RewTerm(func=mdp.forward_imu, weight=70.0)
-    forward_velocity = RewTerm(func=mdp.forward_velocity, weight=8.0)
-    forward_foot = RewTerm(func=mdp.forward_foot, weight=70.0)
-    progress = RewTerm(func=mdp.progress, weight=50.0)
+    # forward_velocity = RewTerm(func=mdp.forward_velocity, weight=8.0)
+    # forward_foot = RewTerm(func=mdp.forward_foot, weight=70.0)
+    # progress = RewTerm(func=mdp.progress, weight=50.0)
 
     # upright_bonus = RewTerm(func=mdp.upright_bonus, weight=0.8)
     # push_off_bonus = RewTerm(func=mdp.push_off_bonus, weight=0.35)

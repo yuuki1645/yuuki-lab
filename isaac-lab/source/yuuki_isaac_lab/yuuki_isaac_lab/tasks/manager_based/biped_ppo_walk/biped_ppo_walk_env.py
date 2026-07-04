@@ -32,7 +32,13 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         # Enable MJCF importer before spawn (required in headless kit)
         ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
+
+    def load_managers(self) -> None:
+        """Initialize biped episode state before observation manager probes ``policy_obs``."""
+        # ObservationManager._prepare_terms() calls policy_obs during super().__init__().
+        # BipedEpisodeState must exist before that probe (scene is already updated).
         self.biped_state = BipedEpisodeState(self)
+        super().load_managers()
 
     # --- eval_biped_walk.py / Direct compatibility ---
 

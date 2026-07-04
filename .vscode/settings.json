@@ -1,4 +1,23 @@
 {
     "files.encoding": "utf8",
-    "files.autoGuessEncoding": false
+    "files.autoGuessEncoding": false,
+    "python.defaultInterpreterPath": "C:/Users/yuukilab/miniconda3/envs/env_isaaclab/python.exe",
+    "python.analysis.extraPaths": [
+      "Z:/Projects/IsaacLab/source/isaaclab",
+      "Z:/Projects/IsaacLab/source/isaaclab_assets",
+      "Z:/Projects/IsaacLab/source/isaaclab_contrib",
+      "Z:/Projects/IsaacLab/source/isaaclab_mimic",
+      "Z:/Projects/IsaacLab/source/isaaclab_rl",
+      "Z:/Projects/IsaacLab/source/isaaclab_tasks",
+      "Z:/Projects/yuuki-lab/isaac-lab/source/yuuki_isaac_lab"
+    ],
+    "basedpyright.analysis.extraPaths": [
+      "Z:/Projects/IsaacLab/source/isaaclab",
+      "Z:/Projects/IsaacLab/source/isaaclab_assets",
+      "Z:/Projects/IsaacLab/source/isaaclab_contrib",
+      "Z:/Projects/IsaacLab/source/isaaclab_mimic",
+      "Z:/Projects/IsaacLab/source/isaaclab_rl",
+      "Z:/Projects/IsaacLab/source/isaaclab_tasks",
+      "Z:/Projects/yuuki-lab/isaac-lab/source/yuuki_isaac_lab"
+    ]
 }

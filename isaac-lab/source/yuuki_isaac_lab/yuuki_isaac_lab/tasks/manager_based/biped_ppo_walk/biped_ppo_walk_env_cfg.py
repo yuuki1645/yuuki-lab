@@ -1,6 +1,8 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
+# pyright: reportMissingImports=false
+
 """BipedPpoWalk environment config (ManagerBasedRLEnv)."""
 
 from __future__ import annotations

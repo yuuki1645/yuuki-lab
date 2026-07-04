@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Biped walk episode state (ported from Direct env buffers)."""
+"""Biped walk episode buffers and per-step physics/gait snapshot."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING
 import torch
 from isaaclab.utils.math import quat_apply
 
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import action as action_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import episode_state as episode_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import pose as pose_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import termination as termination_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp.actuators import (
+from . import action as action_mdp
+from . import gait as gait_mdp
+from . import pose as pose_mdp
+from . import termination as termination_mdp
+from .actuators import (
     FOOT_SITE_OFFSET,
     HEEL_SITE_OFFSET,
     IMU_OFFSET,
@@ -26,9 +26,12 @@ from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp.actuators import (
     TOE_SITE_OFFSET,
     ctrl_ranges_tensor,
 )
+from .reward_utils import compute_effort_penalty, compute_forward_allowed, compute_shaping_allowed
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
+
+    from ..biped_ppo_walk_env_cfg import BipedPpoWalkEnvCfg
 
 
 @dataclass
@@ -36,12 +39,17 @@ class BipedStepSnapshot:
     """Physics and gait-phase snapshot for one control step."""
 
     physics: dict[str, torch.Tensor]
-    biped: episode_mdp.BipedStepContext
+    biped: gait_mdp.BipedStepContext
     dx: torch.Tensor
     left_foot_dx: torch.Tensor
     right_foot_dx: torch.Tensor
     progress_m: torch.Tensor
     imu_dz: torch.Tensor
+    forward_allowed: torch.Tensor
+    shaping_allowed: torch.Tensor
+    total_displacement: torch.Tensor
+    max_dx_per_step: float
+    effort_penalty: torch.Tensor
 
 
 class BipedEpisodeState:
@@ -95,10 +103,10 @@ class BipedEpisodeState:
         self._last_update_step: int = -1
 
         self._last_physics: dict[str, torch.Tensor] | None = None
-        self._last_biped_ctx: episode_mdp.BipedStepContext | None = None
+        self._last_biped_ctx: gait_mdp.BipedStepContext | None = None
 
     def read_physics_state(self) -> dict[str, torch.Tensor]:
-        """Read IMU, foot sites, and pose metrics (same as Direct env)."""
+        """Read IMU, foot sites, and pose metrics from simulation."""
         robot = self._env.scene["robot"]
         root_pos = robot.data.body_pos_w[:, self.root_body_id]
         root_quat = robot.data.body_quat_w[:, self.root_body_id]
@@ -123,7 +131,7 @@ class BipedEpisodeState:
         lean_fwd_body, heading_align, tilt_horiz = pose_mdp.pose_metrics(imu_zaxis, body_x)
         upright = imu_zaxis[:, 2]
 
-        term_cfg = self._env.cfg.termination
+        term_cfg = self._env.cfg.termination  # type: ignore[attr-defined]
         left_on = termination_mdp.foot_contact_from_heights(
             left_foot[:, 2], left_toe[:, 2], left_heel[:, 2], term_cfg.foot_contact_z_on, term_cfg.foot_contact_z_off
         )
@@ -160,8 +168,29 @@ class BipedEpisodeState:
             "right_knee_vel": robot.data.joint_vel[:, self.right_knee_id],
         }
 
+    def _update_bad_pose_counter(self, physics: dict[str, torch.Tensor], biped: gait_mdp.BipedStepContext) -> None:
+        """Advance consecutive bad-pose counter used by termination and terminal penalty."""
+        term_cfg = self._env.cfg.termination  # type: ignore[attr-defined]
+        pose_bad, _ = termination_mdp.compute_pose_termination(
+            imu_z=physics["imu_z"],
+            upright=physics["upright"],
+            lean_fwd_body=physics["lean_fwd_body"],
+            both_feet_on_floor=biped.both_feet_on_floor,
+            min_imu_z=term_cfg.min_imu_z,
+            min_imu_upright=term_cfg.min_imu_upright,
+            max_backward_lean_body=term_cfg.max_backward_lean_body,
+            max_forward_lean_both_feet=term_cfg.max_forward_lean_both_feet,
+            pose_termination_penalty=term_cfg.pose_termination_penalty,
+        )
+        self.bad_pose_steps = torch.where(
+            pose_bad,
+            self.bad_pose_steps + 1,
+            torch.zeros_like(self.bad_pose_steps),
+        )
+
     def update_after_physics(self) -> None:
-        """Update gait phase, progress, and step snapshot after physics."""
+        """Update gait phase, reward gates, and step snapshot after physics."""
+        cfg: BipedPpoWalkEnvCfg = self._env.cfg  # type: ignore[assignment]
         physics = self.read_physics_state()
         self._last_physics = physics
 
@@ -176,7 +205,7 @@ class BipedEpisodeState:
             self.prev_single_support_side,
             self.aerial_steps,
             self.same_side_streak,
-        ) = episode_mdp.advance_biped_context(
+        ) = gait_mdp.advance_biped_context(
             left_on_floor=physics["left_on_floor"],
             right_on_floor=physics["right_on_floor"],
             prev_left_on_floor=self.prev_left_on_floor,
@@ -189,14 +218,13 @@ class BipedEpisodeState:
         )
         self._last_biped_ctx = biped_ctx
 
-        reward_cfg = self._env.cfg.reward
-        progress_m, self.best_imu_x = episode_mdp.advance_progress(
+        progress_m, self.best_imu_x = gait_mdp.advance_progress(
             physics["imu_x"],
             self.best_imu_x,
             upright=physics["upright"],
             single_support=biped_ctx.single_support,
-            progress_min_upright=reward_cfg.progress_min_upright,
-            progress_require_single_support=reward_cfg.progress_require_single_support,
+            progress_min_upright=cfg.reward.progress_min_upright,
+            progress_require_single_support=cfg.reward.progress_require_single_support,
         )
         imu_dz = physics["imu_z"] - self.prev_imu_z
 
@@ -204,6 +232,26 @@ class BipedEpisodeState:
         raw = self._env.action_manager.action
         self.prev_action = action_mdp.clip_policy_action(raw).clone()
 
+        forward_allowed = compute_forward_allowed(
+            cfg.reward,
+            biped_ctx,
+            upright=physics["upright"],
+            lean_fwd_body=physics["lean_fwd_body"],
+        )
+        shaping_allowed = compute_shaping_allowed(cfg.reward, forward_allowed, dx)
+        total_displacement = physics["imu_x"] - self.episode_start_imu_x
+
+        robot = self._env.scene["robot"]
+        effort_penalty = compute_effort_penalty(
+            robot.data.applied_torque[:, self.joint_ids],
+            robot.data.joint_vel[:, self.joint_ids],
+            dt=cfg.sim.dt * float(cfg.decimation),
+            scale=cfg.reward.effort_penalty_scale if cfg.reward.enable_effort else 0.0,
+        )
+
+        self._update_bad_pose_counter(physics, biped_ctx)
+
+        max_dx = cfg.max_dx_per_step_base * float(cfg.decimation)
         self.snapshot = BipedStepSnapshot(
             physics=physics,
             biped=biped_ctx,
@@ -212,17 +260,21 @@ class BipedEpisodeState:
             right_foot_dx=right_foot_dx,
             progress_m=progress_m,
             imu_dz=imu_dz,
+            forward_allowed=forward_allowed,
+            shaping_allowed=shaping_allowed,
+            total_displacement=total_displacement,
+            max_dx_per_step=max_dx,
+            effort_penalty=effort_penalty,
         )
 
         self.prev_imu_x = physics["imu_x"].clone()
         self.prev_left_foot_x = physics["left_foot_x"].clone()
         self.prev_right_foot_x = physics["right_foot_x"].clone()
         self.prev_imu_z = physics["imu_z"].clone()
-
         self._last_update_step = int(self._env.common_step_counter)
 
     def record_episode_displacement(self, env_ids: torch.Tensor) -> None:
-        """Store +X displacement before reset (eval_biped_walk.py compat)."""
+        """Store +X displacement before reset (eval script)."""
         if env_ids.numel() == 0 or self.snapshot is None:
             return
         displacement = self.snapshot.physics["imu_x"][env_ids] - self.episode_start_imu_x[env_ids]
@@ -231,7 +283,7 @@ class BipedEpisodeState:
         self._env.extras["log"]["Metrics/episode_displacement_x"] = displacement.mean()
 
     def init_env_buffers(self, env_ids: torch.Tensor) -> None:
-        """Init episode buffers from post-reset physics."""
+        """Initialize episode buffers from post-reset physics."""
         if env_ids.numel() == 0:
             return
 

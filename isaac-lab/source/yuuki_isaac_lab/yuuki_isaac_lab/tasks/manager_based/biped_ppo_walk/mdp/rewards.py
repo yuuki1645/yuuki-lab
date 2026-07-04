@@ -1,140 +1,421 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Step reward (wraps Direct compute_step_reward as a Manager term)."""
+"""Manager-based reward terms for biped alternating walk (+X).
+
+Each function returns an unweighted reward contribution; scales are applied via
+``RewardTermCfg.weight`` in ``biped_ppo_walk_env_cfg.py``.
+"""
 
 from __future__ import annotations
 
 import torch
 from isaaclab.envs import ManagerBasedRLEnv
 
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import action as action_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import reward as reward_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import termination as termination_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.biped_ppo_walk_env_cfg import BipedPpoWalkEnvCfg, get_max_dx_per_step
-
+from . import termination as termination_mdp
 from .episode_state import ensure_step_updated, get_biped_state
+from .reward_utils import compute_milestone_bonus
 
 
-def _update_pose_hysteresis(env: ManagerBasedRLEnv, physics: dict[str, torch.Tensor]) -> torch.Tensor:
-    """Update consecutive bad-pose counter; return post-update termination flag."""
+def _snap(env: ManagerBasedRLEnv):
+    """Ensure step snapshot exists and return (snap, state, reward_cfg)."""
+    snap = ensure_step_updated(env)
     state = get_biped_state(env)
-    term_cfg = env.cfg.termination
-    pose_bad, _ = termination_mdp.compute_pose_termination(
+    return snap, state, env.cfg.reward  # type: ignore[attr-defined]
+
+
+# --- Primary forward terms ---
+
+
+def forward_imu(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """IMU +X displacement reward during allowed single-support forward motion."""
+    snap, _, cfg = _snap(env)
+    dx = snap.dx
+    max_dx = snap.max_dx_per_step
+    dx_clipped = torch.clamp(dx, -max_dx, max_dx)
+    return torch.where(
+        snap.forward_allowed & (dx_clipped >= cfg.forward_min_dx),
+        torch.clamp(dx_clipped, min=0.0),
+        torch.zeros_like(dx),
+    )
+
+
+def forward_velocity(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Root +X velocity reward during forward-allowed phases."""
+    snap, _, cfg = _snap(env)
+    vel = torch.clamp(snap.physics["root_vel_x"], min=0.0, max=cfg.forward_vel_max)
+    return torch.where(snap.forward_allowed, vel, torch.zeros_like(vel))
+
+
+def forward_foot(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Stance-foot +X displacement reward (left stance by default)."""
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    dx = snap.dx
+    max_dx = snap.max_dx_per_step
+
+    stance_foot_dx = torch.zeros_like(dx)
+    stance_foot_dx = torch.where(
+        biped.single_support & (biped.single_support_side == 1),
+        torch.clamp(snap.left_foot_dx, min=0.0),
+        stance_foot_dx,
+    )
+    if not cfg.forward_foot_left_stance_only:
+        stance_foot_dx = torch.where(
+            biped.single_support & (biped.single_support_side == -1),
+            torch.clamp(snap.right_foot_dx, min=0.0),
+            stance_foot_dx,
+        )
+    foot_dx_clipped = torch.clamp(stance_foot_dx, -max_dx, max_dx)
+    return torch.where(
+        snap.forward_allowed & (foot_dx_clipped >= cfg.forward_min_dx),
+        foot_dx_clipped,
+        torch.zeros_like(dx),
+    )
+
+
+def progress(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Episode IMU +X progress increment."""
+    snap, _, _ = _snap(env)
+    return torch.where(snap.shaping_allowed, snap.progress_m, torch.zeros_like(snap.dx))
+
+
+# --- Gait shaping bonuses ---
+
+
+def upright_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    bonus = torch.clamp(snap.physics["upright"] - cfg.upright_bonus_thresh, min=0.0)
+    return torch.where(
+        snap.shaping_allowed & (snap.dx >= cfg.upright_bonus_min_dx),
+        bonus,
+        torch.zeros_like(bonus),
+    )
+
+
+def push_off_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    foot_dx_ss = torch.where(
+        biped.single_support_side == 1,
+        snap.left_foot_dx,
+        torch.where(biped.single_support_side == -1, snap.right_foot_dx, snap.dx),
+    )
+    knee_vel_ss = torch.where(
+        biped.single_support_side == 1,
+        physics["left_knee_vel"],
+        torch.where(biped.single_support_side == -1, physics["right_knee_vel"], snap.dx),
+    )
+    push_ok = snap.shaping_allowed & biped.single_support & (foot_dx_ss >= cfg.push_off_min_foot_dx)
+    push_ok = push_ok & ((knee_vel_ss < -cfg.push_off_min_knee_ext_vel) | (snap.imu_dz >= cfg.push_off_min_imu_dz))
+    return torch.where(push_ok, torch.ones_like(snap.dx), torch.zeros_like(snap.dx))
+
+
+def landing_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    toe_z = torch.where(biped.left_landed, physics["left_toe_z"], torch.where(biped.right_landed, physics["right_toe_z"], snap.dx))
+    heel_z = torch.where(biped.left_landed, physics["left_heel_z"], torch.where(biped.right_landed, physics["right_heel_z"], snap.dx))
+    land_ok = snap.shaping_allowed & (biped.left_landed | biped.right_landed)
+    land_ok = land_ok & (toe_z <= cfg.landing_max_toe_z) & (heel_z <= cfg.landing_max_heel_z)
+    land_ok = land_ok & (physics["lean_fwd_body"] <= cfg.landing_max_forward_lean)
+    return torch.where(land_ok, torch.ones_like(snap.dx), torch.zeros_like(snap.dx))
+
+
+def alternating_landing_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, _ = _snap(env)
+    return torch.where(
+        snap.shaping_allowed & snap.biped.alternating_landing,
+        torch.ones_like(snap.dx),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def left_landing_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    left_land_ok = snap.shaping_allowed & biped.left_landed
+    left_land_ok = left_land_ok & (physics["left_toe_z"] <= cfg.landing_max_toe_z)
+    left_land_ok = left_land_ok & (physics["left_heel_z"] <= cfg.landing_max_heel_z)
+    return torch.where(left_land_ok, torch.ones_like(snap.dx), torch.zeros_like(snap.dx))
+
+
+def left_single_support_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    lss_ok = snap.shaping_allowed & biped.single_support & (biped.single_support_side == 1)
+    lss_ok = lss_ok & (snap.dx >= cfg.left_single_support_min_dx)
+    return torch.where(lss_ok, torch.ones_like(snap.dx), torch.zeros_like(snap.dx))
+
+
+def foot_swap_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, _ = _snap(env)
+    return torch.where(
+        snap.shaping_allowed & snap.biped.foot_swap,
+        torch.ones_like(snap.dx),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def swing_clearance_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    swing_z = torch.where(
+        biped.single_support & (biped.single_support_side == 1) & (~biped.right_landed),
+        physics["right_foot_z"],
+        torch.where(
+            biped.single_support & (biped.single_support_side == -1) & (~biped.left_landed),
+            physics["left_foot_z"],
+            snap.dx,
+        ),
+    )
+    clearance = torch.clamp(swing_z - cfg.swing_min_foot_z, min=0.0)
+    return torch.where(snap.shaping_allowed & biped.single_support, clearance, torch.zeros_like(clearance))
+
+
+def duration_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    physics = snap.physics
+    dur_frac = env.episode_length_buf.float() / float(env.max_episode_length)
+    dur_ok = (physics["upright"] >= cfg.alive_min_upright) & (snap.dx >= cfg.shaping_min_dx)
+    return torch.where(dur_ok, dur_frac, torch.zeros_like(dur_frac))
+
+
+def displacement_milestone_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, state, cfg = _snap(env)
+    bonus, state.milestone_level = compute_milestone_bonus(
+        snap.total_displacement,
+        state.milestone_level,
+        cfg.displacement_milestone_targets,
+        cfg.displacement_milestone_scales,
+    )
+    return bonus
+
+
+def survival_milestone_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, state, cfg = _snap(env)
+    bonus, state.survival_milestone_level = compute_milestone_bonus(
+        env.episode_length_buf.float(),
+        state.survival_milestone_level,
+        tuple(float(t) for t in cfg.survival_milestone_targets),
+        cfg.survival_milestone_scales,
+    )
+    return bonus
+
+
+def alive_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    physics = snap.physics
+    alive_ok = (physics["upright"] >= cfg.alive_min_upright) & (physics["imu_z"] >= cfg.alive_min_imu_z)
+    alive_scale = torch.ones_like(snap.dx)
+    alive_scale = alive_scale * (1.0 + env.episode_length_buf.float() / float(env.max_episode_length))
+    return torch.where(alive_ok, alive_scale, torch.zeros_like(alive_scale))
+
+
+def displacement_progress_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    disp_ok = snap.forward_allowed & (snap.total_displacement > 0.0)
+    progress = torch.clamp(snap.total_displacement, min=0.0, max=15.0)
+    return torch.where(disp_ok, progress, torch.zeros_like(progress))
+
+
+def long_horizon_bonus(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    lh_ok = snap.forward_allowed & (env.episode_length_buf > cfg.long_horizon_step_threshold)
+    lh_ok = lh_ok & (snap.dx >= cfg.shaping_min_dx)
+    step_over = (env.episode_length_buf.float() - float(cfg.long_horizon_step_threshold)).clamp(min=0.0)
+    return torch.where(lh_ok, step_over / 400.0, torch.zeros_like(step_over))
+
+
+# --- Posture / gait penalties (return positive magnitudes; use negative weights) ---
+
+
+def backward_lean_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    return torch.clamp(-snap.physics["lean_fwd_body"] - cfg.lean_backward_thresh, min=0.0)
+
+
+def forward_lean_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    return torch.where(
+        (~biped.any_foot_on_floor) & (biped.aerial_steps >= cfg.lean_forward_min_aerial_steps),
+        torch.clamp(snap.physics["lean_fwd_body"] - cfg.lean_forward_thresh, min=0.0),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def double_support_forward_lean_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    return torch.where(
+        snap.biped.both_feet_on_floor,
+        torch.clamp(snap.physics["lean_fwd_body"] - cfg.ds_forward_lean_thresh, min=0.0),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def fall_forward_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    fall_hack = biped.both_feet_on_floor & (physics["lean_fwd_body"] > cfg.fall_forward_lean_thresh)
+    return torch.where(
+        fall_hack,
+        torch.clamp(physics["lean_fwd_body"] - cfg.fall_forward_lean_thresh, min=0.0)
+        + torch.clamp(snap.dx, min=0.0),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def same_side_streak_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    over_streak = snap.biped.same_side_streak.float() - float(cfg.same_side_streak_penalty_after)
+    return torch.where(over_streak > 0.0, over_streak, torch.zeros_like(over_streak))
+
+
+def contact_imbalance_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    streak_over = biped.same_side_streak.float() - float(cfg.contact_imbalance_streak_after)
+    return torch.where(
+        biped.single_support & (streak_over > 0.0),
+        streak_over,
+        torch.zeros_like(streak_over),
+    )
+
+
+def right_pivot_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    right_pivot = biped.single_support & (biped.single_support_side == -1)
+    streak_over = biped.same_side_streak.float() - float(cfg.right_pivot_streak_after)
+    return torch.where(right_pivot & (streak_over > 0.0), streak_over, torch.zeros_like(streak_over))
+
+
+def backward_dx_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    return torch.where(
+        (snap.physics["upright"] >= cfg.forward_min_upright) & (snap.dx < -cfg.backward_dx_thresh),
+        -snap.dx,
+        torch.zeros_like(snap.dx),
+    )
+
+
+def lateral_velocity_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, _ = _snap(env)
+    return torch.abs(snap.physics["root_vel_y"])
+
+
+def angular_velocity_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    penalty = torch.norm(snap.physics["imu_gyro"], dim=-1)
+    return torch.where(snap.physics["upright"] >= cfg.alive_min_upright, penalty, torch.zeros_like(penalty))
+
+
+def action_rate_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, state, _ = _snap(env)
+    current = state.prev_action
+    previous = state.prev_step_action
+    return torch.sum(torch.abs(current - previous), dim=-1)
+
+
+def imu_height_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    physics = snap.physics
+    imu_z = physics["imu_z"]
+
+    target_z = torch.full_like(imu_z, cfg.target_imu_z)
+    target_z = torch.where(biped.single_support, torch.full_like(imu_z, cfg.target_imu_z_single_stance), target_z)
+    target_z = torch.where(biped.both_feet_on_floor, torch.full_like(imu_z, cfg.target_imu_z_double_stance), target_z)
+    height_penalty = torch.clamp(target_z - imu_z, min=0.0)
+    return torch.where(
+        ~biped.any_foot_on_floor,
+        torch.where(
+            imu_z < cfg.height_penalty_aerial_crash_z,
+            torch.clamp(cfg.target_imu_z - imu_z, min=0.0) * 1.5,
+            torch.clamp(cfg.target_imu_z - imu_z, min=0.0),
+        ),
+        height_penalty,
+    )
+
+
+def flight_duration_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    over = biped.aerial_steps.float() - float(cfg.aerial_duration_penalty_after_steps)
+    return torch.where((~biped.any_foot_on_floor) & (over > 0.0), over, torch.zeros_like(over))
+
+
+def knee_hyperflex_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    physics = snap.physics
+    biped = snap.biped
+    knee = torch.maximum(physics["left_knee"], physics["right_knee"])
+    penalty = torch.clamp(knee - cfg.knee_hyperflex_max_rad, min=0.0)
+    if cfg.knee_hyperflex_aerial_only:
+        penalty = torch.where(biped.any_foot_on_floor, torch.zeros_like(penalty), penalty)
+    return penalty
+
+
+def heading_misalign_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    return torch.clamp(cfg.heading_align_min - snap.physics["heading_align"], min=0.0)
+
+
+def lateral_tilt_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    return torch.clamp(snap.physics["tilt_horiz"] - cfg.lateral_tilt_thresh, min=0.0)
+
+
+def double_support_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    snap, _, cfg = _snap(env)
+    biped = snap.biped
+    forward_motion = torch.maximum(
+        torch.clamp(snap.dx, min=0.0),
+        torch.maximum(torch.clamp(snap.left_foot_dx, min=0.0), torch.clamp(snap.right_foot_dx, min=0.0)),
+    )
+    return torch.where(
+        biped.both_feet_on_floor,
+        0.5 + torch.where(
+            forward_motion < cfg.double_support_min_forward,
+            torch.zeros_like(snap.dx),
+            forward_motion,
+        ),
+        torch.zeros_like(snap.dx),
+    )
+
+
+def effort_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Precomputed in episode snapshot (positive magnitude)."""
+    snap, _, _ = _snap(env)
+    return snap.effort_penalty
+
+
+def pose_termination_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Terminal penalty when bad-pose hysteresis triggers termination this step."""
+    ensure_step_updated(env)
+    state = get_biped_state(env)
+    term_cfg = env.cfg.termination  # type: ignore[attr-defined]
+    physics = state._last_physics
+    biped = state._last_biped_ctx
+    if physics is None or biped is None:
+        return torch.zeros(env.num_envs, device=env.device)
+
+    pose_done = state.bad_pose_steps >= term_cfg.bad_pose_consecutive_steps
+    _, penalty = termination_mdp.compute_pose_termination(
         imu_z=physics["imu_z"],
         upright=physics["upright"],
         lean_fwd_body=physics["lean_fwd_body"],
-        both_feet_on_floor=physics["left_on_floor"] & physics["right_on_floor"],
+        both_feet_on_floor=biped.both_feet_on_floor,
         min_imu_z=term_cfg.min_imu_z,
         min_imu_upright=term_cfg.min_imu_upright,
         max_backward_lean_body=term_cfg.max_backward_lean_body,
         max_forward_lean_both_feet=term_cfg.max_forward_lean_both_feet,
         pose_termination_penalty=term_cfg.pose_termination_penalty,
     )
-    state.bad_pose_steps = torch.where(
-        pose_bad,
-        state.bad_pose_steps + 1,
-        torch.zeros_like(state.bad_pose_steps),
-    )
-    return state.bad_pose_steps >= term_cfg.bad_pose_consecutive_steps
-
-
-def step_reward(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """Per-step total reward (same as Direct _get_rewards)."""
-    snap = ensure_step_updated(env)
-    state = get_biped_state(env)
-    physics = snap.physics
-    biped = snap.biped
-    cfg: BipedPpoWalkEnvCfg = env.cfg  # type: ignore[assignment]
-
-    pose_done = _update_pose_hysteresis(env, physics)
-
-    robot = env.scene["robot"]
-    effort_penalty = reward_mdp.compute_effort_penalty(
-        robot.data.applied_torque[:, state.joint_ids],
-        robot.data.joint_vel[:, state.joint_ids],
-        dt=cfg.sim.dt * float(cfg.decimation),
-        scale=cfg.reward.effort_penalty_scale,
-    )
-
-    reward, forward, effort, state.milestone_level, state.survival_milestone_level = reward_mdp.compute_step_reward(
-        cfg=cfg.reward,
-        max_dx_per_step=get_max_dx_per_step(cfg),
-        dx=snap.dx,
-        root_vel_x=physics["root_vel_x"],
-        left_foot_dx=snap.left_foot_dx,
-        right_foot_dx=snap.right_foot_dx,
-        upright=physics["upright"],
-        lean_fwd_body=physics["lean_fwd_body"],
-        heading_align=physics["heading_align"],
-        tilt_horiz=physics["tilt_horiz"],
-        imu_z=physics["imu_z"],
-        left_foot_z=physics["left_foot_z"],
-        right_foot_z=physics["right_foot_z"],
-        left_knee=physics["left_knee"],
-        right_knee=physics["right_knee"],
-        biped=biped,
-        progress_m=snap.progress_m,
-        imu_dz=snap.imu_dz,
-        left_knee_vel=physics["left_knee_vel"],
-        right_knee_vel=physics["right_knee_vel"],
-        left_toe_z=physics["left_toe_z"],
-        left_heel_z=physics["left_heel_z"],
-        right_toe_z=physics["right_toe_z"],
-        right_heel_z=physics["right_heel_z"],
-        effort_penalty=effort_penalty,
-        imu_gyro=physics["imu_gyro"],
-        root_vel_y=physics["root_vel_y"],
-        episode_step=env.episode_length_buf,
-        max_episode_steps=env.max_episode_length,
-        total_displacement=physics["imu_x"] - state.episode_start_imu_x,
-        milestone_level=state.milestone_level,
-        survival_milestone_level=state.survival_milestone_level,
-        current_action=action_mdp.clip_policy_action(env.action_manager.action),
-        prev_step_action=state.prev_step_action,
-    )
-
-    env.extras.setdefault("log", {})
-    env.extras["log"].update(
-        {
-            "Reward/mean_forward": forward.mean(),
-            "Reward/mean_effort": effort.mean(),
-            "Metrics/mean_imu_x": physics["imu_x"].mean(),
-            "Metrics/mean_root_vel_x": physics["root_vel_x"].mean(),
-            "Metrics/mean_upright": physics["upright"].mean(),
-            "Metrics/mean_imu_z": physics["imu_z"].mean(),
-            "Metrics/left_contact_ratio": physics["left_on_floor"].float().mean(),
-            "Metrics/right_contact_ratio": physics["right_on_floor"].float().mean(),
-            "Metrics/single_support_ratio": biped.single_support.float().mean(),
-            "Metrics/mean_left_foot_z": physics["left_foot_z"].mean(),
-            "Metrics/mean_right_foot_z": physics["right_foot_z"].mean(),
-            "Metrics/term_low_z_ratio": (physics["imu_z"] < cfg.termination.min_imu_z).float().mean(),
-            "Metrics/term_low_upright_ratio": (physics["upright"] < cfg.termination.min_imu_upright).float().mean(),
-            "Metrics/mean_lean_fwd": physics["lean_fwd_body"].mean(),
-            "Metrics/both_feet_ratio": (physics["left_on_floor"] & physics["right_on_floor"]).float().mean(),
-            "Metrics/mean_same_side_streak": biped.same_side_streak.float().mean(),
-            "Metrics/alternating_landing_ratio": biped.alternating_landing.float().mean(),
-            "Metrics/right_single_support_ratio": (
-                biped.single_support & (biped.single_support_side == -1)
-            ).float().mean(),
-            "Metrics/foot_swap_ratio": biped.foot_swap.float().mean(),
-            "Metrics/mean_milestone_level": state.milestone_level.float().mean(),
-            "Metrics/mean_survival_milestone_level": state.survival_milestone_level.float().mean(),
-            "Metrics/mean_bad_pose_steps": state.bad_pose_steps.float().mean(),
-        }
-    )
-
-    _, pose_penalty = termination_mdp.compute_pose_termination(
-        imu_z=physics["imu_z"],
-        upright=physics["upright"],
-        lean_fwd_body=physics["lean_fwd_body"],
-        both_feet_on_floor=physics["left_on_floor"] & physics["right_on_floor"],
-        min_imu_z=cfg.termination.min_imu_z,
-        min_imu_upright=cfg.termination.min_imu_upright,
-        max_backward_lean_body=cfg.termination.max_backward_lean_body,
-        max_forward_lean_both_feet=cfg.termination.max_forward_lean_both_feet,
-        pose_termination_penalty=cfg.termination.pose_termination_penalty,
-    )
-    terminal_penalty = torch.where(pose_done, pose_penalty, torch.zeros_like(reward))
-    
-    return reward + terminal_penalty
+    return torch.where(pose_done, penalty, torch.zeros_like(penalty))

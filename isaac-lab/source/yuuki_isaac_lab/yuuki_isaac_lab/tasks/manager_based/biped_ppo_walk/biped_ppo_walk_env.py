@@ -3,7 +3,7 @@
 
 # type: ignore
 
-"""BipedPpoWalk PPO task on ManagerBasedRLEnv (exp_030 port)."""
+"""BipedPpoWalk PPO task on ManagerBasedRLEnv."""
 
 from __future__ import annotations
 
@@ -20,27 +20,19 @@ from .mdp.episode_state import BipedEpisodeState
 
 
 class BipedPpoWalkEnv(ManagerBasedRLEnv):
-    """12-DOF biped walk (+X alternating single support) on ManagerBasedRLEnv.
-
-    Same MDP as Direct ``BipedPpoWalkEnv``, decomposed into Manager terms.
-    Episode state lives in ``biped_state``; eval script attributes are mirrored.
-    """
+    """12-DOF biped walk (+X alternating single support) on ManagerBasedRLEnv."""
 
     cfg: BipedPpoWalkEnvCfg
 
     def __init__(self, cfg: BipedPpoWalkEnvCfg, render_mode: str | None = None, **kwargs):
-        # Enable MJCF importer before spawn (required in headless kit)
+        # MJCF importer must be enabled before robot spawn (headless kit).
         ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
 
     def load_managers(self) -> None:
         """Initialize biped episode state before observation manager probes ``policy_obs``."""
-        # ObservationManager._prepare_terms() calls policy_obs during super().__init__().
-        # BipedEpisodeState must exist before that probe (scene is already updated).
         self.biped_state = BipedEpisodeState(self)
         super().load_managers()
-
-    # --- eval_biped_walk.py / Direct compatibility ---
 
     @property
     def last_episode_displacement(self) -> torch.Tensor:
@@ -63,13 +55,8 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         if not isinstance(env_ids, torch.Tensor):
             env_ids = torch.as_tensor(list(env_ids), device=self.device, dtype=torch.long)
 
-        # Before reset: record displacement from latest snapshot
         self.biped_state.record_episode_displacement(env_ids)
-
         super()._reset_idx(env_ids)
-
-        # After reset events: sync buffers from post-reset physics
         self.biped_state.init_env_buffers(env_ids)
-
         self.biped_state._last_update_step = -1
         self.biped_state.snapshot = None

@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Custom action term: exp_030 neutral-offset joint position mapping."""
+"""Custom action term: neutral-offset joint position mapping."""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ from isaaclab.managers.action_manager import ActionTerm
 from isaaclab.managers.manager_term_cfg import ActionTermCfg
 from isaaclab.utils import configclass
 
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import action as action_mdp
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp.actuators import JOINT_NAMES, ctrl_ranges_tensor, neutral_pos_tensor
+from . import action as action_mdp
+from .actuators import JOINT_NAMES, ctrl_ranges_tensor, neutral_pos_tensor
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 
 class BipedNeutralJointPositionAction(ActionTerm):
-    """Map policy [-1, 1] to joint position targets via exp_030 ctrl mapping."""
+    """Map policy [-1, 1] to joint position targets via neutral-offset ctrl mapping."""
 
     cfg: BipedNeutralJointPositionActionCfg
     _asset: Articulation

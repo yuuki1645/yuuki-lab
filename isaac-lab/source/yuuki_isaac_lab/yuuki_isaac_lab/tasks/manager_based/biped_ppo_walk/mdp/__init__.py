@@ -1,11 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""BipedPpoWalk Manager-Based MDP terms.
-
-Reuses reward/gait logic from ``tasks/direct/biped_ppo_walk/mdp`` and exposes
-them as Isaac Lab Manager term functions.
-"""
+"""BipedPpoWalk Manager-Based MDP terms."""
 
 from isaaclab.envs.mdp import *  # noqa: F401, F403
 

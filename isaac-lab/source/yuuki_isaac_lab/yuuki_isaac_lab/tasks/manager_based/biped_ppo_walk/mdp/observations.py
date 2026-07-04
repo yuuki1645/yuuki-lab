@@ -1,20 +1,15 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""54-dim policy observation (same layout as Direct _get_observations)."""
+"""54-dim policy observation."""
 
 from __future__ import annotations
 
 import torch
 from isaaclab.envs import ManagerBasedRLEnv
 
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.mdp import obs_norm
-from yuuki_isaac_lab.tasks.direct.biped_ppo_walk.biped_ppo_walk_env_cfg import (
-    BipedPpoWalkEnvCfg,
-    get_max_dx_per_step,
-    get_max_foot_dx_per_step,
-)
-
+from . import obs_norm
+from .env_params import get_max_dx_per_step, get_max_foot_dx_per_step
 from .episode_state import ensure_step_updated, get_biped_state
 
 
@@ -24,7 +19,7 @@ def policy_obs(env: ManagerBasedRLEnv) -> torch.Tensor:
     state = get_biped_state(env)
     physics = snap.physics
     biped = snap.biped
-    cfg: BipedPpoWalkEnvCfg = env.cfg  # type: ignore[assignment]
+    cfg = env.cfg
 
     robot = env.scene["robot"]
     joint_q = robot.data.joint_pos[:, state.joint_ids]

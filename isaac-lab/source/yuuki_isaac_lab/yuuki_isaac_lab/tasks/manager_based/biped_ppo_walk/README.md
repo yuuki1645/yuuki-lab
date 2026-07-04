@@ -1,11 +1,7 @@
 # BipedPpoWalk — Manager-Based 版
 
-**Yuuki Lab 両脚交互片脚歩行 PPO** の Isaac Lab **ManagerBasedRLEnv** 移植版です。  
-MDP（報酬・観測 54 次元・終了条件）は [Direct 版](../direct/biped_ppo_walk/) と同一で、実装のみ Manager ワークフローに分解しています。
-
-詳細（観測レイアウト・報酬設計・exp_030 対応表など）は Direct 版 README を参照してください:
-
-- [tasks/direct/biped_ppo_walk/README.md](../direct/biped_ppo_walk/README.md)
+**Yuuki Lab 両脚交互片脚歩行 PPO** の Isaac Lab **ManagerBasedRLEnv** 実装です。  
+MDP は manager-based ワークフローに沿って **項ごとの `RewTerm`** に分解され、Direct 版とは独立したコードベースです。
 
 ---
 
@@ -18,14 +14,15 @@ MDP（報酬・観測 54 次元・終了条件）は [Direct 版](../direct/bipe
 
 ---
 
-## Direct 版との差分
+## 設計方針
 
-| 項目 | Direct | Manager-Based |
-|------|--------|---------------|
-| 環境クラス | `DirectRLEnv` | `ManagerBasedRLEnv` |
-| 報酬・観測 | env 内メソッド | Manager 項（`mdp/`） |
-| ログ dir | `logs/rsl_rl/biped_ppo_walk/` | `logs/rsl_rl/biped_ppo_walk_manager/` |
-| MDP ロジック | 同一（`direct/biped_ppo_walk/mdp` を再利用） | |
+| 項目 | 内容 |
+|------|------|
+| 環境クラス | `ManagerBasedRLEnv` |
+| 報酬 | `RewardsCfg` の個別 `RewTerm`（`mdp/rewards.py`） |
+| 係数 | `BipedRewardCfg` → `_sync_reward_weights_from_cfg()` で weight に反映 |
+| 共有状態 | `mdp/episode_state.py`（歩行位相・ゲート・マイルストーン） |
+| Direct 版 | 別タスクとして残存（コード共有なし） |
 
 ---
 
@@ -33,24 +30,37 @@ MDP（報酬・観測 54 次元・終了条件）は [Direct 版](../direct/bipe
 
 ```
 biped_ppo_walk/
-├── biped_ppo_walk_env.py       # BipedPpoWalkEnv（エピソード状態 + eval 互換）
-├── biped_ppo_walk_env_cfg.py   # Scene / Actions / Obs / Reward / Termination
+├── biped_ppo_walk_env.py       # BipedPpoWalkEnv + episode state
+├── biped_ppo_walk_env_cfg.py   # Scene / RewardsCfg / BipedRewardCfg
 ├── agents/rsl_rl_ppo_cfg.py
 └── mdp/
-    ├── episode_state.py        # 位相・進捗バッファ
-    ├── actions.py              # 中立角基準の関節位置写像
-    ├── observations.py         # 54 次元観測
-    ├── rewards.py              # compute_step_reward ラップ
+    ├── actuators.py            # 関節名・ctrlrange
+    ├── action.py               # [-1,1] → 関節位置目標
+    ├── gait.py                 # 着地エッジ・交互歩行コンテキスト
+    ├── pose.py / obs_norm.py
+    ├── episode_state.py        # スナップショット + バッファ
+    ├── rewards.py              # Manager 報酬項（1 関数 = 1 RewTerm）
+    ├── reward_utils.py         # マイルストーン・forward ゲート
+    ├── observations.py
     ├── terminations.py
-    └── events.py               # リセット + 関節ノイズ
+    └── events.py
 ```
+
+---
+
+## 報酬の変更方法
+
+1. **係数だけ変える** → `biped_ppo_walk_env_cfg.py` の `BipedRewardCfg` を編集（`__post_init__` が weight を同期）
+2. **項を無効化** → 対応する `enable_*` を `False`、または `self.rewards.<term> = None`
+3. **ロジックを変える** → `mdp/rewards.py` の該当関数を編集
+4. **新項を追加** → `mdp/rewards.py` に関数追加 + `RewardsCfg` に `RewTerm` 追加
 
 ---
 
 ## 実行例
 
 ```powershell
-# スモーク（専用ラッパー）
+# スモーク
 python scripts/manager_based/smoke.py --headless --num_envs 4 --steps 200
 
 # 学習
@@ -70,6 +80,5 @@ python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <r
 
 ## 変更時の注意
 
-- 報酬・観測・終了の **係数・ロジック** を変える場合は `direct/biped_ppo_walk/mdp/` が正本。Manager 側はラップ層のみ更新するか、共有 mdp を直接編集する。
-- 観測次元を変えた場合は Direct 版と **両方** の登録・PPO 設定を整合させる。
-- Python ソースの docstring は **ASCII / 英語** を推奨（Windows 環境でのエンコーディング問題回避）。日本語説明は本 README または Direct 版 README に書く。
+- 観測次元を変えた場合は PPO 設定（`agents/rsl_rl_ppo_cfg.py`）も更新する
+- 報酬 sweep は `RewardsCfg` の weight または `BipedRewardCfg` の係数を 1 軸ずつ変更するのが推奨

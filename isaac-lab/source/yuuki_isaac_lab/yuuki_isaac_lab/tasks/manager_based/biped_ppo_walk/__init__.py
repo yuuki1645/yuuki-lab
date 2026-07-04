@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""exp_030 biped walk PPO task (Isaac Lab Manager-Based port)."""
+"""Biped walk PPO task (Isaac Lab Manager-Based)."""
 
 import gymnasium as gym
 

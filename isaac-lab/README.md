@@ -23,23 +23,33 @@ python scripts/list_envs.py --headless
 
 登録タスク（接頭辞 `YuukiLab-`）:
 
-| Task ID | 用途 |
-|---------|------|
-| `YuukiLab-BipedPpoWalk-Direct-v0` | 学習 |
-| `YuukiLab-BipedPpoWalk-Direct-Play-v0` | 再生・録画 |
+| Task ID | 用途 | ワークフロー |
+|---------|------|--------------|
+| `YuukiLab-BipedPpoWalk-Direct-v0` | 学習 | DirectRLEnv |
+| `YuukiLab-BipedPpoWalk-Direct-Play-v0` | 再生・録画 | DirectRLEnv |
+| `YuukiLab-BipedPpoWalk-v0` | 学習 | ManagerBasedRLEnv |
+| `YuukiLab-BipedPpoWalk-Play-v0` | 再生・録画 | ManagerBasedRLEnv |
 
-**タスクの詳細解説**: [source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md)（観測・報酬・終了・exp_030 対応表）
+**Direct 版タスク解説**: [source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md)
+
+**Manager-Based 版**: [source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_ppo_walk/README.md](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_ppo_walk/README.md)
 
 ## 学習
 
 **1行で書く（PowerShell / bash 共通・おすすめ）**
 
 ```powershell
-# スモーク
+# スモーク（Direct）
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 64 --max_iterations 5
 
-# 本番（例）
+# スモーク（Manager-Based）
+python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --num_envs 64 --max_iterations 5
+
+# 本番（例: Direct）
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 4096
+
+# 本番（例: Manager-Based）
+python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --num_envs 4096
 ```
 
 **PowerShell で複数行に分ける場合**は行末に **バッククォート `` ` ``**（`\` ではない）:
@@ -52,8 +62,19 @@ python scripts/rsl_rl/train.py `
 
 ※ `` ` `` の直後にスペースを入れないこと。bash の `\` 継続は PowerShell では使えません。
 
-- ログ: `logs/rsl_rl/biped_ppo_walk/<run>/`
+- ログ: `logs/rsl_rl/biped_ppo_walk/<run>/`（Direct） / `logs/rsl_rl/biped_ppo_walk_manager/<run>/`（Manager-Based）
 - WandB: デフォルトオンライン（`--wandb_mode offline` でローカルのみ）
+
+## Manager-Based スクリプト（薄いラッパー）
+
+Direct 版と同一の train/play/eval 本体を、Manager-Based タスク既定値で起動する:
+
+```powershell
+python scripts/manager_based/train.py --headless --num_envs 64 --max_iterations 5
+python scripts/manager_based/play.py --load_run <run_dir_name>
+python scripts/manager_based/eval.py --load_run <run_dir_name>
+python scripts/manager_based/smoke.py --num_envs 4 --steps 200
+```
 
 ## 評価・再生
 

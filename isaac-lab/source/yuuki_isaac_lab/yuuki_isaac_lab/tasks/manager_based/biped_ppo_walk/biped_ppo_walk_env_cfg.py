@@ -34,11 +34,10 @@ _ROBOT_JOINTS = SceneEntityCfg("robot", joint_names=list(JOINT_NAMES))
 class BipedTerminationParams:
     """Termination thresholds."""
 
+    # かご付近（basket_thigh 上 IMU）の最低高さ [m]。
     min_imu_z: float = 0.18
+    # 体幹の傾き閾値（IMU 上方向の Z 成分。小さいほど傾いている）。
     min_imu_upright: float = 0.35
-    max_backward_lean_body: float = 0.40
-    max_forward_lean_both_feet: float = 0.22
-    bad_pose_consecutive_steps: int = 65
     pose_termination_penalty: float = -10.0
     foot_contact_z_on: float = FOOT_CONTACT_Z_ON
     foot_contact_z_off: float = FOOT_CONTACT_Z_OFF
@@ -178,7 +177,7 @@ class TerminationsCfg:
 
     bad_pose = DoneTerm(
         func=mdp.bad_pose,
-        params={"consecutive_steps": 65},
+        params={"min_imu_z": 0.18, "min_imu_upright": 0.35},
     )
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
@@ -228,7 +227,8 @@ class BipedPpoWalkEnvCfg(ManagerBasedRLEnvCfg):
         )
         # Keep event / termination params aligned with nested configs.
         self.events.reset_joint_noise.params["noise_rad"] = 0.010
-        self.terminations.bad_pose.params["consecutive_steps"] = self.termination_params.bad_pose_consecutive_steps
+        self.terminations.bad_pose.params["min_imu_z"] = self.termination_params.min_imu_z
+        self.terminations.bad_pose.params["min_imu_upright"] = self.termination_params.min_imu_upright
 
 
 @configclass

@@ -98,7 +98,6 @@ class BipedEpisodeState:
         self.last_episode_displacement = torch.zeros(n, device=self._device)
         self.milestone_level = torch.zeros(n, device=self._device, dtype=torch.long)
         self.survival_milestone_level = torch.zeros(n, device=self._device, dtype=torch.long)
-        self.bad_pose_steps = torch.zeros(n, device=self._device, dtype=torch.long)
 
         self.snapshot: BipedStepSnapshot | None = None
         self._last_update_step: int = -1
@@ -169,26 +168,6 @@ class BipedEpisodeState:
             "right_knee_vel": robot.data.joint_vel[:, self.right_knee_id],
         }
 
-    def _update_bad_pose_counter(self, physics: dict[str, torch.Tensor], biped: gait_mdp.BipedStepContext) -> None:
-        """Advance consecutive bad-pose counter used by termination and terminal penalty."""
-        term_cfg = self._env.cfg.termination_params  # type: ignore[attr-defined]
-        pose_bad, _ = termination_mdp.compute_pose_termination(
-            imu_z=physics["imu_z"],
-            upright=physics["upright"],
-            lean_fwd_body=physics["lean_fwd_body"],
-            both_feet_on_floor=biped.both_feet_on_floor,
-            min_imu_z=term_cfg.min_imu_z,
-            min_imu_upright=term_cfg.min_imu_upright,
-            max_backward_lean_body=term_cfg.max_backward_lean_body,
-            max_forward_lean_both_feet=term_cfg.max_forward_lean_both_feet,
-            pose_termination_penalty=term_cfg.pose_termination_penalty,
-        )
-        self.bad_pose_steps = torch.where(
-            pose_bad,
-            self.bad_pose_steps + 1,
-            torch.zeros_like(self.bad_pose_steps),
-        )
-
     def update_after_physics(self) -> None:
         """Update gait phase, reward gates, and step snapshot after physics."""
         cfg: BipedPpoWalkEnvCfg = self._env.cfg  # type: ignore[assignment]
@@ -250,8 +229,6 @@ class BipedEpisodeState:
             scale=1.0,
         )
 
-        self._update_bad_pose_counter(physics, biped_ctx)
-
         max_dx = get_max_dx_per_step(cfg.observation_params, cfg.decimation)
         self.snapshot = BipedStepSnapshot(
             physics=physics,
@@ -301,7 +278,6 @@ class BipedEpisodeState:
         self.same_side_streak[env_ids] = 0
         self.milestone_level[env_ids] = 0
         self.survival_milestone_level[env_ids] = 0
-        self.bad_pose_steps[env_ids] = 0
         self.prev_action[env_ids] = 0.0
         self.prev_step_action[env_ids] = 0.0
         self.episode_start_imu_x[env_ids] = physics["imu_x"][env_ids]

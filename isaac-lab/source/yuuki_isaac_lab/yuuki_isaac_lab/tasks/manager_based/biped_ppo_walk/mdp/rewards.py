@@ -397,25 +397,15 @@ def effort_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
 
 
 def pose_termination_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """Terminal penalty when bad-pose hysteresis triggers termination this step."""
-    ensure_step_updated(env)
-    state = get_biped_state(env)
+    """Terminal penalty when bad-pose termination triggers this step."""
+    snap, _, _ = _snap(env)
     term_cfg = env.cfg.termination_params  # type: ignore[attr-defined]
-    physics = state._last_physics
-    biped = state._last_biped_ctx
-    if physics is None or biped is None:
-        return torch.zeros(env.num_envs, device=env.device)
-
-    pose_done = state.bad_pose_steps >= term_cfg.bad_pose_consecutive_steps
-    _, penalty = termination_mdp.compute_pose_termination(
+    physics = snap.physics
+    pose_done = termination_mdp.is_bad_pose(
         imu_z=physics["imu_z"],
         upright=physics["upright"],
-        lean_fwd_body=physics["lean_fwd_body"],
-        both_feet_on_floor=biped.both_feet_on_floor,
         min_imu_z=term_cfg.min_imu_z,
         min_imu_upright=term_cfg.min_imu_upright,
-        max_backward_lean_body=term_cfg.max_backward_lean_body,
-        max_forward_lean_both_feet=term_cfg.max_forward_lean_both_feet,
-        pose_termination_penalty=term_cfg.pose_termination_penalty,
     )
+    penalty = torch.full((env.num_envs,), term_cfg.pose_termination_penalty, device=env.device)
     return torch.where(pose_done, penalty, torch.zeros_like(penalty))

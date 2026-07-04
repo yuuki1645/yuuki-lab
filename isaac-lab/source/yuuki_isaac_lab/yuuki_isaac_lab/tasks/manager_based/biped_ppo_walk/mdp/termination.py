@@ -8,6 +8,19 @@ from __future__ import annotations
 import torch
 
 
+def is_bad_pose(
+    *,
+    imu_z: torch.Tensor,
+    upright: torch.Tensor,
+    min_imu_z: float,
+    min_imu_upright: float,
+) -> torch.Tensor:
+    """Return True when basket height is too low or body tilt exceeds threshold."""
+    low_height = imu_z < min_imu_z
+    too_tilted = upright < min_imu_upright
+    return low_height | too_tilted
+
+
 def compute_pose_termination(
     *,
     imu_z: torch.Tensor,

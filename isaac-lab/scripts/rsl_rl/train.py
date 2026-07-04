@@ -244,13 +244,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
 
-    # run training
-    runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
-
-    print(f"Training time: {round(time.time() - start_time, 2)} seconds")
-
-    # close the simulator
-    env.close()
+    # run training (finally で W&B 終了処理を保証 — Ctrl+C 中断時も wandb.finish される)
+    try:
+        runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+        print(f"Training time: {round(time.time() - start_time, 2)} seconds")
+    except KeyboardInterrupt:
+        print("[INFO] Training interrupted by user (Ctrl+C).")
+    finally:
+        if runner.logger.writer is not None:
+            runner.logger.stop_logging_writer()
+        env.close()
 
 
 if __name__ == "__main__":

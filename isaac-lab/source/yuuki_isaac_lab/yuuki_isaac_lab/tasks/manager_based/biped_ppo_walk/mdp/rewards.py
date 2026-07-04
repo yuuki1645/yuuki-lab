@@ -406,16 +406,16 @@ def pose_termination_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
     if physics is None or biped is None:
         return torch.zeros(env.num_envs, device=env.device)
 
-    pose_done = state.bad_pose_steps >= term_params.bad_pose_consecutive_steps
+    pose_done = state.bad_pose_steps >= term_cfg.bad_pose_consecutive_steps
     _, penalty = termination_mdp.compute_pose_termination(
         imu_z=physics["imu_z"],
         upright=physics["upright"],
         lean_fwd_body=physics["lean_fwd_body"],
         both_feet_on_floor=biped.both_feet_on_floor,
-        min_imu_z=term_params.min_imu_z,
-        min_imu_upright=term_params.min_imu_upright,
-        max_backward_lean_body=term_params.max_backward_lean_body,
-        max_forward_lean_both_feet=term_params.max_forward_lean_both_feet,
-        pose_termination_penalty=term_params.pose_termination_penalty,
+        min_imu_z=term_cfg.min_imu_z,
+        min_imu_upright=term_cfg.min_imu_upright,
+        max_backward_lean_body=term_cfg.max_backward_lean_body,
+        max_forward_lean_both_feet=term_cfg.max_forward_lean_both_feet,
+        pose_termination_penalty=term_cfg.pose_termination_penalty,
     )
     return torch.where(pose_done, penalty, torch.zeros_like(penalty))

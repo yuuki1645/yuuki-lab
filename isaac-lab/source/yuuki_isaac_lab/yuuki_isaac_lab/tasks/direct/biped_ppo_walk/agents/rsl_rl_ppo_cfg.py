@@ -3,14 +3,18 @@
 
 # type: ignore
 
-"""exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来）。
+"""exp_030 PPO ハイパーパラメータ（conf/ppo/default.yaml 由来、rsl-rl >= 4.0 / 5.0 形式）。
 
     v27: v25 ckpt から fine-tune（displacement_progress 強化）。
 """
 
 from isaaclab.utils import configclass
 
-from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, RslRlPpoAlgorithmCfg
+from isaaclab_rl.rsl_rl import (
+    RslRlMLPModelCfg,
+    RslRlOnPolicyRunnerCfg,
+    RslRlPpoAlgorithmCfg,
+)
 
 
 @configclass
@@ -22,16 +26,18 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     # 学習メトリクスは WandB に記録（--logger tensorboard で上書き可能）
     logger = "wandb"
     wandb_project = "biped_ppo_walk"
-    empirical_normalization = True
-
-    policy = RslRlPpoActorCriticCfg(
-        # v23: 探索をさらに抑えて fine-tune 安定化（v22 で std が 0.59 まで増大）
-        init_noise_std=0.28,
-        actor_obs_normalization=True,
-        critic_obs_normalization=True,
-        actor_hidden_dims=[256, 256, 128],
-        critic_hidden_dims=[256, 256, 128],
+    obs_groups = {"actor": ["policy"], "critic": ["policy"]}
+    actor = RslRlMLPModelCfg(
+        hidden_dims=[256, 256, 128],
         activation="elu",
+        obs_normalization=True,
+        # v23: 探索をさらに抑えて fine-tune 安定化（旧 init_noise_std=0.28）
+        distribution_cfg=RslRlMLPModelCfg.GaussianDistributionCfg(init_std=0.28),
+    )
+    critic = RslRlMLPModelCfg(
+        hidden_dims=[256, 256, 128],
+        activation="elu",
+        obs_normalization=True,
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,

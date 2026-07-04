@@ -19,6 +19,7 @@ import time
 from isaaclab.app import AppLauncher
 
 import cli_args  # isort: skip
+import env_cfg_cli  # isort: skip
 
 parser = argparse.ArgumentParser(description="Record a long YouTube demo of biped PPO policy on parallel envs.")
 parser.add_argument("--num_envs", type=int, default=16, help="Number of parallel environments (default: 16).")
@@ -51,8 +52,9 @@ parser.add_argument(
     "--disable_fabric",
     action="store_true",
     default=False,
-    help="Disable fabric (same as play.py; keeps all env meshes visible).",
+    help="Set sim.use_fabric=False (USD I/O; GUI may look frozen). For mesh visibility use --visualize-robots.",
 )
+env_cfg_cli.add_robot_visualization_cli_args(parser)
 parser.add_argument(
     "--use_pretrained_checkpoint",
     action="store_true",
@@ -130,6 +132,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env_cfg.scene.num_envs = args_cli.num_envs
     env_cfg.seed = agent_cfg.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    env_cfg_cli.apply_robot_visualization_if_requested(env_cfg, args_cli)
 
     if hasattr(env_cfg, "viewer"):
         env_cfg.viewer.eye = (14.0, -18.0, 9.0)

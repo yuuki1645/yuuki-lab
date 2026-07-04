@@ -8,14 +8,25 @@
 """Launch Isaac Sim Simulator first."""
 
 import argparse
+import sys
+from pathlib import Path
 
 from isaaclab.app import AppLauncher
+
+_RSL_RL_DIR = Path(__file__).resolve().parent / "rsl_rl"
+if str(_RSL_RL_DIR) not in sys.path:
+    sys.path.insert(0, str(_RSL_RL_DIR))
+import env_cfg_cli  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Random agent for Isaac Lab environments.")
 parser.add_argument(
-    "--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations."
+    "--disable_fabric",
+    action="store_true",
+    default=False,
+    help="Set sim.use_fabric=False. For mesh visibility use --visualize-robots instead.",
 )
+env_cfg_cli.add_robot_visualization_cli_args(parser)
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 # append AppLauncher cli args
@@ -41,9 +52,8 @@ import yuuki_isaac_lab.tasks  # noqa: F401
 def main():
     """Random actions agent with Isaac Lab environment."""
     # create environment configuration
-    env_cfg = parse_env_cfg(
-        args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
-    )
+    env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs)
+    env_cfg_cli.apply_robot_visualization_if_requested(env_cfg, args_cli)
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg)
 

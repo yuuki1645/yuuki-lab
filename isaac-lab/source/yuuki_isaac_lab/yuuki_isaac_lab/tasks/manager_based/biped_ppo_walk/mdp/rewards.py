@@ -28,16 +28,9 @@ def _snap(env: ManagerBasedRLEnv):
 
 
 def forward_imu(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """IMU +X displacement reward during allowed single-support forward motion."""
-    snap, _, params = _snap(env)
-    dx = snap.dx
-    max_dx = snap.max_dx_per_step
-    dx_clipped = torch.clamp(dx, -max_dx, max_dx)
-    return torch.where(
-        snap.forward_allowed & (dx_clipped >= params.forward_min_dx),
-        torch.clamp(dx_clipped, min=0.0),
-        torch.zeros_like(dx),
-    )
+    """IMU +X displacement reward: max(dx, 0) per control step (no gait gating)."""
+    snap, _, _ = _snap(env)
+    return torch.clamp(snap.dx, min=0.0)
 
 
 def forward_velocity(env: ManagerBasedRLEnv) -> torch.Tensor:

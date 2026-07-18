@@ -176,26 +176,35 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     policy = runner.get_inference_policy(device=env.unwrapped.device)
 
     # extract the neural network module
-    # we do this in a try-except to maintain backwards compatibility.
-    try:
-        # version 2.3 onwards
+    # ループ内のエピソード終了時 reset に使う。rsl-rl のバージョンごとに
+    # 属性名が異なるため、新しい順にフォールバックする:
+    #   - rsl-rl >= 5.0: alg.get_policy()（actor と critic が分離、MLPModel を返す）
+    #   - rsl-rl 2.3 〜 4.x: alg.policy
+    #   - rsl-rl <= 2.2: alg.actor_critic
+    if hasattr(runner.alg, "get_policy"):
+        policy_nn = runner.alg.get_policy()
+    elif hasattr(runner.alg, "policy"):
         policy_nn = runner.alg.policy
-    except AttributeError:
-        # version 2.2 and below
-        policy_nn = runner.alg.actor_critic
-
-    # extract the normalizer
-    if hasattr(policy_nn, "actor_obs_normalizer"):
-        normalizer = policy_nn.actor_obs_normalizer
-    elif hasattr(policy_nn, "student_obs_normalizer"):
-        normalizer = policy_nn.student_obs_normalizer
     else:
-        normalizer = None
+        policy_nn = runner.alg.actor_critic
 
     # export policy to onnx/jit
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    export_policy_as_jit(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.pt")
-    export_policy_as_onnx(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx")
+    if hasattr(runner, "export_policy_to_jit"):
+        # rsl-rl >= 5.0: runner が公式のエクスポート API を持つ
+        #（モデル側の as_jit()/as_onnx() を利用。normalizer もモデルに内包される）
+        runner.export_policy_to_jit(path=export_model_dir, filename="policy.pt")
+        runner.export_policy_to_onnx(path=export_model_dir, filename="policy.onnx")
+    else:
+        # rsl-rl <= 4.x: isaaclab_rl のエクスポータへ normalizer を明示的に渡す
+        if hasattr(policy_nn, "actor_obs_normalizer"):
+            normalizer = policy_nn.actor_obs_normalizer
+        elif hasattr(policy_nn, "student_obs_normalizer"):
+            normalizer = policy_nn.student_obs_normalizer
+        else:
+            normalizer = None
+        export_policy_as_jit(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.pt")
+        export_policy_as_onnx(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx")
 
     dt = env.unwrapped.step_dt
 

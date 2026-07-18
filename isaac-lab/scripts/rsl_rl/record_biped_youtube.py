@@ -181,9 +181,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     runner.load(resume_path)
     policy = runner.get_inference_policy(device=env.unwrapped.device)
 
-    try:
+    # エピソード終了時の reset に使うネットワーク本体を取得する。
+    # rsl-rl のバージョンごとに属性名が異なるため、新しい順にフォールバックする:
+    #   - rsl-rl >= 5.0: alg.get_policy()
+    #   - rsl-rl 2.3 〜 4.x: alg.policy
+    #   - rsl-rl <= 2.2: alg.actor_critic
+    if hasattr(runner.alg, "get_policy"):
+        policy_nn = runner.alg.get_policy()
+    elif hasattr(runner.alg, "policy"):
         policy_nn = runner.alg.policy
-    except AttributeError:
+    else:
         policy_nn = runner.alg.actor_critic
 
     obs = env.get_observations()

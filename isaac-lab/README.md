@@ -81,10 +81,28 @@ python scripts/manager_based/smoke.py --num_envs 4 --steps 200
 
 ## 評価・再生
 
+**Direct 版**
+
 ```bash
 python scripts/eval_biped_walk.py --load_run <run_dir_name>
 python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Direct-Play-v0 --load_run <run_dir_name>
 ```
+
+**Manager-Based 版**（タスク ID は末尾 `-v0` まで必要。`<run_dir_name>` は `logs/rsl_rl/biped_ppo_walk_manager/` 配下のディレクトリ名）
+
+```bash
+# 定量評価（headless で移動距離・エピソード長・片脚率を集計）
+python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run <run_dir_name>
+
+# GUI 再生（Play タスクは 16 env・可視化向け設定）
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name>
+
+# 特定のチェックポイントを指定する場合
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name> --checkpoint model_2999.pt
+```
+
+`--load_run` を省略すると最新 run・最新 ckpt が自動選択されます。学習を headless で回し、
+見たいときだけ play で再生する運用（学習と可視化の分離）を推奨します。
 
 ## Robotics Hub 連携
 

@@ -21,7 +21,8 @@ from isaaclab_rl.rsl_rl import (
 class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 3000
-    save_interval = 400
+    # 節目で play / eval しやすいよう短めに保存する（本番でディスクが気になる場合は戻す）
+    save_interval = 10
     experiment_name = "biped_ppo_walk"
     # 学習メトリクスは WandB に記録（--logger tensorboard で上書き可能）
     logger = "wandb"

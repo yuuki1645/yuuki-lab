@@ -146,7 +146,7 @@ python scripts/rsl_rl/train.py `
 |------|-----|
 | ログ出力 | `isaac-lab/logs/rsl_rl/biped_ppo_walk/<timestamp>_<run_name>/` |
 | W&B プロジェクト | `biped_ppo_walk`（既定 online） |
-| ckpt 間隔 | `save_interval=400` → `model_400.pt`, `model_800.pt`, ... |
+| ckpt 間隔 | `save_interval=10` → `model_10.pt`, `model_20.pt`, ... |
 
 **長時間学習**: バックグラウンド実行 + [loop skill](file:///C:/Users/yuukilab/.cursor/skills-cursor/loop/SKILL.md) で完了を監視。学習中に別仮説を混ぜない。
 

@@ -262,7 +262,7 @@ MuJoCo 側: [docs/experiments/exp_030_biped_ppo_walk/termination.md](../../../..
 |------|-----|
 | `num_steps_per_env` | 24 |
 | `max_iterations` | 5000 |
-| `save_interval` | 400 |
+| `save_interval` | 10 |
 | `experiment_name` | `biped_ppo_walk` |
 | ロガー | WandB（`wandb_project=biped_ppo_walk`） |
 | ネットワーク | Actor/Critic MLP [256, 256, 128], ELU |

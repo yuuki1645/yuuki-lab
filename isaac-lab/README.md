@@ -115,8 +115,8 @@ GUI でロボットの動きを見るのは基本 **`play.py`**（Play タスク
 logs/rsl_rl/biped_ppo_walk_manager/          # Manager-Based
 ├── 2026-07-19_04-52-15/                     # ← これが run_dir_name
 │   ├── model_0.pt
-│   ├── model_400.pt
-│   └── model_800.pt
+│   ├── model_10.pt
+│   └── model_20.pt
 └── 2026-07-18_18-39-55/
 
 logs/rsl_rl/biped_ppo_walk/                  # Direct
@@ -141,21 +141,21 @@ Get-ChildItem logs\rsl_rl\biped_ppo_walk_manager
 
 | 指定 | 選ばれるもの |
 |------|----------------|
-| `--load_run 2026-07-19_04-52-15` のみ | その run 内の **最新** `model_*.pt`（上例なら `model_800.pt`） |
+| `--load_run 2026-07-19_04-52-15` のみ | その run 内の **最新** `model_*.pt`（上例なら `model_20.pt`） |
 | `--load_run` / `--checkpoint` とも省略 | **最新 run** の **最新** `model_*.pt` |
 | `--checkpoint <フルパス>` | 指定ファイルをそのまま読む（`--load_run` は使われない） |
 
 実際に読んだパスは起動ログの次の行で確認できます。
 
 ```
-[INFO]: Loading model checkpoint from: ...\2026-07-19_04-52-15\model_800.pt
+[INFO]: Loading model checkpoint from: ...\2026-07-19_04-52-15\model_20.pt
 ```
 
-途中イテレーションを見るときは **ファイルのフルパス** を渡します（ファイル名だけ + `--load_run` の併用はこの `play.py` では意図どおりにならないことがあります）。
+途中イテレーションを見るときは **ファイルのフルパス** を渡します（ファイル名だけ + `--load_run` の併用はこの `play.py` では意図どおりにならないことがあります）。チェックポイントは `save_interval=10` ごと（`model_10.pt`, `model_20.pt`, …）。
 
 ```powershell
 python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 `
-  --checkpoint Z:\Projects\yuuki-lab\isaac-lab\logs\rsl_rl\biped_ppo_walk_manager\2026-07-19_04-52-15\model_400.pt
+  --checkpoint Z:\Projects\yuuki-lab\isaac-lab\logs\rsl_rl\biped_ppo_walk_manager\2026-07-19_04-52-15\model_10.pt
 ```
 
 ### コマンド例

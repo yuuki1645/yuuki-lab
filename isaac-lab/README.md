@@ -39,10 +39,13 @@ python scripts/list_envs.py --headless
 
 ## 学習
 
+**スモークテスト**とは、本番学習の前に「環境と学習ループが起動するか」だけを短時間確認する実行です。  
+歩行の出来は見ず、`num_envs` を少なめ・`max_iterations` をごく短くします。`scripts/manager_based/smoke.py` は学習なしで環境を数ステップ回す、さらに軽い起動確認です。
+
 **1行で書く（PowerShell / bash 共通・おすすめ）**
 
 ```powershell
-# スモーク（Direct）
+# スモーク（Direct）— 起動確認のみ
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 64 --max_iterations 5
 
 # スモーク（Manager-Based）
@@ -67,6 +70,7 @@ python scripts/rsl_rl/train.py `
 
 - ログ: `logs/rsl_rl/biped_ppo_walk/<run>/`（Direct） / `logs/rsl_rl/biped_ppo_walk_manager/<run>/`（Manager-Based）
 - WandB: デフォルトオンライン（`--wandb_mode offline` でローカルのみ）
+- GUI で学習中の映像を見続けるのは重いので、**学習は `--headless`、確認は後述の `play.py`** を推奨
 
 ## Manager-Based スクリプト（薄いラッパー）
 
@@ -74,35 +78,91 @@ Direct 版と同一の train/play/eval 本体を、Manager-Based タスク既定
 
 ```powershell
 python scripts/manager_based/train.py --headless --num_envs 64 --max_iterations 5
-python scripts/manager_based/play.py --load_run <run_dir_name>
-python scripts/manager_based/eval.py --load_run <run_dir_name>
+python scripts/manager_based/play.py --load_run 2026-07-19_04-52-15
+python scripts/manager_based/eval.py --load_run 2026-07-19_04-52-15
 python scripts/manager_based/smoke.py --num_envs 4 --steps 200
 ```
 
 ## 評価・再生
 
+GUI でロボットの動きを見るのは基本 **`play.py`**（Play タスク）です。  
+運用の型は **headless で学習 → 節目で play / eval → 必要なら `--resume` で再開** です。
+
+### `--load_run`（run ディレクトリ名）
+
+学習 1 回ごとに日時名のフォルダが作られます。`--load_run` には **フルパスではなく、そのフォルダ名だけ** を渡します。
+
+```
+logs/rsl_rl/biped_ppo_walk_manager/          # Manager-Based
+├── 2026-07-19_04-52-15/                     # ← これが run_dir_name
+│   ├── model_0.pt
+│   ├── model_400.pt
+│   └── model_800.pt
+└── 2026-07-18_18-39-55/
+
+logs/rsl_rl/biped_ppo_walk/                  # Direct
+└── 2026-07-05_11-11-18/
+```
+
+```powershell
+# ○ 正しい（フォルダ名のみ）
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run 2026-07-19_04-52-15
+
+# × 誤り（フルパスは渡さない）
+# --load_run Z:\Projects\yuuki-lab\isaac-lab\logs\rsl_rl\biped_ppo_walk_manager\2026-07-19_04-52-15
+```
+
+一覧確認の例:
+
+```powershell
+Get-ChildItem logs\rsl_rl\biped_ppo_walk_manager
+```
+
+### どのチェックポイントが読まれるか
+
+| 指定 | 選ばれるもの |
+|------|----------------|
+| `--load_run 2026-07-19_04-52-15` のみ | その run 内の **最新** `model_*.pt`（上例なら `model_800.pt`） |
+| `--load_run` / `--checkpoint` とも省略 | **最新 run** の **最新** `model_*.pt` |
+| `--checkpoint <フルパス>` | 指定ファイルをそのまま読む（`--load_run` は使われない） |
+
+実際に読んだパスは起動ログの次の行で確認できます。
+
+```
+[INFO]: Loading model checkpoint from: ...\2026-07-19_04-52-15\model_800.pt
+```
+
+途中イテレーションを見るときは **ファイルのフルパス** を渡します（ファイル名だけ + `--load_run` の併用はこの `play.py` では意図どおりにならないことがあります）。
+
+```powershell
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 `
+  --checkpoint Z:\Projects\yuuki-lab\isaac-lab\logs\rsl_rl\biped_ppo_walk_manager\2026-07-19_04-52-15\model_400.pt
+```
+
+### コマンド例
+
 **Direct 版**
 
-```bash
-python scripts/eval_biped_walk.py --load_run <run_dir_name>
-python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Direct-Play-v0 --load_run <run_dir_name>
+```powershell
+python scripts/eval_biped_walk.py --load_run 2026-07-19_04-52-15
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Direct-Play-v0 --load_run 2026-07-19_04-52-15
 ```
 
-**Manager-Based 版**（タスク ID は末尾 `-v0` まで必要。`<run_dir_name>` は `logs/rsl_rl/biped_ppo_walk_manager/` 配下のディレクトリ名）
+**Manager-Based 版**（タスク ID は末尾 `-v0` まで必要）
 
-```bash
-# 定量評価（headless で移動距離・エピソード長・片脚率を集計）
-python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run <run_dir_name>
+```powershell
+# 定量評価（headless: 移動距離・エピソード長・片脚率）
+python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run 2026-07-19_04-52-15
 
-# GUI 再生（Play タスクは 16 env・可視化向け設定）
-python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name>
-
-# 特定のチェックポイントを指定する場合
-python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name> --checkpoint model_2999.pt
+# GUI 再生（Play タスクは 16 env・可視化向け）
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run 2026-07-19_04-52-15
 ```
 
-`--load_run` を省略すると最新 run・最新 ckpt が自動選択されます。学習を headless で回し、
-見たいときだけ play で再生する運用（学習と可視化の分離）を推奨します。
+学習の続きから再開する例:
+
+```powershell
+python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --resume --load_run 2026-07-19_04-52-15
+```
 
 ## Robotics Hub 連携
 

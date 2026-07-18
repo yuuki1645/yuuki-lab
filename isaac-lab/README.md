@@ -1,7 +1,10 @@
 # isaac-lab
 
 [yuuki-lab](https://github.com/yuuki1645/yuuki-lab) 内の **Isaac Lab 拡張**です。  
-MuJoCo 本線 [exp_030](../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) を Isaac Sim / Isaac Lab 上で学習するための移植版です。
+**リポジトリの強化学習本線**（両脚・交互片脚歩行 PPO）です。由来は MuJoCo [exp_030](../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) で、報酬設計の背景はそこを参照します。
+
+実験ドキュメント: [docs/experiments/isaac_biped_ppo_walk/](../docs/experiments/isaac_biped_ppo_walk/README.md)  
+改善ループ（AI）: [.cursor/skills/rl-improvement-loop/SKILL.md](../.cursor/skills/rl-improvement-loop/SKILL.md)
 
 ## 前提
 
@@ -95,10 +98,12 @@ python isaac_rl_log_server.py
 
 ## mujoco-sim との関係
 
-| 項目 | mujoco-sim (exp_030) | isaac-lab |
-|------|----------------------|-----------|
+| 項目 | mujoco-sim (exp_030・参照) | isaac-lab（**本線**） |
+|------|---------------------------|----------------------|
+| 位置づけ | 旧本線・設計背景の参照 | 日常の学習・eval・改善 |
 | シミュレータ | MuJoCo | Isaac Sim |
 | 報酬・終了条件 | Hydra YAML | `biped_ppo_walk_env_cfg.py` |
 | ロボット MJCF | `mujoco_sim_assets/` | `yuuki_isaac_lab/assets/robots/yuuki_biped/` |
 
-モデルは現状コピー運用です。将来 `mujoco_sim_assets` との共有を検討してください。
+モデルは現状コピー運用です。将来 `mujoco_sim_assets` との共有を検討してください。  
+**新規の学習・評価は本パッケージ（`isaac-lab/`）で行い、MuJoCo `train.py` は使わないでください。**

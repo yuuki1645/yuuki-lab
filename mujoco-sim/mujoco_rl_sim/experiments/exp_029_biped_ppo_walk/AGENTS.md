@@ -2,7 +2,7 @@
 
 ## 位置づけ
 
-- **後継**: runs 整理のため [exp_030](../exp_030_biped_ppo_walk/) に fork（2026-06）。**以降の本線は exp_030**
+- **後継**: runs 整理のため [exp_030](../exp_030_biped_ppo_walk/) に fork（2026-06）。MuJoCo 系統の後継は exp_030（**リポジトリ本線は Isaac Lab**）
 - **由来**: [exp_028](../exp_028_biped_ppo_walk/) をコピー（コピー時点で機能同一。`runs/` 混在整理のため fork）
 - **ベース**: [exp_026](../exp_026_biped_ppo_hop_balance/)（MLP 256→256→128）
 - **差分**: ホップ/すり足ではなく **交互片脚歩行** 向けの報酬・観測（`biped_walk_v1`、51 次元）

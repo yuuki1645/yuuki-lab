@@ -2,6 +2,7 @@
 
 ## 位置づけ
 
+- **リポジトリ本線は Isaac Lab**: 日常の学習・eval・改善は `isaac-lab/` と [.cursor/skills/rl-improvement-loop/SKILL.md](../../../../.cursor/skills/rl-improvement-loop/SKILL.md)。本フォルダは **MuJoCo 参照・レガシー**
 - **由来**: [exp_029](../exp_029_biped_ppo_walk/) をコピー（コピー時点で機能同一。`runs/` 混在整理のため fork）
 - **ベース**: [exp_026](../exp_026_biped_ppo_hop_balance/)（MLP 256→256→128）
 - **差分**: ホップ/すり足ではなく **交互片脚歩行** 向けの報酬・観測（`biped_walk_v1`、51 次元）

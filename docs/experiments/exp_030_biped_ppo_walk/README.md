@@ -1,6 +1,9 @@
 # exp_030 詳細ドキュメント
 
 **交互片脚歩行 PPO**（`biped_walk_v1`、観測 51 次元）の詳細解説。  
+> **位置づけ**: MuJoCo 時代の最終本線実験です。**現行の学習本線は [Isaac Lab biped_ppo_walk](../isaac_biped_ppo_walk/README.md)**。  
+> 本 docs は報酬・終了の設計意図を読むための参照用として維持します。
+
 実験フォルダの入口は [experiments/exp_030_biped_ppo_walk/README.md](../../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/README.md)。  
 落とし穴・エージェント向け要点は [AGENTS.md](../../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/AGENTS.md)。
 

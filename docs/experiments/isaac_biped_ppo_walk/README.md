@@ -1,6 +1,7 @@
 # Isaac Lab — biped_ppo_walk 実験ドキュメント
 
-Isaac Sim 上の二足歩行 PPO（`YuukiLab-BipedPpoWalk-Direct-v0`）の実験正本。
+Isaac Sim 上の二足歩行 PPO（`YuukiLab-BipedPpoWalk-Direct-v0`）の実験正本。  
+**リポジトリ強化学習の本線**です（MuJoCo exp_030 は参照のみ）。
 
 ## 入口
 

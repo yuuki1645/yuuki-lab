@@ -1,5 +1,8 @@
 # AWS 上での exp_030 学習（新プロメテウス v0）
 
+> **対象は MuJoCo exp_030（参照・レガシー）です。**  
+> リポジトリ強化学習の本線は [Isaac Lab](../isaac-lab/README.md) です。Isaac 学習を AWS に載せる手順はこのドキュメントの範囲外です。
+
 自宅 PC から **EC2 Spot** を起動し、各 VM で `train.py` を 1 本実行する最小ランチャーです。  
 旧 LAN 向け `mujoco_rl_sim.dispatch`（Coordinator / Worker）とは別系統です。
 

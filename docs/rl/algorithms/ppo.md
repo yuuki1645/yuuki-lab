@@ -1,6 +1,6 @@
 # PPO（Proximal Policy Optimization）
 
-yuuki-lab **本線**の強化学習アルゴリズムです（exp_030）。  
+yuuki-lab **本線**の強化学習アルゴリズムです（Isaac Lab / RSL-RL。由来の具体例は MuJoCo exp_030）。  
 論文: Schulman et al. 2017。
 
 ## 一行要約

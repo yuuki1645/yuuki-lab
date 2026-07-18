@@ -1,7 +1,11 @@
 # exp_030: 交互片脚歩行 PPO（exp_029 コピー）
 
+> **リポジトリ強化学習の本線は [Isaac Lab](../../../../isaac-lab/README.md) に移りました。**  
+> 本フォルダは MuJoCo 時代の最終系統（参照・レガシー）。新規学習は `isaac-lab/` を使ってください。  
+> 実験 docs: [docs/experiments/isaac_biped_ppo_walk](../../../../docs/experiments/isaac_biped_ppo_walk/README.md)
+
 **exp_029** をコピーした作業用 fork です（2026-06）。**コピー時点でコードは exp_029 と同一**で、`runs/` のみ空から開始します。  
-exp_029 の run 混在を整理し、以降の本線実験は本フォルダで行います。
+exp_029 の run 混在を整理し、**MuJoCo 系統では**以降の作業を本フォルダで行う想定でした。
 
 | 項目 | exp_029 | exp_030 |
 |------|---------|---------|

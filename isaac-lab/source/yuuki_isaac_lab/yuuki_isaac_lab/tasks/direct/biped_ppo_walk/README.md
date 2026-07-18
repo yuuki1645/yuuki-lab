@@ -1,7 +1,7 @@
 # BipedPpoWalk — Isaac Lab タスク詳細解説
 
-**Yuuki Lab 両脚交互片脚歩行 PPO** タスクの解説です。  
-MuJoCo 本線 [exp_030_biped_ppo_walk](../../../../../../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) を [Isaac Lab DirectRLEnv](https://isaac-sim.github.io/IsaacLab/) 上に移植したものです。
+**Yuuki Lab 両脚交互片脚歩行 PPO** タスクの解説です（**リポジトリ強化学習本線**の Direct 実装）。  
+[Isaac Lab DirectRLEnv](https://isaac-sim.github.io/IsaacLab/) 上で学習します。由来は MuJoCo [exp_030_biped_ppo_walk](../../../../../../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/)（参照・レガシー）。
 
 ## 目次
 

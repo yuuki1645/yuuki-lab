@@ -5,13 +5,14 @@
 
 ## 運用方針
 
-- 各 `mujoco-sim/mujoco_rl_sim/experiments/exp_*` の **README.md** は入口（概要・最短手順・本 docs へのリンク）に留める。
-- **報酬・終了・ワークフロー・実装詳細** の正本は `docs/experiments/<exp_name>/` に置く（ファイル分割推奨）。
-- 実験フォルダはスタンドアロンコピー戦略を維持する。
+- **強化学習の本線は Isaac Lab**（`isaac_biped_ppo_walk`）。日常の学習・eval・改善ループはこちら。
+- MuJoCo `exp_*` は参照・レガシー。報酬設計の背景を読むときに使う。
+- 各実験フォルダの **README.md** は入口（概要・最短手順・本 docs へのリンク）に留める。
+- **報酬・終了・ワークフロー・実装詳細** の正本は `docs/experiments/<name>/` に置く（ファイル分割推奨）。
 
-| 実験 | 入口 | 実験フォルダ |
-|------|------|--------------|
-| exp_030_biped_ppo_walk | [README](exp_030_biped_ppo_walk/README.md) | [experiments/exp_030_biped_ppo_walk/](../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) |
-| isaac_biped_ppo_walk | [README](isaac_biped_ppo_walk/README.md) | [isaac-lab/source/yuuki_isaac_lab/.../biped_ppo_walk/](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/) |
+| 実験 | 位置づけ | 入口 | コード |
+|------|----------|------|--------|
+| **isaac_biped_ppo_walk** | **本線** | [README](isaac_biped_ppo_walk/README.md) | [isaac-lab/.../biped_ppo_walk/](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/) |
+| exp_030_biped_ppo_walk | 参照（旧 MuJoCo 本線） | [README](exp_030_biped_ppo_walk/README.md) | [experiments/exp_030_biped_ppo_walk/](../../mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) |
 
-新規 `exp_*` を追加するときは、本ディレクトリに `<exp_name>/` を作成し、実験 README からリンクする。
+新規 Isaac タスクや MuJoCo `exp_*` を追加するときは、本ディレクトリに対応フォルダを作成し、実験 README からリンクする。

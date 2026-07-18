@@ -17,9 +17,10 @@ PPO は「同じ rollout を clip 付きで複数 epoch 使う」点が異なり
 | 実験 | algo | 状態 |
 |------|------|------|
 | archive exp_001, exp_002 | A2C | アーカイブ（片脚 2 関節） |
-| exp_030 | PPO | **本線** |
+| exp_030（MuJoCo） | PPO | 参照（旧本線） |
+| Isaac Lab biped_ppo_walk | PPO（RSL-RL） | **本線** |
 
-アーカイブ README: [exp_001](../../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c/README.md)
+アーカイブ README: [exp_001](../../../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c/README.md)
 
 ## A2C から PPO へ移行した理由（一般的）
 
@@ -29,7 +30,7 @@ PPO は「同じ rollout を clip 付きで複数 epoch 使う」点が異なり
 | サンプル効率 | 1 回のデータで 1 回更新が基本 | 複数 epoch 再利用 |
 | 連続制御ロボット | 使われる | **より広く使われる** |
 
-yuuki-lab では exp_015 以降バイペッド系に移行し、exp_030 で Hydra + PPO + VecEnv が本線です。
+yuuki-lab では exp_015 以降バイペッド系に移行し、MuJoCo では exp_030（Hydra + PPO + VecEnv）まで進めたあと、**学習本線を Isaac Lab（RSL-RL PPO）へ移しました**。
 
 ## 次に読む
 

@@ -1,33 +1,39 @@
 # 強化学習ドキュメント（yuuki-lab）
 
-MuJoCo 歩行実験で使う **強化学習の汎用解説** です。  
-数式は GitHub 向けに `$...$`（インライン）・`$$...$$`（ブロック）で記述しています。  
+歩行 RL で使う **強化学習の汎用解説** です。  
+数式は GitHub 向けに `$...$`（インライン）・`$$...$$`（ブロック）で記述しています。
+
+**現行の学習本線は Isaac Lab**（[experiments/isaac_biped_ppo_walk](../experiments/isaac_biped_ppo_walk/README.md)）。  
+本文の具体例の多くは由来となった MuJoCo [exp_030](../experiments/exp_030_biped_ppo_walk/README.md) を参照しています（参照・レガシー）。
+
 実験固有の詳細（報酬係数・終了条件・ワークフロー）は [experiments/](../experiments/README.md) に、人体・実機の数値は [human_joint_kinematics.md](../human_joint_kinematics.md) 等に置きます。
 
 ## この docs の位置づけ
 
 ```text
 docs/rl/           … 理論・アルゴリズム・実務の一般論（本フォルダ）
-docs/experiments/  … 各 exp の正本（exp_030 の reward.md 等）
-コード             … mujoco-sim/mujoco_rl_sim/experiments/exp_030/...
+docs/experiments/  … 各実験の正本（本線: isaac_biped_ppo_walk、参照: exp_030）
+コード（本線）     … isaac-lab/source/yuuki_isaac_lab/.../biped_ppo_walk/
+コード（参照）     … mujoco-sim/mujoco_rl_sim/experiments/exp_030/...
 ```
 
 ## 推奨読みルート
 
-### ルート A: いま exp_030 を回している
+### ルート A: いま Isaac Lab で歩行を回している
 
 1. [algorithms/ppo.md](algorithms/ppo.md) — いま使っている algo
 2. [practice/reward-design.md](practice/reward-design.md) — 報酬の考え方
 3. [practice/evaluation.md](practice/evaluation.md) — train と eval の分離
-4. [yuuki-lab/exp030-bridge.md](yuuki-lab/exp030-bridge.md) — 理論とコードの対応
-5. [experiments/exp_030_biped_ppo_walk/](../experiments/exp_030_biped_ppo_walk/README.md) — 実験の正本
+4. [experiments/isaac_biped_ppo_walk/](../experiments/isaac_biped_ppo_walk/README.md) — **本線**の実験入口
+5. [isaac-lab Direct タスク README](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md) — 観測・報酬・実行手順
+6. （背景参照）[yuuki-lab/exp030-bridge.md](yuuki-lab/exp030-bridge.md) — 理論と MuJoCo 由来コードの対応
 
 ### ルート B: Sutton & Barto 学び直し
 
 1. [yuuki-lab/sutton-barto-map.md](yuuki-lab/sutton-barto-map.md) — 章とファイルの対応
 2. [foundations/](foundations/README.md) — 基礎編（01〜07）
 3. [algorithms/policy-gradient.md](algorithms/policy-gradient.md) → [ppo.md](algorithms/ppo.md)
-4. [yuuki-lab/exp030-bridge.md](yuuki-lab/exp030-bridge.md)
+4. [yuuki-lab/exp030-bridge.md](yuuki-lab/exp030-bridge.md) — 具体例（MuJoCo exp_030）
 
 ### ルート C: AI の出力を検品したい
 
@@ -50,7 +56,8 @@ docs/experiments/  … 各 exp の正本（exp_030 の reward.md 等）
 
 | リンク | 内容 |
 |--------|------|
-| [experiments/exp_030](../experiments/exp_030_biped_ppo_walk/README.md) | 本線実験の詳細 |
+| [experiments/isaac_biped_ppo_walk](../experiments/isaac_biped_ppo_walk/README.md) | **本線**実験の詳細 |
+| [experiments/exp_030](../experiments/exp_030_biped_ppo_walk/README.md) | MuJoCo 参照（旧本線） |
 | [control_timing_human_rl.md](../control_timing_human_rl.md) | 人体 Hz と RL step |
-| [aws/README.md](../../aws/README.md) | AWS 並列学習 |
+| [aws/README.md](../../aws/README.md) | AWS 並列学習（MuJoCo exp_030 向け・レガシー） |
 | [トップ README](../../README.md) | リポジトリ全体の導線 |

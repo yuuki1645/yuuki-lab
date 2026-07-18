@@ -1,6 +1,6 @@
 # BipedPpoWalk — Manager-Based 版
 
-**Yuuki Lab 両脚交互片脚歩行 PPO** の Isaac Lab **ManagerBasedRLEnv** 実装です。  
+**Yuuki Lab 両脚交互片脚歩行 PPO** の Isaac Lab **ManagerBasedRLEnv** 実装です（本線タスクの Manager 版）。  
 Direct 版とは独立したコードベースで、Isaac Lab の Manager ワークフローに沿って MDP を構成しています。
 
 ---

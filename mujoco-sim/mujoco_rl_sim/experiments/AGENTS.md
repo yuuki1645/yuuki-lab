@@ -1,5 +1,9 @@
 # mujoco_rl_sim 実験 — AI エージェント向け共通メモ
 
+> **リポジトリ強化学習の本線は Isaac Lab**（`isaac-lab/`）。  
+> 改善ループは `.cursor/skills/rl-improvement-loop/SKILL.md`（Isaac 専用）。  
+> 本ドキュメントは **MuJoCo `mujoco_rl_sim/experiments/` 内**で作業するときの共通メモです。
+
 ## 実行方法（スタンドアロン）
 
 各 `exp_*` フォルダは **単体で完結** しています（`contract/` 等は実験フォルダ内に同梱）。
@@ -27,12 +31,13 @@ python visualize.py
 | 駆動 | 膝 + 足首サーボ |
 | 典型タスク | 片脚ホッピング（exp_008 以降） |
 
-## アクティブな実験
+## MuJoCo 内の実験範囲
 
 | 範囲 | 場所 |
 |------|------|
-| **exp_015 以降** | `experiments/exp_*`（本線） |
-| exp_001〜014 | `experiments/archive/exp_*`（参照用・アーカイブ） |
+| **exp_015 以降** | `experiments/exp_*`（MuJoCo アクティブ系・参照） |
+| 最終歩行系統 | **exp_030**（旧リポジトリ本線） |
+| exp_001〜014 | `experiments/archive/exp_*`（アーカイブ） |
 
 ## 実験の系統（archive: exp_001〜014）
 

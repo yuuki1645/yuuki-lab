@@ -88,22 +88,23 @@ class ObservationsCfg:
         """Observations for the PPO policy."""
 
         imu_dx = ObsTerm(func=mdp.imu_dx)
-        imu_gyro = ObsTerm(func=mdp.imu_gyro)
         imu_zaxis = ObsTerm(func=mdp.imu_zaxis)
-        imu_height = ObsTerm(func=mdp.imu_height)
-        left_foot_contact = ObsTerm(func=mdp.left_foot_contact)
-        right_foot_contact = ObsTerm(func=mdp.right_foot_contact)
-        left_foot_dx = ObsTerm(func=mdp.left_foot_dx)
-        right_foot_dx = ObsTerm(func=mdp.right_foot_dx)
-        left_foot_height = ObsTerm(func=mdp.left_foot_height)
-        right_foot_height = ObsTerm(func=mdp.right_foot_height)
         single_support = ObsTerm(func=mdp.single_support_flag)
-        joint_pos = ObsTerm(func=mdp.joint_pos_normalized, params={"asset_cfg": _ROBOT_JOINTS})
-        joint_vel = ObsTerm(func=mdp.joint_vel_normalized, params={"asset_cfg": _ROBOT_JOINTS})
-        actions = ObsTerm(func=mdp.last_action)
-        support_side = ObsTerm(func=mdp.support_side)
-        same_side_streak = ObsTerm(func=mdp.same_side_streak_normalized)
-        episode_progress = ObsTerm(func=mdp.episode_progress)
+
+        # imu_gyro = ObsTerm(func=mdp.imu_gyro)
+        # imu_height = ObsTerm(func=mdp.imu_height)
+        # left_foot_contact = ObsTerm(func=mdp.left_foot_contact)
+        # right_foot_contact = ObsTerm(func=mdp.right_foot_contact)
+        # left_foot_dx = ObsTerm(func=mdp.left_foot_dx)
+        # right_foot_dx = ObsTerm(func=mdp.right_foot_dx)
+        # left_foot_height = ObsTerm(func=mdp.left_foot_height)
+        # right_foot_height = ObsTerm(func=mdp.right_foot_height)
+        # joint_pos = ObsTerm(func=mdp.joint_pos_normalized, params={"asset_cfg": _ROBOT_JOINTS})
+        # joint_vel = ObsTerm(func=mdp.joint_vel_normalized, params={"asset_cfg": _ROBOT_JOINTS})
+        # actions = ObsTerm(func=mdp.last_action)
+        # support_side = ObsTerm(func=mdp.support_side)
+        # same_side_streak = ObsTerm(func=mdp.same_side_streak_normalized)
+        # episode_progress = ObsTerm(func=mdp.episode_progress)
 
         def __post_init__(self) -> None:
             self.enable_corruption = False

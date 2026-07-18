@@ -56,7 +56,39 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
             env_ids = torch.as_tensor(list(env_ids), device=self.device, dtype=torch.long)
 
         self.biped_state.record_episode_displacement(env_ids)
+        # super()._reset_idx() が episode_length_buf をゼロ化するため、終了エピソード長を先に退避する
+        episode_lengths = self.episode_length_buf[env_ids].float()
         super()._reset_idx(env_ids)
+        self._log_watchlist(env_ids, episode_lengths)
         self.biped_state.init_env_buffers(env_ids)
         self.biped_state._last_update_step = -1
         self.biped_state.snapshot = None
+
+    def _log_watchlist(self, env_ids: torch.Tensor, episode_lengths: torch.Tensor) -> None:
+        """重要指標を WandB の専用セクション（0_Watchlist/）にも重複ログする。
+
+        WandB はキーの ``/`` より前をセクション名として自動グルーピングし、
+        セクションはアルファベット順に並ぶため、``0_`` 接頭辞で常に最上部に表示される。
+        値は既存メトリクスの複製（スカラー）なのでログコストはほぼゼロ。
+
+        注意: super()._reset_idx() は extras["log"] を新しい dict に差し替えるため、
+        このメソッドは必ず super() の後に呼ぶこと。
+        """
+        if env_ids.numel() == 0:
+            return
+        log = self.extras.setdefault("log", {})
+
+        # 前進距離（このタスクの主目的。右上がりが好ましい）
+        log["0_Watchlist/episode_displacement_x"] = self.biped_state.last_episode_displacement[env_ids].mean()
+        # エピソード長（長くなる = 転倒が減る。上限は episode_length_s / step_dt）
+        log["0_Watchlist/episode_length_steps"] = episode_lengths.mean()
+
+        # 終了理由の内訳（bad_pose は下がる・time_out は後半増えるのが好ましい）
+        for key in ("Episode_Termination/bad_pose", "Episode_Termination/time_out"):
+            if key in log:
+                log["0_Watchlist/" + key.split("/")[-1]] = log[key]
+
+        # エピソード報酬合計（報酬だけ伸びて displacement が停滞する場合は報酬ハックを疑う）
+        reward_terms = [v for k, v in log.items() if k.startswith("Episode_Reward/")]
+        if reward_terms:
+            log["0_Watchlist/episode_reward_total"] = sum(reward_terms)

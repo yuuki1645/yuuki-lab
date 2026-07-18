@@ -72,6 +72,25 @@ python scripts/rsl_rl/train.py `
 - WandB: デフォルトオンライン（`--wandb_mode offline` でローカルのみ）
 - GUI で学習中の映像を見続けるのは重いので、**学習は `--headless`、確認は後述の `play.py`** を推奨
 
+### WandB の監視ダッシュボード
+
+重要指標は学習側が `0_Watchlist/*` セクションに重複ログする（Manager-Based 版
+`biped_ppo_walk_env.py` の `_log_watchlist()`）。WandB の Charts 最上部に自動表示される。
+
+Workspace（監視ビュー）と Report（指標の見方ガイド）はスクリプトで生成できる:
+
+```powershell
+# Workspace + Report を両方作成（wandb login 済みであること）
+python scripts/wandb_dashboard.py
+
+# 片方だけ
+python scripts/wandb_dashboard.py --workspace-only
+python scripts/wandb_dashboard.py --report-only
+```
+
+実行するたびに新しい Saved View / Report が追加されるので、作り直した場合は
+WandB UI で古い方を削除する。Isaac Sim 不要（純 WandB API）。
+
 ## Manager-Based スクリプト（薄いラッパー）
 
 Direct 版と同一の train/play/eval 本体を、Manager-Based タスク既定値で起動する:

@@ -12,6 +12,9 @@ from collections.abc import Sequence
 import torch
 
 from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.markers.config import FRAME_MARKER_CFG
+from isaaclab.utils.math import quat_apply
 
 from yuuki_isaac_lab.assets.robots.yuuki_biped.mjcf_utils import ensure_mjcf_importer_enabled
 
@@ -28,6 +31,38 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         # MJCF importer must be enabled before robot spawn (headless kit).
         ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
+
+        # IMU サイトに追従する 3 軸フレームマーカー（X=赤 / Y=緑 / Z=青）。
+        # USD のギズモと違い Fabric 上の物理更新にも追従できるように、
+        # VisualizationMarkers を使って毎ステップ座標を書き込む方式にする。
+        # GUI が無い（headless）場合は描画されないので生成自体をスキップする。
+        self._imu_frame_marker: VisualizationMarkers | None = None
+        if self.cfg.debug_vis_imu_frame and self.sim.has_gui():
+            marker_cfg = FRAME_MARKER_CFG.copy()
+            marker_cfg.prim_path = "/Visuals/IMUFrame"
+            # ロボットが小型（IMU 高さ 0.2〜0.3 m 程度）なので軸長を縮める
+            marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
+            self._imu_frame_marker = VisualizationMarkers(marker_cfg)
+
+    def step(self, action: torch.Tensor):
+        """1 制御ステップ実行後、IMU フレームマーカーの位置・姿勢を更新する。"""
+        result = super().step(action)
+        if self._imu_frame_marker is not None:
+            self._update_imu_frame_marker()
+        return result
+
+    def _update_imu_frame_marker(self) -> None:
+        """全 env の IMU サイトのワールド位置・姿勢をマーカーに反映する。
+
+        IMU サイトはルートボディ（basket_thigh）にオフセット ``IMU_OFFSET`` で
+        固定されているため、位置はルート位置 + 回転済みオフセット、
+        姿勢はルートボディの姿勢そのものになる。
+        """
+        robot = self.scene["robot"]
+        root_pos = robot.data.body_pos_w[:, self.biped_state.root_body_id]
+        root_quat = robot.data.body_quat_w[:, self.biped_state.root_body_id]  # (w, x, y, z)
+        imu_pos = root_pos + quat_apply(root_quat, self.biped_state.imu_off.unsqueeze(0).expand(self.num_envs, -1))
+        self._imu_frame_marker.visualize(translations=imu_pos, orientations=root_quat)
 
     def load_managers(self) -> None:
         """Initialize biped episode state before observation manager probes policy terms."""

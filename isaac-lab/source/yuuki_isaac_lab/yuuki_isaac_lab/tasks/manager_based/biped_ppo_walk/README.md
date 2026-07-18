@@ -88,6 +88,18 @@ python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-v0 --num_envs 16 --vi
 
 GUI で全 env のロボットメッシュを見る場合は `--visualize-robots` を付ける（`sim.use_fabric` は維持され物理も GUI も同期する）。`--disable_fabric` だけだと viewport が止まって見えることがある。
 
+### IMU 3 軸フレームの表示
+
+IMU サイト位置に 3 軸フレーム（X=赤 / Y=緑 / Z=青）を毎ステップ追従表示できる。
+USD のギズモと違い Fabric 上の物理更新にも追従する（`VisualizationMarkers` でコードから座標を書き込むため）。
+
+| 設定 | 既定値 |
+|------|--------|
+| `BipedPpoWalkEnvCfg.debug_vis_imu_frame` | `False`（学習用。描画負荷を避ける） |
+| `BipedPpoWalkEnvCfg_PLAY.debug_vis_imu_frame` | `True`（`-Play-v0` タスクで自動的に有効） |
+
+headless 実行時は設定値に関わらず自動で無効化される。学習タスク（`-v0`）を GUI 付きで動かすときに表示したい場合は、`BipedPpoWalkEnvCfg` の `debug_vis_imu_frame` を `True` に変更する。
+
 ---
 
 ## 変更時の注意

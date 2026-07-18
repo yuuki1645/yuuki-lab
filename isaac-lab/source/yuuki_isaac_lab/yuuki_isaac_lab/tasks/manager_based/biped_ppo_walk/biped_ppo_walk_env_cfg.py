@@ -209,6 +209,10 @@ class BipedPpoWalkEnvCfg(ManagerBasedRLEnvCfg):
     observation_params: BipedObservationParams = BipedObservationParams()
     termination_params: BipedTerminationParams = BipedTerminationParams()
 
+    # IMU サイト位置に 3 軸フレーム（X=赤 / Y=緑 / Z=青）を毎ステップ描画するか。
+    # GUI 起動時のみ有効（headless では自動的に無効化）。学習時は負荷回避のため False を推奨。
+    debug_vis_imu_frame: bool = False
+
     def __post_init__(self) -> None:
         self.sim = SimulationCfg(
             dt=0.002,
@@ -244,6 +248,9 @@ class BipedPpoWalkEnvCfg_PLAY(BipedPpoWalkEnvCfg):
         replicate_physics=False,
         clone_in_fabric=False,
     )
+
+    # Play 時は IMU の姿勢を目視確認したいので 3 軸フレームを表示する。
+    debug_vis_imu_frame: bool = True
 
     viewer: ViewerCfg = ViewerCfg(
         eye=(14.0, -18.0, 9.0),

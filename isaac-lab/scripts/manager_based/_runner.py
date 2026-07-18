@@ -9,7 +9,9 @@ import runpy
 import sys
 from pathlib import Path
 
-_ISAAC_LAB_ROOT = Path(__file__).resolve().parents[1]
+# このファイルは <root>/scripts/manager_based/_runner.py にあるため、
+# リポジトリルートは 2 階層上（parents[0]=manager_based, parents[1]=scripts, parents[2]=root）
+_ISAAC_LAB_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _run_script(relative_path: Path, default_task: str, argv: list[str] | None = None) -> None:

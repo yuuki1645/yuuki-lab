@@ -40,6 +40,10 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         if self.cfg.debug_vis_imu_frame and self.sim.has_gui():
             marker_cfg = FRAME_MARKER_CFG.copy()
             marker_cfg.prim_path = "/Visuals/IMUFrame"
+            # FRAME_MARKER_CFG には frame と connecting_line の 2 プロトタイプが含まれるが、
+            # 使うのは frame のみ。未使用プロトタイプが PointInstancer に残ると
+            # omni.physx.fabric が "mismatched prototypes" 警告を出すため frame だけ残す。
+            marker_cfg.markers = {"frame": marker_cfg.markers["frame"]}
             # ロボットが小型（IMU 高さ 0.2〜0.3 m 程度）なので軸長を縮める
             marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
             self._imu_frame_marker = VisualizationMarkers(marker_cfg)

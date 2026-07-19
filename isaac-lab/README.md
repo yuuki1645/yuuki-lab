@@ -107,6 +107,24 @@ python scripts/manager_based/smoke.py --num_envs 4 --steps 200
 GUI でロボットの動きを見るのは基本 **`play.py`**（Play タスク）です。  
 運用の型は **headless で学習 → 節目で play / eval → 必要なら `--resume` で再開** です。
 
+### 再生は `--device cpu` を推奨
+
+少数 env（1〜16 程度）の再生では **`--device cpu`** を付けると UI・シミュレーションとも大幅に滑らかになります。
+
+```powershell
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name> --num_envs 1 --device cpu
+```
+
+理由: GPU PhysX は 1 物理ステップごとに固定レイテンシ（カーネル発行 + 完了待ち `fetchResults`）があり、
+このタスクは物理 500 Hz（`dt=0.002` × `decimation=10`）なので 1 制御ステップに物理 10 回が直列に走る。
+数千 env の学習では並列数で固定費を償却できるが、少数 env では固定費だけを払い続けて
+1 フレーム 100 ms 超（約 7 FPS）まで落ちる。CPU PhysX なら GPU 往復がなく、小規模シーンでは圧倒的に速い。
+
+| 用途 | 推奨デバイス |
+|------|--------------|
+| 学習（数千 env、headless） | GPU（既定の `cuda:0`） |
+| 再生・目視確認（1〜16 env、GUI） | **`--device cpu`** |
+
 ### `--load_run`（run ディレクトリ名）
 
 学習 1 回ごとに日時名のフォルダが作られます。`--load_run` には **フルパスではなく、そのフォルダ名だけ** を渡します。
@@ -173,8 +191,8 @@ python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Direct-Play-v0 --load
 # 定量評価（headless: 移動距離・エピソード長・片脚率）
 python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run 2026-07-19_04-52-15
 
-# GUI 再生（Play タスクは 16 env・可視化向け）
-python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run 2026-07-19_04-52-15
+# GUI 再生（Play タスクは 16 env・可視化向け。少数 env は --device cpu が滑らか）
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run 2026-07-19_04-52-15 --device cpu
 ```
 
 学習の続きから再開する例:

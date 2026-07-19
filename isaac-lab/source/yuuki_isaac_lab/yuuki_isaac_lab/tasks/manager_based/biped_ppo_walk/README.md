@@ -82,11 +82,14 @@ python scripts/manager_based/smoke.py --headless --num_envs 4 --steps 200
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --num_envs 4096
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --num_envs 16 --visualize-robots
 python scripts/eval_biped_walk.py --task YuukiLab-BipedPpoWalk-v0 --load_run <run_dir_name>
-python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name>
+python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run <run_dir_name> --device cpu
 python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-v0 --num_envs 16 --visualize-robots --load_run <run_dir_name>
 ```
 
 GUI で全 env のロボットメッシュを見る場合は `--visualize-robots` を付ける（`sim.use_fabric` は維持され物理も GUI も同期する）。`--disable_fabric` だけだと viewport が止まって見えることがある。
+
+**少数 env の再生は `--device cpu` を推奨。** GPU PhysX は物理 1 ステップごとに固定レイテンシがあり、
+物理 500 Hz × 少数 env では固定費が支配して約 7 FPS まで落ちる（詳細はリポジトリ直下 README の「再生は `--device cpu` を推奨」）。
 
 ### IMU 3 軸フレームの表示
 

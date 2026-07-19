@@ -32,9 +32,9 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
 
-        # Play 時など、設定で opacity < 1 のときロボット見た目を半透明にする。
-        # IMU フレームマーカーがボディに隠れないようにするため（物理・観測は不変）。
-        self._apply_robot_visual_opacity()
+        # Play 時など、設定で opacity < 1 のとき basket_thigh（かご）だけ半透明にする。
+        # IMU はかご内にあるため、脚などは不透明のまま残す（物理・観測は不変）。
+        self._apply_basket_thigh_visual_opacity()
 
         # IMU サイトに追従する 3 軸フレームマーカー（X=赤 / Y=緑 / Z=青）。
         # USD のギズモと違い Fabric 上の物理更新にも追従できるように、
@@ -52,11 +52,32 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
             marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
             self._imu_frame_marker = VisualizationMarkers(marker_cfg)
 
-    def _apply_robot_visual_opacity(self) -> None:
-        """ロボット下の見た目メッシュ／Shader に ``robot_visual_opacity`` を適用する。
+    # basket_thigh の子ボディ名。これら配下の見た目には opacity を掛けない。
+    _BASKET_THIGH_CHILD_BODIES = frozenset(
+        {
+            "basket_top_roll",
+            "balance_pitch",
+            "balance_bar",
+            "left_hip",
+            "left_thigh",
+            "left_knee",
+            "left_ankle_pitch",
+            "left_ankle_roll",
+            "left_foot",
+            "right_hip",
+            "right_thigh",
+            "right_knee",
+            "right_ankle_pitch",
+            "right_ankle_roll",
+            "right_foot",
+        }
+    )
 
-        MJCF 由来の PreviewSurface は ``inputs:opacity``、メッシュ側は
-        ``displayOpacity`` を更新する。どちらも見た目専用で、PhysX の衝突には触らない。
+    def _apply_basket_thigh_visual_opacity(self) -> None:
+        """``basket_thigh``（かご本体）の見た目だけ ``robot_visual_opacity`` を適用する。
+
+        IMU サイトはかご内にあるため、このボディを半透明にすればフレームが見える。
+        脚・バランスバーなど子ボディは対象外。物理・観測には影響しない。
         """
         opacity = float(self.cfg.robot_visual_opacity)
         if opacity >= 1.0 - 1e-6:
@@ -69,23 +90,53 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         from isaaclab.sim.utils import find_matching_prim_paths, get_current_stage
 
         stage = get_current_stage()
-        robot_paths = find_matching_prim_paths(self.scene["robot"].cfg.prim_path)
-        for root_path in robot_paths:
-            root = stage.GetPrimAtPath(root_path)
-            if not root.IsValid():
+        robot_prim_path = self.scene["robot"].cfg.prim_path
+        basket_paths = find_matching_prim_paths(f"{robot_prim_path}/basket_thigh")
+
+        for basket_path in basket_paths:
+            basket_prim = stage.GetPrimAtPath(basket_path)
+            if not basket_prim.IsValid():
                 continue
-            for prim in Usd.PrimRange(root):
-                # Cube / Mesh など geom の表示不透明度（レガシー経路・補助）
+            prefix = f"{basket_path}/"
+            for prim in Usd.PrimRange(basket_prim):
+                # 子ボディ配下はスキップ（脚・サーボ・バランスバー等）
+                rel = str(prim.GetPath())[len(prefix) :] if str(prim.GetPath()).startswith(prefix) else ""
+                if rel and any(part in self._BASKET_THIGH_CHILD_BODIES for part in rel.split("/")):
+                    continue
                 if prim.IsA(UsdGeom.Gprim):
                     UsdGeom.Gprim(prim).CreateDisplayOpacityAttr().Set([opacity])
-                # UsdPreviewSurface 等の Shader opacity（RTX インタラクティブ描画で効く）
                 if prim.IsA(UsdShade.Shader):
-                    shader = UsdShade.Shader(prim)
-                    opacity_input = shader.GetInput("opacity")
-                    if opacity_input:
-                        opacity_input.Set(opacity)
-                    else:
-                        shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(opacity)
+                    self._set_shader_opacity(prim, opacity)
+
+        # MJCF の material "basket" は Robot/Looks 配下に置かれることが多いので、
+        # 名前に basket を含む Shader の opacity も合わせて下げる（かご geom 専用マテリアル）。
+        looks_paths = find_matching_prim_paths(f"{robot_prim_path}/Looks")
+        for looks_path in looks_paths:
+            looks_prim = stage.GetPrimAtPath(looks_path)
+            if not looks_prim.IsValid():
+                continue
+            for prim in Usd.PrimRange(looks_prim):
+                name = prim.GetName().lower()
+                if "basket" not in name:
+                    continue
+                if prim.IsA(UsdShade.Shader):
+                    self._set_shader_opacity(prim, opacity)
+                # Material 直下の Shader も拾う
+                for child in prim.GetChildren():
+                    if child.IsA(UsdShade.Shader):
+                        self._set_shader_opacity(child, opacity)
+
+    @staticmethod
+    def _set_shader_opacity(shader_prim, opacity: float) -> None:
+        """UsdPreviewSurface 系 Shader の ``inputs:opacity`` を設定する。"""
+        from pxr import Sdf, UsdShade
+
+        shader = UsdShade.Shader(shader_prim)
+        opacity_input = shader.GetInput("opacity")
+        if opacity_input:
+            opacity_input.Set(opacity)
+        else:
+            shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(opacity)
 
     def step(self, action: torch.Tensor):
         """1 制御ステップ実行後、IMU フレームマーカーの位置・姿勢を更新する。"""

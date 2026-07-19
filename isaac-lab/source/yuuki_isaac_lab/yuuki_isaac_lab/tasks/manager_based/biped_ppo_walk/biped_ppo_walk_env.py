@@ -83,7 +83,7 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         opacity = max(0.0, min(1.0, opacity))
 
         # pxr / isaaclab.sim は Kit 起動後にしか使えないため、ここで遅延 import する
-        from pxr import UsdGeom, UsdShade
+        from pxr import Usd, UsdGeom, UsdShade
 
         from isaaclab.sim.utils import find_matching_prim_paths, get_current_stage
 

@@ -100,8 +100,10 @@ USD のギズモと違い Fabric 上の物理更新にも追従する（`Visuali
 |------|--------|
 | `BipedPpoWalkEnvCfg.debug_vis_imu_frame` | `False`（学習用。描画負荷を避ける） |
 | `BipedPpoWalkEnvCfg_PLAY.debug_vis_imu_frame` | `True`（`-Play-v0` タスクで自動的に有効） |
+| `BipedPpoWalkEnvCfg.robot_visual_opacity` | `1.0`（不透明） |
+| `BipedPpoWalkEnvCfg_PLAY.robot_visual_opacity` | `0.35`（半透明。内部マーカーが見える） |
 
-headless 実行時は設定値に関わらず自動で無効化される。学習タスク（`-v0`）を GUI 付きで動かすときに表示したい場合は、`BipedPpoWalkEnvCfg` の `debug_vis_imu_frame` を `True` に変更する。
+headless 実行時、IMU フレームは設定値に関わらず自動で無効化される。学習タスク（`-v0`）を GUI 付きで動かすときに表示したい場合は、`debug_vis_imu_frame` を `True` に変更する。透明度は `robot_visual_opacity`（0〜1）で調整でき、物理・観測には影響しない。
 
 ---
 

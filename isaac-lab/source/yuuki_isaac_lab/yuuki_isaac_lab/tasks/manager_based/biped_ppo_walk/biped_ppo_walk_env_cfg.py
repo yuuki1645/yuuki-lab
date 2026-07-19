@@ -213,6 +213,11 @@ class BipedPpoWalkEnvCfg(ManagerBasedRLEnvCfg):
     # GUI 起動時のみ有効（headless では自動的に無効化）。学習時は負荷回避のため False を推奨。
     debug_vis_imu_frame: bool = False
 
+    # ロボット見た目の不透明度（1.0=不透明, 0.0=完全透明）。
+    # IMU フレームなど内部マーカーを透かして見る用途。1.0 未満のときだけ適用する。
+    # 物理・観測には影響しない（見た目マテリアルのみ変更）。
+    robot_visual_opacity: float = 1.0
+
     def __post_init__(self) -> None:
         self.sim = SimulationCfg(
             dt=0.002,
@@ -251,6 +256,9 @@ class BipedPpoWalkEnvCfg_PLAY(BipedPpoWalkEnvCfg):
 
     # Play 時は IMU の姿勢を目視確認したいので 3 軸フレームを表示する。
     debug_vis_imu_frame: bool = True
+
+    # Play 時はボディを半透明にして、内部の IMU フレームを見えるようにする。
+    robot_visual_opacity: float = 0.35
 
     viewer: ViewerCfg = ViewerCfg(
         eye=(14.0, -18.0, 9.0),

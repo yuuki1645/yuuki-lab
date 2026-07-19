@@ -32,6 +32,10 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
 
+        # Play 時など、設定で opacity < 1 のときロボット見た目を半透明にする。
+        # IMU フレームマーカーがボディに隠れないようにするため（物理・観測は不変）。
+        self._apply_robot_visual_opacity()
+
         # IMU サイトに追従する 3 軸フレームマーカー（X=赤 / Y=緑 / Z=青）。
         # USD のギズモと違い Fabric 上の物理更新にも追従できるように、
         # VisualizationMarkers を使って毎ステップ座標を書き込む方式にする。
@@ -47,6 +51,41 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
             # ロボットが小型（IMU 高さ 0.2〜0.3 m 程度）なので軸長を縮める
             marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
             self._imu_frame_marker = VisualizationMarkers(marker_cfg)
+
+    def _apply_robot_visual_opacity(self) -> None:
+        """ロボット下の見た目メッシュ／Shader に ``robot_visual_opacity`` を適用する。
+
+        MJCF 由来の PreviewSurface は ``inputs:opacity``、メッシュ側は
+        ``displayOpacity`` を更新する。どちらも見た目専用で、PhysX の衝突には触らない。
+        """
+        opacity = float(self.cfg.robot_visual_opacity)
+        if opacity >= 1.0 - 1e-6:
+            return
+        opacity = max(0.0, min(1.0, opacity))
+
+        # pxr / isaaclab.sim は Kit 起動後にしか使えないため、ここで遅延 import する
+        from pxr import Sdf, Usd, UsdGeom, UsdShade
+
+        from isaaclab.sim.utils import find_matching_prim_paths, get_current_stage
+
+        stage = get_current_stage()
+        robot_paths = find_matching_prim_paths(self.scene["robot"].cfg.prim_path)
+        for root_path in robot_paths:
+            root = stage.GetPrimAtPath(root_path)
+            if not root.IsValid():
+                continue
+            for prim in Usd.PrimRange(root):
+                # Cube / Mesh など geom の表示不透明度（レガシー経路・補助）
+                if prim.IsA(UsdGeom.Gprim):
+                    UsdGeom.Gprim(prim).CreateDisplayOpacityAttr().Set([opacity])
+                # UsdPreviewSurface 等の Shader opacity（RTX インタラクティブ描画で効く）
+                if prim.IsA(UsdShade.Shader):
+                    shader = UsdShade.Shader(prim)
+                    opacity_input = shader.GetInput("opacity")
+                    if opacity_input:
+                        opacity_input.Set(opacity)
+                    else:
+                        shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(opacity)
 
     def step(self, action: torch.Tensor):
         """1 制御ステップ実行後、IMU フレームマーカーの位置・姿勢を更新する。"""

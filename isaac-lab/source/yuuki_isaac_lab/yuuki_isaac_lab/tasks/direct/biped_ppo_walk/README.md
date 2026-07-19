@@ -79,7 +79,7 @@ biped_ppo_walk/
 
 ロボットアセットは別パッケージにあります:
 
-- `yuuki_isaac_lab/assets/robots/yuuki_biped/` — MJCF（`main_isaac.xml`）と `YUUKI_BIPED_CFG`
+- `yuuki_isaac_lab/assets/robots/yuuki_biped/` — USD（`usd/yuuki_biped.usd`）と `YUUKI_BIPED_CFG`
 
 ---
 
@@ -359,7 +359,7 @@ PowerShell で複数行に分けるときは行末に **バッククォート ``
 | 観測 | `sim/observation.py`（51 次元） | `biped_ppo_walk_env._get_observations`（54 次元） |
 | 位相状態 | `sim/episode_state.py` | `mdp/episode_state.py` |
 | 行動写像 | `lib/ctrl.py` | `mdp/action.py` |
-| ロボット | `model/main.xml` | `assets/robots/yuuki_biped/main_isaac.xml` |
+| ロボット | `model/main.xml` | `assets/robots/yuuki_biped/usd/yuuki_biped.usd` |
 | 学習 | 自前 PPO + Hydra | RSL-RL PPO |
 | チェックポイント | `mujoco_rl_sim/runs/exp_030_.../` | `isaac-lab/logs/rsl_rl/biped_ppo_walk/` |
 
@@ -375,7 +375,7 @@ PowerShell で複数行に分けるときは行末に **バッククォート ``
 | 報酬ロジック | `mdp/reward.py` |
 | 終了閾値 | `biped_ppo_walk_env_cfg.py` → `BipedTerminationCfg` |
 | 観測次元・内容 | `biped_ppo_walk_env.py` の `_get_observations` + `observation_space` |
-| 関節・ctrlrange | `mdp/actuators.py` + MJCF |
+| 関節・ctrlrange | `mdp/actuators.py` + USD / `YUUKI_BIPED_CFG` |
 | 並列 env 数・物理 | `biped_ppo_walk_env_cfg.py` → `scene` / `sim` |
 | PPO ハイパラ | `agents/rsl_rl_ppo_cfg.py` |
 | Gym タスク ID | `__init__.py` |

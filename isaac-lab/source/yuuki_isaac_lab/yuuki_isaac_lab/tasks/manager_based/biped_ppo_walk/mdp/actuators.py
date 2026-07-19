@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import torch
 
-# Joint order matches MJCF / Isaac articulation naming.
+# Joint order matches USD / Isaac articulation naming.
 JOINT_NAMES: tuple[str, ...] = (
     "left_hip_roll",
     "left_hip_pitch",

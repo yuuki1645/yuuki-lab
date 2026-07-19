@@ -218,7 +218,7 @@ python isaac_rl_log_server.py
 | 位置づけ | 旧本線・設計背景の参照 | 日常の学習・eval・改善 |
 | シミュレータ | MuJoCo | Isaac Sim |
 | 報酬・終了条件 | Hydra YAML | `biped_ppo_walk_env_cfg.py` |
-| ロボット MJCF | `mujoco_sim_assets/` | `yuuki_isaac_lab/assets/robots/yuuki_biped/` |
+| ロボット資産 | `mujoco_sim_assets/`（参照） | `yuuki_isaac_lab/assets/robots/yuuki_biped/usd/`（USD） |
 
 モデルは現状コピー運用です。将来 `mujoco_sim_assets` との共有を検討してください。  
 **新規の学習・評価は本パッケージ（`isaac-lab/`）で行い、MuJoCo `train.py` は使わないでください。**

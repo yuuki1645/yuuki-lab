@@ -17,8 +17,6 @@ from isaaclab.envs import DirectRLEnv
 from isaaclab.sim.spawners.from_files import GroundPlaneCfg, spawn_ground_plane
 from isaaclab.utils.math import quat_apply
 
-from yuuki_isaac_lab.assets.robots.yuuki_biped.mjcf_utils import ensure_mjcf_importer_enabled
-
 from .biped_ppo_walk_env_cfg import BipedPpoWalkEnvCfg, get_max_dx_per_step, get_max_foot_dx_per_step
 from .mdp import action as action_mdp
 from .mdp import episode_state as episode_mdp
@@ -45,8 +43,6 @@ class BipedPpoWalkEnv(DirectRLEnv):
     cfg: BipedPpoWalkEnvCfg
 
     def __init__(self, cfg: BipedPpoWalkEnvCfg, render_mode: str | None = None, **kwargs):
-        # headless kit では MJCF インポータが未ロードのため、spawn 前に有効化する
-        ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
 
         # 関節インデックス（exp_030 JOINT_NAMES 順を保証）

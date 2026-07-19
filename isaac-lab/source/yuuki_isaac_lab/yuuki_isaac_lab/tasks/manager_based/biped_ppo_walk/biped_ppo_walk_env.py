@@ -16,8 +16,6 @@ from isaaclab.markers import VisualizationMarkers
 from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.utils.math import quat_apply
 
-from yuuki_isaac_lab.assets.robots.yuuki_biped.mjcf_utils import ensure_mjcf_importer_enabled
-
 from .biped_ppo_walk_env_cfg import BipedPpoWalkEnvCfg
 from .mdp.episode_state import BipedEpisodeState
 
@@ -28,8 +26,6 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
     cfg: BipedPpoWalkEnvCfg
 
     def __init__(self, cfg: BipedPpoWalkEnvCfg, render_mode: str | None = None, **kwargs):
-        # MJCF importer must be enabled before robot spawn (headless kit).
-        ensure_mjcf_importer_enabled()
         super().__init__(cfg, render_mode, **kwargs)
 
         # Play 時など、設定で opacity < 1 のとき basket_thigh（かご）だけ半透明にする。
@@ -61,15 +57,17 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
             "left_hip",
             "left_thigh",
             "left_knee",
+            "left_shin",
             "left_ankle_pitch",
             "left_ankle_roll",
-            "left_foot",
+            "left_sole",
             "right_hip",
             "right_thigh",
             "right_knee",
+            "right_shin",
             "right_ankle_pitch",
             "right_ankle_roll",
-            "right_foot",
+            "right_sole",
         }
     )
 
@@ -85,12 +83,13 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
         opacity = max(0.0, min(1.0, opacity))
 
         # pxr / isaaclab.sim は Kit 起動後にしか使えないため、ここで遅延 import する
-        from pxr import Sdf, Usd, UsdGeom, UsdShade
+        from pxr import UsdGeom, UsdShade
 
         from isaaclab.sim.utils import find_matching_prim_paths, get_current_stage
 
         stage = get_current_stage()
         robot_prim_path = self.scene["robot"].cfg.prim_path
+        # spawn 後は .../Robot/basket_thigh 配下（USD 内の main_isaac は defaultPrim で剥がれる）
         basket_paths = find_matching_prim_paths(f"{robot_prim_path}/basket_thigh")
 
         for basket_path in basket_paths:
@@ -108,8 +107,7 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
                 if prim.IsA(UsdShade.Shader):
                     self._set_shader_opacity(prim, opacity)
 
-        # MJCF の material "basket" は Robot/Looks 配下に置かれることが多いので、
-        # 名前に basket を含む Shader の opacity も合わせて下げる（かご geom 専用マテリアル）。
+        # material_basket は Robot/Looks 配下。名前に basket を含む Shader の opacity を下げる。
         looks_paths = find_matching_prim_paths(f"{robot_prim_path}/Looks")
         for looks_path in looks_paths:
             looks_prim = stage.GetPrimAtPath(looks_path)
@@ -121,7 +119,6 @@ class BipedPpoWalkEnv(ManagerBasedRLEnv):
                     continue
                 if prim.IsA(UsdShade.Shader):
                     self._set_shader_opacity(prim, opacity)
-                # Material 直下の Shader も拾う
                 for child in prim.GetChildren():
                     if child.IsA(UsdShade.Shader):
                         self._set_shader_opacity(child, opacity)

@@ -253,7 +253,7 @@ class BipedPpoWalkEnvCfg_PLAY(BipedPpoWalkEnvCfg):
     """評価・可視化向け（並列 env 数を抑える）。
 
     訓練用の replicate_physics + clone_in_fabric は GUI ではメッシュが env_0 のみ表示され、
-    他 env は MJCF site（黄色い点）だけ見えることがあるため、play では通常 clone を使う。
+    他 env は site（黄色い点）だけ見えることがあるため、play では通常 clone を使う。
     """
 
     scene: InteractiveSceneCfg = InteractiveSceneCfg(

@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""exp_030 両脚モデルを Isaac Lab から spawn する ArticulationCfg。"""
+"""Yuuki biped ArticulationCfg (USD asset)."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 
-# Isaac Lab 用 MJCF（床 geom なし・ルート高さは init_state で指定）
-_MJCF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main_isaac.xml")
+# Converted USD (instanceable). Regenerated historically from MJCF via Isaac Lab MjcfConverter.
+_USD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "usd", "yuuki_biped.usd")
 
-# exp_030 stand keyframe: 全 12 関節 0 rad、ルート高さ 0.66 m
+# Stand pose: all 12 joints 0 rad, root height 0.66 m
 _STAND_JOINT_POS = {
     "left_hip_roll": 0.0,
     "left_hip_pitch": 0.0,
@@ -30,7 +30,7 @@ _STAND_JOINT_POS = {
     "balance_pitch": 0.0,
 }
 
-# MuJoCo position actuator の kp/kv（main.xml と一致）
+# Joint PD gains (legacy MuJoCo position-actuator kp/kv values)
 _LEG_STIFFNESS = 85.0
 _LEG_DAMPING = 12.0
 _KNEE_STIFFNESS = 120.0
@@ -43,16 +43,13 @@ _TORSO_STIFFNESS = 85.0
 _TORSO_DAMPING = 12.0
 
 YUUKI_BIPED_CFG = ArticulationCfg(
-    # MJCF インポート後は worldBody と basket_thigh の 2 articulation ができる。
-    # ロボット本体（freejoint ルート）を明示する。
+    # USD has both worldBody and basket_thigh articulations; pick the free-joint robot root.
+    # Path is relative to the spawned prim (e.g. .../Robot). When the USD defaultPrim is
+    # ``main_isaac``, that namespace is stripped and bodies appear directly under Robot.
     articulation_root_prim_path="/basket_thigh/basket_thigh",
-    spawn=sim_utils.MjcfFileCfg(
-        asset_path=_MJCF_PATH,
-        fix_base=False,
-        import_sites=True,
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=_USD_PATH,
         activate_contact_sensors=True,
-        # MJCF→USD キャッシュを利用（main_isaac.xml 更新時のみ True にする）
-        force_usd_conversion=False,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             max_depenetration_velocity=1.0,

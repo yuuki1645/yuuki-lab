@@ -1,19 +1,4 @@
 <?xml version="1.0" ?>
-<!--
-  yuuki_biped.urdf
-  Source of truth for geometry / kinematics (authoring).
-  Converted from deleted MJCF: assets/robots/yuuki_biped/main_isaac.xml
-  (git history; Isaac Lab version without floor/lights, root at z=0).
-
-  Notes:
-  - MuJoCo box size (half-extents) -> URDF box size (full extents = x2)
-  - Joint range: MJCF degrees -> URDF radians
-  - freejoint 'root' -> floating base (no fixed joint to world;
-    use convert_urdf.py WITHOUT --fix-base)
-  - MJCF sites -> fixed child links (imu_site, foot_site, ...)
-  - Actuator gains (kp/kv) are NOT in URDF; set in ArticulationCfg.actuators
-  - Runtime asset is prebuilt USD (see README). Re-convert after editing this file.
--->
 <robot name="yuuki_biped">
   <link name="basket_thigh">
     <inertial>

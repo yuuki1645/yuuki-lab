@@ -1,0 +1,742 @@
+<?xml version="1.0" ?>
+<!--
+  yuuki_biped.urdf
+  Source of truth for geometry / kinematics (authoring).
+  Converted from deleted MJCF: assets/robots/yuuki_biped/main_isaac.xml
+  (git history; Isaac Lab version without floor/lights, root at z=0).
+
+  Notes:
+  - MuJoCo box size (half-extents) -> URDF box size (full extents = x2)
+  - Joint range: MJCF degrees -> URDF radians
+  - freejoint 'root' -> floating base (no fixed joint to world;
+    use convert_urdf.py WITHOUT --fix-base)
+  - MJCF sites -> fixed child links (imu_site, foot_site, ...)
+  - Actuator gains (kp/kv) are NOT in URDF; set in ArticulationCfg.actuators
+  - Runtime asset is prebuilt USD (see README). Re-convert after editing this file.
+-->
+<robot name="yuuki_biped">
+  <link name="basket_thigh">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0725" rpy="0 0 0"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.004142708333333333" ixy="0" ixz="0" iyy="0.0022260416666666665" iyz="0" izz="0.0046166666666666665"/>
+    </inertial>
+    <visual name="basket">
+      <origin xyz="0.0 0.0 0.0725" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.18 0.28 0.145"/>
+      </geometry>
+      <material name="basket_mat">
+        <color rgba="0.85 0.82 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="basket_col">
+      <origin xyz="0.0 0.0 0.0725" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.18 0.28 0.145"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="imu_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="imu_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="imu_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="imu_site_fixed" type="fixed">
+    <parent link="basket_thigh"/>
+    <child link="imu_site"/>
+    <origin xyz="0.0 0.0 0.05" rpy="0 0 0"/>
+  </joint>
+  <joint name="basket_top_roll" type="revolute">
+    <parent link="basket_thigh"/>
+    <child link="basket_top_roll"/>
+    <origin xyz="0.0 0.0 0.145" rpy="0 0 0"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.785398" upper="0.785398" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="basket_top_roll">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="basket_top_roll_servo">
+      <origin xyz="0.0 0.0 0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="basket_top_roll_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="balance_pitch" type="revolute">
+    <parent link="basket_top_roll"/>
+    <child link="balance_pitch"/>
+    <origin xyz="0.0 0.0 0.065" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="-0.785398" upper="0.785398" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="balance_pitch">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="balance_pitch_servo">
+      <origin xyz="0.0 0.0 0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="balance_pitch_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="balance_bar_fixed" type="fixed">
+    <parent link="balance_pitch"/>
+    <child link="balance_bar"/>
+    <origin xyz="0.0 0.0 0.065" rpy="0 0 0"/>
+  </joint>
+  <link name="balance_bar">
+    <inertial>
+      <origin xyz="0.0 0.0 0.125" rpy="0 0 0"/>
+      <mass value="1.5"/>
+      <inertia ixx="0.0025000000000000005" ixy="0" ixz="0" iyy="0.0025000000000000005" iyz="0" izz="0.0025000000000000005"/>
+    </inertial>
+    <visual name="balance_bar">
+      <origin xyz="0.0 0.0 0.125" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.03 0.25"/>
+      </geometry>
+      <material name="balance_bar_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="balance_bar_col">
+      <origin xyz="0.0 0.0 0.125" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.03 0.25"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="left_hip_roll" type="revolute">
+    <parent link="basket_thigh"/>
+    <child link="left_hip"/>
+    <origin xyz="0.0 0.12 0.0" rpy="0 0 0"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.523599" upper="1.570796" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="left_hip">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="left_hip_roll_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="left_hip_roll_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="left_hip_pitch" type="revolute">
+    <parent link="left_hip"/>
+    <child link="left_thigh"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="-1.919862" upper="0.523599" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="left_thigh">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.10000000000000002" rpy="0 0 0"/>
+      <mass value="0.428"/>
+      <inertia ixx="0.0007133333333333335" ixy="0" ixz="0" iyy="0.0007133333333333335" iyz="0" izz="0.0007133333333333335"/>
+    </inertial>
+    <visual name="left_thigh_plate_outer">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="left_thigh_plate_outer_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="left_thigh_plate_outer_col">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="thigh_link">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="thigh_link_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="thigh_link_col">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="left_thigh_lipo">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+      <material name="left_thigh_lipo_mat">
+        <color rgba="0.95 0.55 0.1 0.85"/>
+      </material>
+    </visual>
+    <collision name="left_thigh_lipo_col">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="left_knee_pitch" type="revolute">
+    <parent link="left_thigh"/>
+    <child link="left_knee"/>
+    <origin xyz="0.0 0.0 -0.2" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="0.000000" upper="1.745329" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="left_knee">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="left_knee_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="left_knee_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="left_shin_fixed" type="fixed">
+    <parent link="left_knee"/>
+    <child link="left_shin"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+  </joint>
+  <link name="left_shin">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.10000000000000002" rpy="0 0 0"/>
+      <mass value="0.428"/>
+      <inertia ixx="0.0007133333333333335" ixy="0" ixz="0" iyy="0.0007133333333333335" iyz="0" izz="0.0007133333333333335"/>
+    </inertial>
+    <visual name="left_shin_plate_outer">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="left_shin_plate_outer_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="left_shin_plate_outer_col">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="shank_link">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="shank_link_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="shank_link_col">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="left_shin_lipo">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+      <material name="left_shin_lipo_mat">
+        <color rgba="0.95 0.55 0.1 0.85"/>
+      </material>
+    </visual>
+    <collision name="left_shin_lipo_col">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="left_ankle_pitch" type="revolute">
+    <parent link="left_shin"/>
+    <child link="left_ankle_pitch"/>
+    <origin xyz="0.0 0.0 -0.2" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="-0.349066" upper="1.570796" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="left_ankle_pitch">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="left_ankle_pitch_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="left_ankle_pitch_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="left_ankle_roll" type="revolute">
+    <parent link="left_ankle_pitch"/>
+    <child link="left_ankle_roll"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.349066" upper="0.349066" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="left_ankle_roll">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="left_ankle_roll_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="left_ankle_roll_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="left_sole_fixed" type="fixed">
+    <parent link="left_ankle_roll"/>
+    <child link="left_sole"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+  </joint>
+  <link name="left_sole">
+    <inertial>
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <mass value="0.226"/>
+      <inertia ixx="0.00037666666666666675" ixy="0" ixz="0" iyy="0.00037666666666666675" iyz="0" izz="0.00037666666666666675"/>
+    </inertial>
+    <visual name="foot_plate">
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.1 0.002"/>
+      </geometry>
+      <material name="foot_plate_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="foot_plate_col">
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.1 0.002"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="foot_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="foot_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="foot_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="foot_site_fixed" type="fixed">
+    <parent link="left_sole"/>
+    <child link="foot_site"/>
+    <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+  </joint>
+  <link name="heel_bottom_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="heel_bottom_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="heel_bottom_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="heel_bottom_site_fixed" type="fixed">
+    <parent link="left_sole"/>
+    <child link="heel_bottom_site"/>
+    <origin xyz="-0.025 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+  <link name="toe_bottom_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="toe_bottom_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="toe_bottom_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="toe_bottom_site_fixed" type="fixed">
+    <parent link="left_sole"/>
+    <child link="toe_bottom_site"/>
+    <origin xyz="0.205 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+  <joint name="right_hip_roll" type="revolute">
+    <parent link="basket_thigh"/>
+    <child link="right_hip"/>
+    <origin xyz="0.0 -0.12 0.0" rpy="0 0 0"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.523599" upper="1.570796" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="right_hip">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="right_hip_roll_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="right_hip_roll_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_hip_pitch" type="revolute">
+    <parent link="right_hip"/>
+    <child link="right_thigh"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="-1.919862" upper="0.523599" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="right_thigh">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.10000000000000002" rpy="0 0 0"/>
+      <mass value="0.428"/>
+      <inertia ixx="0.0007133333333333335" ixy="0" ixz="0" iyy="0.0007133333333333335" iyz="0" izz="0.0007133333333333335"/>
+    </inertial>
+    <visual name="right_thigh_plate_outer">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="right_thigh_plate_outer_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="right_thigh_plate_outer_col">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="right_thigh_link">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="right_thigh_link_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="right_thigh_link_col">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="right_thigh_lipo">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+      <material name="right_thigh_lipo_mat">
+        <color rgba="0.95 0.55 0.1 0.85"/>
+      </material>
+    </visual>
+    <collision name="right_thigh_lipo_col">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_knee_pitch" type="revolute">
+    <parent link="right_thigh"/>
+    <child link="right_knee"/>
+    <origin xyz="0.0 0.0 -0.2" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="0.000000" upper="1.745329" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="right_knee">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="right_knee_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="right_knee_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_shin_fixed" type="fixed">
+    <parent link="right_knee"/>
+    <child link="right_shin"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+  </joint>
+  <link name="right_shin">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.10000000000000002" rpy="0 0 0"/>
+      <mass value="0.428"/>
+      <inertia ixx="0.0007133333333333335" ixy="0" ixz="0" iyy="0.0007133333333333335" iyz="0" izz="0.0007133333333333335"/>
+    </inertial>
+    <visual name="right_shin_plate_outer">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="right_shin_plate_outer_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="right_shin_plate_outer_col">
+      <origin xyz="0.0 -0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="right_shin_link">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+      <material name="right_shin_link_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="right_shin_link_col">
+      <origin xyz="0.0 0.0255 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.003 0.2"/>
+      </geometry>
+    </collision>
+    <visual name="right_shin_lipo">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+      <material name="right_shin_lipo_mat">
+        <color rgba="0.95 0.55 0.1 0.85"/>
+      </material>
+    </visual>
+    <collision name="right_shin_lipo_col">
+      <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.024 0.04 0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_ankle_pitch" type="revolute">
+    <parent link="right_shin"/>
+    <child link="right_ankle_pitch"/>
+    <origin xyz="0.0 0.0 -0.2" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit lower="-0.349066" upper="1.570796" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="right_ankle_pitch">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="right_ankle_pitch_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="right_ankle_pitch_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_ankle_roll" type="revolute">
+    <parent link="right_ankle_pitch"/>
+    <child link="right_ankle_roll"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.349066" upper="0.349066" effort="14.7" velocity="10.0"/>
+    <dynamics damping="2.0" friction="0"/>
+  </joint>
+  <link name="right_ankle_roll">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00012" ixy="0" ixz="0" iyy="0.00012" iyz="0" izz="0.00012"/>
+    </inertial>
+    <visual name="right_ankle_roll_servo">
+      <origin xyz="0.0 0.0 -0.0325" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.048 0.065"/>
+      </geometry>
+      <material name="right_ankle_roll_servo_mat">
+        <color rgba="0.65 0.1 0.18 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_sole_fixed" type="fixed">
+    <parent link="right_ankle_roll"/>
+    <child link="right_sole"/>
+    <origin xyz="0.0 0.0 -0.065" rpy="0 0 0"/>
+  </joint>
+  <link name="right_sole">
+    <inertial>
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <mass value="0.226"/>
+      <inertia ixx="0.00037666666666666675" ixy="0" ixz="0" iyy="0.00037666666666666675" iyz="0" izz="0.00037666666666666675"/>
+    </inertial>
+    <visual name="right_foot_plate">
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.1 0.002"/>
+      </geometry>
+      <material name="right_foot_plate_mat">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision name="right_foot_plate_col">
+      <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.1 0.002"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_foot_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="right_foot_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="right_foot_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_foot_site_fixed" type="fixed">
+    <parent link="right_sole"/>
+    <child link="right_foot_site"/>
+    <origin xyz="0.1 0.0 0.001" rpy="0 0 0"/>
+  </joint>
+  <link name="right_heel_bottom_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="right_heel_bottom_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="right_heel_bottom_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_heel_bottom_site_fixed" type="fixed">
+    <parent link="right_sole"/>
+    <child link="right_heel_bottom_site"/>
+    <origin xyz="-0.025 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+  <link name="right_toe_bottom_site">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+    <visual name="right_toe_bottom_site_vis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="right_toe_bottom_site_mat">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="right_toe_bottom_site_fixed" type="fixed">
+    <parent link="right_sole"/>
+    <child link="right_toe_bottom_site"/>
+    <origin xyz="0.205 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+</robot>

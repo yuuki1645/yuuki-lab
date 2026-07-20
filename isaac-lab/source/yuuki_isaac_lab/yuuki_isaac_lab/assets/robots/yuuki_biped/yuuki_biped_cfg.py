@@ -1,7 +1,11 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Yuuki biped ArticulationCfg (USD asset)."""
+"""Yuuki biped ArticulationCfg (USD asset).
+
+Authoring 正本は ``urdf/yuuki_biped.urdf``。実行時は prebuilt USD を読む。
+URDF を編集したら README の手動手順で USD を再生成すること。
+"""
 
 from __future__ import annotations
 
@@ -11,7 +15,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 
-# Converted USD (instanceable). Regenerated historically from MJCF via Isaac Lab MjcfConverter.
+# Prebuilt USD (instanceable). Author from urdf/, convert with Isaac Lab convert_urdf.py.
 _USD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "usd", "yuuki_biped.usd")
 
 # Stand pose: all 12 joints 0 rad, root height 0.66 m

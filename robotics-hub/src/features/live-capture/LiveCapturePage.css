@@ -1,4 +1,8 @@
-/* 横向き iPad: 左=カメラ、右=センサー／デバッグ */
+/* 横向き iPad: 左=カメラ、右=センサー／デバッグ
+ *
+ * 注意: iPad Chrome は overflow 付き祖先の中の multipart MJPEG <img> を描画しないことがある。
+ * ライブ映像の祖先には overflow: hidden / scroll を付けない。
+ */
 .live-capture {
   display: flex;
   flex-direction: column;
@@ -13,22 +17,22 @@
   max-width: none;
   width: 100%;
   flex: 1;
-  height: 100%;
   min-height: 0;
   margin: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto;
+  align-items: start;
   gap: 0 14px;
   padding: 8px 12px 12px;
-  overflow: hidden;
+  /* MJPEG 描画のため hidden にしない */
+  overflow: visible;
 }
 
 .live-capture__main {
   min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* スクロールも overflow も付けない（ページ全体／hub-main に任せる） */
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -37,8 +41,8 @@
 
 .live-capture__aside {
   min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
+  max-height: min(100dvh - 72px, 900px);
+  overflow-x: visible;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -51,6 +55,7 @@
     rgba(11, 16, 32, 0.2) 100%
   );
   border-radius: 0 8px 8px 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .live-capture__aside-header {
@@ -247,13 +252,19 @@
 .live-capture__stage {
   background: #111;
   border-radius: 8px;
-  overflow: hidden;
+  /* ライブ MJPEG を clip しない（角丸は img 側） */
+  overflow: visible;
   min-height: 120px;
   border: 2px solid transparent;
 }
 
 .live-capture__stage--review-active {
   border-color: #3d7ec9;
+}
+
+/* 見返し video だけははみ出し防止で clip してよい */
+.live-capture__stage:has(.live-capture__video) {
+  overflow: hidden;
 }
 
 .live-capture__img,
@@ -263,6 +274,12 @@
   max-height: min(36vh, 420px);
   object-fit: contain;
   background: #000;
+  border-radius: 6px;
+}
+
+/* Chrome が描画領域を確保しやすいよう最低高さを明示 */
+.live-capture__img {
+  min-height: 200px;
 }
 
 /* 縦向きなど狭い幅では上下に積む */
@@ -275,6 +292,7 @@
   }
 
   .live-capture__aside {
+    max-height: none;
     border-left: none;
     border-top: 1px solid rgba(200, 210, 255, 0.14);
     border-radius: 8px;

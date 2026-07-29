@@ -146,6 +146,27 @@ export function getTelemetryImuSocketUrl(): string {
   return SERVO_DAEMON_URL.replace(/\/$/, "");
 }
 
+/**
+ * 実機カメラ MJPEG（``programs/capture_realtime/serve_realtime.py``、既定 :8766）のベース URL。
+ * ``VITE_CAPTURE_REALTIME_URL`` があれば優先（ビルド時に埋め込み）。
+ */
+export function getCaptureRealtimeBaseUrl(): string {
+  const fromEnv = import.meta.env.VITE_CAPTURE_REALTIME_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8766"
+  );
+}
+
+/** MJPEG ストリーム本体（``/stream.mjpg``）。 */
+export function getCaptureRealtimeStreamUrl(): string {
+  return getCaptureRealtimeBaseUrl() + "/stream.mjpg";
+}
+
 /** 物理角スライダー範囲（レッグチューナーなど） */
 export const PHYSICAL_MIN = 0;
 export const PHYSICAL_MAX = 180;

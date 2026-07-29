@@ -15,11 +15,13 @@
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
 - **Isaac 学習進捗** — [isaac-lab](../isaac-lab/) の RSL-RL TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
+- **実機カメラ** — メインPCの `programs/capture_realtime`（MJPEG・既定 :8766）を低遅延表示（`/live-capture`）
 
 ## 前提
 
 - Node.js（推奨: 現在の LTS）
 - 実機連携時は **`robot-daemon`** を起動（既定ポート **5000**。REST のホストはブラウザと同じ `hostname` + `:5000`。IMU は同一オリジンへの Socket.IO）
+- 実機カメラ表示時は **`serve_realtime.py`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
 
 ## セットアップ
 
@@ -36,6 +38,25 @@ npm run dev
 
 ブラウザで表示された URL を開く（通常 `http://localhost:5173`）。トップは既定で **モーションエディタ** へリダイレクトされます。
 
+### 実機実験用（Hub + MJPEG 同時起動）
+
+ビデオカメラ監視まで含めて起動する場合:
+
+```bash
+cd robotics-hub
+npm run dev:lab
+```
+
+- Vite を **`--host 0.0.0.0:5173`** で起動（iPad から LAN アクセス可）
+- あわせて `../programs/capture_realtime/serve_realtime.py`（既定 **:8766**、1280×720 / 30fps）を起動
+- iPad では Hub の **実機カメラ**（`/live-capture`）を開く（映像 URL はブラウザの hostname + `:8766`）
+
+MJPEG だけ先に失敗しても Hub は動き続けます。カメラ未接続時は `npm run dev` のみで問題ありません。TCP **8766** の受信許可が未設定なら、管理者 PowerShell で一度:
+
+```bash
+python ../programs/capture_realtime/serve_realtime.py --open-firewall
+```
+
 ### LAN に公開する（同一ネット内の他端末からアクセス）
 
 開発 PC ですべてのインターフェースにバインドして起動します。
@@ -43,6 +64,8 @@ npm run dev
 ```bash
 npx vite --host 0.0.0.0 --port 5173
 ```
+
+（実機カメラも使うなら上記の **`npm run dev:lab`** の方がまとめて起動できます。）
 
 別端末のブラウザでは、起動ログに出る **Network** の URL（例: `http://192.168.x.x:5173`）を開くか、開発 PC の LAN IP を確認して `http://<そのIP>:5173` でアクセスします。
 
@@ -75,6 +98,7 @@ npm run preview
 | `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
 | `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
 | `VITE_ISAAC_RL_LOG_API_URL` | Isaac 学習ログ API（未設定時は `http://<hostname>:8792`） |
+| `VITE_CAPTURE_REALTIME_URL` | 実機カメラ MJPEG ベース URL（未設定時は `http://<hostname>:8766`） |
 
 ## Isaac 学習進捗（TensorBoard ログ）
 

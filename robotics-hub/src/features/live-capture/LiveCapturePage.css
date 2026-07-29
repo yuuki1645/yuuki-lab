@@ -1,0 +1,72 @@
+.live-capture {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 12px 24px;
+}
+
+.live-capture__header h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.live-capture__header p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.live-capture__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-capture__url {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  word-break: break-all;
+}
+
+.live-capture__btn {
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  background: color-mix(in srgb, Canvas 92%, CanvasText);
+  color: inherit;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.live-capture__btn:hover {
+  background: color-mix(in srgb, Canvas 80%, CanvasText);
+}
+
+.live-capture__error {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #c62828 18%, Canvas);
+  border: 1px solid color-mix(in srgb, #c62828 40%, transparent);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.live-capture__stage {
+  background: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.live-capture__img {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 720px);
+  object-fit: contain;
+  background: #000;
+}

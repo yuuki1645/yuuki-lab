@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:lab": "concurrently -n hub,mjpeg -c cyan,magenta \"vite --host 0.0.0.0 --port 5173\" \"python ../programs/capture_realtime/serve_realtime.py --width 1280 --height 720 --fps 30\"",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -20,6 +21,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "concurrently": "^9.2.4",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

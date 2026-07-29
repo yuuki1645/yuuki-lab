@@ -29,6 +29,7 @@ const TrainingTelemetryPage = lazy(
 const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
 const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
 const IsaacRlLogPage = lazy(() => import("@/features/isaac-rl-log/IsaacRlLogPage"));
+const LiveCapturePage = lazy(() => import("@/features/live-capture/LiveCapturePage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -58,6 +59,14 @@ export const hubTools: HubTool[] = [
     label: "Daemon Socket Test",
     description: "robot-daemon との Socket.IO 通信を確認します。",
     LazyPage: DaemonSocketTestPage,
+  },
+  {
+    id: "live-capture",
+    path: "/live-capture",
+    label: "実機カメラ",
+    description:
+      "メインPCの serve_realtime（MJPEG）でビデオカメラ映像を低遅延表示します。npm run dev:lab で Hub と同時起動できます。",
+    LazyPage: LiveCapturePage,
   },
   {
     id: "device-telemetry",

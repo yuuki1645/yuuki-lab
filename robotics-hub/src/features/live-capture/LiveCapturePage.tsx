@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
-import { useDaemonImuTelemetry } from "@/shared/contexts/DaemonImuTelemetryContext";
-import ImuAttitudeGauges from "@/shared/components/ImuAttitudeGauges";
+import LiveCaptureDebugAside from "@/features/live-capture/LiveCaptureDebugAside";
+import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
 import "./LiveCapturePage.css";
 
 type CaptureStatus = {
@@ -20,10 +20,10 @@ type CaptureStatus = {
 
 /**
  * 横向き iPad 向け: 左にカメラ／録画、右にセンサー・デバッグ枠。
+ * IMU は右ペイン専用コンポーネントで購読し、ライブ MJPEG は memo で隔離する。
  */
 export default function LiveCapturePage() {
   const baseUrl = useMemo(() => getCaptureRealtimeBaseUrl(), []);
-  const imu = useDaemonImuTelemetry();
   const [nonce, setNonce] = useState(() => Date.now());
   const [imgError, setImgError] = useState(false);
   const [status, setStatus] = useState<CaptureStatus | null>(null);
@@ -78,6 +78,10 @@ export default function LiveCapturePage() {
   const reconnectLive = useCallback(() => {
     setImgError(false);
     setNonce(Date.now());
+  }, []);
+
+  const onMjpegErrorChange = useCallback((hasError: boolean) => {
+    setImgError(hasError);
   }, []);
 
   const startRecord = useCallback(async () => {
@@ -156,7 +160,6 @@ export default function LiveCapturePage() {
 
   return (
     <div className="live-capture live-capture--split">
-      {/* 左: カメラ・録画（横向き iPad の主領域） */}
       <div className="live-capture__main">
         <header className="live-capture__header">
           <h1>実機カメラ</h1>
@@ -209,20 +212,7 @@ export default function LiveCapturePage() {
           </div>
         ) : null}
 
-        <section className="live-capture__section" aria-label="ライブ">
-          <h2 className="live-capture__section-title">ライブ（低遅延）</h2>
-          {/* overflow 付き祖先に入れない（iPad Chrome の MJPEG 描画対策） */}
-          <div className="live-capture__stage live-capture__stage--live">
-            <img
-              key={streamUrl}
-              className="live-capture__img"
-              src={streamUrl}
-              alt="実機カメラのライブ映像"
-              onError={() => setImgError(true)}
-              onLoad={() => setImgError(false)}
-            />
-          </div>
-        </section>
+        <LiveMjpegView streamUrl={streamUrl} onErrorChange={onMjpegErrorChange} />
 
         <section className="live-capture__section" aria-label="見返し">
           <div className="live-capture__section-head">
@@ -283,40 +273,7 @@ export default function LiveCapturePage() {
         </section>
       </div>
 
-      {/* 右: センサー・ログ・デバッグ（今後ここに追加） */}
-      <aside className="live-capture__aside" aria-label="デバッグ・センサー">
-        <header className="live-capture__aside-header">
-          <h2 className="live-capture__aside-title">デバッグ / センサー</h2>
-          <p className="live-capture__aside-sub">
-            robot-daemon（{imu.url}）
-          </p>
-        </header>
-
-        <section className="live-capture__aside-card" aria-label="IMU 姿勢">
-          <h3 className="live-capture__aside-card-title">IMU 姿勢（ピッチ／ロール）</h3>
-          <p className="live-capture__aside-meta">
-            状態:{" "}
-            <span
-              className={
-                "live-capture__ws live-capture__ws--" + imu.wsStatus
-              }
-            >
-              {imu.wsStatus}
-            </span>
-            {imu.lastError ? ` / ${imu.lastError}` : null}
-          </p>
-          <ImuAttitudeGauges
-            pitch={imu.lastSample?.angle?.pitch}
-            roll={imu.lastSample?.angle?.roll}
-            connected={imu.wsStatus === "connected"}
-          />
-        </section>
-
-        <section className="live-capture__aside-card live-capture__aside-card--placeholder">
-          <h3 className="live-capture__aside-card-title">ログ・その他</h3>
-          <p className="live-capture__hint">今後、デバッグログや他センサーをここに追加します。</p>
-        </section>
-      </aside>
+      <LiveCaptureDebugAside />
     </div>
   );
 }

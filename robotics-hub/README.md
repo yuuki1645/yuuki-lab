@@ -70,7 +70,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 別端末のブラウザでは、起動ログに出る **Network** の URL（例: `http://192.168.x.x:5173`）を開くか、開発 PC の LAN IP を確認して `http://<そのIP>:5173` でアクセスします。
 
-**`robot-daemon` について:** REST・Socket.IO のベース URL は **`window.location.hostname` + `:5000`**（`src/shared/constants.ts` の `SERVO_DAEMON_URL`。名前は歴史的経緯のためそのまま）です。タブレットなどから `http://192.168.x.x:5173` で開いた場合、フロントからは `http://192.168.x.x:5000` にリクエスト・WebSocket 相当の接続が飛びます。デーモンを動かしているマシンとポート 5000 が、他端末から届くようにファイアウォールで許可されているか確認してください（デーモンとハブを同一 PC で動かしているのが最も単純です）。
+**`robot-daemon` について:** REST・Socket.IO のベース URL は既定で **ラズパイ固定 IP** `http://192.168.100.50:5000`（`src/shared/constants.ts` の `SERVO_DAEMON_URL` / `ROBOT_DAEMON_HOST`）です。上書きは **`VITE_SERVO_DAEMON_URL`**（実機 IMU だけ別にする場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`**）。デーモンはラズパイ上で `0.0.0.0:5000` 待ち受け、同一 LAN から届くようにしてください。
 
 **テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`）と **学習テレメトリ**（`/training-telemetry`）に分かれています。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://<hostname>:5000`**（`SERVO_DAEMON_URL` と同じ）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
 
@@ -92,6 +92,7 @@ npm run preview
 
 | 名前 | 説明 |
 |------|------|
+| `VITE_SERVO_DAEMON_URL` | robot-daemon（未設定時は `http://192.168.100.50:5000`） |
 | `VITE_MUJOCO_SIM_URL` | 実時間 MuJoCo HTTP シムのベース URL（未設定時は `http://<hostname>:8787`） |
 | `VITE_IMU_SOCKET_URL` | IMU 用 Socket.IO（未設定時は `getMujocoSimUrl()` と同じ。Daemon Socket Test 等） |
 | `VITE_TELEMETRY_SOCKET_URL` | 学習テレメトリ用 Socket.IO（未設定時は `VITE_RL_TELEMETRY_SOCKET_URL` のあと `http://<hostname>:8791`） |

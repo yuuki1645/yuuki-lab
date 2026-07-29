@@ -47,11 +47,21 @@ export const SERVO_TICK_VALUES: Record<string, number[]> = {
 // 全サーボチャンネル番号の配列
 export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
 
-/** robot-daemon のベース URL（サーボは REST、IMU は同じオリジンで Socket.IO） */
-export const SERVO_DAEMON_URL =
-  "http://" +
-  (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
-  ":5000";
+/** 自宅ラボ固定: 実機 robot-daemon を動かすラズパイ */
+export const ROBOT_DAEMON_HOST = "192.168.100.50";
+export const ROBOT_DAEMON_PORT = 5000;
+
+/**
+ * robot-daemon のベース URL（サーボは REST、実機 IMU は同じオリジンで Socket.IO）。
+ * ラズパイ固定 IP。上書きは ``VITE_SERVO_DAEMON_URL``。
+ */
+export const SERVO_DAEMON_URL = (() => {
+  const fromEnv = import.meta.env.VITE_SERVO_DAEMON_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return `http://${ROBOT_DAEMON_HOST}:${ROBOT_DAEMON_PORT}`;
+})();
 
 /**
  * mujoco-sim（Flask）のベース URL。
@@ -136,7 +146,7 @@ export function getIsaacRlLogApiUrl(): string {
 
 /**
  * テレメトリページ用の IMU（robot-daemon）Socket.IO。
- * 未設定時は ``SERVO_DAEMON_URL`` と同じ（通常 ``http://<hostname>:5000``）。
+ * 未設定時は ``SERVO_DAEMON_URL`` と同じ（ラズパイ ``192.168.100.50:5000``）。
  */
 export function getTelemetryImuSocketUrl(): string {
   const fromEnv = import.meta.env.VITE_TELEMETRY_IMU_SOCKET_URL;

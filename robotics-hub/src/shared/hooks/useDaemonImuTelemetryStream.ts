@@ -84,7 +84,7 @@ export function useDaemonImuTelemetryStream(
     socket.on("connect_error", (err: Error) => {
       setLastError(
         `IMU (robot-daemon) 接続失敗 (${url}): ${err.message}。` +
-          "デーモンを起動し、`VITE_TELEMETRY_IMU_SOCKET_URL` が正しいか確認してください（未設定時は `http://<hostname>:5000`）。"
+                        "デーモンを起動し、`VITE_TELEMETRY_IMU_SOCKET_URL` が正しいか確認してください（未設定時はラズパイ `http://192.168.100.50:5000`）。"
       );
     });
 

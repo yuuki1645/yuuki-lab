@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Capture HLS</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+      header {
+        padding: 12px 16px;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+      video {
+        display: block;
+        width: 100%;
+        max-height: calc(100vh - 88px);
+        background: #000;
+      }
+      .hint {
+        padding: 12px 16px 20px;
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <header>実機キャプチャ HLS（シークで過去へ戻れます）</header>
+    <!-- iPad Chrome は WebKit のため m3u8 をネイティブ再生できる -->
+    <video id="player" controls playsinline></video>
+    <p class="hint">
+      再生が始まらないときは画面をタップ。音が出ない場合はプレイヤーのミュートを解除してください。
+      プレイリスト更新直後は先端付近のみのこともあります。数秒待ってからシークしてください。
+    </p>
+    <script>
+      (function () {
+        var video = document.getElementById("player");
+        // 同じオリジンの index.m3u8 を再生（サーバが HLS 断片を配信）
+        video.src = "index.m3u8";
+        // 自動再生は制限されやすいので muted で試行し、失敗しても手動再生可能にする
+        video.muted = true;
+        var p = video.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function () {
+            /* ユーザー操作待ち */
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

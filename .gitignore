@@ -33,6 +33,11 @@ robot-daemon/imu_logs/
 *.divx
 *.xvid
 
+# HLS 断片・プレイリスト（programs/capture_hls 実行時出力）
+*.m3u8
+*.ts
+programs/capture_hls/out/
+
 *.csv
 
 YuukiLab*/

@@ -18,6 +18,9 @@ AVerMedia Live Gamer ULTRA S 等の DirectShow デバイスを ffmpeg で HLS �
   # 録画 + 配信開始（Ctrl+C で停止）
   python programs/capture_hls/serve_hls.py
 
+  # NVIDIA GPU（NVENC）+ 既定の短い HLS 断片（1 秒）
+  python programs/capture_hls/serve_hls.py --nvenc
+
   # ポート・出力先・長さを指定（例: 60 秒で自動終了）
   python programs/capture_hls/serve_hls.py --port 8765 --duration 60
 
@@ -220,6 +223,46 @@ def prepare_out_dir(out_dir: Path) -> None:
   dest.write_text(VIEWER_HTML.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def build_video_encode_args(*, nvenc: bool, framerate: int, hls_time: float) -> list[str]:
+  """映像エンコード引数。NVENC 時は低遅延寄り、それ以外は libx264 ultrafast。"""
+  # セグメント境界で切れやすいよう、GOP を hls_time 秒相当に近づける
+  gop = max(int(round(framerate * max(hls_time, 0.5))), 15)
+
+  if nvenc:
+    # RTX 4080 SUPER 等: NVENC ハードウェアエンコード（CPU 解放・エンコード遅延低減）
+    return [
+      "-c:v",
+      "h264_nvenc",
+      "-preset",
+      "p1",  # 最速寄り
+      "-tune",
+      "ull",  # ultra low latency
+      "-rc",
+      "vbr",
+      "-cq",
+      "23",
+      "-bf",
+      "0",  # Bフレーム無しで並べ替え遅延を避ける
+      "-pix_fmt",
+      "yuv420p",
+      "-g",
+      str(gop),
+    ]
+
+  return [
+    "-c:v",
+    "libx264",
+    "-preset",
+    "ultrafast",
+    "-pix_fmt",
+    "yuv420p",
+    "-g",
+    str(gop),
+    "-sc_threshold",
+    "0",
+  ]
+
+
 def build_ffmpeg_cmd(
   ffmpeg: str,
   *,
@@ -232,6 +275,7 @@ def build_ffmpeg_cmd(
   rtbufsize: str,
   hls_time: float,
   duration: float | None,
+  nvenc: bool = False,
 ) -> list[str]:
   """dshow → HLS の ffmpeg コマンドを組み立てる。"""
   playlist = str(out_dir / "index.m3u8")
@@ -258,17 +302,8 @@ def build_ffmpeg_cmd(
     f"{width}x{height}",
     "-i",
     input_spec,
-    "-c:v",
-    "libx264",
-    "-preset",
-    "ultrafast",
-    "-pix_fmt",
-    "yuv420p",
-    "-g",
-    str(max(framerate * 2, 30)),  # キーフレーム間隔（シークしやすさ）
-    "-sc_threshold",
-    "0",
   ]
+  cmd += build_video_encode_args(nvenc=nvenc, framerate=framerate, hls_time=hls_time)
 
   if audio:
     cmd += ["-c:a", "aac", "-b:a", "128k"]
@@ -370,6 +405,7 @@ def run_session(args: argparse.Namespace) -> int:
     rtbufsize=args.rtbufsize,
     hls_time=args.hls_time,
     duration=args.duration,
+    nvenc=args.nvenc,
   )
   if args.hls_window is not None and args.hls_window > 0:
     cmd = build_ffmpeg_cmd_window(cmd, hls_window=args.hls_window)
@@ -476,8 +512,13 @@ def main() -> int:
   parser.add_argument(
     "--hls-time",
     type=float,
-    default=2.0,
-    help="HLS segment duration in seconds (default: 2).",
+    default=1.0,
+    help="HLS segment duration in seconds (default: 1).",
+  )
+  parser.add_argument(
+    "--nvenc",
+    action="store_true",
+    help="Use NVIDIA NVENC (h264_nvenc) instead of libx264.",
   )
   parser.add_argument(
     "--hls-window",

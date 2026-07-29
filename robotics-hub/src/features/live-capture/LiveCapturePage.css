@@ -1,21 +1,139 @@
+/* 横向き iPad: 左=カメラ、右=センサー／デバッグ */
 .live-capture {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   max-width: 1200px;
   margin: 0 auto;
   padding: 8px 12px 24px;
+  box-sizing: border-box;
+}
+
+.live-capture--split {
+  max-width: none;
+  width: 100%;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0 14px;
+  padding: 8px 12px 12px;
+  overflow: hidden;
+}
+
+.live-capture__main {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.live-capture__aside {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 4px 8px 12px;
+  border-left: 1px solid rgba(200, 210, 255, 0.14);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 24, 46, 0.55) 0%,
+    rgba(11, 16, 32, 0.2) 100%
+  );
+  border-radius: 0 8px 8px 0;
+}
+
+.live-capture__aside-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.live-capture__aside-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.live-capture__aside-sub {
+  margin: 0;
+  font-size: 0.72rem;
+  font-family: ui-monospace, monospace;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.live-capture__aside-card {
+  border: 1px solid rgba(110, 168, 255, 0.28);
+  border-radius: 10px;
+  background: #151c34;
+  padding: 8px 8px 10px;
+}
+
+.live-capture__aside-card--placeholder {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
+.live-capture__aside-card-title {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: #cfd6ff;
+}
+
+.live-capture__aside-meta {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.live-capture__ws--connected {
+  color: #7ddea0;
+  font-weight: 600;
+}
+
+.live-capture__ws--connecting {
+  color: #e0c36a;
+  font-weight: 600;
+}
+
+.live-capture__ws--disconnected {
+  color: #f09090;
+  font-weight: 600;
+}
+
+/* 右ペイン幅ではゲージを縦積みの方が見やすい */
+.live-capture__aside .imu-tilt-gauges {
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.live-capture__aside .imu-attitude-body {
+  padding: 4px 0 0;
 }
 
 .live-capture__header h1 {
-  margin: 0 0 6px;
-  font-size: 1.35rem;
+  margin: 0 0 4px;
+  font-size: 1.2rem;
 }
 
 .live-capture__header p {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.85rem;
+  line-height: 1.45;
   opacity: 0.85;
 }
 
@@ -23,12 +141,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .live-capture__url {
   font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   opacity: 0.8;
   word-break: break-all;
 }
@@ -109,7 +227,7 @@
 
 .live-capture__section-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 650;
 }
 
@@ -130,7 +248,7 @@
   background: #111;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 160px;
+  min-height: 120px;
   border: 2px solid transparent;
 }
 
@@ -142,7 +260,29 @@
 .live-capture__video {
   display: block;
   width: 100%;
-  max-height: min(42vh, 480px);
+  max-height: min(36vh, 420px);
   object-fit: contain;
   background: #000;
+}
+
+/* 縦向きなど狭い幅では上下に積む */
+@media (max-width: 900px) {
+  .live-capture--split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .live-capture__aside {
+    border-left: none;
+    border-top: 1px solid rgba(200, 210, 255, 0.14);
+    border-radius: 8px;
+    padding: 12px 8px;
+  }
+
+  .live-capture__aside .imu-tilt-gauges {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }

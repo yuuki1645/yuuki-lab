@@ -137,7 +137,8 @@ export default function ImuAttitudeGauges({
 
   return (
     <div className={"imu-attitude-body imu-attitude-body--tilt" + (className ? ` ${className}` : "")}>
-      <div className="imu-tilt-gauges" aria-live="polite">
+      {/* 高頻度更新のため aria-live は付けない（読み上げ／a11y ツリー負荷で描画が荒れる） */}
+      <div className="imu-tilt-gauges">
         <div className="imu-tilt-col">
           <TiltGauge
             angleDeg={pitchAngle}

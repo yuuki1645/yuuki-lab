@@ -282,6 +282,18 @@
   min-height: 200px;
 }
 
+/* MJPEG を React ツリー外（iframe Document）に隔離 */
+.live-capture__iframe {
+  border: 0;
+  padding: 0;
+  /* iframe は object-fit が効かないので高さを明示 */
+  height: min(36vh, 420px);
+  min-height: 200px;
+  /* 合成レイヤを分けて兄弟 DOM 更新の影響を抑える */
+  transform: translateZ(0);
+  contain: strict;
+}
+
 /* 縦向きなど狭い幅では上下に積む */
 @media (max-width: 900px) {
   .live-capture--split {

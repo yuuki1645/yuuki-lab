@@ -25,7 +25,6 @@ type CaptureStatus = {
 export default function LiveCapturePage() {
   const baseUrl = useMemo(() => getCaptureRealtimeBaseUrl(), []);
   const [nonce, setNonce] = useState(() => Date.now());
-  const [imgError, setImgError] = useState(false);
   const [status, setStatus] = useState<CaptureStatus | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -76,12 +75,7 @@ export default function LiveCapturePage() {
   }, [reviewSrc, reviewMode]);
 
   const reconnectLive = useCallback(() => {
-    setImgError(false);
     setNonce(Date.now());
-  }, []);
-
-  const onMjpegErrorChange = useCallback((hasError: boolean) => {
-    setImgError(hasError);
   }, []);
 
   const startRecord = useCallback(async () => {
@@ -206,13 +200,8 @@ export default function LiveCapturePage() {
             {apiError}
           </div>
         ) : null}
-        {imgError ? (
-          <div className="live-capture__error" role="alert">
-            ライブ映像を取得できません。serve_realtime / デバイス占有 / ファイアウォールを確認してください。
-          </div>
-        ) : null}
 
-        <LiveMjpegView streamUrl={streamUrl} onErrorChange={onMjpegErrorChange} />
+        <LiveMjpegView streamUrl={streamUrl} />
 
         <section className="live-capture__section" aria-label="見返し">
           <div className="live-capture__section-head">

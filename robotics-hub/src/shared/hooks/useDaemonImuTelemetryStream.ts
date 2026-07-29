@@ -27,6 +27,8 @@ export type DaemonImuTelemetryStream = {
 };
 
 const DEFAULT_RATE_HZ = 30;
+/** React へ流すサンプルの上限（Hz）。UI/Wi‑Fi 負荷抑制。CSV は daemon 側で記録するためここは下げてよい */
+const UI_SAMPLE_MAX_HZ = 8;
 
 /**
  * robot-daemon の IMU ストリーム（接続後に ``imu/start`` を送り ``imu/sample`` を購読）。
@@ -46,6 +48,10 @@ export function useDaemonImuTelemetryStream(
   const [url] = useState(() => getTelemetryImuSocketUrl());
   const [socketGen, setSocketGen] = useState(0);
   const socketRef = useRef<Socket | null>(null);
+  // 最新サンプルを保持し、UI 更新だけ間引く
+  const pendingSampleRef = useRef<ImuDaemonSamplePayload | null>(null);
+  const uiFlushTimerRef = useRef<number | null>(null);
+  const receivedCountRef = useRef(0);
 
   const reconnect = useCallback(() => {
     setSocketGen((g) => g + 1);
@@ -70,10 +76,19 @@ export function useDaemonImuTelemetryStream(
     setLastError(null);
     setLastImuError(null);
     setLastLogStatus(null);
+    pendingSampleRef.current = null;
+    receivedCountRef.current = 0;
+    if (uiFlushTimerRef.current != null) {
+      window.clearTimeout(uiFlushTimerRef.current);
+      uiFlushTimerRef.current = null;
+    }
+
+    const uiMinIntervalMs = Math.round(1000 / UI_SAMPLE_MAX_HZ);
 
     const socket = io(url, {
-      // WebSocket を優先し、サンプル・perf 表示の遅延を抑える
-      transports: ["websocket", "polling"],
+      // HTTP long-polling は接続を食い MJPEG と競合しやすいので WebSocket のみ
+      transports: ["websocket"],
+      upgrade: false,
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 500,
@@ -104,8 +119,17 @@ export function useDaemonImuTelemetryStream(
     });
 
     socket.on("imu/sample", (payload: ImuDaemonSamplePayload) => {
-      setLastSample(payload);
-      setSampleCount((c) => c + 1);
+      pendingSampleRef.current = payload;
+      receivedCountRef.current += 1;
+      // setState を間引き（30Hz → UI_SAMPLE_MAX_HZ）。MJPEG とのメインスレッド競合を抑える
+      if (uiFlushTimerRef.current != null) return;
+      uiFlushTimerRef.current = window.setTimeout(() => {
+        uiFlushTimerRef.current = null;
+        const sample = pendingSampleRef.current;
+        if (!sample) return;
+        setLastSample(sample);
+        setSampleCount(receivedCountRef.current);
+      }, uiMinIntervalMs);
     });
 
     socket.on("imu/error", (payload: { message?: string; error_code?: string }) => {
@@ -125,6 +149,10 @@ export function useDaemonImuTelemetryStream(
     });
 
     return () => {
+      if (uiFlushTimerRef.current != null) {
+        window.clearTimeout(uiFlushTimerRef.current);
+        uiFlushTimerRef.current = null;
+      }
       try {
         socket.emit("imu/stop");
       } catch {

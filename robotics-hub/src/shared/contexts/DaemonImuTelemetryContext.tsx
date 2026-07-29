@@ -11,7 +11,8 @@ const DaemonImuTelemetryContext = createContext<DaemonImuTelemetryStream | null>
  * テレメトリ画面を離れても `imu/stop` を送らないため、CSV ログ（imu/log_start）が継続する。
  */
 export function DaemonImuTelemetryProvider({ children }: { children: ReactNode }) {
-  const value = useDaemonImuTelemetryStream(true, 30);
+  // 10Hz: 表示には十分。30Hz は iPad で MJPEG ライブと Wi‑Fi／メインスレッドが競合しやすい
+  const value = useDaemonImuTelemetryStream(true, 10);
   return (
     <DaemonImuTelemetryContext.Provider value={value}>{children}</DaemonImuTelemetryContext.Provider>
   );

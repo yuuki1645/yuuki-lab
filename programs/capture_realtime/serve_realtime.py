@@ -38,6 +38,12 @@ from pathlib import Path
 
 import cv2
 
+# Windows (cp932) ではログの記号で UnicodeEncodeError になりやすい
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+  sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.platform == "win32" and hasattr(sys.stderr, "reconfigure"):
+  sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 VIEWER_HTML = SCRIPT_DIR / "viewer.html"
 
@@ -144,7 +150,7 @@ def list_devices(max_index: int = 10) -> None:
       w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
       h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
       fps = cap.get(cv2.CAP_PROP_FPS)
-      print(f"  [{i}] OK  {w}x{h}  fps≈{fps:.1f}")
+      print(f"  [{i}] OK  {w}x{h}  fps~={fps:.1f}")
       found += 1
       cap.release()
     else:
@@ -178,7 +184,7 @@ def open_capture(
   actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
   actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
   actual_fps = cap.get(cv2.CAP_PROP_FPS)
-  print(f"Opened device {device}: {actual_w}x{actual_h} fps≈{actual_fps:.1f}")
+  print(f"Opened device {device}: {actual_w}x{actual_h} fps~={actual_fps:.1f}")
   return cap
 
 

@@ -15,7 +15,7 @@
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
 - **Isaac 学習進捗** — [isaac-lab](../isaac-lab/) の RSL-RL TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
-- **実機カメラ** — メインPCの `programs/capture_realtime`（MJPEG・既定 :8766）を低遅延表示（`/live-capture`）
+- **実機カメラ** — メインPCの `programs/capture_realtime`（MJPEG ライブ + 録画時 HLS 見返し / mp4 保存、既定 :8766）（`/live-capture`）
 
 ## 前提
 
@@ -50,6 +50,7 @@ npm run dev:lab
 - Vite を **`--host 0.0.0.0:5173`** で起動（iPad から LAN アクセス可）
 - あわせて `../programs/capture_realtime/serve_realtime.py`（既定 **:8766**、1280×720 / 30fps）を起動
 - iPad では Hub の **実機カメラ**（`/live-capture`）を開く（映像 URL はブラウザの hostname + `:8766`）
+- 同ページで **録画開始／停止**、見返し（シーク・-30秒）、停止後の **mp4** リンクが使えます（映像のみ・音声なし）
 
 MJPEG だけ先に失敗しても Hub は動き続けます。カメラ未接続時は `npm run dev` のみで問題ありません。TCP **8766** の受信許可が未設定なら、管理者 PowerShell で一度:
 

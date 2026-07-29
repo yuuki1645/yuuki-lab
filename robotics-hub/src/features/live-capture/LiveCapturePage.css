@@ -1,7 +1,7 @@
 .live-capture {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   max-width: 1200px;
   margin: 0 auto;
   padding: 8px 12px 24px;
@@ -19,7 +19,7 @@
   opacity: 0.85;
 }
 
-.live-capture__meta {
+.live-capture__toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -38,13 +38,50 @@
   background: color-mix(in srgb, Canvas 92%, CanvasText);
   color: inherit;
   border-radius: 6px;
-  padding: 6px 12px;
+  padding: 8px 12px;
   font-size: 0.85rem;
   cursor: pointer;
+  min-height: 40px;
 }
 
-.live-capture__btn:hover {
+.live-capture__btn:hover:not(:disabled) {
   background: color-mix(in srgb, Canvas 80%, CanvasText);
+}
+
+.live-capture__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.live-capture__btn--primary {
+  background: #1b4f8a;
+  border-color: #3d7ec9;
+  color: #e8f1ff;
+}
+
+.live-capture__btn--danger {
+  background: #7a1f1f;
+  border-color: #c44;
+  color: #ffe8e8;
+}
+
+.live-capture__rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ff6b6b;
+}
+
+.live-capture__rec-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  box-shadow: 0 0 0 3px rgba(255, 59, 59, 0.25);
 }
 
 .live-capture__error {
@@ -56,17 +93,56 @@
   line-height: 1.45;
 }
 
+.live-capture__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-capture__section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.live-capture__section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.live-capture__review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.live-capture__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.45;
+}
+
 .live-capture__stage {
   background: #111;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 200px;
+  min-height: 160px;
+  border: 2px solid transparent;
 }
 
-.live-capture__img {
+.live-capture__stage--review-active {
+  border-color: #3d7ec9;
+}
+
+.live-capture__img,
+.live-capture__video {
   display: block;
   width: 100%;
-  max-height: min(70vh, 720px);
+  max-height: min(42vh, 480px);
   object-fit: contain;
   background: #000;
 }

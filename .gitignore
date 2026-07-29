@@ -37,6 +37,7 @@ robot-daemon/imu_logs/
 *.m3u8
 *.ts
 programs/capture_hls/out/
+programs/capture_realtime/recordings/
 
 *.csv
 

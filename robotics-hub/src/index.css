@@ -87,7 +87,8 @@ body {
   margin-left: auto;
 }
 
-@media (max-width: 767px) {
+/* iPad（横向きの Pro 含む）でもハンバーガーにする。PC の広い画面だけ横並びナビ */
+@media (max-width: 1399px) {
   .hub-header {
     flex-wrap: wrap;
     align-items: flex-start;

@@ -65,7 +65,7 @@ export const hubTools: HubTool[] = [
     path: "/live-capture",
     label: "実機カメラ",
     description:
-      "メインPCの serve_realtime（MJPEG）でビデオカメラ映像を低遅延表示します。npm run dev:lab で Hub と同時起動できます。",
+      "robot-recorder（MJPEG）でビデオカメラを低遅延表示・実験フォルダへ記録。npm run dev:lab で Hub と同時起動。",
     LazyPage: LiveCapturePage,
   },
   {

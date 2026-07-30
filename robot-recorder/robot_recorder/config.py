@@ -36,6 +36,8 @@ class AppConfig:
   recording: RecordingConfig = field(default_factory=RecordingConfig)
   default_format_id: str = "robot_take_v0"
   robot_daemon_url: str = "http://192.168.100.50:5000"
+  imu_bridge_enabled: bool = True
+  imu_bridge_rate_hz: float = 10.0
 
 
 def _as_dict(path: Path) -> dict[str, Any]:
@@ -82,4 +84,6 @@ def load_config(config_path: Path | None = None) -> AppConfig:
     ),
     default_format_id=str(merged.get("default_format_id") or "robot_take_v0"),
     robot_daemon_url=str(daemon_raw.get("url") or "http://192.168.100.50:5000"),
+    imu_bridge_enabled=bool(daemon_raw.get("imu_bridge", True)),
+    imu_bridge_rate_hz=float(daemon_raw.get("imu_rate_hz", 10)),
   )

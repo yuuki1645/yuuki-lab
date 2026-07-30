@@ -249,6 +249,52 @@
   line-height: 1.45;
 }
 
+.live-capture__experiments {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(200, 210, 255, 0.16);
+  background: rgba(18, 24, 46, 0.45);
+}
+
+.live-capture__exp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-capture__exp-label {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  min-width: 5.5rem;
+}
+
+.live-capture__exp-select,
+.live-capture__exp-input {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(200, 210, 255, 0.28);
+  background: #0f1424;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.live-capture__meta-pill {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(110, 168, 255, 0.16);
+  border: 1px solid rgba(110, 168, 255, 0.35);
+}
+
+.live-capture__meta-pill--warn {
+  background: rgba(224, 195, 106, 0.16);
+  border-color: rgba(224, 195, 106, 0.45);
+  color: #e0c36a;
+}
+
 .live-capture__stage {
   background: #111;
   border-radius: 8px;

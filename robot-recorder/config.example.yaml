@@ -32,6 +32,9 @@ recording:
 # 既定の format（新規実験・take に付与）
 default_format_id: "robot_take_v0"
 
-# robot-daemon（参考。指令は iPad→Pi、ログのみ本サーバーへ）
+# robot-daemon（IMU ブリッジ購読先。指令は iPad→Pi、ログは Pi→本サーバー）
 robot_daemon:
   url: "http://192.168.100.50:5000"
+  # Recorder が Pi の IMU を購読して Hub へ中継する
+  imu_bridge: true
+  imu_rate_hz: 10

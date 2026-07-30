@@ -99,7 +99,8 @@ def make_handler(app: RecorderApp):  # noqa: ANN201
         return
       if path == "/api/imu/latest":
         sample = app.latest_imu()
-        self._send_json(200, {"ok": True, "sample": sample})
+        bridge = app.imu_bridge.snapshot() if app.imu_bridge else {"status": "disabled"}
+        self._send_json(200, {"ok": True, "sample": sample, "imu_bridge": bridge})
         return
       if path.startswith("/data/"):
         self._serve_data(path[len("/data/") :])

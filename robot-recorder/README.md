@@ -26,17 +26,19 @@
 7. IMU ingest（recording 中のみファイル化）+ `/api/imu/latest`（ライブ暫定）
 8. `robotics-hub` の `dev:lab` から本サーバーを起動
 
-### Phase 2（次）
+### Phase 2（本 README 更新時点で実装済み）
 
-- Hub: 実験管理 UI、記録ボタンを Recorder API に接続
-- Pi: 指令成功後に非同期で `/api/ingest/command` へ送信
-- IMU ライブを Recorder 経由に完全切替（Socket.IO 中継など）
+1. Hub: 実験フォルダ管理 UI（作成・選択・改名・削除）
+2. 実機カメラページを Recorder API（take_id / ディスク警告）に接続
+3. Recorder が Pi の IMU を購読（Socket.IO クライアント）し Hub は `/api/imu/latest` で表示
+4. 指令ログ非同期転送は Phase 1 済み（`RECORDER_URL`）
 
 ### Phase 3（その後）
 
 - format_id 別 DataViewer
 - センサ種別の追加（足圧など）
 - Kaggle 向け書き出し（焼き込みなしは後続検討）
+- IMU 中継の Socket.IO 化（ポーリングからの昇格・任意）
 
 ## セットアップ
 

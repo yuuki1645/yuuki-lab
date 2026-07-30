@@ -1,31 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
+import ExperimentManager from "@/features/live-capture/ExperimentManager";
 import LiveCaptureDebugAside from "@/features/live-capture/LiveCaptureDebugAside";
 import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
+import {
+  fetchRecorderStatus,
+  startRecording,
+  stopRecording,
+  type RecorderStatus,
+} from "@/shared/recorderApi";
 import "./LiveCapturePage.css";
 
-type CaptureStatus = {
-  ok: boolean;
-  recording: boolean;
-  session_id: string | null;
-  elapsed_sec: number | null;
-  hls_url: string | null;
-  mp4_url: string | null;
-  frame_size: number[] | null;
-  fps: number;
-  has_audio: boolean;
-  error?: string;
-  message?: string;
-};
-
 /**
- * 横向き iPad 向け: 左にカメラ／録画、右にセンサー・デバッグ枠。
- * IMU は右ペイン専用コンポーネントで購読し、ライブ MJPEG は memo で隔離する。
+ * 横向き iPad 向け: 左に実験管理・カメラ／録画、右にセンサー。
+ * IMU は右ペインが Recorder 経由で購読。ライブ MJPEG は memo / iframe で隔離。
  */
 export default function LiveCapturePage() {
   const baseUrl = useMemo(() => getCaptureRealtimeBaseUrl(), []);
   const [nonce, setNonce] = useState(() => Date.now());
-  const [status, setStatus] = useState<CaptureStatus | null>(null);
+  const [status, setStatus] = useState<RecorderStatus | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
@@ -37,7 +30,7 @@ export default function LiveCapturePage() {
   );
 
   const reviewSrc = useMemo(() => {
-    if (!status?.session_id) return null;
+    if (!status?.take_id) return null;
     if (status.mp4_url) return baseUrl + status.mp4_url;
     if (status.hls_url) return baseUrl + status.hls_url;
     return null;
@@ -45,15 +38,13 @@ export default function LiveCapturePage() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(baseUrl + "/api/status", { cache: "no-store" });
-      if (!res.ok) throw new Error("status HTTP " + String(res.status));
-      const data = (await res.json()) as CaptureStatus;
+      const data = await fetchRecorderStatus();
       setStatus(data);
       setApiError(null);
     } catch (e) {
       setApiError(e instanceof Error ? e.message : String(e));
     }
-  }, [baseUrl]);
+  }, []);
 
   useEffect(() => {
     void fetchStatus();
@@ -82,29 +73,22 @@ export default function LiveCapturePage() {
     setBusy(true);
     setApiError(null);
     try {
-      const res = await fetch(baseUrl + "/api/record/start", { method: "POST" });
-      const data = (await res.json()) as CaptureStatus;
-      if (!res.ok || data.ok === false) {
-        throw new Error(data.message ?? data.error ?? "録画開始に失敗しました");
-      }
+      const data = await startRecording();
       setStatus(data);
       setReviewMode(true);
     } catch (e) {
       setApiError(e instanceof Error ? e.message : String(e));
+      void fetchStatus();
     } finally {
       setBusy(false);
     }
-  }, [baseUrl]);
+  }, [fetchStatus]);
 
   const stopRecord = useCallback(async () => {
     setBusy(true);
     setApiError(null);
     try {
-      const res = await fetch(baseUrl + "/api/record/stop", { method: "POST" });
-      const data = (await res.json()) as CaptureStatus;
-      if (!res.ok) {
-        throw new Error(data.message ?? data.error ?? "録画停止に失敗しました");
-      }
+      const data = await stopRecording();
       setStatus(data);
       setReviewMode(true);
     } catch (e) {
@@ -112,7 +96,7 @@ export default function LiveCapturePage() {
     } finally {
       setBusy(false);
     }
-  }, [baseUrl]);
+  }, []);
 
   const seekBack30 = useCallback(() => {
     const el = videoRef.current;
@@ -151,6 +135,11 @@ export default function LiveCapturePage() {
 
   const recording = Boolean(status?.recording);
   const canReview = Boolean(reviewSrc);
+  const diskWarn = status?.disk?.warning;
+  const canStart =
+    !busy &&
+    Boolean(status?.experiment_id) &&
+    status?.disk?.ok_for_record !== false;
 
   return (
     <div className="live-capture live-capture--split">
@@ -158,13 +147,24 @@ export default function LiveCapturePage() {
         <header className="live-capture__header">
           <h1>実機カメラ</h1>
           <p>
-            左: 低遅延ライブと録画見返し。右: センサー／デバッグ。起動は{" "}
-            <code>npm run dev:lab</code>。
+            Recorder（本線）経由のライブと記録。起動は <code>npm run dev:lab</code>。
           </p>
         </header>
 
+        <ExperimentManager recording={recording} />
+
         <div className="live-capture__toolbar">
           <span className="live-capture__url">{baseUrl}</span>
+          {status?.experiment_id ? (
+            <span className="live-capture__meta-pill">実験: {status.experiment_id}</span>
+          ) : (
+            <span className="live-capture__meta-pill live-capture__meta-pill--warn">
+              実験未選択
+            </span>
+          )}
+          {status?.take_id ? (
+            <span className="live-capture__meta-pill">take: {status.take_id}</span>
+          ) : null}
           <button type="button" className="live-capture__btn" onClick={reconnectLive}>
             ライブ再接続
           </button>
@@ -182,8 +182,15 @@ export default function LiveCapturePage() {
             <button
               type="button"
               className="live-capture__btn live-capture__btn--primary"
-              disabled={busy}
+              disabled={!canStart}
               onClick={() => void startRecord()}
+              title={
+                !status?.experiment_id
+                  ? "実験フォルダを選択してください"
+                  : status?.disk?.ok_for_record === false
+                    ? diskWarn ?? "ディスク空き不足"
+                    : undefined
+              }
             >
               録画開始
             </button>
@@ -195,6 +202,11 @@ export default function LiveCapturePage() {
           ) : null}
         </div>
 
+        {diskWarn ? (
+          <div className="live-capture__error" role="alert">
+            ディスク: {diskWarn}
+          </div>
+        ) : null}
         {apiError ? (
           <div className="live-capture__error" role="alert">
             {apiError}

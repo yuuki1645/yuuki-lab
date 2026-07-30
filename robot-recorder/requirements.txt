@@ -1,3 +1,4 @@
+python-socketio[client]>=5.11
 tzdata>=2024.1
 opencv-python>=4.8
 PyYAML>=6.0

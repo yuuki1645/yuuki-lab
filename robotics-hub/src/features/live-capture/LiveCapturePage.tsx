@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
 import ExperimentManager from "@/features/live-capture/ExperimentManager";
-import LiveCaptureDebugAside from "@/features/live-capture/LiveCaptureDebugAside";
+import LiveCaptureLiveImuPanel from "@/features/live-capture/LiveCaptureLiveImuPanel";
 import LiveCaptureReviewPlayer from "@/features/live-capture/LiveCaptureReviewPlayer";
+import LiveCaptureReviewTelemetry from "@/features/live-capture/LiveCaptureReviewTelemetry";
 import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
 import {
   fetchRecorderStatus,
@@ -13,9 +14,10 @@ import {
 import "./LiveCapturePage.css";
 
 /**
- * 横向き iPad 向け: 左に実験管理・カメラ／録画、右にセンサー。
- * ライブ MJPEG と見返し（HLS/mp4 + シーク）を併記。
- * 右ペインはライブ IMU と、見返し再生時刻に同期したテレメトリを両方表示する。
+ * 横向き iPad 向け 3 段構成:
+ * 1) 実験フォルダ / 録画操作
+ * 2) ライブ（左: 映像、右: リアルタイム IMU）
+ * 3) 見返し（左: シーク映像、右: 再生位置同期データ）
  */
 export default function LiveCapturePage() {
   const baseUrl = useMemo(() => getCaptureRealtimeBaseUrl(), []);
@@ -25,7 +27,7 @@ export default function LiveCapturePage() {
   const [busy, setBusy] = useState(false);
   /** 見返し操作中（シーク／再生）。ライブ MJPEG は常時表示のまま。 */
   const [reviewActive, setReviewActive] = useState(false);
-  /** 見返し video の currentTime（秒）→ 右ペイン同期用 */
+  /** 見返し video の currentTime（秒）→ 見返しデータ同期用 */
   const [reviewCurrentTime, setReviewCurrentTime] = useState(0);
 
   const streamUrl = useMemo(
@@ -108,8 +110,9 @@ export default function LiveCapturePage() {
   );
 
   return (
-    <div className="live-capture live-capture--split">
-      <div className="live-capture__main">
+    <div className="live-capture live-capture--tiers">
+      {/* ── 1段目: 実験フォルダ + 録画操作 ── */}
+      <section className="live-capture__tier live-capture__tier--top" aria-label="実験と録画">
         <header className="live-capture__header">
           <h1>実機カメラ</h1>
           <p>
@@ -179,42 +182,55 @@ export default function LiveCapturePage() {
             {apiError}
           </div>
         ) : null}
+      </section>
 
-        <LiveMjpegView streamUrl={streamUrl} />
-
-        <section className="live-capture__section" aria-label="見返し">
-          <div className="live-capture__section-head">
-            <h2 className="live-capture__section-title">見返し（録画開始以降・シーク可）</h2>
+      {/* ── 2段目: ライブ映像 | ライブ IMU ── */}
+      <section className="live-capture__tier live-capture__tier--live" aria-label="ライブ">
+        <h2 className="live-capture__tier-title">ライブ（低遅延）</h2>
+        <div className="live-capture__band">
+          <div className="live-capture__band-media">
+            <LiveMjpegView streamUrl={streamUrl} />
           </div>
-          <LiveCaptureReviewPlayer
-            src={canReview ? reviewSrc : null}
-            recording={recording}
-            reviewActive={reviewActive}
-            onReviewActiveChange={setReviewActive}
-            onCurrentTimeChange={setReviewCurrentTime}
-          />
-          {status?.mp4_url ? (
-            <p className="live-capture__hint">
-              保存ファイル:{" "}
-              <a href={baseUrl + status.mp4_url} target="_blank" rel="noreferrer">
-                {status.mp4_url}
-              </a>
-            </p>
-          ) : null}
-        </section>
-      </div>
+          <div className="live-capture__band-data">
+            <LiveCaptureLiveImuPanel />
+          </div>
+        </div>
+      </section>
 
-      <LiveCaptureDebugAside
-        review={{
-          recorderBaseUrl: baseUrl,
-          imuUrl: status?.imu_url ?? null,
-          commandsUrl: status?.commands_url ?? null,
-          videoT0Unix: status?.video_t0_unix ?? null,
-          reviewCurrentTime,
-          recording,
-          enabled: reviewTelemetryEnabled,
-        }}
-      />
+      {/* ── 3段目: 見返し映像 | 見返し時点データ ── */}
+      <section className="live-capture__tier live-capture__tier--review" aria-label="見返し">
+        <h2 className="live-capture__tier-title">見返し（録画開始以降・シーク可）</h2>
+        <div className="live-capture__band">
+          <div className="live-capture__band-media">
+            <LiveCaptureReviewPlayer
+              src={canReview ? reviewSrc : null}
+              recording={recording}
+              reviewActive={reviewActive}
+              onReviewActiveChange={setReviewActive}
+              onCurrentTimeChange={setReviewCurrentTime}
+            />
+            {status?.mp4_url ? (
+              <p className="live-capture__hint">
+                保存ファイル:{" "}
+                <a href={baseUrl + status.mp4_url} target="_blank" rel="noreferrer">
+                  {status.mp4_url}
+                </a>
+              </p>
+            ) : null}
+          </div>
+          <div className="live-capture__band-data">
+            <LiveCaptureReviewTelemetry
+              recorderBaseUrl={baseUrl}
+              imuUrl={status?.imu_url ?? null}
+              commandsUrl={status?.commands_url ?? null}
+              videoT0Unix={status?.video_t0_unix ?? null}
+              reviewCurrentTime={reviewCurrentTime}
+              recording={recording}
+              enabled={reviewTelemetryEnabled}
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

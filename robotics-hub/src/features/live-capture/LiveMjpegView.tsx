@@ -48,22 +48,20 @@ function LiveMjpegView({ streamUrl }: LiveMjpegViewProps) {
 </html>`;
   }, [streamUrl]);
 
+  // 段タイトルは親（LiveCapturePage）が付ける。ここは映像ステージのみ。
   return (
-    <section className="live-capture__section" aria-label="ライブ">
-      <h2 className="live-capture__section-title">ライブ（低遅延）</h2>
-      <div className="live-capture__stage live-capture__stage--live">
-        <iframe
-          key={streamUrl}
-          className="live-capture__img live-capture__iframe"
-          title="実機カメラのライブ映像"
-          srcDoc={srcDoc}
-          // スクリプト無効のままネットワーク画像（MJPEG）は読める
-          sandbox=""
-          // スクロールバーを出さない
-          scrolling="no"
-        />
-      </div>
-    </section>
+    <div className="live-capture__stage live-capture__stage--live">
+      <iframe
+        key={streamUrl}
+        className="live-capture__img live-capture__iframe"
+        title="実機カメラのライブ映像"
+        srcDoc={srcDoc}
+        // スクリプト無効のままネットワーク画像（MJPEG）は読める
+        sandbox=""
+        // スクロールバーを出さない
+        scrolling="no"
+      />
+    </div>
   );
 }
 

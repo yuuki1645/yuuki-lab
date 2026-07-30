@@ -116,8 +116,8 @@ export default function LiveCaptureReviewTelemetry({
 
   if (!enabled) {
     return (
-      <section className="live-capture__aside-card live-capture__aside-card--placeholder">
-        <h3 className="live-capture__aside-card-title">見返し時点のデータ</h3>
+      <section className="live-capture__data-card live-capture__data-card--placeholder">
+        <h3 className="live-capture__data-card-title">見返し時点のデータ</h3>
         <p className="live-capture__hint">
           録画を開始すると、見返し映像の再生位置に対応する IMU / 指令がここに出ます（ライブ表示とは別）。
         </p>
@@ -126,9 +126,9 @@ export default function LiveCaptureReviewTelemetry({
   }
 
   return (
-    <section className="live-capture__aside-card" aria-label="見返し時点のデータ">
-      <h3 className="live-capture__aside-card-title">見返し時点のデータ</h3>
-      <p className="live-capture__aside-meta">
+    <section className="live-capture__data-card" aria-label="見返し時点のデータ">
+      <h3 className="live-capture__data-card-title">見返し時点のデータ</h3>
+      <p className="live-capture__data-meta">
         t={reviewCurrentTime.toFixed(2)}s
         {wallNow != null ? ` / wall=${wallNow.toFixed(3)}` : " / t0 未設定"}
         {" · "}
@@ -152,7 +152,7 @@ export default function LiveCaptureReviewTelemetry({
             ? "video_t0_unix が無いため同期できません"
             : "この再生位置の IMU がまだありません"}
       </pre>
-      <h4 className="live-capture__aside-subhead">指令（±{CMD_WINDOW_SEC}s）</h4>
+      <h4 className="live-capture__data-subhead">指令（±{CMD_WINDOW_SEC}s）</h4>
       {nearbyCmds.length === 0 ? (
         <p className="live-capture__hint">付近の指令はありません。</p>
       ) : (

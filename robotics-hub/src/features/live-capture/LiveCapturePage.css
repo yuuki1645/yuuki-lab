@@ -1,4 +1,4 @@
-/* 横向き iPad: 左=カメラ、右=センサー／デバッグ
+/* 横向き iPad: 上下 3 段（実験 / ライブ / 見返し）。ライブ・見返しは内部 2 カラム。
  *
  * 注意: iPad Chrome は overflow 付き祖先の中の multipart MJPEG <img> を描画しないことがある。
  * ライブ映像の祖先には overflow: hidden / scroll を付けない。
@@ -13,95 +13,101 @@
   box-sizing: border-box;
 }
 
-.live-capture--split {
+.live-capture--tiers {
   max-width: none;
   width: 100%;
   flex: 1;
   min-height: 0;
   margin: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  grid-template-rows: auto;
-  align-items: start;
-  gap: 0 14px;
-  padding: 8px 12px 12px;
+  gap: 14px;
+  padding: 8px 12px 16px;
   /* MJPEG 描画のため hidden にしない */
   overflow: visible;
 }
 
-.live-capture__main {
+/* 各段の共通枠 */
+.live-capture__tier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
-  /* スクロールも overflow も付けない（ページ全体／hub-main に任せる） */
   overflow: visible;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-right: 4px;
 }
 
-.live-capture__aside {
-  min-width: 0;
-  max-height: min(100dvh - 72px, 900px);
-  overflow-x: visible;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 4px 4px 8px 12px;
-  border-left: 1px solid rgba(200, 210, 255, 0.14);
-  background: linear-gradient(
-    180deg,
-    rgba(18, 24, 46, 0.55) 0%,
-    rgba(11, 16, 32, 0.2) 100%
-  );
-  border-radius: 0 8px 8px 0;
-  -webkit-overflow-scrolling: touch;
+.live-capture__tier--top {
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.12);
 }
 
-.live-capture__aside-header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.live-capture__aside-title {
+.live-capture__tier-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 650;
 }
 
-.live-capture__aside-sub {
-  margin: 0;
-  font-size: 0.72rem;
-  font-family: ui-monospace, monospace;
-  opacity: 0.7;
-  word-break: break-all;
+/* ライブ／見返し内部: 左=映像、右=データ */
+.live-capture__band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+  overflow: visible;
 }
 
-.live-capture__aside-card {
+.live-capture__band-media {
+  min-width: 0;
+  /* ライブ MJPEG のため overflow を付けない */
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-capture__band-data {
+  min-width: 0;
+  /* データ側だけ縦に長いときスクロール可（映像列には付けない） */
+  max-height: min(42vh, 480px);
+  overflow-x: visible;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.live-capture__data-card {
   border: 1px solid rgba(110, 168, 255, 0.28);
   border-radius: 10px;
   background: #151c34;
   padding: 8px 8px 10px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
-.live-capture__aside-card--placeholder {
+.live-capture__data-card--placeholder {
   opacity: 0.85;
   border-style: dashed;
 }
 
-.live-capture__aside-card-title {
+.live-capture__data-card-title {
   margin: 0 0 6px;
   font-size: 0.85rem;
   font-weight: 650;
   color: #cfd6ff;
 }
 
-.live-capture__aside-meta {
+.live-capture__data-meta {
   margin: 0 0 8px;
   font-size: 0.75rem;
   opacity: 0.8;
   line-height: 1.4;
+  word-break: break-all;
+}
+
+.live-capture__data-subhead {
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #cfd6ff;
 }
 
 .live-capture__ws--connected {
@@ -119,14 +125,16 @@
   font-weight: 600;
 }
 
-/* 右ペイン幅ではゲージを縦積みの方が見やすい */
-.live-capture__aside .imu-tilt-gauges {
-  flex-direction: column;
+/* データ列ではゲージを横並びにして高さを抑える */
+.live-capture__band-data .imu-tilt-gauges {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
-.live-capture__aside .imu-attitude-body {
+.live-capture__band-data .imu-attitude-body {
   padding: 4px 0 0;
 }
 
@@ -279,13 +287,6 @@
   opacity: 0.7;
 }
 
-.live-capture__aside-subhead {
-  margin: 10px 0 4px;
-  font-size: 0.8rem;
-  font-weight: 650;
-  color: #cfd6ff;
-}
-
 .live-capture__review-pre {
   margin: 8px 0 0;
   padding: 8px;
@@ -384,7 +385,8 @@
 .live-capture__video {
   display: block;
   width: 100%;
-  max-height: min(36vh, 420px);
+  /* 3 段構成のため各映像をやや低めに */
+  max-height: min(28vh, 360px);
   object-fit: contain;
   background: #000;
   border-radius: 6px;
@@ -392,7 +394,7 @@
 
 /* Chrome が描画領域を確保しやすいよう最低高さを明示 */
 .live-capture__img {
-  min-height: 200px;
+  min-height: 160px;
 }
 
 /* MJPEG を React ツリー外（iframe Document）に隔離 */
@@ -400,31 +402,24 @@
   border: 0;
   padding: 0;
   /* iframe は object-fit が効かないので高さを明示 */
-  height: min(36vh, 420px);
-  min-height: 200px;
+  height: min(28vh, 360px);
+  min-height: 160px;
   /* 合成レイヤを分けて兄弟 DOM 更新の影響を抑える */
   transform: translateZ(0);
   contain: strict;
 }
 
-/* 縦向きなど狭い幅では上下に積む */
+/* 狭い幅では各段の内部も縦積み */
 @media (max-width: 900px) {
-  .live-capture--split {
+  .live-capture__band {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    height: auto;
-    overflow: visible;
   }
 
-  .live-capture__aside {
+  .live-capture__band-data {
     max-height: none;
-    border-left: none;
-    border-top: 1px solid rgba(200, 210, 255, 0.14);
-    border-radius: 8px;
-    padding: 12px 8px;
   }
 
-  .live-capture__aside .imu-tilt-gauges {
+  .live-capture__band-data .imu-tilt-gauges {
     flex-direction: row;
     flex-wrap: wrap;
   }

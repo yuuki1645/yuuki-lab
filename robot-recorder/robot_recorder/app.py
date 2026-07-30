@@ -271,15 +271,25 @@ class RecorderApp:
       }
     print(f"Recording stopping: {sess.take_id} ...")
     mp4 = sess.stop()
-    if meta and mp4 is not None:
-      meta["video_file"] = "video.mp4"
+    if meta is not None:
       meta["stopped_at_unix"] = time.time()
+      meta["has_hls"] = (sess.out_dir / "index.m3u8").is_file()
+      if mp4 is not None:
+        meta["video_file"] = "video.mp4"
+        meta["video_mux_ok"] = True
+        print(f"Recording saved: {mp4}")
+      else:
+        meta["video_mux_ok"] = False
+        meta.pop("video_file", None)
+        print(
+          f"Recording HLS kept but mp4 mux failed: {sess.out_dir}",
+          file=__import__("sys").stderr,
+        )
       meta_path = sess.out_dir / "meta.json"
       meta_path.write_text(
         json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
       )
-      print(f"Recording saved: {mp4}")
     return 200, self.status_dict()
 
   def ingest_command(self, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -299,7 +309,11 @@ class RecorderApp:
 
   def ingest_imu(self, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     sample = dict(payload)
-    sample.setdefault("recorder_recv_unix", time.time())
+    recv = time.time()
+    sample.setdefault("recorder_recv_unix", recv)
+    # ビュワー同期用。Pi の timestamp が相対でも絶対時刻を残す
+    if "wall_unix" not in sample:
+      sample["wall_unix"] = recv
     with self._imu_lock:
       self._latest_imu = sample
     with self._rec_lock:

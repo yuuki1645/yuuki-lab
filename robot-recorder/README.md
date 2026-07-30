@@ -86,7 +86,11 @@ data_root/
 | POST | `/api/ingest/command` | Pi からの指令ログ |
 | POST | `/api/ingest/imu` | Pi からの IMU サンプル |
 | GET | `/api/imu/latest` | 最新 IMU（ライブ暫定） |
+| GET | `/api/experiments/{id}/takes` | take 一覧（meta・video/hls URL） |
 | GET | `/stream.mjpg` | ライブ映像 |
+
+録画停止時は `index.m3u8` に `#EXT-X-ENDLIST` を付けてから mp4 化し、壊れた mp4 は残しません。
+キャプチャが 30fps 未満でも壁時計に合わせてフレームを埋め、再生時間が実時間に近づくようにしています。
 
 ## 設計メモ（議論の確定事項）
 

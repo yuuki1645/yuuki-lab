@@ -200,7 +200,9 @@ class ExperimentStore:
     if meta is None or not take_dir.is_dir():
       return None
     video_name = str(meta.get("video_file") or "video.mp4")
-    has_video = (take_dir / video_name).is_file()
+    video_path = take_dir / video_name
+    has_video = video_path.is_file() and video_path.stat().st_size > 1024
+    has_hls = (take_dir / "index.m3u8").is_file()
     has_imu = (take_dir / "sensors" / "imu.jsonl").is_file()
     has_commands = (take_dir / "commands" / "servo.jsonl").is_file()
     base = f"/data/experiments/{exp_id}/takes/{take_id}"
@@ -210,9 +212,11 @@ class ExperimentStore:
       "format_id": str(meta.get("format_id") or "robot_take_v0"),
       "meta": meta,
       "has_video": has_video,
+      "has_hls": has_hls,
       "has_imu": has_imu,
       "has_commands": has_commands,
       "video_url": f"{base}/{video_name}" if has_video else None,
+      "hls_url": f"{base}/index.m3u8" if has_hls else None,
       "imu_url": f"{base}/sensors/imu.jsonl" if has_imu else None,
       "commands_url": f"{base}/commands/servo.jsonl" if has_commands else None,
       "meta_url": f"{base}/meta.json",

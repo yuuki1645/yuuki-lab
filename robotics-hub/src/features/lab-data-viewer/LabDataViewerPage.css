@@ -138,6 +138,16 @@
   word-break: break-all;
 }
 
+.lab-dv__linkish {
+  border: none;
+  background: none;
+  color: #8eb6ff;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .lab-dv__format-grid {
     grid-template-columns: 1fr;

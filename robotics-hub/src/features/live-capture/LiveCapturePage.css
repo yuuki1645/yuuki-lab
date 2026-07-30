@@ -242,6 +242,73 @@
   gap: 8px;
 }
 
+/* DVR 風シークバー（見返し video 直下） */
+.live-capture__stage--review {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.live-capture__seek {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.live-capture__seek-range {
+  width: 100%;
+  height: 28px;
+  cursor: pointer;
+  accent-color: #3d7ec9;
+}
+
+.live-capture__seek-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+  opacity: 0.85;
+  padding: 0 2px;
+}
+
+.live-capture__seek-kind {
+  opacity: 0.7;
+}
+
+.live-capture__aside-subhead {
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #cfd6ff;
+}
+
+.live-capture__review-pre {
+  margin: 8px 0 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: #0f1424;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.live-capture__cmd-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  font-family: ui-monospace, monospace;
+}
+
+.live-capture__cmd-list code {
+  opacity: 0.85;
+}
+
 .live-capture__hint {
   margin: 0;
   font-size: 0.85rem;

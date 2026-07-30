@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
 import ExperimentManager from "@/features/live-capture/ExperimentManager";
 import LiveCaptureDebugAside from "@/features/live-capture/LiveCaptureDebugAside";
+import LiveCaptureReviewPlayer from "@/features/live-capture/LiveCaptureReviewPlayer";
 import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
 import {
   fetchRecorderStatus,
@@ -13,7 +14,8 @@ import "./LiveCapturePage.css";
 
 /**
  * 横向き iPad 向け: 左に実験管理・カメラ／録画、右にセンサー。
- * IMU は右ペインが Recorder 経由で購読。ライブ MJPEG は memo / iframe で隔離。
+ * ライブ MJPEG と見返し（HLS/mp4 + シーク）を併記。
+ * 右ペインはライブ IMU と、見返し再生時刻に同期したテレメトリを両方表示する。
  */
 export default function LiveCapturePage() {
   const baseUrl = useMemo(() => getCaptureRealtimeBaseUrl(), []);
@@ -21,14 +23,17 @@ export default function LiveCapturePage() {
   const [status, setStatus] = useState<RecorderStatus | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reviewMode, setReviewMode] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  /** 見返し操作中（シーク／再生）。ライブ MJPEG は常時表示のまま。 */
+  const [reviewActive, setReviewActive] = useState(false);
+  /** 見返し video の currentTime（秒）→ 右ペイン同期用 */
+  const [reviewCurrentTime, setReviewCurrentTime] = useState(0);
 
   const streamUrl = useMemo(
     () => getCaptureRealtimeStreamUrl() + "?t=" + String(nonce),
     [nonce]
   );
 
+  // 録画中は HLS、停止後は mp4 を優先（シーク安定）
   const reviewSrc = useMemo(() => {
     if (!status?.take_id) return null;
     if (status.mp4_url) return baseUrl + status.mp4_url;
@@ -54,17 +59,6 @@ export default function LiveCapturePage() {
     return () => window.clearInterval(id);
   }, [fetchStatus]);
 
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el || !reviewSrc || !reviewMode) return;
-    if (el.src !== reviewSrc) {
-      el.src = reviewSrc;
-      void el.play().catch(() => {
-        /* ユーザー操作待ち */
-      });
-    }
-  }, [reviewSrc, reviewMode]);
-
   const reconnectLive = useCallback(() => {
     setNonce(Date.now());
   }, []);
@@ -75,7 +69,8 @@ export default function LiveCapturePage() {
     try {
       const data = await startRecording();
       setStatus(data);
-      setReviewMode(true);
+      setReviewActive(true);
+      setReviewCurrentTime(0);
     } catch (e) {
       setApiError(e instanceof Error ? e.message : String(e));
       void fetchStatus();
@@ -90,46 +85,11 @@ export default function LiveCapturePage() {
     try {
       const data = await stopRecording();
       setStatus(data);
-      setReviewMode(true);
+      setReviewActive(true);
     } catch (e) {
       setApiError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
-    }
-  }, []);
-
-  const seekBack30 = useCallback(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    setReviewMode(true);
-    const end =
-      el.seekable.length > 0
-        ? el.seekable.end(el.seekable.length - 1)
-        : Number.isFinite(el.duration) && el.duration > 0
-          ? el.duration
-          : el.currentTime;
-    el.currentTime = Math.max(0, end - 30);
-    void el.play().catch(() => {
-      /* ignore */
-    });
-  }, []);
-
-  const jumpLiveEdge = useCallback(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (el.seekable.length > 0) {
-      el.currentTime = el.seekable.end(el.seekable.length - 1);
-    }
-    void el.play().catch(() => {
-      /* ignore */
-    });
-  }, []);
-
-  const focusLive = useCallback(() => {
-    setReviewMode(false);
-    const el = videoRef.current;
-    if (el) {
-      el.pause();
     }
   }, []);
 
@@ -141,6 +101,12 @@ export default function LiveCapturePage() {
     Boolean(status?.experiment_id) &&
     status?.disk?.ok_for_record !== false;
 
+  // 見返しテレメトリ: take があり t0 または jsonl があるとき有効
+  const reviewTelemetryEnabled = Boolean(
+    status?.take_id &&
+      (status.video_t0_unix != null || status.imu_url || status.commands_url)
+  );
+
   return (
     <div className="live-capture live-capture--split">
       <div className="live-capture__main">
@@ -148,6 +114,7 @@ export default function LiveCapturePage() {
           <h1>実機カメラ</h1>
           <p>
             Recorder（本線）経由のライブと記録。起動は <code>npm run dev:lab</code>。
+            見返しはシークバーで録画開始以降を自由に移動できます。
           </p>
         </header>
 
@@ -217,52 +184,15 @@ export default function LiveCapturePage() {
 
         <section className="live-capture__section" aria-label="見返し">
           <div className="live-capture__section-head">
-            <h2 className="live-capture__section-title">見返し（録画開始以降）</h2>
-            <div className="live-capture__review-actions">
-              <button
-                type="button"
-                className="live-capture__btn"
-                disabled={!canReview}
-                onClick={seekBack30}
-              >
-                -30秒
-              </button>
-              <button
-                type="button"
-                className="live-capture__btn"
-                disabled={!canReview || !recording}
-                onClick={jumpLiveEdge}
-              >
-                録画の先端へ
-              </button>
-              <button
-                type="button"
-                className="live-capture__btn"
-                disabled={!reviewMode}
-                onClick={focusLive}
-              >
-                ライブに戻る
-              </button>
-            </div>
+            <h2 className="live-capture__section-title">見返し（録画開始以降・シーク可）</h2>
           </div>
-          {!canReview ? (
-            <p className="live-capture__hint">録画を開始すると、ここにシーク可能な映像が出ます。</p>
-          ) : (
-            <div
-              className={
-                "live-capture__stage" +
-                (reviewMode ? " live-capture__stage--review-active" : "")
-              }
-            >
-              <video
-                ref={videoRef}
-                className="live-capture__video"
-                controls
-                playsInline
-                src={reviewSrc ?? undefined}
-              />
-            </div>
-          )}
+          <LiveCaptureReviewPlayer
+            src={canReview ? reviewSrc : null}
+            recording={recording}
+            reviewActive={reviewActive}
+            onReviewActiveChange={setReviewActive}
+            onCurrentTimeChange={setReviewCurrentTime}
+          />
           {status?.mp4_url ? (
             <p className="live-capture__hint">
               保存ファイル:{" "}
@@ -274,7 +204,17 @@ export default function LiveCapturePage() {
         </section>
       </div>
 
-      <LiveCaptureDebugAside />
+      <LiveCaptureDebugAside
+        review={{
+          recorderBaseUrl: baseUrl,
+          imuUrl: status?.imu_url ?? null,
+          commandsUrl: status?.commands_url ?? null,
+          videoT0Unix: status?.video_t0_unix ?? null,
+          reviewCurrentTime,
+          recording,
+          enabled: reviewTelemetryEnabled,
+        }}
+      />
     </div>
   );
 }

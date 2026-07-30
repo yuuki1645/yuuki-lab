@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import ImuAttitudeGauges from "@/shared/components/ImuAttitudeGauges";
+import LiveCaptureReviewTelemetry, {
+  type LiveCaptureReviewTelemetryProps,
+} from "@/features/live-capture/LiveCaptureReviewTelemetry";
 import { fetchRecorderImuLatest } from "@/shared/recorderApi";
 import type { ImuDaemonSamplePayload } from "@/shared/types/imuDaemon";
 
@@ -9,11 +12,17 @@ type BridgeUi = {
   lastError?: string | null;
 };
 
+type LiveCaptureDebugAsideProps = {
+  /** 見返し再生時刻に同期したテレメトリ（ライブ表示とは別） */
+  review: LiveCaptureReviewTelemetryProps;
+};
+
 /**
  * 実機カメラ右ペイン。
- * IMU は Recorder（Pi→Recorder→Hub）をポーリングし、左の MJPEG 再描画を誘発しない。
+ * - 上: ライブ IMU（Pi→Recorder の最新値）
+ * - 下: 見返し映像の再生位置に同期した IMU / 指令
  */
-export default function LiveCaptureDebugAside() {
+export default function LiveCaptureDebugAside({ review }: LiveCaptureDebugAsideProps) {
   const [sample, setSample] = useState<ImuDaemonSamplePayload | null>(null);
   const [bridge, setBridge] = useState<BridgeUi>({ status: "connecting" });
   const [pollError, setPollError] = useState<string | null>(null);
@@ -66,8 +75,8 @@ export default function LiveCaptureDebugAside() {
         </p>
       </header>
 
-      <section className="live-capture__aside-card" aria-label="IMU 姿勢">
-        <h3 className="live-capture__aside-card-title">IMU 姿勢（ピッチ／ロール）</h3>
+      <section className="live-capture__aside-card" aria-label="ライブ IMU">
+        <h3 className="live-capture__aside-card-title">ライブ IMU（リアルタイム）</h3>
         <p className="live-capture__aside-meta">
           ブリッジ:{" "}
           <span className={"live-capture__ws live-capture__ws--" + statusClass}>
@@ -83,12 +92,7 @@ export default function LiveCaptureDebugAside() {
         />
       </section>
 
-      <section className="live-capture__aside-card live-capture__aside-card--placeholder">
-        <h3 className="live-capture__aside-card-title">ログ・その他</h3>
-        <p className="live-capture__hint">
-          指令ログは Pi→Recorder（記録中のみ take に保存）。今後ここに足圧などを追加します。
-        </p>
-      </section>
+      <LiveCaptureReviewTelemetry {...review} />
     </aside>
   );
 }

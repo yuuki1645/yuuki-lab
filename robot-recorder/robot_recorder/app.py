@@ -149,31 +149,55 @@ class RecorderApp:
       last_take = self._last_take_id
       last_exp = self._last_experiment_id
       disk_warn = self._disk_warning
+      take_meta = dict(self._take_meta) if self._take_meta else None
     recording = sess is not None
     take_id = sess.take_id if sess else last_take
-    exp_id = self.store.get_active_experiment_id() if recording else (
-      last_exp or self.store.get_active_experiment_id()
-    )
-    if recording and self._take_meta:
-      exp_id = self._take_meta.get("experiment_id", exp_id)
+    # 見返し用: 録画中メタ or 直前 take の実験 ID
+    take_exp_id = None
+    if take_meta and take_meta.get("experiment_id"):
+      take_exp_id = str(take_meta["experiment_id"])
+    elif last_exp:
+      take_exp_id = last_exp
+    elif take_id:
+      take_exp_id = self.store.get_active_experiment_id()
+
     elapsed = (time.time() - sess.started_at) if sess else None
     disk = self.check_disk()
     hls_url = None
     mp4_url = None
-    if take_id and exp_id:
-      base = f"/data/experiments/{exp_id}/takes/{take_id}"
-      hls_url = f"{base}/index.m3u8"
-      take_dir = self.store.takes_dir(exp_id) / take_id
+    imu_url = None
+    commands_url = None
+    video_t0_unix = None
+    if take_id and take_exp_id:
+      base = f"/data/experiments/{take_exp_id}/takes/{take_id}"
+      take_dir = self.store.takes_dir(take_exp_id) / take_id
+      if (take_dir / "index.m3u8").is_file():
+        hls_url = f"{base}/index.m3u8"
       if not recording and (take_dir / "video.mp4").is_file():
         mp4_url = f"{base}/video.mp4"
+      if (take_dir / "sensors" / "imu.jsonl").is_file():
+        imu_url = f"{base}/sensors/imu.jsonl"
+      if (take_dir / "commands" / "servo.jsonl").is_file():
+        commands_url = f"{base}/commands/servo.jsonl"
+      if take_meta and take_meta.get("video_t0_unix") is not None:
+        video_t0_unix = take_meta.get("video_t0_unix")
+      else:
+        meta = self.store.get_take_meta(take_exp_id, take_id)
+        if meta and meta.get("video_t0_unix") is not None:
+          video_t0_unix = meta.get("video_t0_unix")
+
     return {
       "ok": True,
       "recording": recording,
       "experiment_id": self.store.get_active_experiment_id(),
       "take_id": take_id,
+      "take_experiment_id": take_exp_id,
       "elapsed_sec": round(elapsed, 1) if elapsed is not None else None,
       "hls_url": hls_url,
       "mp4_url": mp4_url,
+      "imu_url": imu_url,
+      "commands_url": commands_url,
+      "video_t0_unix": video_t0_unix,
       "frame_size": list(self._frame_wh) if self._frame_wh else None,
       "fps": self.config.capture.fps,
       "burn_timestamp": self.config.capture.burn_timestamp,
@@ -249,6 +273,15 @@ class RecorderApp:
         json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
       )
+      # 見返し同期用: 空でも URL をすぐ出せるようプレースホルダを作る
+      (out_dir / "sensors").mkdir(exist_ok=True)
+      (out_dir / "commands").mkdir(exist_ok=True)
+      imu_path = out_dir / "sensors" / "imu.jsonl"
+      cmd_path = out_dir / "commands" / "servo.jsonl"
+      if not imu_path.is_file():
+        imu_path.write_text("", encoding="utf-8")
+      if not cmd_path.is_file():
+        cmd_path.write_text("", encoding="utf-8")
       self._session = sess
       self._take_meta = meta
       self._last_take_id = take_id

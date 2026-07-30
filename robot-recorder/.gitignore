@@ -1,0 +1,6 @@
+# robot-recorder ローカル設定（マシン固有）。リポジトリにコミットしない。
+config.local.yaml
+
+__pycache__/
+*.pyc
+.pytest_cache/

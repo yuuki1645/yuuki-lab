@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 from flask import jsonify, request
 
 from servo_controller import parse_transition_payload
+from recorder_forward import forward_command_async
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -33,6 +35,7 @@ def register_servo_rest_routes(
         mode = data.get("mode", "logical")
         angle = float(data.get("angle"))
         result = servo.set_angle(ch, angle, mode)
+        wall = time.time()
         if servo_csv_log is not None:
             servo_csv_log.record_set(
                 mode=str(mode),
@@ -41,6 +44,18 @@ def register_servo_rest_routes(
                 logical_deg=float(result["logical"]),
                 physical_deg=float(result["physical"]),
             )
+        # 適用時刻を押印して Recorder へ（非同期・失敗は捨てる）
+        forward_command_async(
+            {
+                "wall_unix": wall,
+                "endpoint": "set",
+                "mode": str(mode),
+                "ch": ch,
+                "angle_in": angle,
+                "logical_deg": float(result["logical"]),
+                "physical_deg": float(result["physical"]),
+            }
+        )
         return jsonify(
             {
                 "status": "ok",
@@ -56,10 +71,20 @@ def register_servo_rest_routes(
         angles = data.get("angles", {})
         angles_dict = {int(ch_str): float(angle) for ch_str, angle in angles.items()}
         results = servo.set_angles_batch(angles_dict, mode)
+        wall = time.time()
         if servo_csv_log is not None:
             servo_csv_log.record_set_multiple(
                 mode=str(mode), angles_dict=angles_dict, results=results
             )
+        forward_command_async(
+            {
+                "wall_unix": wall,
+                "endpoint": "set_multiple",
+                "mode": str(mode),
+                "angles": {str(k): v for k, v in angles_dict.items()},
+                "results": results,
+            }
+        )
         return jsonify(
             {
                 "status": "ok",
@@ -74,10 +99,21 @@ def register_servo_rest_routes(
         data = request.json or {}
         mode, angles_dict, duration = parse_transition_payload(data)
         transition_count = servo.start_transition(angles_dict, mode, duration)
+        wall = time.time()
         if servo_csv_log is not None:
             servo_csv_log.record_transition(
                 mode=str(mode), angles_dict=angles_dict, duration_sec=float(duration)
             )
+        forward_command_async(
+            {
+                "wall_unix": wall,
+                "endpoint": "transition",
+                "mode": str(mode),
+                "angles": {str(k): v for k, v in angles_dict.items()},
+                "duration_sec": float(duration),
+                "transition_count": transition_count,
+            }
+        )
         return jsonify(
             {
                 "status": "ok",

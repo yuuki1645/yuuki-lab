@@ -15,19 +15,27 @@
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
 - **Isaac 学習進捗** — [isaac-lab](../isaac-lab/) の RSL-RL TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
-- **実機カメラ** — メインPCの `programs/capture_realtime`（MJPEG ライブ + 録画時 HLS 見返し / mp4 保存、既定 :8766）（`/live-capture`）
+- **実機カメラ** — メインPCの [robot-recorder](../robot-recorder/)（MJPEG ライブ + 実験フォルダへの記録、既定 :8766）（`/live-capture`）
 
 ## 前提
 
 - Node.js（推奨: 現在の LTS）
 - 実機連携時は **`robot-daemon`** を起動（既定ポート **5000**。REST のホストはブラウザと同じ `hostname` + `:5000`。IMU は同一オリジンへの Socket.IO）
-- 実機カメラ表示時は **`serve_realtime.py`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
+- 実機カメラ表示時は **`robot-recorder`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
 
 ## セットアップ
 
 ```bash
 cd robotics-hub
 npm install
+```
+
+Recorder 初回:
+
+```bash
+cd ../robot-recorder
+copy config.example.yaml config.local.yaml
+pip install -r requirements.txt
 ```
 
 ## 開発サーバー
@@ -38,7 +46,7 @@ npm run dev
 
 ブラウザで表示された URL を開く（通常 `http://localhost:5173`）。トップは既定で **モーションエディタ** へリダイレクトされます。
 
-### 実機実験用（Hub + MJPEG 同時起動）
+### 実機実験用（Hub + Recorder 同時起動）
 
 ビデオカメラ監視まで含めて起動する場合:
 
@@ -48,16 +56,11 @@ npm run dev:lab
 ```
 
 - Vite を **`--host 0.0.0.0:5173`** で起動（iPad から LAN アクセス可）
-- あわせて `../programs/capture_realtime/serve_realtime.py`（既定 **:8766**、1280×720 / 30fps）を起動
+- あわせて `../robot-recorder/run.py`（既定 **:8766**）を起動
 - iPad では Hub の **実機カメラ**（`/live-capture`）を開く（映像 URL はブラウザの hostname + `:8766`）
-- 同ページで **録画開始／停止**、見返し（シーク・-30秒）、停止後の **mp4** リンクが使えます（映像のみ・音声なし）
+- 記録は選択中の実験フォルダ配下の take に保存（詳細は robot-recorder README）
 
-MJPEG だけ先に失敗しても Hub は動き続けます。カメラ未接続時は `npm run dev` のみで問題ありません。TCP **8766** の受信許可が未設定なら、管理者 PowerShell で一度:
-
-```bash
-python ../programs/capture_realtime/serve_realtime.py --open-firewall
-```
-
+カメラ未接続時は `npm run dev` のみで問題ありません。
 ### LAN に公開する（同一ネット内の他端末からアクセス）
 
 開発 PC ですべてのインターフェースにバインドして起動します。

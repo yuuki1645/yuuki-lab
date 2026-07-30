@@ -157,7 +157,7 @@ export function getTelemetryImuSocketUrl(): string {
 }
 
 /**
- * 実機カメラ MJPEG（``programs/capture_realtime/serve_realtime.py``、既定 :8766）のベース URL。
+ * 実機カメラ／Recorder MJPEG（``robot-recorder``、既定 :8766）のベース URL。
  * ``VITE_CAPTURE_REALTIME_URL`` があれば優先（ビルド時に埋め込み）。
  */
 export function getCaptureRealtimeBaseUrl(): string {

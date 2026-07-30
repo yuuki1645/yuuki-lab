@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>robot-recorder</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+      header {
+        padding: 12px 16px;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+      img#live {
+        display: block;
+        width: 100%;
+        max-height: calc(100vh - 96px);
+        object-fit: contain;
+        background: #000;
+      }
+      .hint {
+        padding: 12px 16px 20px;
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <header>robot-recorder — 低遅延 MJPEG（本線）</header>
+    <img id="live" src="/stream.mjpg" alt="live" />
+    <p class="hint">API: <code>/api/status</code> ・ 記録は robotics-hub から操作します。</p>
+  </body>
+</html>

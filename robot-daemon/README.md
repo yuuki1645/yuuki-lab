@@ -33,25 +33,30 @@ python app.py
 
 IMU が無い／開発時は `imu.py` のモック経由で動く構成にもなっています。
 
-### IMU の CSV ログ（ラズパイでの解析用）
+### IMU・サーボ CSV（ラズパイローカル）と Recorder 転送
 
 **`imu/start` だけでは CSV は書きません。** Socket.IO で **`imu/log_start`** を送ったときに `IMU_LOG_DIR` 以下へ **`imu_YYYYMMDD_HHMMSS.csv`** と **`servo_YYYYMMDD_HHMMSS.csv`** の両方を開きます。IMU 側は以降の **`imu/sample` と同じタイミング**でサンプルをメモリに溜め、サーボ側は **`/set`・`/set_multiple`・`/transition` が成功した直後**に 1 行ずつバッファへ追加します。**約 `IMU_LOG_FLUSH_SEC` 秒ごと**に各バッファをファイルへ追記します。**`imu/log_stop`** または **`imu/stop`**（ストリーム停止）・IMU 読み取りエラーで**残りを flush** して**両方の**セッションを閉じます。
+
+サーボ指令成功後、同じ適用内容を **非同期**でメイン PC の [robot-recorder](../robot-recorder/README.md) へも POST します（制御は待たない。失敗は捨てる）。
+
+| 環境変数 | 説明 |
+|----------|------|
+| `RECORDER_URL` | 例: `http://192.168.100.20:8766`。未設定なら Recorder へ転送しない |
+| `IMU_LOG_DISABLE` | `1` / `true` などで **CSV を出さない** |
+| `IMU_LOG_DIR` | 出力ディレクトリ（既定: `./imu_logs`、相対パスはカレント基準） |
+| `IMU_LOG_FLUSH_SEC` | ディスクへのフラッシュ間隔（秒、既定: **10**、最小 0.5） |
 
 - **`imu/log_start`** … IMU ストリーミング中のみ有効。成功時に `imu/log_status` `{"ok":true,"recording":true}` と `imu/status`（`csv_recording: true`・`servo_csv_recording: true`）を返します。
 - **`imu/log_stop`** … 記録停止。`imu/log_status` `{"ok":true,"recording":false}`。
 - ストリーミング未開始で `imu/log_start` … `imu/log_status` `{"ok":false,"reason":"imu_not_streaming"}`。
-
-| 環境変数 | 説明 |
-|----------|------|
-| `IMU_LOG_DISABLE` | `1` / `true` などで **CSV を出さない** |
-| `IMU_LOG_DIR` | 出力ディレクトリ（既定: `./imu_logs`、相対パスはカレント基準） |
-| `IMU_LOG_FLUSH_SEC` | ディスクへのフラッシュ間隔（秒、既定: **10**、最小 0.5） |
 
 IMU ファイルの列は `wall_unix`, `perf_timestamp`, `mock`, 加速度・角速度・推定角（`imu/sample` と同じ構造をフラット化）です。
 
 サーボファイルの列は `wall_unix`, `perf_timestamp`（`time.perf_counter()`、IMU CSV の `perf_timestamp` と同一プロセス内の単調時計）, `endpoint`（`set` / `set_multiple` / `transition`）, `mode`, `ch`（一括時は `-1`）, `angle_in`, `logical_deg`, `physical_deg`, `extra_json`（一括・トランジション時に JSON で角度・結果・所要秒など）です。記録開始時に **`servo_*.csv` がヘッダ付きで必ず作成**され、以降の指令は **REST がデーモンに届いたタイミングで即追記**されます（IMU の `IMU_LOG_FLUSH_SEC` バッチとは無関係）。
 
 記録してもサーボ CSV に行が増えないときは、**(1) Hub のテレメトリと同じホスト・ポートに対して** `/set` など REST が飛んでいるか（ブラウザから別 URL のデーモンへ叩いていないか）、**(2) CSV ログ開始後に**サーボ操作したかを確認してください。
+
+本線のセッション保存（映像＋ ingest）は Recorder の記録開始〜終了です。
 
 ## フロント側との対応
 

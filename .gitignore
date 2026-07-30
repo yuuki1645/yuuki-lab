@@ -39,6 +39,9 @@ robot-daemon/imu_logs/
 programs/capture_hls/out/
 programs/capture_realtime/recordings/
 
+# robot-recorder ローカル設定
+robot-recorder/config.local.yaml
+
 *.csv
 
 YuukiLab*/

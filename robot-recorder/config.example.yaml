@@ -1,0 +1,37 @@
+# robot-recorder 設定テンプレート
+# 使い方:
+#   1. このファイルを config.local.yaml にコピー
+#   2. 値を自分の環境に合わせる
+#   3. config.local.yaml は gitignore（マシン固有パス）
+
+# 実験データ根ディレクトリ（リポジトリ外を推奨）
+# 例: "D:/yuuki-lab-data" または "C:/Users/あなた/yuuki-lab-data"
+data_root: "C:/Users/yuukilab/yuuki-lab-data"
+
+# HTTP 待ち受け（Hub / iPad / Pi からのアクセス）
+host: "0.0.0.0"
+port: 8766
+
+# キャプチャ（映像）
+capture:
+  device: 0
+  width: 1280
+  height: 720
+  fps: 30
+  jpeg_quality: 80
+  # フレーム焼き込み（JST・日付+時刻+ms）
+  burn_timestamp: true
+
+# 記録
+recording:
+  # 空き容量がこれ未満なら記録開始を拒否（バイト）
+  min_free_bytes: 10737418240  # 10 GiB
+  # 記録中の空き容量チェック間隔（秒）
+  disk_check_interval_sec: 30
+
+# 既定の format（新規実験・take に付与）
+default_format_id: "robot_take_v0"
+
+# robot-daemon（参考。指令は iPad→Pi、ログのみ本サーバーへ）
+robot_daemon:
+  url: "http://192.168.100.50:5000"

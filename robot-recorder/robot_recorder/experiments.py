@@ -181,3 +181,49 @@ class ExperimentStore:
     return sorted(
       p.name for p in d.iterdir() if p.is_dir() and (p / "meta.json").is_file()
     )
+
+  def get_take_meta(self, exp_id: str, take_id: str) -> dict[str, Any] | None:
+    """take の meta.json を読む。無ければ None。"""
+    path = self.takes_dir(exp_id) / take_id / "meta.json"
+    if not path.is_file():
+      return None
+    try:
+      data = json.loads(path.read_text(encoding="utf-8"))
+      return data if isinstance(data, dict) else None
+    except (OSError, json.JSONDecodeError, TypeError):
+      return None
+
+  def describe_take(self, exp_id: str, take_id: str) -> dict[str, Any] | None:
+    """ビュワー用: meta + ファイル有無 + URL。"""
+    take_dir = self.takes_dir(exp_id) / take_id
+    meta = self.get_take_meta(exp_id, take_id)
+    if meta is None or not take_dir.is_dir():
+      return None
+    video_name = str(meta.get("video_file") or "video.mp4")
+    has_video = (take_dir / video_name).is_file()
+    has_imu = (take_dir / "sensors" / "imu.jsonl").is_file()
+    has_commands = (take_dir / "commands" / "servo.jsonl").is_file()
+    base = f"/data/experiments/{exp_id}/takes/{take_id}"
+    return {
+      "take_id": take_id,
+      "experiment_id": exp_id,
+      "format_id": str(meta.get("format_id") or "robot_take_v0"),
+      "meta": meta,
+      "has_video": has_video,
+      "has_imu": has_imu,
+      "has_commands": has_commands,
+      "video_url": f"{base}/{video_name}" if has_video else None,
+      "imu_url": f"{base}/sensors/imu.jsonl" if has_imu else None,
+      "commands_url": f"{base}/commands/servo.jsonl" if has_commands else None,
+      "meta_url": f"{base}/meta.json",
+    }
+
+  def list_take_descriptions(self, exp_id: str) -> list[dict[str, Any]]:
+    if self.get(exp_id) is None:
+      raise KeyError(exp_id)
+    out: list[dict[str, Any]] = []
+    for tid in self.list_takes(exp_id):
+      desc = self.describe_take(exp_id, tid)
+      if desc is not None:
+        out.append(desc)
+    return out

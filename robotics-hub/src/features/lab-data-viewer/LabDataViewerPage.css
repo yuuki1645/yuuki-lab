@@ -1,0 +1,145 @@
+.lab-dv {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 12px 28px;
+  box-sizing: border-box;
+}
+
+.lab-dv__header h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.lab-dv__header p {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  opacity: 0.88;
+}
+
+.lab-dv__recorder {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem !important;
+  opacity: 0.7 !important;
+}
+
+.lab-dv__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.lab-dv__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 12rem;
+  flex: 1 1 14rem;
+  font-size: 0.8rem;
+}
+
+.lab-dv__field select {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(200, 210, 255, 0.28);
+  background: #0f1424;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.lab-dv__btn {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(200, 210, 255, 0.35);
+  background: #1a2238;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.lab-dv__error {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #c62828 18%, Canvas);
+  border: 1px solid color-mix(in srgb, #c62828 40%, transparent);
+  font-size: 0.9rem;
+}
+
+.lab-dv__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.45;
+}
+
+.lab-dv__format-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 0.78rem;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.lab-dv__format-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.9fr);
+  gap: 12px;
+}
+
+.lab-dv__panel {
+  border: 1px solid rgba(200, 210, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(18, 24, 46, 0.45);
+  min-width: 0;
+}
+
+.lab-dv__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.lab-dv__panel-title {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.lab-dv__video {
+  display: block;
+  width: 100%;
+  max-height: min(42vh, 480px);
+  background: #000;
+  border-radius: 6px;
+}
+
+.lab-dv__pre {
+  margin: 8px 0 0;
+  padding: 8px;
+  font-size: 0.78rem;
+  background: #0a0f1e;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.lab-dv__cmd-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.lab-dv__cmd-raw {
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+@media (max-width: 900px) {
+  .lab-dv__format-grid {
+    grid-template-columns: 1fr;
+  }
+}

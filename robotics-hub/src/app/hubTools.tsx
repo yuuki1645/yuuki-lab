@@ -27,6 +27,7 @@ const TrainingTelemetryPage = lazy(
   () => import("@/features/telemetry/TrainingTelemetryPage")
 );
 const DataViewerPage = lazy(() => import("@/features/data-viewer/DataViewerPage"));
+const LabDataViewerPage = lazy(() => import("@/features/lab-data-viewer/LabDataViewerPage"));
 const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
 const IsaacRlLogPage = lazy(() => import("@/features/isaac-rl-log/IsaacRlLogPage"));
 const LiveCapturePage = lazy(() => import("@/features/live-capture/LiveCapturePage"));
@@ -90,6 +91,14 @@ export const hubTools: HubTool[] = [
     description:
       "IMU / サーボの CSV と動画を wall_unix で突き合わせ、シーク位置のログを確認します。",
     LazyPage: DataViewerPage,
+  },
+  {
+    id: "lab-data-viewer",
+    path: "/lab-data-viewer",
+    label: "ラボデータビュワー",
+    description:
+      "robot-recorder の実験／take を format_id 別ビュワーで確認します（既存データビュワーとは別）。",
+    LazyPage: LabDataViewerPage,
   },
   {
     id: "mujoco-viewer-aux",

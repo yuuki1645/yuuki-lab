@@ -119,6 +119,30 @@ def make_handler(app: RecorderApp):  # noqa: ANN201
         self._send_json(200, {"ok": True, "experiment": row})
         return
 
+      m = re.match(r"^/api/experiments/([^/]+)/takes$", path)
+      if m:
+        exp_id = m.group(1)
+        try:
+          takes = app.store.list_take_descriptions(exp_id)
+        except KeyError:
+          self._send_json(404, {"ok": False, "error": "not_found"})
+          return
+        self._send_json(200, {"ok": True, "experiment_id": exp_id, "takes": takes})
+        return
+
+      m = re.match(r"^/api/experiments/([^/]+)/takes/([^/]+)$", path)
+      if m:
+        exp_id, take_id = m.group(1), m.group(2)
+        if app.store.get(exp_id) is None:
+          self._send_json(404, {"ok": False, "error": "not_found"})
+          return
+        desc = app.store.describe_take(exp_id, take_id)
+        if desc is None:
+          self._send_json(404, {"ok": False, "error": "take_not_found"})
+          return
+        self._send_json(200, {"ok": True, "take": desc})
+        return
+
       self._send_json(404, {"ok": False, "error": "not_found"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -263,11 +287,50 @@ def make_handler(app: RecorderApp):  # noqa: ANN201
         ctype = "application/vnd.apple.mpegurl"
       elif full.suffix == ".ts":
         ctype = "video/mp2t"
+      elif full.suffix == ".jsonl":
+        ctype = "application/x-ndjson; charset=utf-8"
+      elif full.suffix == ".json":
+        ctype = "application/json; charset=utf-8"
+
+      file_size = full.stat().st_size
+      range_hdr = self.headers.get("Range")
+      # 動画シーク用に簡易 Range 対応
+      if range_hdr and range_hdr.startswith("bytes=") and full.suffix in (
+        ".mp4",
+        ".ts",
+        ".m4v",
+      ):
+        try:
+          spec = range_hdr[6:].strip()
+          start_s, _, end_s = spec.partition("-")
+          start = int(start_s) if start_s else 0
+          end = int(end_s) if end_s else file_size - 1
+          end = min(end, file_size - 1)
+          if start < 0 or start > end:
+            raise ValueError("bad range")
+          length = end - start + 1
+          with full.open("rb") as f:
+            f.seek(start)
+            chunk = f.read(length)
+          self.send_response(206)
+          self._cors()
+          self.send_header("Content-Type", ctype)
+          self.send_header("Content-Length", str(length))
+          self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+          self.send_header("Accept-Ranges", "bytes")
+          self.send_header("Cache-Control", "no-cache")
+          self.end_headers()
+          self.wfile.write(chunk)
+          return
+        except (ValueError, OSError):
+          pass
+
       data = full.read_bytes()
       self.send_response(200)
       self._cors()
       self.send_header("Content-Type", ctype)
       self.send_header("Content-Length", str(len(data)))
+      self.send_header("Accept-Ranges", "bytes")
       self.send_header("Cache-Control", "no-cache")
       self.end_headers()
       self.wfile.write(data)

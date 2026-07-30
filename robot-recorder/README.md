@@ -33,9 +33,9 @@
 3. Recorder が Pi の IMU を購読（Socket.IO クライアント）し Hub は `/api/imu/latest` で表示
 4. 指令ログ非同期転送は Phase 1 済み（`RECORDER_URL`）
 
-### Phase 3（その後）
+### Phase 3（進行中）
 
-- format_id 別 DataViewer
+- **ラボデータビュワー**（`/lab-data-viewer`）: format_id 別サブビュワー。既存 `/data-viewer` は温存
 - センサ種別の追加（足圧など）
 - Kaggle 向け書き出し（焼き込みなしは後続検討）
 - IMU 中継の Socket.IO 化（ポーリングからの昇格・任意）

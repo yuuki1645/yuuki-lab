@@ -12,7 +12,8 @@
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
 - **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
-- **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）
+- **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
+- **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）
 - **MuJoCo ビュワー補助** — mujoco_test_009 連携（`/mujoco-viewer-aux`、既定 :8788）
 - **Isaac 学習進捗** — [isaac-lab](../isaac-lab/) の RSL-RL TensorBoard ログ（`/isaac-rl-log`、API 既定 :8792）
 - **実機カメラ** — メインPCの [robot-recorder](../robot-recorder/)（MJPEG ライブ + 実験フォルダへの記録、既定 :8766）（`/live-capture`）

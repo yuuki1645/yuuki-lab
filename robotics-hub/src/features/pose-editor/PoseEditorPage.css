@@ -113,6 +113,9 @@
   border-radius: 14px;
   box-shadow: 0 8px 22px rgba(30, 24, 16, 0.08);
   padding: 12px 14px 16px;
+  /* 矢印ドラッグ中にラベル／リードアウトが選択ハイライトされないようにする */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .pose-card-title {
@@ -195,6 +198,19 @@
   height: auto;
   display: block;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* SVG 内の <text> は親の user-select が効かないブラウザがあるため明示する */
+.pose-overview-svg text,
+.pose-side-svg text,
+.pose-joint-label,
+.pose-legend,
+.pose-hint,
+.pose-sketch-title,
+.pose-front-marker {
+  -webkit-user-select: none;
   user-select: none;
 }
 

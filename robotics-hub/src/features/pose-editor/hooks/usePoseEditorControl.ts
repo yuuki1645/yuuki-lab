@@ -142,13 +142,22 @@ export function usePoseEditorControl(
       setActiveDrag(null);
     };
 
+    // ドラッグ中のテキスト選択（selectstart）を抑止する
+    const onSelectStart = (e: Event) => {
+      if (dragRef.current) {
+        e.preventDefault();
+      }
+    };
+
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+    window.addEventListener("selectstart", onSelectStart);
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("selectstart", onSelectStart);
     };
   }, [setLegAngle, pushServo, flushDragPointerUp]);
 
@@ -159,6 +168,8 @@ export function usePoseEditorControl(
     ) => {
       e.preventDefault();
       e.stopPropagation();
+      // 既存の選択ハイライトをクリアしてからドラッグを開始する
+      window.getSelection()?.removeAllRanges();
       const pose = poseRef.current[partial.leg];
       const startAngle = pose[partial.key];
       const startClient = partial.axis === "x" ? e.clientX : e.clientY;

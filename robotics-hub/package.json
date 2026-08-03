@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:lab": "concurrently -n hub,recorder -c cyan,magenta \"vite --host 0.0.0.0 --port 5173\" \"python ../robot-recorder/run.py\"",
-    "dev:pressure": "concurrently -n hub,pressure -c cyan,green \"vite --host 0.0.0.0 --port 5173\" \"python server/pressure_telemetry_server.py\"",
+    "dev:pressure": "concurrently -n hub,pressure -c cyan,green \"vite --host 0.0.0.0 --port 5173\" \"powershell -ExecutionPolicy Bypass -File server/run_pressure_for_npm.ps1\"",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

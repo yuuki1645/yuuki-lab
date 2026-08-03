@@ -10,7 +10,7 @@
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）
+- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 圧力センサー（ブリッジ既定 :8793）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
 - **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）
@@ -104,6 +104,7 @@ npm run preview
 | `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
 | `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
 | `VITE_ISAAC_RL_LOG_API_URL` | Isaac 学習ログ API（未設定時は `http://<hostname>:8792`） |
+| `VITE_PRESSURE_TELEMETRY_SOCKET_URL` | Pico 圧力テレメトリ Socket.IO（未設定時は `http://<hostname>:8793`） |
 | `VITE_CAPTURE_REALTIME_URL` | 実機カメラ MJPEG ベース URL（未設定時は `http://<hostname>:8766`） |
 
 ## Isaac 学習進捗（TensorBoard ログ）
@@ -155,6 +156,42 @@ npm run dev
 
 同一 LAN 内のみなら LAN IP（例: `http://192.168.x.x:8792`）でも可です。
 
+## Pico W 圧力センサー（実機テレメトリ）
+
+[pico-test](../../pico-test/) の DF9-40@10kg を、Hub の **実機テレメトリ** 画面にリアルタイム表示します。
+
+### 流れ
+
+1. **この PC** で圧力ブリッジを起動（Pico からの HTTP POST を受け、ブラウザへ Socket.IO 配信）
+2. **Pico W** で `send_pressure_to_hub.py` を実行（Wi-Fi → `POST /api/pressure/sample`）
+3. Hub の **実機テレメトリ**（`/device-telemetry`）で円環ゲージが動く
+
+### 1. ブリッジ起動（Hub PC = 192.168.100.104）
+
+```powershell
+cd robotics-hub\server
+pip install -r requirements.txt
+.\start_pressure.ps1
+```
+
+または:
+
+```powershell
+python pressure_telemetry_server.py --host 0.0.0.0 --port 8793
+```
+
+- Pico POST: `http://192.168.100.104:8793/api/pressure/sample`
+- Hub Socket.IO: `http://192.168.100.104:8793`（ブラウザは hostname から自動決定。上書きは `VITE_PRESSURE_TELEMETRY_SOCKET_URL`）
+
+### 2. Pico 側
+
+```text
+pico-test/
+  secrets.example.py  → コピーして secrets.py（SSID / パスワード / HUB_HOST）
+  send_pressure_to_hub.py
+```
+
+`HUB_HOST` の既定は `192.168.100.104`。回路は `main.py` と同じ（GP27 + 10kΩ 分圧）。
 
 ## 新しいツールを追加する手順
 

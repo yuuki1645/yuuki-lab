@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useDaemonImuTelemetry } from "@/shared/contexts/DaemonImuTelemetryContext";
+import { usePressureTelemetryStream } from "@/shared/hooks/usePressureTelemetryStream";
+import { PressureForceGauge } from "./PressureForceGauge";
 import {
   ACC_LABELS,
   ANGLE_LABELS,
@@ -13,6 +15,7 @@ import "./TelemetryPage.css";
 
 export default function DeviceTelemetryPage() {
   const imuStream = useDaemonImuTelemetry();
+  const pressureStream = usePressureTelemetryStream(true);
   const csvRecording = imuStream.lastStatus?.csv_recording === true;
   const csvEnabledOnServer = imuStream.lastStatus?.csv_enabled !== false;
   const imuStreaming = Boolean(imuStream.lastStatus?.streaming);
@@ -34,8 +37,9 @@ export default function DeviceTelemetryPage() {
         <h1>実機テレメトリ</h1>
         <p>
           <code>robot-daemon</code> の IMU（<code>imu/start</code> 後の <code>imu/sample</code>
-          ）を表示します。ラズパイへの CSV ログは <code>imu/log_start</code> /{" "}
-          <code>imu/log_stop</code> で開始・停止します（ハブ内の別画面に移っても接続は維持されます）。
+          ）と、Pico W の DF9-40 圧力センサー（ブリッジ <code>:8793</code>）を表示します。
+          ラズパイへの CSV ログは <code>imu/log_start</code> / <code>imu/log_stop</code>{" "}
+          で開始・停止します（ハブ内の別画面に移っても IMU 接続は維持されます）。
         </p>
       </header>
 
@@ -107,7 +111,7 @@ export default function DeviceTelemetryPage() {
       </div>
 
       <div className="telemetry__data-zones">
-        <div className="telemetry__grid">
+        <div className="telemetry__grid telemetry__grid--device">
           <div className="telemetry__panel">
             <h2>実機 IMU（局所・robot-daemon）</h2>
             <p className="telemetry__meta">
@@ -137,6 +141,37 @@ export default function DeviceTelemetryPage() {
               valueHeader="値"
               noPanel
               showTitle={false}
+            />
+          </div>
+          <div className="telemetry__panel telemetry__panel--pressure">
+            <h2>足裏圧力（Pico W / DF9-40@10kg）</h2>
+            <div className="telemetry__status telemetry__status--nested">
+              <span
+                className={
+                  "telemetry__status-badge telemetry__status-badge--" + pressureStream.wsStatus
+                }
+              >
+                {wsStatusLabel(pressureStream.wsStatus)}
+              </span>
+              <span className="telemetry__url">{pressureStream.url}</span>
+              <span className="telemetry__meta">受信: {pressureStream.sampleCount}</span>
+            </div>
+            {pressureStream.lastError && (
+              <div className="telemetry__error">{pressureStream.lastError}</div>
+            )}
+            <div className="telemetry__actions">
+              <button
+                type="button"
+                className="telemetry__btn"
+                onClick={() => pressureStream.reconnect()}
+              >
+                圧力ブリッジ再接続
+              </button>
+            </div>
+            <PressureForceGauge
+              sample={pressureStream.lastSample}
+              staleSec={pressureStream.staleSec}
+              connected={pressureStream.wsStatus === "connected"}
             />
           </div>
         </div>

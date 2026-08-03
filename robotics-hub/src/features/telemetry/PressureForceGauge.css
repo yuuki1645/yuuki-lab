@@ -1,0 +1,196 @@
+/* DF9-40 圧力ゲージ — 力の大きさが一目で分かる円環 + バー + リップル */
+
+.pressure-gauge {
+  --pressure-heat: hsl(190 80% 52%);
+  --pressure-ratio: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.35rem 0.25rem 0.15rem;
+}
+
+.pressure-gauge--idle {
+  opacity: 0.72;
+}
+
+.pressure-gauge--stale .pressure-gauge__value {
+  color: #fbbf24;
+}
+
+.pressure-gauge__visual {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  display: grid;
+  place-items: center;
+}
+
+.pressure-gauge__glow {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--pressure-heat) 55%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: calc(0.25 + var(--pressure-ratio) * 0.75);
+  filter: blur(10px);
+  pointer-events: none;
+  transition: opacity 120ms linear;
+  animation: pressure-glow-breathe 1.8s ease-in-out infinite;
+}
+
+.pressure-gauge--idle .pressure-gauge__glow {
+  animation: none;
+  opacity: 0.12;
+}
+
+@keyframes pressure-glow-breathe {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.pressure-gauge__ripple {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 2px solid var(--ripple-heat, var(--pressure-heat));
+  opacity: 0.85;
+  pointer-events: none;
+  animation: pressure-ripple 0.9s ease-out forwards;
+}
+
+@keyframes pressure-ripple {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+.pressure-gauge__svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.pressure-gauge__arc {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--pressure-heat) 70%, transparent));
+  transition: stroke 80ms linear;
+}
+
+.pressure-gauge__center {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pressure-gauge__value {
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 2.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #f4f6ff;
+  line-height: 1;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--pressure-heat) 45%, transparent);
+}
+
+.pressure-gauge__unit {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a8b0d6;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pressure-gauge__pct {
+  margin-top: 0.35rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: color-mix(in srgb, var(--pressure-heat) 85%, #e8ecff);
+}
+
+.pressure-gauge__bar {
+  position: relative;
+  width: min(100%, 280px);
+  height: 0.72rem;
+  border-radius: 999px;
+  background: rgba(120, 140, 190, 0.2);
+  border: 1px solid rgba(140, 160, 220, 0.35);
+  overflow: hidden;
+}
+
+.pressure-gauge__bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--pressure-ratio) * 100%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pressure-heat) 55%, #0ea5e9),
+    var(--pressure-heat)
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pressure-heat) 55%, transparent);
+  transition: width 80ms linear;
+}
+
+.pressure-gauge__bar-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #8b93c4;
+  pointer-events: none;
+}
+
+.pressure-gauge__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 1rem;
+  width: min(100%, 280px);
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.pressure-gauge__meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.1);
+}
+
+.pressure-gauge__meta dt {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #9ca8d8;
+}
+
+.pressure-gauge__meta dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: #e8ecff;
+}

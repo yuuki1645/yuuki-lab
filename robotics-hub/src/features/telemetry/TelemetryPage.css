@@ -157,6 +157,27 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/** 実機: IMU 2 列 + 圧力ゲージ */
+.telemetry__grid--device {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .telemetry__grid--device {
+    grid-template-columns: 1fr;
+  }
+}
+
+.telemetry__status--nested {
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.telemetry__panel--pressure {
+  display: flex;
+  flex-direction: column;
+}
+
 .telemetry__grid--training {
   align-items: start;
 }

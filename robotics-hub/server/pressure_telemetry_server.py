@@ -56,17 +56,83 @@ def _lan_ipv4() -> str | None:
         return None
 
 
-def _normalize_sample(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """Pico からの JSON を正規化する。必須は force_kg。"""
+_CORNER_KEYS = ("top_left", "top_right", "bottom_right", "bottom_left")
+
+
+def _normalize_corner(raw: Any) -> dict[str, Any] | None:
+    """1 隅のオブジェクトを正規化する。null / 不正は None（未設置扱い）。"""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        return None
     try:
-        force_kg = float(payload.get("force_kg"))
+        force_kg = float(raw.get("force_kg"))
     except (TypeError, ValueError):
+        return None
+
+    corner: dict[str, Any] = {"force_kg": force_kg}
+    for key, caster in (
+        ("force_pct", float),
+        ("voltage_v", float),
+        ("rs_ohm", float),
+        ("channel", int),
+    ):
+        val = raw.get(key)
+        if val is None:
+            continue
+        try:
+            corner[key] = caster(val)
+        except (TypeError, ValueError):
+            pass
+    return corner
+
+
+def _normalize_corners(raw: Any) -> dict[str, Any] | None:
+    """四隅オブジェクトを正規化する。欠落キーは null。"""
+    if not isinstance(raw, dict):
+        return None
+    corners: dict[str, Any] = {}
+    for key in _CORNER_KEYS:
+        corners[key] = _normalize_corner(raw.get(key))
+    return corners
+
+
+def _normalize_sample(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Pico からの JSON を正規化する。
+
+    必須は ``force_kg``、または ``corners`` 内の設置センサから合計を導出できること。
+    """
+    corners = _normalize_corners(payload.get("corners"))
+
+    force_raw = payload.get("force_kg")
+    force_kg: float | None
+    try:
+        force_kg = float(force_raw) if force_raw is not None else None
+    except (TypeError, ValueError):
+        force_kg = None
+
+    # 四隅がある場合、force_kg 未指定なら設置センサの合計を使う
+    if force_kg is None and corners is not None:
+        total = 0.0
+        any_installed = False
+        for key in _CORNER_KEYS:
+            c = corners.get(key)
+            if isinstance(c, dict) and "force_kg" in c:
+                total += float(c["force_kg"])
+                any_installed = True
+        if any_installed:
+            force_kg = total
+
+    if force_kg is None:
         return None
 
     sample: dict[str, Any] = {
         "force_kg": force_kg,
         "server_ts": time.time(),
     }
+
+    if corners is not None:
+        sample["corners"] = corners
 
     for key, caster in (
         ("voltage_v", float),
@@ -88,7 +154,7 @@ def _normalize_sample(payload: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(sensor_id, str) and sensor_id:
         sample["sensor_id"] = sensor_id
     else:
-        sample["sensor_id"] = "df9-40"
+        sample["sensor_id"] = "df9-40-foot" if corners is not None else "df9-40"
 
     return sample
 
@@ -180,7 +246,12 @@ def create_app() -> tuple[Flask, SocketIO]:
 
         sample = _normalize_sample(payload)
         if sample is None:
-            return jsonify({"ok": False, "error": "force_kg must be a number"}), 400
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "force_kg (number) or corners with force_kg required",
+                }
+            ), 400
 
         with _state_lock:
             _last_sample = sample

@@ -176,6 +176,12 @@
 .telemetry__panel--pressure {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.telemetry__panel--pressure > .telemetry__meta {
+  margin: 0 0 0.55rem;
+  line-height: 1.35;
 }
 
 .telemetry__grid--training {

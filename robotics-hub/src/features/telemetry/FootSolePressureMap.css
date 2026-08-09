@@ -1,0 +1,275 @@
+/* 足裏フレーム四隅の圧力マップ */
+
+.foot-sole {
+  --sole-border: rgba(180, 200, 255, 0.35);
+  --sole-plate: rgba(12, 18, 36, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.foot-sole--idle {
+  opacity: 0.72;
+}
+
+.foot-sole--stale .foot-sole__total-value {
+  opacity: 0.55;
+}
+
+.foot-sole__orient {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(180, 195, 230, 0.65);
+}
+
+.foot-sole__orient--heel {
+  margin-top: 0.1rem;
+}
+
+.foot-sole__frame {
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    "tl tr"
+    "bl br";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 100%;
+  aspect-ratio: 0.72;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  isolation: isolate;
+}
+
+/* 足裏プレート（四角フレーム） */
+.foot-sole__plate {
+  position: absolute;
+  inset: 0.15rem;
+  border-radius: 14px;
+  border: 2px solid var(--sole-border);
+  background:
+    linear-gradient(160deg, rgba(40, 55, 95, 0.35), transparent 55%),
+    var(--sole-plate);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 8px 28px rgba(0, 0, 0, 0.35);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.foot-sole__plate::before {
+  /* つま先側のわずかな面取り感 */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 10px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, rgba(120, 150, 220, 0.18), transparent);
+}
+
+.foot-sole__pad {
+  --pad-heat: hsl(190 80% 52%);
+  --pad-ratio: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.45rem 0.35rem 0.4rem;
+  border-radius: 12px;
+  background: rgba(8, 12, 28, 0.55);
+  border: 1px solid rgba(160, 180, 230, 0.22);
+  min-height: 0;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.foot-sole__pad--active {
+  border-color: color-mix(in srgb, var(--pad-heat) 55%, rgba(160, 180, 230, 0.25));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--pad-heat) 35%, transparent);
+}
+
+.foot-sole__pad--missing {
+  border-style: dashed;
+  opacity: 0.55;
+  background: rgba(8, 12, 28, 0.35);
+}
+
+.foot-sole__pad-blob {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--pad-heat) calc(30% + var(--pad-ratio) * 55%), transparent) 0%,
+    transparent 62%
+  );
+  opacity: calc(0.35 + var(--pad-ratio) * 0.65);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.foot-sole__pad--missing .foot-sole__pad-blob {
+  display: none;
+}
+
+.foot-sole__pad-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  z-index: 1;
+}
+
+.foot-sole__pad-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #d5defe;
+}
+
+.foot-sole__pad-ch {
+  font-size: 0.65rem;
+  font-family: ui-monospace, monospace;
+  color: rgba(170, 185, 220, 0.7);
+}
+
+.foot-sole__pad-value {
+  position: relative;
+  z-index: 1;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f0f4ff;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--pad-heat) 40%, transparent);
+  line-height: 1.1;
+}
+
+.foot-sole__pad-unit {
+  margin-left: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(200, 210, 240, 0.75);
+}
+
+.foot-sole__pad-bar {
+  position: relative;
+  z-index: 1;
+  width: 78%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(120, 140, 190, 0.2);
+  overflow: hidden;
+  margin-top: 0.1rem;
+}
+
+.foot-sole__pad-bar-fill {
+  height: 100%;
+  width: calc(var(--pad-ratio) * 100%);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pad-heat) 55%, #0ea5e9),
+    var(--pad-heat)
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pad-heat) 50%, transparent);
+}
+
+.foot-sole__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(10, 14, 30, 0.82);
+  border: 1px solid rgba(180, 200, 255, 0.22);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  min-width: 5.5rem;
+}
+
+.foot-sole__total-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: rgba(170, 185, 220, 0.75);
+}
+
+.foot-sole__total-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f4f7ff;
+  line-height: 1.15;
+}
+
+.foot-sole__total-unit {
+  margin-left: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(200, 210, 240, 0.75);
+}
+
+.foot-sole__fresh {
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  font-family: ui-monospace, monospace;
+  color: rgba(140, 220, 180, 0.85);
+}
+
+.foot-sole__cop {
+  position: absolute;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: #f8fbff;
+  box-shadow:
+    0 0 0 2px rgba(14, 165, 233, 0.85),
+    0 0 16px rgba(14, 165, 233, 0.65);
+  pointer-events: none;
+  transition: left 0.12s ease-out, top 0.12s ease-out;
+}
+
+.foot-sole__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.75rem;
+  width: 100%;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  font-size: 0.72rem;
+}
+
+.foot-sole__meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0.15rem;
+  border-bottom: 1px solid rgba(160, 180, 230, 0.12);
+}
+
+.foot-sole__meta dt {
+  margin: 0;
+  color: rgba(170, 185, 220, 0.7);
+}
+
+.foot-sole__meta dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  color: #d8e0ff;
+  font-variant-numeric: tabular-nums;
+}

@@ -10,7 +10,7 @@
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 圧力センサー（ブリッジ既定 :8793）
+- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40、ブリッジ既定 :8793）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
 - **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）
@@ -158,15 +158,26 @@ npm run dev
 
 同一 LAN 内のみなら LAN IP（例: `http://192.168.x.x:8792`）でも可です。
 
-## Pico W 圧力センサー（実機テレメトリ）
+## Pico W 足裏圧力（実機テレメトリ）
 
-[pico-test](../../pico-test/) の DF9-40@10kg を、Hub の **実機テレメトリ** 画面にリアルタイム表示します。
+[pico-test](../../pico-test/) の DF9-40@10kg（ADS1115 経由）を、Hub の **実機テレメトリ** 画面に足裏フレーム四隅としてリアルタイム表示します。
+
+### センサー配置（足裏上面・つま先が上）
+
+| 位置 | ADS1115 | 状態 |
+|------|---------|------|
+| 左上 | A0 | 設置済み |
+| 右上 | A1 | 設置済み |
+| 右下 | A2 | 設置済み |
+| 左下 | — | 未設置（UI は破線表示） |
+
+力換算は Winsen DF9-40@10kg データシートの Pressure-sensitive Characteristic（回路はセンサー上側 + 10kΩ）に準拠。
 
 ### 流れ
 
 1. **この PC** で圧力ブリッジを起動（Pico からの HTTP POST を受け、ブラウザへ Socket.IO 配信）
-2. **Pico W** で `send_pressure_to_hub.py` を実行（Wi-Fi → `POST /api/pressure/sample`）
-3. Hub の **実機テレメトリ**（`/device-telemetry`）で円環ゲージが動く
+2. **Pico W** で `main.py` を実行（Wi-Fi → `POST /api/pressure/sample`、四隅 JSON）
+3. Hub の **実機テレメトリ**（`/device-telemetry`）で足裏フレームの四隅が動く
 
 ### 1. ブリッジ起動（Hub PC = 192.168.100.104）
 
@@ -190,10 +201,13 @@ python pressure_telemetry_server.py --host 0.0.0.0 --port 8793
 ```text
 pico-test/
   secrets.example.py  → コピーして secrets.py（SSID / パスワード / HUB_HOST）
-  send_pressure_to_hub.py
+  main.py             → Hub 送信（ADS1115 A0/A1/A2）
+  ads1115_test.py     → シリアル確認用
+  df9_force.py        → データシート準拠の抵抗→力換算
+  ads1115.py          → ADS1115 ドライバ
 ```
 
-`HUB_HOST` の既定は `192.168.100.104`。回路は `main.py` と同じ（GP27 + 10kΩ 分圧）。
+`HUB_HOST` の既定は `192.168.100.104`。配線は I2C1（SDA=GP26 / SCL=GP27）+ 各チャネル 10kΩ 分圧。
 
 ## 新しいツールを追加する手順
 

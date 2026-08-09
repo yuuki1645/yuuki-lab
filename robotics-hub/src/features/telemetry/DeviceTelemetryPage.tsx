@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useDaemonImuTelemetry } from "@/shared/contexts/DaemonImuTelemetryContext";
 import { usePressureTelemetryStream } from "@/shared/hooks/usePressureTelemetryStream";
-import { PressureForceGauge } from "./PressureForceGauge";
+import { FootSolePressureMap } from "./FootSolePressureMap";
 import {
   ACC_LABELS,
   ANGLE_LABELS,
@@ -37,7 +37,7 @@ export default function DeviceTelemetryPage() {
         <h1>実機テレメトリ</h1>
         <p>
           <code>robot-daemon</code> の IMU（<code>imu/start</code> 後の <code>imu/sample</code>
-          ）と、Pico W の DF9-40 圧力センサー（ブリッジ <code>:8793</code>）を表示します。
+          ）と、Pico W の足裏圧力（ADS1115 × DF9-40@10kg、ブリッジ <code>:8793</code>）を表示します。
           ラズパイへの CSV ログは <code>imu/log_start</code> / <code>imu/log_stop</code>{" "}
           で開始・停止します（ハブ内の別画面に移っても IMU 接続は維持されます）。
         </p>
@@ -145,6 +145,9 @@ export default function DeviceTelemetryPage() {
           </div>
           <div className="telemetry__panel telemetry__panel--pressure">
             <h2>足裏圧力（Pico W / DF9-40@10kg）</h2>
+            <p className="telemetry__meta">
+              ADS1115 A0=左上 / A1=右上 / A2=右下（左下は未設置）。四隅の色とバーがリアルタイムで追従します。
+            </p>
             <div className="telemetry__status telemetry__status--nested">
               <span
                 className={
@@ -168,7 +171,7 @@ export default function DeviceTelemetryPage() {
                 圧力ブリッジ再接続
               </button>
             </div>
-            <PressureForceGauge
+            <FootSolePressureMap
               sample={pressureStream.lastSample}
               staleSec={pressureStream.staleSec}
               connected={pressureStream.wsStatus === "connected"}

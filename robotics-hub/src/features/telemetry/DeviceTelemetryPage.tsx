@@ -146,7 +146,7 @@ export default function DeviceTelemetryPage() {
           <div className="telemetry__panel telemetry__panel--pressure">
             <h2>足裏圧力（Pico W / DF9-40@10kg）</h2>
             <p className="telemetry__meta">
-              ADS1115 A0=左上 / A1=右上 / A2=右下（左下は未設置）。四隅の色とバーがリアルタイムで追従します。
+              ADS1115 A0=左上 / A1=右上 / A2=右下 / A3=左下。四隅の色とバーがリアルタイムで追従します。
             </p>
             <div className="telemetry__status telemetry__status--nested">
               <span

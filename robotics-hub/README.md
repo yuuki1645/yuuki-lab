@@ -169,7 +169,7 @@ npm run dev
 | 左上 | A0 | 設置済み |
 | 右上 | A1 | 設置済み |
 | 右下 | A2 | 設置済み |
-| 左下 | — | 未設置（UI は破線表示） |
+| 左下 | A3 | 設置済み |
 
 力換算は Winsen DF9-40@10kg データシートの Pressure-sensitive Characteristic（回路はセンサー上側 + 10kΩ）に準拠。
 

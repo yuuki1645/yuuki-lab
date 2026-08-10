@@ -20,11 +20,11 @@ type CornerDef = {
   gridArea: string;
 };
 
-/** 上面図・つま先が上。A0=左上 / A1=右上 / A2=右下 / 左下=未設置 */
+/** 上面図・つま先が上。A0=左上 / A1=右上 / A2=右下 / A3=左下 */
 const CORNER_DEFS: CornerDef[] = [
   { id: "top_left", label: "左上", channelLabel: "A0", gridArea: "tl" },
   { id: "top_right", label: "右上", channelLabel: "A1", gridArea: "tr" },
-  { id: "bottom_left", label: "左下", channelLabel: null, gridArea: "bl" },
+  { id: "bottom_left", label: "左下", channelLabel: "A3", gridArea: "bl" },
   { id: "bottom_right", label: "右下", channelLabel: "A2", gridArea: "br" },
 ];
 

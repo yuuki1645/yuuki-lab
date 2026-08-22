@@ -10,7 +10,7 @@
 - **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40、ブリッジ既定 :8793）
+- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40@2kg、ブリッジ既定 :8793）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
 - **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）
@@ -160,7 +160,7 @@ npm run dev
 
 ## Pico W 足裏圧力（実機テレメトリ）
 
-[pico-test](../../pico-test/) の DF9-40@10kg（ADS1115 経由）を、Hub の **実機テレメトリ** 画面に足裏フレーム四隅としてリアルタイム表示します。
+[pico-test](../../pico-test/) の DF9-40@2kg（ADS1115 経由）を、Hub の **実機テレメトリ** 画面に足裏フレーム四隅としてリアルタイム表示します。
 
 ### センサー配置（足裏上面・つま先が上）
 
@@ -171,7 +171,7 @@ npm run dev
 | 右下 | A2 | 設置済み |
 | 左下 | A3 | 設置済み |
 
-力換算は Winsen DF9-40@10kg データシートの Pressure-sensitive Characteristic（回路はセンサー上側 + 10kΩ）に準拠。
+力換算は DF9-40@2kg データシートの圧力–抵抗表（回路はセンサー上側 + 10kΩ）に準拠。1 センサのフルスケールは 2kg。
 
 ### 流れ
 

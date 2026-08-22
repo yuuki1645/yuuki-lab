@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type {
-  PressureCornerSample,
-  PressureFootCorners,
-  PressureTelemetrySample,
+import {
+  DF9_FORCE_MAX_KG,
+  type PressureCornerSample,
+  type PressureFootCorners,
+  type PressureTelemetrySample,
 } from "@/shared/types/pressureTelemetry";
 import "./FootSolePressureMap.css";
-
-/** DF9-40@10kg のフルスケール（1 センサ） */
-const FORCE_MAX_KG = 10;
 
 type CornerId = keyof PressureFootCorners;
 
@@ -51,8 +49,8 @@ function forceHeatHsl(ratio: number): string {
 
 function formatKg(kg: number | null | undefined): string {
   if (kg == null || !Number.isFinite(kg)) return "—.—";
-  if (kg < 0.01) return "0.00";
-  return kg.toFixed(2);
+  if (kg < 0.001) return "0.000";
+  return kg.toFixed(3);
 }
 
 /**
@@ -158,7 +156,7 @@ export function FootSolePressureMap({ sample, staleSec, connected }: Props) {
         const c = corners?.[def.id] ?? null;
         const uninstalled = def.channelLabel == null;
         const targetKg = uninstalled || c == null ? 0 : c.force_kg;
-        const targetRatio = clamp01(targetKg / FORCE_MAX_KG);
+        const targetRatio = clamp01(targetKg / DF9_FORCE_MAX_KG);
         const cur = next[def.id];
         next[def.id] = {
           kg: cur.kg + (targetKg - cur.kg) * 0.22,

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { PressureTelemetrySample } from "@/shared/types/pressureTelemetry";
+import {
+  DF9_FORCE_MAX_KG,
+  type PressureTelemetrySample,
+} from "@/shared/types/pressureTelemetry";
 import "./PressureForceGauge.css";
-
-/** DF9-40@10kg のフルスケール */
-const FORCE_MAX_KG = 10;
 
 type Props = {
   sample: PressureTelemetrySample | null;
@@ -33,8 +33,8 @@ function forceHeatHsl(ratio: number): string {
 
 function formatKg(kg: number | null): string {
   if (kg == null || !Number.isFinite(kg)) return "—.—";
-  if (kg < 0.01) return "0.00";
-  return kg.toFixed(2);
+  if (kg < 0.001) return "0.000";
+  return kg.toFixed(3);
 }
 
 /**
@@ -45,7 +45,7 @@ function formatKg(kg: number | null): string {
  */
 export function PressureForceGauge({ sample, staleSec, connected }: Props) {
   const forceKg = sample?.force_kg ?? null;
-  const targetRatio = forceKg == null ? 0 : clamp01(forceKg / FORCE_MAX_KG);
+  const targetRatio = forceKg == null ? 0 : clamp01(forceKg / DF9_FORCE_MAX_KG);
 
   // 表示用に少し遅れて追従（ガタつき低減）
   const [displayRatio, setDisplayRatio] = useState(0);
@@ -80,9 +80,9 @@ export function PressureForceGauge({ sample, staleSec, connected }: Props) {
     const prev = prevForceRef.current;
     const delta = forceKg - prev;
     prevForceRef.current = forceKg;
-    if (delta < 0.35) return;
+    if (delta < 0.07) return;
     const id = ++rippleIdRef.current;
-    const ratio = clamp01(forceKg / FORCE_MAX_KG);
+    const ratio = clamp01(forceKg / DF9_FORCE_MAX_KG);
     setRipples((list) => [...list.slice(-4), { id, ratio }]);
     const t = window.setTimeout(() => {
       setRipples((list) => list.filter((r) => r.id !== id));
@@ -183,12 +183,12 @@ export function PressureForceGauge({ sample, staleSec, connected }: Props) {
         </div>
       </div>
 
-      <div className="pressure-gauge__bar" role="meter" aria-valuemin={0} aria-valuemax={FORCE_MAX_KG} aria-valuenow={forceKg ?? 0}>
+      <div className="pressure-gauge__bar" role="meter" aria-valuemin={0} aria-valuemax={DF9_FORCE_MAX_KG} aria-valuenow={forceKg ?? 0}>
         <div className="pressure-gauge__bar-fill" />
         <div className="pressure-gauge__bar-ticks">
           <span>0</span>
-          <span>5</span>
-          <span>10 kg</span>
+          <span>1</span>
+          <span>2 kg</span>
         </div>
       </div>
 

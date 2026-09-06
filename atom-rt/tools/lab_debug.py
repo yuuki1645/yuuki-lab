@@ -445,6 +445,9 @@ class AtomWorker:
                     ser.write(msg)
                     ser.flush()
                     self._put("tx", proto.format_tx(msg))
+                    # マップチャンクを間隔なしで出すと CDC が溢れ、ボードが 16/191 busy になる
+                    if len(msg) >= 3 and msg[2] == proto.CMD_MAPCHUNK:
+                        time.sleep(0.03)
                 except queue.Empty:
                     pass
                 try:
@@ -767,7 +770,7 @@ class AtomSession:
             self.worker.send(data)
 
     def send_map(self, ch: int, points: list[tuple[float, float]]) -> None:
-        """校正点をチャンクに分けて送る。"""
+        """校正点をチャンクに分けて送る。間隔は AtomWorker が空ける。"""
         for fr in proto.cmd_map_chunks(ch, points):
             self.send(fr)
 

@@ -11,6 +11,7 @@
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
 - **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40@2kg、ブリッジ既定 :8793）
+- **実機テレメトリ（M5）** — [atom-rt](../atom-rt/) の `tools/lab_debug.py` が USB の ATOM を Socket.IO 既定 :8794 で中継（`/m5-telemetry`）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
 - **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）
@@ -22,6 +23,7 @@
 
 - Node.js（推奨: 現在の LTS）
 - 実機連携時は **`robot-daemon`** を起動（既定ポート **5000**。REST のホストはブラウザと同じ `hostname` + `:5000`。IMU は同一オリジンへの Socket.IO）
+- ATOM（M5）操作時は [atom-rt](../atom-rt/) で `python tools/lab_debug.py` を起動（Socket.IO 既定 **8794**）
 - 実機カメラ表示時は **`robot-recorder`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
 
 ## セットアップ
@@ -76,7 +78,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 **`robot-daemon` について:** REST・Socket.IO のベース URL は既定で **ラズパイ固定 IP** `http://192.168.100.50:5000`（`src/shared/constants.ts` の `SERVO_DAEMON_URL` / `ROBOT_DAEMON_HOST`）です。上書きは **`VITE_SERVO_DAEMON_URL`**（実機 IMU だけ別にする場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`**）。デーモンはラズパイ上で `0.0.0.0:5000` 待ち受け、同一 LAN から届くようにしてください。
 
-**テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`、IMU/圧力）、**実機テレメトリ（M5）**（`/m5-telemetry`、ATOM USB を PC の `lab_debug.py` が :8794 で中継）、**学習テレメトリ**（`/training-telemetry`）に分かれています。M5 画面は iPad から **Windows PC の LAN IP:5173** で開きます（ラズパイ `192.168.100.50` ではありません）。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://192.168.100.50:5000`**（`SERVO_DAEMON_URL`）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
+**テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`、IMU/圧力）、**実機テレメトリ（M5）**（`/m5-telemetry`、ATOM USB を [atom-rt](../atom-rt/) の `tools/lab_debug.py` が :8794 で中継）、**学習テレメトリ**（`/training-telemetry`）に分かれています。M5 画面は iPad から **Windows PC の LAN IP:5173** で開きます（ラズパイ `192.168.100.50` ではありません）。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://192.168.100.50:5000`**（`SERVO_DAEMON_URL`）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
 
 **圧力ブリッジ注意:** `:8793` は **必ず 1 プロセス・`0.0.0.0`** で待ち受けてください。以前の `127.0.0.1:8793` が残っていると、ブラウザ（localhost）と Pico（LAN IP）が別プロセスを見て画面が更新されません。起動は `npm run dev:pressure` または `server\start_pressure.ps1`（起動前にポートを解放します）。
 
@@ -107,7 +109,7 @@ npm run preview
 | `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
 | `VITE_ISAAC_RL_LOG_API_URL` | Isaac 学習ログ API（未設定時は `http://<hostname>:8792`） |
 | `VITE_PRESSURE_TELEMETRY_SOCKET_URL` | Pico 圧力テレメトリ Socket.IO（未設定時は `http://<hostname>:8793`） |
-| `VITE_M5_TELEMETRY_SOCKET_URL` | ATOM / lab_debug.py 中継 Socket.IO（未設定時は `http://<hostname>:8794`）。iPad は Windows PC の LAN IP で Hub を開く |
+| `VITE_M5_TELEMETRY_SOCKET_URL` | ATOM / [atom-rt](../atom-rt/) の `lab_debug.py` 中継 Socket.IO（未設定時は `http://<hostname>:8794`）。iPad は Windows PC の LAN IP で Hub を開く |
 | `VITE_CAPTURE_REALTIME_URL` | 実機カメラ MJPEG ベース URL（未設定時は `http://<hostname>:8766`） |
 
 ## Isaac 学習進捗（TensorBoard ログ）

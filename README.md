@@ -85,10 +85,11 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 
 **フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。
+実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。ATOM（M5）の関節・校正は **`atom-rt`** の `lab_debug.py` 経由です。
 
 - **Isaac Lab 学習** … ハブの **「Isaac 学習進捗」**（`/isaac-rl-log`）で `isaac-lab/logs/rsl_rl/` を参照できます。
 - **MuJoCo RL（レガシー）** … [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) の `train.py` と併用する場合は **「学習テレメトリ」**（`/training-telemetry`、Socket.IO 既定 **8791**）が利用できます。
+- **ATOM / M5** … [atom-rt](atom-rt/) の `lab_debug.py` と **「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
@@ -99,6 +100,16 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 **[robotics-hub](robotics-hub/)** からこのデーモンの REST API と Socket.IO を利用します（開発・運用の主経路）。
 
 詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
+
+## ■ atom-rt
+
+ATOMS3 Lite（M5Stack ATOM）上の **20 Hz 制御ファーム** と、Windows PC の USB 総合デバッグです。ラズパイの `robot-daemon` とは別系統（USB CDC）です。
+
+- 書き込み: `cd atom-rt` → `pio run -t upload`
+- デバッグ: `python tools/lab_debug.py`
+- Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）は、この `lab_debug.py` が Socket.IO 既定 **8794** で中継します
+
+詳細は [atom-rt/README.md](atom-rt/README.md) を参照してください。
 
 ## ■ 削除済み：旧スタンドアロンのフロントエンド
 

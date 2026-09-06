@@ -6,6 +6,8 @@ import {
   MAG_LABEL,
   M5_COLORS,
   M5_INA_CHS,
+  M5_INA_DEFAULT_ASSIGNED,
+  M5_INA_PLOT_COLORS,
   M5_JOINTS,
   M5_PANEL_COUNT,
   kindMeta,
@@ -51,9 +53,9 @@ function emptyRoute(i: number): M5Route {
     act_ch: -1,
     act_addr: 0x25,
     servo_ch: i,
-    ina_hub: i < M5_INA_CHS ? 0x71 : 0,
-    ina_ch: i < M5_INA_CHS ? i : -1,
-    ina_addr: i < M5_INA_CHS ? 0x41 : 0,
+    ina_hub: i < M5_INA_DEFAULT_ASSIGNED ? 0x71 : 0,
+    ina_ch: i < M5_INA_DEFAULT_ASSIGNED ? i : -1,
+    ina_addr: i < M5_INA_DEFAULT_ASSIGNED ? 0x41 : 0,
   };
 }
 
@@ -166,7 +168,7 @@ export default function M5TelemetryPage() {
       <header className="m5__header">
         <h1>実機テレメトリ（M5）</h1>
         <p>
-          ATOM は USB で Windows PC の <code>lab_debug.py</code> に接続し、この画面は Wi‑Fi で PC を中継します。
+          ATOM は USB で Windows PC の <code>atom-rt/tools/lab_debug.py</code> に接続し、この画面は Wi‑Fi で PC を中継します。
           iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。既存の「実機テレメトリ」（IMU）とは別です。
         </p>
       </header>
@@ -432,18 +434,20 @@ export default function M5TelemetryPage() {
           <h3>電力 [W]</h3>
           <Sparkline
             autoScale
-            series={[
-              { key: "w0", color: M5_COLORS.watt, values: history.map((h) => at(h.watt, 0)) },
-              { key: "w1", color: M5_COLORS.amp, values: history.map((h) => at(h.watt, 1)) },
-            ]}
+            series={Array.from({ length: M5_INA_CHS }, (_, i) => ({
+              key: `w${i}`,
+              color: M5_INA_PLOT_COLORS[i % M5_INA_PLOT_COLORS.length],
+              values: history.map((h) => at(h.watt, i)),
+            }))}
           />
           <h3>電圧 [V]</h3>
           <Sparkline
             autoScale
-            series={[
-              { key: "v0", color: M5_COLORS.volt, values: history.map((h) => at(h.volt, 0)) },
-              { key: "v1", color: "#e67e22", values: history.map((h) => at(h.volt, 1)) },
-            ]}
+            series={Array.from({ length: M5_INA_CHS }, (_, i) => ({
+              key: `v${i}`,
+              color: M5_INA_PLOT_COLORS[i % M5_INA_PLOT_COLORS.length],
+              values: history.map((h) => at(h.volt, i)),
+            }))}
           />
         </section>
       ) : null}

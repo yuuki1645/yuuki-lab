@@ -4,6 +4,8 @@
 
 以前の **`servo-daemon`** ディレクトリから改名したもので、REST のサーボ API に加え IMU 連携が入っています。
 
+ATOMS3 Lite（M5Stack ATOM）の USB 制御・校正は本デーモンではなく、同じリポジトリの **[atom-rt](../atom-rt/README.md)** です。
+
 ## 機能概要
 
 - **HTTP（Flask）**: `/servos`, `/set`, `/set_multiple`, `/transition` など（`rest_servo.py`）

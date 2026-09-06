@@ -205,7 +205,7 @@ export function JointTripleBar({
           />
           <Sparkline
             className="m5-spark m5-spark--row"
-            height={112}
+            height={120}
             showAxes
             series={buildPlotSeries(plotOn, historyCmd, historyCorr, historyVolt, historyAmp)}
           />

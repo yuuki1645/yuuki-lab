@@ -23,6 +23,7 @@ const DaemonSocketTestPage = lazy(
   () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
 );
 const DeviceTelemetryPage = lazy(() => import("@/features/telemetry/DeviceTelemetryPage"));
+const M5TelemetryPage = lazy(() => import("@/features/m5-telemetry/M5TelemetryPage"));
 const TrainingTelemetryPage = lazy(
   () => import("@/features/telemetry/TrainingTelemetryPage")
 );
@@ -75,6 +76,14 @@ export const hubTools: HubTool[] = [
     label: "実機テレメトリ",
     description: "robot-daemon の実機 IMU をリアルタイム表示し、CSV ログを操作します。",
     LazyPage: DeviceTelemetryPage,
+  },
+  {
+    id: "m5-telemetry",
+    path: "/m5-telemetry",
+    label: "実機テレメトリ（M5）",
+    description:
+      "Windows PC の lab_debug.py 経由で ATOM の関節・電源・校正を iPad から操作します（Socket.IO :8794）。",
+    LazyPage: M5TelemetryPage,
   },
   {
     id: "training-telemetry",

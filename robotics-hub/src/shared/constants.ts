@@ -173,6 +173,23 @@ export function getPressureTelemetrySocketUrl(): string {
 }
 
 /**
+ * ATOM / lab_debug.py の iPad 中継 Socket.IO（既定 :8794）。
+ * iPad は Windows PC の LAN IP で Hub を開く（ラズパイ 192.168.100.50 ではない）。
+ * ``VITE_M5_TELEMETRY_SOCKET_URL`` があれば優先。
+ */
+export function getM5TelemetrySocketUrl(): string {
+  const fromEnv = import.meta.env.VITE_M5_TELEMETRY_SOCKET_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8794"
+  );
+}
+
+/**
  * 実機カメラ／Recorder MJPEG（``robot-recorder``、既定 :8766）のベース URL。
  * ``VITE_CAPTURE_REALTIME_URL`` があれば優先（ビルド時に埋め込み）。
  */

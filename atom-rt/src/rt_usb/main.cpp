@@ -281,6 +281,57 @@ static String calKey(const char* prefix, int ch) {
     return String(prefix) + String(ch);
 }
 
+/**
+ * マップ x は単調な unwrap。起動直後の raw は 0〜360 なので、
+ * 360° を跨いだマップ（例: 315〜504）と枝がずれる。
+ * u / u±360 のうち [x0, x1] に最も近いものを使う（JSON を mod しない）。
+ */
+static float alignAs5600ToMap(float u, float x0, float x1) {
+    float best = u;
+    float bestDist = 1e9f;
+    for (int k = -1; k <= 1; ++k) {
+        const float cand = u + 360.0f * static_cast<float>(k);
+        float d = 0.0f;
+        if (cand < x0) {
+            d = x0 - cand;
+        } else if (cand > x1) {
+            d = cand - x1;
+        }
+        if (d < bestDist) {
+            bestDist = d;
+            best = cand;
+        }
+    }
+    return best;
+}
+
+/** 整列した u をマップ上で線形補間。範囲外は端の y。 */
+static float interpCalPoints(const float* xs, const float* ys, int n, float u) {
+    if (xs == nullptr || ys == nullptr || n < 2) {
+        return u;
+    }
+    u = alignAs5600ToMap(u, xs[0], xs[n - 1]);
+    if (u <= xs[0]) {
+        return ys[0];
+    }
+    if (u >= xs[n - 1]) {
+        return ys[n - 1];
+    }
+    for (int i = 0; i < n - 1; ++i) {
+        const float x0 = xs[i];
+        const float x1 = xs[i + 1];
+        if (u >= x0 && u <= x1) {
+            const float den = x1 - x0;
+            if (fabsf(den) < 1e-4f) {
+                return ys[i];
+            }
+            const float t = (u - x0) / den;
+            return ys[i] + t * (ys[i + 1] - ys[i]);
+        }
+    }
+    return u;
+}
+
 static float lookupMap(int ch, float as5600Unwrapped) {
     if (ch < 0 || ch >= kJointCount) {
         return as5600Unwrapped;
@@ -288,36 +339,12 @@ static float lookupMap(int ch, float as5600Unwrapped) {
     portENTER_CRITICAL(&gMapLock);
     const bool ok = gCal[ch].ok && gCal[ch].count >= 2;
     const int n = gCal[ch].count;
-    if (!ok) {
-        portEXIT_CRITICAL(&gMapLock);
-        return as5600Unwrapped;
-    }
-    if (as5600Unwrapped <= gCal[ch].x[0]) {
-        const float y = gCal[ch].y[0];
-        portEXIT_CRITICAL(&gMapLock);
-        return y;
-    }
-    if (as5600Unwrapped >= gCal[ch].x[n - 1]) {
-        const float y = gCal[ch].y[n - 1];
-        portEXIT_CRITICAL(&gMapLock);
-        return y;
-    }
-    for (int i = 0; i < n - 1; ++i) {
-        const float x0 = gCal[ch].x[i];
-        const float x1 = gCal[ch].x[i + 1];
-        if (as5600Unwrapped >= x0 && as5600Unwrapped <= x1) {
-            const float den = x1 - x0;
-            float y = gCal[ch].y[i];
-            if (fabsf(den) >= 1e-4f) {
-                const float t = (as5600Unwrapped - x0) / den;
-                y += t * (gCal[ch].y[i + 1] - gCal[ch].y[i]);
-            }
-            portEXIT_CRITICAL(&gMapLock);
-            return y;
-        }
+    float y = as5600Unwrapped;
+    if (ok) {
+        y = interpCalPoints(gCal[ch].x, gCal[ch].y, n, as5600Unwrapped);
     }
     portEXIT_CRITICAL(&gMapLock);
-    return as5600Unwrapped;
+    return y;
 }
 
 static void loadCalibration(int ch) {
@@ -1186,25 +1213,7 @@ static float calLookupTmp(const CalMap& m, float as5600Unwrapped) {
     if (!m.ok || m.count < 2) {
         return gCalScale * as5600Unwrapped + gCalOffset;
     }
-    if (as5600Unwrapped <= m.x[0]) {
-        return m.y[0];
-    }
-    if (as5600Unwrapped >= m.x[m.count - 1]) {
-        return m.y[m.count - 1];
-    }
-    for (int i = 0; i < m.count - 1; ++i) {
-        const float x0 = m.x[i];
-        const float x1 = m.x[i + 1];
-        if (as5600Unwrapped >= x0 && as5600Unwrapped <= x1) {
-            const float den = x1 - x0;
-            if (fabsf(den) < 1e-4f) {
-                return m.y[i];
-            }
-            const float t = (as5600Unwrapped - x0) / den;
-            return m.y[i] + t * (m.y[i + 1] - m.y[i]);
-        }
-    }
-    return gCalScale * as5600Unwrapped + gCalOffset;
+    return interpCalPoints(m.x, m.y, m.count, as5600Unwrapped);
 }
 
 static bool calBuildMap(CalMap& out) {

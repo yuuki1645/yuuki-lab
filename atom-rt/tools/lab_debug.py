@@ -490,7 +490,8 @@ class AtomWorker:
             self._put("hello", h.text() if h else "HELLO 形式不正")
             return
         if msg_type == proto.MSG_SCAN_BEGIN:
-            self._put("scan_begin", None)
+            n = payload[0] if payload else 0
+            self._put("scan_begin", n)
             return
         if msg_type == proto.MSG_SCAN_NODE:
             nd = proto.decode_scan_node(payload)
@@ -703,6 +704,8 @@ class AtomSession:
         self.out_mask = 0
         self.nodes: list[ScanNode] = []
         self._scan_acc: list[ScanNode] = []
+        self._scan_expect = 0
+        self._scan_open = False
         self.routes: list[JointRoute] = default_routes()
         self.map_points: list[tuple[float, float]] = []
         self.map_ch = 0
@@ -751,6 +754,9 @@ class AtomSession:
         self._green_sound_failed = False
         self._got_hello = False
         self._got_scan = False
+        self._scan_acc = []
+        self._scan_expect = 0
+        self._scan_open = False
         self._post_hello_frames = 0
         self._startup_overrun = False
         self._startup_overcurrent = False
@@ -818,14 +824,24 @@ class AtomSession:
             self.send(proto.cmd_prof_get())
         elif kind == "scan_begin":
             self._scan_acc = []
+            self._scan_expect = int(payload) if isinstance(payload, int) else 0
+            self._scan_open = True
         elif kind == "node":
-            if isinstance(payload, ScanNode):
+            if isinstance(payload, ScanNode) and self._scan_open:
                 self._scan_acc.append(payload)
         elif kind == "scan_end":
-            self.nodes = list(self._scan_acc)
-            self._got_scan = True
-            self.note(f"スキャン {len(self.nodes)} ノード")
-            self._maybe_play_green()
+            got = len(self._scan_acc)
+            # USB で先頭ノードが欠けると PaHub 親が消え、前回と混ざる。捨てて前回を残す。
+            if not self._scan_open or got != self._scan_expect:
+                self.note(f"スキャン不完全  {got}/{self._scan_expect} 破棄")
+                self._scan_acc = []
+                self._scan_open = False
+            else:
+                self.nodes = list(self._scan_acc)
+                self._got_scan = True
+                self._scan_open = False
+                self.note(f"スキャン {got} ノード")
+                self._maybe_play_green()
         elif kind == "prof":
             routes = payload
             if isinstance(routes, list) and routes:

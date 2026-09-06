@@ -514,7 +514,7 @@ static void markHubSeen(uint8_t addr) {
 
 /**
  * 既知の全 PaHub を全 CH オフ。ping 成功時だけ閉じると、衝突中に閉じ漏れする。
- * 未接続アドレスへの write は NACK で即戻る（タイムアウト待ちではない）。
+ * 未接続アドレスへの write は NACK で即戻る。select はレジスタ読み戻し付き。
  */
 static void closeAllHubs() {
     for (uint8_t a = 0x70; a <= 0x77; ++a) {
@@ -529,6 +529,7 @@ static void closeAllHubs() {
 /**
  * MUX 経路を開く。他 Hub の CH が残っていると 0x36/0x41 が親バスで衝突するので、
  * 先に全 Hub を閉じてから目的の 1 CH だけ開く。hub==0 は直結（全 MUX オフのみ）。
+ * 20 Hz センサ経路では短い待ちのまま（周期を食わない）。
  */
 static void openMux(uint8_t hub, int8_t ch) {
     closeAllHubs();
@@ -538,6 +539,29 @@ static void openMux(uint8_t hub, int8_t ch) {
     markHubSeen(hub);
     PaHub h(hub);
     h.select(static_cast<int>(ch));
+}
+
+/** スキャン / PROBE 用。切替後に下流デバイスがバスから外れるまで待つ。 */
+static constexpr uint32_t kMuxSettleScanUs = 2000;
+
+static void settleMuxScan() {
+    delayMicroseconds(kMuxSettleScanUs);
+}
+
+/**
+ * スキャン / PROBE 専用の隔離。閉じ確認のあと 2 ms 待つ。
+ * テレメトリの openMux より長い（誤 ACK を減らす）。
+ */
+static void isolateHubChannel(uint8_t hub, int ch) {
+    closeAllHubs();
+    if (hub == 0) {
+        settleMuxScan();
+        return;
+    }
+    markHubSeen(hub);
+    PaHub h(hub);
+    h.select(ch);
+    settleMuxScan();
 }
 
 static void closeMux(uint8_t hub) {
@@ -563,6 +587,15 @@ static void resetEncAlive() {
 static bool i2cPing(uint8_t addr) {
     Wire.beginTransmission(addr);
     return Wire.endTransmission() == 0;
+}
+
+/** スキャン用。1 回だけのゴースト ACK を捨てる。 */
+static bool i2cPingTwice(uint8_t addr) {
+    if (!i2cPing(addr)) {
+        return false;
+    }
+    delayMicroseconds(150);
+    return i2cPing(addr);
 }
 
 static uint8_t kindFromAddr(uint8_t addr) {
@@ -619,14 +652,13 @@ static void runI2cScan() {
     const uint32_t oldTimeout = 3;
     Wire.setTimeOut(oldTimeout);
     gScanCount = 0;
-    closeAllHubs();
-    delayMicroseconds(400);
+    isolateHubChannel(0, -1);
 
     uint8_t rootHit[128];
     memset(rootHit, 0, sizeof(rootHit));
 
     for (uint8_t a = 0x08; a <= 0x77; ++a) {
-        if (!i2cPing(a)) {
+        if (!i2cPingTwice(a)) {
             continue;
         }
         rootHit[a] = 1;
@@ -653,17 +685,14 @@ static void runI2cScan() {
         if (!rootHit[hub]) {
             continue;
         }
-        PaHub h(hub);
         for (int ch = 0; ch < PaHub::kChannelCount; ++ch) {
-            closeAllHubs();
-            h.select(ch);
-            delayMicroseconds(400);
+            isolateHubChannel(hub, ch);
             for (size_t i = 0; i < sizeof(kHubProbeAddr); ++i) {
                 const uint8_t a = kHubProbeAddr[i];
                 if (rootHit[a]) {
                     continue;
                 }
-                if (!i2cPing(a)) {
+                if (!i2cPingTwice(a)) {
                     continue;
                 }
                 uint8_t mag = 255;
@@ -675,7 +704,7 @@ static void runI2cScan() {
                 addScanNode(hub, static_cast<int8_t>(ch), a, kind, mag, agc);
             }
         }
-        closeAllHubs();
+        isolateHubChannel(0, -1);
     }
 
     Wire.setTimeOut(20);
@@ -745,8 +774,7 @@ static void probeClear(UsbProbe& p) {
 }
 
 static void runProbeRoot(uint8_t addr) {
-    closeAllHubs();
-    delayMicroseconds(400);
+    isolateHubChannel(0, -1);
     probeClear(gProbeResult);
     gProbeResult.hub = 0;
     gProbeResult.ch = -1;
@@ -788,11 +816,7 @@ static void runProbeRoot(uint8_t addr) {
 }
 
 static void runProbeHub(uint8_t hub, int ch) {
-    closeAllHubs();
-    markHubSeen(hub);
-    PaHub h(hub);
-    h.select(ch);
-    delayMicroseconds(400);
+    isolateHubChannel(hub, ch);
     probeClear(gProbeResult);
     gProbeResult.hub = hub;
     gProbeResult.ch = static_cast<int8_t>(ch);

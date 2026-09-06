@@ -151,6 +151,8 @@ static void resetEncAlive();
 static M5_UNIT_8SERVO gServo;
 static bool gServoOk = false;
 static PaHub gHub(kHubAddress);
+/** 0x70〜0x77 のうち、閉じる対象。既定は本機の 0x70+0x71。スキャンで更新する */
+static uint8_t gHubSeenMask = 0x03;
 
 static float gUnwrapPrev[kJointCount];
 static float gUnwrapped[kJointCount];
@@ -503,24 +505,44 @@ static void applyDefaultProfile() {
     resetEncAlive();
 }
 
+static void markHubSeen(uint8_t addr) {
+    if (addr < 0x70 || addr > 0x77) {
+        return;
+    }
+    gHubSeenMask = static_cast<uint8_t>(gHubSeenMask | (1u << (addr - 0x70)));
+}
+
 /**
- * MUX 経路を開く。hub==0 なら何もしない（直結）。
- * 呼び側が終わったら closeMux(hub) すること。
+ * 既知の全 PaHub を全 CH オフ。ping 成功時だけ閉じると、衝突中に閉じ漏れする。
+ * 未接続アドレスへの write は NACK で即戻る（タイムアウト待ちではない）。
+ */
+static void closeAllHubs() {
+    for (uint8_t a = 0x70; a <= 0x77; ++a) {
+        if ((gHubSeenMask & (1u << (a - 0x70))) == 0) {
+            continue;
+        }
+        PaHub h(a);
+        h.select(-1);
+    }
+}
+
+/**
+ * MUX 経路を開く。他 Hub の CH が残っていると 0x36/0x41 が親バスで衝突するので、
+ * 先に全 Hub を閉じてから目的の 1 CH だけ開く。hub==0 は直結（全 MUX オフのみ）。
  */
 static void openMux(uint8_t hub, int8_t ch) {
+    closeAllHubs();
     if (hub == 0) {
         return;
     }
+    markHubSeen(hub);
     PaHub h(hub);
     h.select(static_cast<int>(ch));
 }
 
 static void closeMux(uint8_t hub) {
-    if (hub == 0) {
-        return;
-    }
-    PaHub h(hub);
-    h.select(-1);
+    (void)hub;
+    closeAllHubs();
 }
 
 static JointRoute jointRoute(int joint) {
@@ -561,15 +583,6 @@ static uint8_t kindFromAddr(uint8_t addr) {
 
 static uint8_t allOutMask() {
     return static_cast<uint8_t>((1u << kJointCount) - 1u);
-}
-
-static void closeAllHubs() {
-    for (uint8_t a = 0x70; a <= 0x77; ++a) {
-        if (i2cPing(a)) {
-            PaHub h(a);
-            h.select(-1);
-        }
-    }
 }
 
 static void addScanNode(uint8_t hub, int8_t ch, uint8_t addr, uint8_t kind,
@@ -626,12 +639,23 @@ static void runI2cScan() {
         addScanNode(0, -1, a, kind, mag, agc);
     }
 
+    uint8_t foundHubs = 0;
+    for (uint8_t a = 0x70; a <= 0x77; ++a) {
+        if (rootHit[a]) {
+            foundHubs = static_cast<uint8_t>(foundHubs | (1u << (a - 0x70)));
+        }
+    }
+    if (foundHubs != 0) {
+        gHubSeenMask = foundHubs;
+    }
+
     for (uint8_t hub = 0x70; hub <= 0x77; ++hub) {
         if (!rootHit[hub]) {
             continue;
         }
         PaHub h(hub);
         for (int ch = 0; ch < PaHub::kChannelCount; ++ch) {
+            closeAllHubs();
             h.select(ch);
             delayMicroseconds(400);
             for (size_t i = 0; i < sizeof(kHubProbeAddr); ++i) {
@@ -651,7 +675,7 @@ static void runI2cScan() {
                 addScanNode(hub, static_cast<int8_t>(ch), a, kind, mag, agc);
             }
         }
-        h.select(-1);
+        closeAllHubs();
     }
 
     Wire.setTimeOut(20);
@@ -764,6 +788,8 @@ static void runProbeRoot(uint8_t addr) {
 }
 
 static void runProbeHub(uint8_t hub, int ch) {
+    closeAllHubs();
+    markHubSeen(hub);
     PaHub h(hub);
     h.select(ch);
     delayMicroseconds(400);
@@ -785,7 +811,7 @@ static void runProbeHub(uint8_t hub, int ch) {
         gProbeResult.agc = agc;
         gProbeResult.magnitude = magnitude;
         gProbeResult.ok = ok ? 1 : 0;
-        h.select(-1);
+        closeAllHubs();
         return;
     }
     if (i2cPing(Ina226::kI2cAddress)) {
@@ -799,10 +825,10 @@ static void runProbeHub(uint8_t hub, int ch) {
         gProbeResult.f1 = a;
         gProbeResult.f2 = w;
         gProbeResult.ok = ok;
-        h.select(-1);
+        closeAllHubs();
         return;
     }
-    h.select(-1);
+    closeAllHubs();
 }
 
 // ---------------------------------------------------------------------------

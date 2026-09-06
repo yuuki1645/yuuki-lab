@@ -2,18 +2,23 @@ import { useMemo, useState } from "react";
 import { Sparkline } from "./Sparkline";
 import "./M5TelemetryPage.css";
 import {
+  KIND_META,
   MAG_LABEL,
   M5_COLORS,
   M5_INA_CHS,
   M5_JOINTS,
   M5_PANEL_COUNT,
+  kindMeta,
   type M5Route,
 } from "./types";
+import { buildTopoTree, type TopoItem } from "./topoTree";
+import { RightLegTab } from "./RightLegTab";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
 
-type TabId = "joint" | "power" | "time" | "topo" | "profile" | "cal" | "events";
+type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "events";
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: "right-leg", label: "右脚" },
   { id: "joint", label: "関節 / 試験" },
   { id: "power", label: "電源" },
   { id: "time", label: "周期" },
@@ -61,7 +66,7 @@ function fmtRouteField(key: keyof M5Route, n: number): string {
 export default function M5TelemetryPage() {
   const stream = useM5TelemetryStream(true);
   const { status, control, frame, scan, profile, events, cal, history, send } = stream;
-  const [tab, setTab] = useState<TabId>("joint");
+  const [tab, setTab] = useState<TabId>("right-leg");
   const [panels, setPanels] = useState<number[]>([0, 1]);
   const [plotJoint, setPlotJoint] = useState(0);
   const [plotLines, setPlotLines] = useState({
@@ -77,6 +82,8 @@ export default function M5TelemetryPage() {
   const [topoInaJoint, setTopoInaJoint] = useState(0);
   const [calCh, setCalCh] = useState(0);
   const [draftRoutes, setDraftRoutes] = useState<M5Route[] | null>(null);
+
+  const topoTree = useMemo(() => buildTopoTree(scan?.nodes ?? []), [scan?.nodes]);
 
   const routes = draftRoutes ?? profile?.routes ?? [];
   const atomOk = Boolean(status?.connected);
@@ -227,6 +234,16 @@ export default function M5TelemetryPage() {
           </button>
         ))}
       </div>
+
+      {tab === "right-leg" ? (
+        <RightLegTab
+          canCmd={canCmd}
+          control={control}
+          frame={frame}
+          history={history}
+          send={send}
+        />
+      ) : null}
 
       {tab === "joint" ? (
         <section className="m5__section">
@@ -510,23 +527,26 @@ export default function M5TelemetryPage() {
               割当を外す
             </button>
           </div>
-          <ul className="m5__nodes">
-            {(scan?.nodes ?? []).map((n, i) => (
-              <li key={`${n.hub}-${n.ch}-${n.addr}-${i}`}>
-                <button
-                  type="button"
-                  className={"m5__node" + (topoSel === i ? " m5__node--on" : "")}
-                  onClick={() => setTopoSel(i)}
-                >
-                  <strong>{n.kind}</strong>
-                  <span>
-                    {n.hub === "root" ? "Grove" : `Hub ${n.hub} CH${n.ch}`} {n.addr}
-                  </span>
-                  {n.kind === "as5600" ? <span>{MAG_LABEL[n.mag] ?? n.mag}</span> : null}
-                </button>
-              </li>
+          <div className="m5__legend">
+            {Object.entries(KIND_META).map(([k, meta]) => (
+              <span key={k} className="m5__legend-item">
+                <i style={{ background: meta.color }} />
+                {meta.label}
+              </span>
             ))}
-          </ul>
+          </div>
+          <div className="m5__tree">
+            <div className="m5__tree-root">Grove I2C</div>
+            {topoTree.map((item) => (
+              <TopoNode
+                key={`${item.kind}-${item.title}-${item.srcIndex}`}
+                item={item}
+                depth={0}
+                selected={topoSel}
+                onSelect={setTopoSel}
+              />
+            ))}
+          </div>
           {!scan?.nodes?.length ? <p className="m5__meta">スキャン結果がありません。</p> : null}
         </section>
       ) : null}
@@ -678,6 +698,73 @@ function Metric({
     <div className={"m5__metric" + (large ? " m5__metric--large" : "")}>
       <span>{title}</span>
       <strong style={{ color }}>{text}</strong>
+    </div>
+  );
+}
+
+function magColor(code: number): string {
+  if (code === 0) return "#10ac84";
+  if (code === 1 || code === 4) return "#ee5253";
+  if (code === 2 || code === 3) return "#feca57";
+  return "#8b9bb0";
+}
+
+function TopoNode({
+  item,
+  depth,
+  selected,
+  onSelect,
+}: {
+  item: TopoItem;
+  depth: number;
+  selected: number | null;
+  onSelect: (i: number) => void;
+}) {
+  const meta = kindMeta(item.kind);
+  const on = item.srcIndex != null && selected === item.srcIndex;
+  const isHub = item.kind === "pahub";
+  return (
+    <div className={"m5__branch" + (depth > 0 ? " m5__branch--child" : "")}>
+      <button
+        type="button"
+        className={
+          "m5__node m5__node--" +
+          item.kind +
+          (on ? " m5__node--on" : "") +
+          (isHub ? " m5__node--hub" : "")
+        }
+        style={{ borderLeftColor: meta.color }}
+        onClick={() => {
+          if (item.srcIndex != null) onSelect(item.srcIndex);
+        }}
+      >
+        <span className="m5__kind" style={{ background: meta.color }}>
+          {meta.label}
+        </span>
+        <span className="m5__node-title">{item.title}</span>
+        <span className="m5__node-detail">{item.detail}</span>
+        {item.magLabel ? (
+          <span className="m5__node-mag" style={{ color: magColor(item.magCode) }}>
+            {item.magLabel}
+          </span>
+        ) : null}
+        {isHub ? (
+          <span className="m5__node-count">{item.children.length} ch</span>
+        ) : null}
+      </button>
+      {item.children.length ? (
+        <div className="m5__kids">
+          {item.children.map((ch) => (
+            <TopoNode
+              key={`${ch.kind}-${ch.title}-${ch.srcIndex}`}
+              item={ch}
+              depth={depth + 1}
+              selected={selected}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

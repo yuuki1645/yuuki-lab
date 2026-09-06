@@ -445,9 +445,9 @@ class AtomWorker:
                     ser.write(msg)
                     ser.flush()
                     self._put("tx", proto.format_tx(msg))
-                    # マップチャンクを間隔なしで出すと CDC が溢れ、ボードが 16/191 busy になる
+                    # マップチャンクは CDC が溢れないよう間隔を空ける（30ms では 32/191 で落ちた）
                     if len(msg) >= 3 and msg[2] == proto.CMD_MAPCHUNK:
-                        time.sleep(0.03)
+                        time.sleep(0.12)
                 except queue.Empty:
                     pass
                 try:
@@ -2059,6 +2059,10 @@ class LabApp(tk.Tk):
             return
         ch = int(self.cal_ch_var.get())
         # ファイルの channel と UI が違うときは UI（送信先）を優先
+        if self._auto_scan.get():
+            self._auto_scan.set(False)
+            self._toggle_auto()
+            s.note("マップ送信のため自動スキャンを停止")
         s.map_ch = ch
         s.map_points = points
         s.send_map(ch, points)

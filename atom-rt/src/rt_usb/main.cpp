@@ -186,7 +186,8 @@ static uint16_t gRxGot = 0;
 static uint8_t gRxPayload[kUsbMaxPayload];
 static uint8_t gRxCrcLo = 0;
 
-static bool gMapRxActive = false;
+/** USB 受信中。テレメトリ／SCAN 送信を止めてチャンク取りこぼしを防ぐ */
+static volatile bool gMapRxActive = false;
 static int gMapRxCh = 0;
 static int gMapRxExpect = 0;
 static int gMapRxCount = 0;
@@ -1980,8 +1981,13 @@ static void usbTask(void* /*arg*/) {
             gEvtBtn = 1;
             gIdentifyUntilMs = millis() + kIdentifyMs;
         }
-        if (gMapRxActive && (millis() - gMapRxLastMs) > 5000) {
+        if (gMapRxActive && (millis() - gMapRxLastMs) > 15000) {
             mapRxFail(kUsbReasonBusy);
+        }
+        if (gMapRxActive) {
+            // 受信中は大きな TX（テレメトリ・SCAN）を止める。CDC が溢れると 16/191 で止まる。
+            vTaskDelay(pdMS_TO_TICKS(5));
+            continue;
         }
         if (gHelloReq) {
             gHelloReq = 0;
@@ -2050,7 +2056,7 @@ static void rtTask(void* /*arg*/) {
         first = false;
         ++seq;
 
-        if (gScanReq) {
+        if (gScanReq && !gMapRxActive) {
             gScanReq = 0;
             runI2cScan();
             gScanReady = 1;

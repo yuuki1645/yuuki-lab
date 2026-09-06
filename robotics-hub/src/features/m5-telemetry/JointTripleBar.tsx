@@ -29,6 +29,9 @@ type Props = {
   onCommand: (deg: number) => void;
 };
 
+/** つまみからの許容距離（px）。トラックの空き部分をタップしても指令しない */
+const THUMB_HIT_PX = 28;
+
 function clampServo(v: number): number {
   return Math.round(Math.min(SERVO_MAX_DEG, Math.max(SERVO_MIN_DEG, v)) * 2) / 2;
 }
@@ -70,7 +73,8 @@ function fmtLive(
 }
 
 /**
- * 1 関節の指令（操作可）・ズレ・補正バーと、角度／電源のスパークライン。
+ * 1 関節の指令・ズレ・補正バーとスパークライン。
+ * 指令バーはつまみ付近のドラッグのみ。PWM OFF / ロック中は disabled。
  */
 export function JointTripleBar({
   joint,
@@ -98,11 +102,24 @@ export function JointTripleBar({
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
+  const thumbX = useCallback(
+    (deg: number): number | null => {
+      const el = trackRef.current;
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0) return null;
+      const t = (deg - SERVO_MIN_DEG) / (SERVO_MAX_DEG - SERVO_MIN_DEG);
+      return r.left + t * r.width;
+    },
+    []
+  );
+
   const applyX = useCallback(
     (clientX: number) => {
       const el = trackRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
+      if (r.width <= 0) return;
       const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
       const deg = clampServo(SERVO_MIN_DEG + t * (SERVO_MAX_DEG - SERVO_MIN_DEG));
       setDrag(deg);
@@ -147,11 +164,13 @@ export function JointTripleBar({
               onContextMenu={(e) => e.preventDefault()}
               onPointerDown={(e) => {
                 if (disabled) return;
+                const tx = thumbX(shownCmd);
+                if (tx == null || Math.abs(e.clientX - tx) > THUMB_HIT_PX) return;
                 e.currentTarget.setPointerCapture(e.pointerId);
                 e.preventDefault();
                 dragging.current = true;
                 onSelect();
-                applyX(e.clientX);
+                setDrag(shownCmd);
               }}
               onPointerMove={(e) => {
                 if (disabled || !dragging.current) return;

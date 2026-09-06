@@ -405,6 +405,32 @@
   margin-bottom: 0.7rem;
 }
 
+.m5-leg__lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.m5-leg__lock-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.m5-leg__lock-badge--on {
+  color: #ffd27a;
+  border: 1px solid rgba(255, 210, 122, 0.5);
+  background: rgba(255, 180, 60, 0.1);
+}
+
+.m5-leg__lock-badge--off {
+  color: #3ee07f;
+  border: 1px solid rgba(62, 224, 127, 0.45);
+  background: rgba(62, 224, 127, 0.08);
+}
+
 .m5-leg__layout {
   display: grid;
   grid-template-columns: minmax(160px, 220px) 1fr;
@@ -635,6 +661,12 @@
   background: #fff6d2;
   border-radius: 1px;
   pointer-events: none;
+}
+
+.m5-bar--cmd:not(.m5-bar--off) .m5-bar__thumb {
+  width: 10px;
+  margin-left: -5px;
+  box-shadow: 0 0 0 2px rgba(247, 201, 72, 0.45);
 }
 
 .m5-jrow__plot {

@@ -188,7 +188,14 @@ export function Sparkline({
     : [yAtGlobal(lo)];
 
   const svg = (
-    <svg className={showAxes ? "m5-spark-svg" : className} viewBox={`0 0 ${w} ${h}`} role="img" aria-hidden>
+    <svg
+      className={showAxes ? "m5-spark-svg" : className}
+      viewBox={`0 0 ${w} ${h}`}
+      /* CSS 上の高さが viewBox と違っても、y が目盛りと同じ比率で伸びるようにする */
+      preserveAspectRatio="none"
+      role="img"
+      aria-hidden
+    >
       {showAxes ? (
         <rect
           className="m5-spark-frame"

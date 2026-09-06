@@ -130,17 +130,17 @@ export function JointTripleBar({
       onClick={onSelect}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <header className="m5-jrow__head">
-        <h2>{joint.label}</h2>
-        <span>ch{joint.ch}</span>
-        <span className={"m5-jrow__pwm" + (pwmOn ? " m5-jrow__pwm--on" : "")}>
-          {pwmOn ? "PWM ON" : "PWM OFF"}
-        </span>
-      </header>
-
       <div className="m5-jrow__body">
-        <div className="m5-jrow__bars">
-          <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>
+        <div className="m5-jrow__left">
+          <header className="m5-jrow__head">
+            <h2>{joint.label}</h2>
+            <span>ch{joint.ch}</span>
+            <span className={"m5-jrow__pwm" + (pwmOn ? " m5-jrow__pwm--on" : "")}>
+              {pwmOn ? "PWM ON" : "PWM OFF"}
+            </span>
+          </header>
+          <div className="m5-jrow__bars">
+            <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>
             <div
               ref={trackRef}
               className={"m5-bar m5-bar--cmd" + (disabled ? " m5-bar--off" : "")}
@@ -193,6 +193,7 @@ export function JointTripleBar({
               />
             </div>
           </BarRow>
+          </div>
         </div>
 
         <div className="m5-jrow__plot">
@@ -205,7 +206,7 @@ export function JointTripleBar({
           />
           <Sparkline
             className="m5-spark m5-spark--row"
-            height={120}
+            height={112}
             showAxes
             series={buildPlotSeries(plotOn, historyCmd, historyCorr, historyVolt, historyAmp)}
           />

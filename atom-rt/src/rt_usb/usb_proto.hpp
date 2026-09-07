@@ -6,7 +6,7 @@
  * 1 フレーム:
  *   0xAA 0x55 | type | len_lo | len_hi | payload[len] | crc16_le
  * crc は type から payload 末尾まで（CRC-16-CCITT、初期値 0xFFFF）。
- * len は LE uint16。8 関節×8 INA のテレメトリが 255 を超えるため。
+ * len は LE uint16。8 関節×8 INA + 足 4 隅のテレメトリが 255 を超えるため。
  *
  * 途中で USB パケットが分かれても、受信側はマジックと CRC で組み立て／破棄する。
  * Python 側は tools/rt_usb_proto.py と欄の並びを揃えること。
@@ -23,7 +23,7 @@ static constexpr uint8_t kUsbMagic0 = 0xAA;
 static constexpr uint8_t kUsbMagic1 = 0x55;
 // 8 関節×8 INA テレメトリは 302 バイト。len は uint16
 static constexpr uint16_t kUsbMaxPayload = 512;
-static constexpr uint8_t kUsbFwVer = 9;
+static constexpr uint8_t kUsbFwVer = 10;
 static constexpr uint8_t kUsbFrameOverhead = 7;  // magic2 + type + len2 + crc2
 static constexpr uint8_t kUsbMapChunkLen = 16;
 
@@ -120,6 +120,10 @@ struct UsbTelemetry {
     uint8_t servo_ok;
     uint8_t mode;
     uint8_t out_mask;
+    uint8_t foot_ok;
+    uint8_t foot_mask;
+    uint32_t foot_seq;
+    uint16_t foot_mv[4];
 };
 
 struct UsbHello {
@@ -245,11 +249,12 @@ struct UsbCmdMapGet {
 #pragma pack(pop)
 
 static_assert(sizeof(UsbTelemetry) <= kUsbMaxPayload, "telemetry too big");
-// 8 関節 + 8 INA: 7I+i+B + 32f + 32B + 24f + 8B + H + 3B = 302
-static_assert(sizeof(UsbTelemetry) == 302, "UsbTelemetry layout");
+// 8 関節 + 8 INA + 足 4 隅: 302 + 14 = 316
+static_assert(sizeof(UsbTelemetry) == 316, "UsbTelemetry layout");
 static_assert(sizeof(UsbHello) == 6, "UsbHello layout");
 static_assert(sizeof(UsbProbe) == 21, "UsbProbe layout");
 static_assert(sizeof(JointRoute) == 10, "JointRoute must be 10 bytes");
+static_assert(sizeof(FootRoute) == 3, "FootRoute must be 3 bytes");
 
 // ---------------------------------------------------------------------------
 // CRC-16-CCITT

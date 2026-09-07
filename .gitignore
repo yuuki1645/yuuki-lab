@@ -33,10 +33,10 @@ robot-daemon/imu_logs/
 *.divx
 *.xvid
 
-# HLS 断片・プレイリスト（programs/capture_hls 実行時出力）
+# HLS 断片・プレイリスト（MPEG-TS。TypeScript の .ts は対象外）
 *.m3u8
-*.ts
 programs/capture_hls/out/
+programs/capture_hls/**/*.ts
 programs/capture_realtime/recordings/
 
 # robot-recorder ローカル設定

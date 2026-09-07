@@ -11,6 +11,7 @@ import {
   M5_JOINTS,
   M5_PANEL_COUNT,
   kindMeta,
+  type M5FootRoute,
   type M5Route,
 } from "./types";
 import { buildTopoTree, type TopoItem } from "./topoTree";
@@ -59,6 +60,34 @@ function emptyRoute(i: number): M5Route {
   };
 }
 
+function emptyFoot(): M5FootRoute {
+  return { hub: 0x71, ch: 2, addr: 0x28 };
+}
+
+function fmtFootRoute(r: M5FootRoute): string {
+  if (!r.addr) return "なし";
+  if (!r.hub) return `root  0x${r.addr.toString(16).toUpperCase().padStart(2, "0")}`;
+  const hub = r.hub.toString(16).toUpperCase().padStart(2, "0");
+  return `${hub} CH${r.ch}  0x${r.addr.toString(16).toUpperCase().padStart(2, "0")}`;
+}
+
+function parseFootOption(text: string): M5FootRoute | null {
+  const s = text.trim();
+  if (s === "なし" || s === "" || s === "—") return { hub: 0, ch: -1, addr: 0 };
+  if (s.startsWith("root")) {
+    const parts = s.split(/\s+/);
+    const addr = Number.parseInt(parts[parts.length - 1] ?? "", 16);
+    if (!Number.isFinite(addr)) return null;
+    return { hub: 0, ch: -1, addr };
+  }
+  const bits = s.replace(/CH/i, " ").replace(/\s+/g, " ").trim().split(" ");
+  const hub = Number.parseInt(bits[0] ?? "", 16);
+  const ch = Number.parseInt(bits[1] ?? "", 10);
+  const addr = Number.parseInt(bits[bits.length - 1] ?? "", 16);
+  if (![hub, ch, addr].every(Number.isFinite)) return null;
+  return { hub, ch, addr };
+}
+
 function fmtRouteField(key: keyof M5Route, n: number): string {
   if (key.endsWith("ch") || key === "servo_ch") return String(n);
   if (key.endsWith("hub") && n === 0) return "0";
@@ -84,10 +113,12 @@ export default function M5TelemetryPage() {
   const [topoInaJoint, setTopoInaJoint] = useState(0);
   const [calCh, setCalCh] = useState(0);
   const [draftRoutes, setDraftRoutes] = useState<M5Route[] | null>(null);
+  const [draftFoot, setDraftFoot] = useState<M5FootRoute | null>(null);
 
   const topoTree = useMemo(() => buildTopoTree(scan?.nodes ?? []), [scan?.nodes]);
 
   const routes = draftRoutes ?? profile?.routes ?? [];
+  const foot = draftFoot ?? profile?.foot ?? emptyFoot();
   const atomOk = Boolean(status?.connected);
   const canCmd = stream.wsStatus === "connected" && atomOk;
 
@@ -169,7 +200,7 @@ export default function M5TelemetryPage() {
         <h1>実機テレメトリ（M5）</h1>
         <p>
           ATOM は USB で Windows PC の <code>atom-rt/tools/lab_debug.py</code> に接続し、この画面は Wi‑Fi で PC を中継します。
-          iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。既存の「実機テレメトリ」（IMU）とは別です。
+          右脚タブ左上は ATOM S3R + 足裏 ATOMS3 Lite スレーブの DF9-40 四隅です。iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。既存の「実機テレメトリ」（IMU / Pico 足圧）とは別です。
         </p>
       </header>
 
@@ -566,8 +597,13 @@ export default function M5TelemetryPage() {
               className="m5__btn m5__btn--on"
               disabled={!canCmd}
               onClick={() => {
-                send({ op: "prof_put", routes: draftRoutes ?? profile?.routes ?? [] });
+                send({
+                  op: "prof_put",
+                  routes: draftRoutes ?? profile?.routes ?? [],
+                  foot: draftFoot ?? profile?.foot ?? emptyFoot(),
+                });
                 setDraftRoutes(null);
+                setDraftFoot(null);
               }}
             >
               ボードへ送信
@@ -635,6 +671,30 @@ export default function M5TelemetryPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="m5-foot-prof">
+            <p className="m5__meta">右足スレーブ（ATOM S3 Lite / DF9-40）。SCAN で見えた 0x28 を選べます。addr=0 は無効。</p>
+            <label className="m5-foot-prof__lab">
+              経路
+              <select
+                disabled={!canCmd}
+                value={fmtFootRoute(foot)}
+                onChange={(e) => {
+                  const parsed = parseFootOption(e.target.value);
+                  if (parsed) setDraftFoot(parsed);
+                }}
+              >
+                {(
+                  profile?.foot_options?.includes(fmtFootRoute(foot))
+                    ? profile.foot_options
+                    : [...(profile?.foot_options ?? ["なし"]), fmtFootRoute(foot)]
+                ).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </section>
       ) : null}

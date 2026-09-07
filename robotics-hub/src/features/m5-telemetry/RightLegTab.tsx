@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { JointTripleBar } from "./JointTripleBar";
 import { RightLegSchematic } from "./RightLegSchematic";
+import { RightFootSole } from "./RightFootSole";
 import {
   LEG_PLOT_DEFAULT,
   LEG_PLOT_ITEMS,
@@ -153,6 +154,7 @@ export function RightLegTab({ canCmd, control, frame, history, send }: Props) {
 
       <div className="m5-leg__layout">
         <div className="m5-leg__schematic">
+          <RightFootSole sample={frame?.foot} />
           <RightLegSchematic angles={angles} selected={selected} onSelect={setSelected} />
         </div>
         <div className="m5-leg__rows">

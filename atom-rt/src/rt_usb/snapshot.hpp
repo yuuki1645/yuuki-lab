@@ -49,4 +49,10 @@ struct Snapshot {
     uint8_t servo_ok;
     uint8_t mode;            // WorkMode
     uint8_t out_mask;       // bit i が立っていたら軸 i へ PWM
+
+    /** 右足スレーブ。未割当・欠測時は foot_ok=0、mv は 0 */
+    uint8_t foot_ok;
+    uint8_t foot_mask;      // bit0..3 = TL/TR/BR/BL
+    uint32_t foot_seq;
+    uint16_t foot_mv[4];    // ミリボルト。並びは TL, TR, BR, BL
 };

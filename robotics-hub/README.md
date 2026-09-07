@@ -11,7 +11,7 @@
 - **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
 - **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
 - **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40@2kg、ブリッジ既定 :8793）
-- **実機テレメトリ（M5）** — [atom-rt](../atom-rt/) の `tools/lab_debug.py` が USB の ATOM を Socket.IO 既定 :8794 で中継（`/m5-telemetry`）
+- **実機テレメトリ（M5）** — [atom-rt](../atom-rt/) の `tools/lab_debug.py` が USB の ATOM を Socket.IO 既定 :8794 で中継（`/m5-telemetry`）。右脚タブに **右足裏 DF9-40**（ATOM S3 Lite スレーブ）の四隅と圧力中心を表示
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
 - **データビュワー** — CSV + 動画の同期表示（`/data-viewer`）。YouTube 紹介用・既存形式。**変更は最小限**
 - **ラボデータビュワー** — robot-recorder の実験／take を `format_id` 別サブビュワーで表示（`/lab-data-viewer`）

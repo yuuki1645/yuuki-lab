@@ -4,7 +4,7 @@ rt-usb バイナリフレームの組み立て／分解（ファーム usb_proto
 
 フレーム: AA 55 | type | len_lo | len_hi | payload | crc16_le
 CRC は type+len16+payload（CRC-16-CCITT、初期値 0xFFFF）。
-len は LE uint16（ver=9 以降。8 関節×8 INA が 255 を超えるため）。
+len は LE uint16（ver=10。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 MAGIC = b"\xAA\x55"
 MAX_PAYLOAD = 512
-FW_VER = 9
+FW_VER = 10
 MAP_CHUNK = 16
 JOINTS = 8
 INA_CHS = 8
@@ -90,6 +90,7 @@ KIND_NAME = {
     2: "as5600",
     3: "ina226",
     4: "servo",
+    5: "foot",
 }
 
 MAG_LABEL = {
@@ -101,24 +102,26 @@ MAG_LABEL = {
     255: "—",
 }
 
-def _telem_struct(n_j: int, n_ina: int) -> struct.Struct:
-    """n_j 関節 + n_ina 電源枠の UsbTelemetry。"""
-    return struct.Struct(
-        f"<7I i B {4 * n_j}f {4 * n_j}B {3 * n_ina}f {n_ina}B HBBB"
-    )
+def _telem_struct(n_j: int, n_ina: int, with_foot: bool = False) -> struct.Struct:
+    """n_j 関節 + n_ina 電源枠の UsbTelemetry。with_foot は ver=10 の右足 4 隅。"""
+    base = f"<7I i B {4 * n_j}f {4 * n_j}B {3 * n_ina}f {n_ina}B HBBB"
+    if with_foot:
+        return struct.Struct(base + " BB I 4H")
+    return struct.Struct(base)
 
 
-# サイズで判別。現行 ver=9 は (8, 8)。旧ペイロードも残す
-def _telem_layout(n_j: int, n_ina: int) -> tuple[int, int, struct.Struct]:
-    st = _telem_struct(n_j, n_ina)
-    return (n_j, n_ina, st)
+# サイズで判別。現行 ver=10 は (8, 8) + 足。旧ペイロードも残す
+def _telem_layout(n_j: int, n_ina: int, with_foot: bool = False) -> tuple[int, int, bool, struct.Struct]:
+    st = _telem_struct(n_j, n_ina, with_foot)
+    return (n_j, n_ina, with_foot, st)
 
 
-_TELEM_BY_SIZE: dict[int, tuple[int, int, struct.Struct]] = {}
-for _nj, _ni in ((8, 8), (8, 2), (2, 2)):
-    _n_j, _n_ina, _st = _telem_layout(_nj, _ni)
-    _TELEM_BY_SIZE[_st.size] = (_n_j, _n_ina, _st)
-_TELEM = _telem_struct(JOINTS, INA_CHS)
+_TELEM_BY_SIZE: dict[int, tuple[int, int, bool, struct.Struct]] = {}
+for _nj, _ni, _foot in ((8, 8, True), (8, 8, False), (8, 2, False), (2, 2, False)):
+    _n_j, _n_ina, _has_foot, _st = _telem_layout(_nj, _ni, _foot)
+    _TELEM_BY_SIZE[_st.size] = (_n_j, _n_ina, _has_foot, _st)
+_TELEM = _telem_struct(JOINTS, INA_CHS, True)
+_FOOT = struct.Struct("<BbB")
 _HELLO = struct.Struct("<6B")
 _SCAN_NODE = struct.Struct("<BbBBBB")
 _ROUTE = struct.Struct("<BbBBbBBBbB")
@@ -274,17 +277,23 @@ def cmd_prof_default() -> bytes:
     return encode_frame(CMD_PROFDEFAULT)
 
 
-def cmd_prof_put(routes: list[tuple[int, int, int, int, int, int, int, int, int, int]]) -> bytes:
+def cmd_prof_put(
+    routes: list[tuple[int, int, int, int, int, int, int, int, int, int]],
+    foot: tuple[int, int, int] = (0x71, 2, 0x28),
+) -> bytes:
     """
     routes の各要素は
     (enc_hub, enc_ch, enc_addr, act_hub, act_ch, act_addr, servo_ch, ina_hub, ina_ch, ina_addr)。
     ina_addr=0 は未割当。
+    foot は (hub, ch, addr)。addr=0 は右足スレーブ無効。
     """
     n = len(routes)
     payload = bytes((n,)) + b"".join(
         _ROUTE.pack(eh, ec, ea, ah, ac, aa, sc, ih, ic, ia)
         for eh, ec, ea, ah, ac, aa, sc, ih, ic, ia in routes
     )
+    fh, fc, fa = foot
+    payload += _FOOT.pack(fh, fc, fa)
     return encode_frame(CMD_PROFPUT, payload)
 
 
@@ -338,6 +347,10 @@ class Telemetry:
     servo_ok: bool
     mode: str
     out_mask: int
+    foot_ok: bool = False
+    foot_mask: int = 0
+    foot_seq: int = 0
+    foot_mv: list[int] = field(default_factory=lambda: [0, 0, 0, 0])
 
 
 @dataclass
@@ -365,6 +378,13 @@ class ScanNodeBin:
     kind: int
     mag: int
     agc: int
+
+
+@dataclass
+class FootRouteBin:
+    hub: int
+    ch: int
+    addr: int
 
 
 @dataclass
@@ -420,7 +440,7 @@ def decode_telemetry(payload: bytes) -> Telemetry | None:
     layout = _TELEM_BY_SIZE.get(len(payload))
     if layout is None:
         return None
-    n_got, n_ina, st = layout
+    n_got, n_ina, with_foot, st = layout
     u = st.unpack(payload)
     seq, period, loop, sense, state, policy, act, jitter, overrun = u[0:9]
     nfloat = 4 * n_got
@@ -429,9 +449,16 @@ def decode_telemetry(payload: bytes) -> Telemetry | None:
     pwr_n = 3 * n_ina
     pwr = u[9 + 2 * nfloat : 9 + 2 * nfloat + pwr_n]
     ina_ok_t = u[9 + 2 * nfloat + pwr_n : 9 + 2 * nfloat + pwr_n + n_ina]
-    i2c_err, servo, mode, out_mask = u[
-        9 + 2 * nfloat + pwr_n + n_ina : 9 + 2 * nfloat + pwr_n + n_ina + 4
-    ]
+    tail0 = 9 + 2 * nfloat + pwr_n + n_ina
+    i2c_err, servo, mode, out_mask = u[tail0 : tail0 + 4]
+    foot_ok = False
+    foot_mask = 0
+    foot_seq = 0
+    foot_mv = [0, 0, 0, 0]
+    if with_foot:
+        foot_ok_b, foot_mask, foot_seq, mv0, mv1, mv2, mv3 = u[tail0 + 4 : tail0 + 11]
+        foot_ok = bool(foot_ok_b)
+        foot_mv = [int(mv0), int(mv1), int(mv2), int(mv3)]
     as_ok = [bool(flags[i]) for i in range(n_got)]
     map_ok = [bool(flags[n_got + i]) for i in range(n_got)]
     mag = [int(flags[2 * n_got + i]) for i in range(n_got)]
@@ -486,6 +513,10 @@ def decode_telemetry(payload: bytes) -> Telemetry | None:
         servo_ok=bool(servo),
         mode=_mode_name(mode),
         out_mask=out_mask,
+        foot_ok=foot_ok,
+        foot_mask=int(foot_mask),
+        foot_seq=int(foot_seq),
+        foot_mv=foot_mv,
     )
 
 
@@ -503,11 +534,11 @@ def decode_scan_node(payload: bytes) -> ScanNodeBin | None:
     return ScanNodeBin(hub, ch, addr, kind, mag, agc)
 
 
-def decode_prof(payload: bytes) -> list[RouteBin] | None:
+def decode_prof(payload: bytes) -> tuple[list[RouteBin], FootRouteBin] | None:
     if len(payload) < 1:
         return None
     n = payload[0]
-    need = 1 + n * _ROUTE.size
+    need = 1 + n * _ROUTE.size + _FOOT.size
     if len(payload) < need:
         return None
     out: list[RouteBin] = []
@@ -516,7 +547,8 @@ def decode_prof(payload: bytes) -> list[RouteBin] | None:
         eh, ec, ea, ah, ac, aa, sc, ih, ic, ia = _ROUTE.unpack_from(payload, off)
         out.append(RouteBin(eh, ec, ea, ah, ac, aa, sc, ih, ic, ia))
         off += _ROUTE.size
-    return out
+    fh, fc, fa = _FOOT.unpack_from(payload, off)
+    return out, FootRouteBin(fh, fc, fa)
 
 
 def decode_map_chunk(payload: bytes) -> MapChunk | None:
@@ -560,10 +592,13 @@ def format_rx(msg_type: int, payload: bytes) -> str:
             else:
                 ina.append(f"INA{i}=なし")
         ov = " overrun" if t.overrun else ""
+        foot = "足=欠測"
+        if t.foot_ok:
+            foot = "足=" + ",".join(str(v) for v in t.foot_mv) + "mV"
         return (
             f"テレメトリ seq={t.seq} 周期={t.period_us/1000:.2f}ms "
             f"ループ={t.loop_us/1000:.2f}ms {ov}  {' '.join(j)}  {' '.join(ina)}  "
-            f"{t.mode} out={t.out_mask}"
+            f"{foot}  {t.mode} out={t.out_mask}"
         )
     if msg_type == MSG_HELLO:
         h = decode_hello(payload)
@@ -583,8 +618,14 @@ def format_rx(msg_type: int, payload: bytes) -> str:
     if msg_type == MSG_SCAN_END:
         return "スキャン終了"
     if msg_type == MSG_PROF:
-        rs = decode_prof(payload)
-        return f"プロファイル  {len(rs) if rs else 0} 軸"
+        got = decode_prof(payload)
+        if got is None:
+            return "プロファイル（形式不正）"
+        rs, foot = got
+        return (
+            f"プロファイル  {len(rs)} 軸  "
+            f"foot={foot.hub:02X}/CH{foot.ch}/0x{foot.addr:02X}"
+        )
     if msg_type == MSG_PROF_OK:
         if len(payload) >= 2:
             return f"プロファイル保存  n={payload[0]} default={payload[1]}"

@@ -31,6 +31,7 @@ import serial
 import serial.tools.list_ports
 
 from cal_map_io import load_map, save_map
+import df9_force
 import rt_usb_proto as proto
 from m5_hub_bridge import (
     EVT_CAL,
@@ -227,6 +228,10 @@ class Frame:
     servo_ok: bool = False
     mode: str = "lab"
     out_mask: int = 0
+    foot_ok: bool = False
+    foot_mask: int = 0
+    foot_seq: int = 0
+    foot_mv: list[int] = field(default_factory=lambda: [0, 0, 0, 0])
 
 
 @dataclass
@@ -253,6 +258,23 @@ class JointRoute:
     ina_hub: int = 0x71
     ina_ch: int = 0
     ina_addr: int = 0x41  # 0 なら未割当
+
+
+@dataclass
+class FootRoute:
+    """右足スレーブ経路（ボードの FootRoute と同じ並び）。addr=0 は無効。"""
+
+    hub: int = 0x71
+    ch: int = 2
+    addr: int = 0x28
+
+
+FOOT_CORNER_KEYS = ("top_left", "top_right", "bottom_right", "bottom_left")
+
+
+def default_foot() -> FootRoute:
+    """既定: PaHub 0x71 CH2 の 0x28。"""
+    return FootRoute()
 
 
 def default_routes(n: int = JOINTS) -> list[JointRoute]:
@@ -303,6 +325,10 @@ def frame_from_telem(t: proto.Telemetry) -> Frame:
         servo_ok=t.servo_ok,
         mode=t.mode,
         out_mask=t.out_mask,
+        foot_ok=t.foot_ok,
+        foot_mask=t.foot_mask,
+        foot_seq=t.foot_seq,
+        foot_mv=list(t.foot_mv),
     )
 
 
@@ -342,8 +368,47 @@ def route_tuple(r: JointRoute) -> tuple[int, int, int, int, int, int, int, int, 
     )
 
 
-def route_sig(routes: list[JointRoute]) -> tuple:
-    return tuple(route_tuple(r) for r in routes[:JOINTS])
+def foot_from_bin(r: proto.FootRouteBin) -> FootRoute:
+    return FootRoute(hub=r.hub, ch=r.ch, addr=r.addr)
+
+
+def foot_tuple(r: FootRoute) -> tuple[int, int, int]:
+    return (r.hub, r.ch, r.addr)
+
+
+def route_sig(routes: list[JointRoute], foot: FootRoute | None = None) -> tuple:
+    base = tuple(route_tuple(r) for r in routes[:JOINTS])
+    if foot is None:
+        return base
+    return base + (foot_tuple(foot),)
+
+
+def foot_sample_dict(f: Frame) -> dict:
+    """USB の mV を Hub と同じ corners 形にする。"""
+    corners: dict[str, dict | None] = {}
+    total = 0.0
+    for i, key in enumerate(FOOT_CORNER_KEYS):
+        installed = bool(f.foot_mask & (1 << i))
+        if not f.foot_ok or not installed:
+            corners[key] = None
+            continue
+        mv = f.foot_mv[i] if i < len(f.foot_mv) else 0
+        voltage = mv / 1000.0
+        rs, kg = df9_force.voltage_to_force_kg(voltage)
+        corners[key] = {
+            "force_kg": kg,
+            "force_pct": 100.0 * kg / df9_force.FORCE_MAX_KG,
+            "voltage_v": voltage,
+            "rs_ohm": rs,
+        }
+        total += kg
+    return {
+        "ok": bool(f.foot_ok),
+        "seq": int(f.foot_seq),
+        "mask": int(f.foot_mask),
+        "force_kg": total,
+        "corners": corners,
+    }
 
 
 def ina_label(hub: int, ch: int, addr: int) -> str:
@@ -505,9 +570,10 @@ class AtomWorker:
             self._put("scan_end", None)
             return
         if msg_type == proto.MSG_PROF:
-            rs = proto.decode_prof(payload)
-            if rs is not None:
-                self._put("prof", [route_from_bin(r) for r in rs])
+            got = proto.decode_prof(payload)
+            if got is not None:
+                rs, foot = got
+                self._put("prof", ([route_from_bin(r) for r in rs], foot_from_bin(foot)))
             return
         if msg_type == proto.MSG_MAP_CHUNK:
             # 組立は _run 側。ここでは何もしない
@@ -710,6 +776,7 @@ class AtomSession:
         self._scan_expect = 0
         self._scan_open = False
         self.routes: list[JointRoute] = default_routes()
+        self.foot: FootRoute = default_foot()
         self.map_points: list[tuple[float, float]] = []
         self.map_ch = 0
         self.cal_status = ""
@@ -846,12 +913,19 @@ class AtomSession:
                 self.note(f"スキャン {got} ノード")
                 self._maybe_play_green()
         elif kind == "prof":
-            routes = payload
+            routes = None
+            foot = None
+            if isinstance(payload, tuple) and len(payload) == 2:
+                routes, foot = payload
+            elif isinstance(payload, list):
+                routes = payload
             if isinstance(routes, list) and routes:
                 merged = default_routes()
                 for i, r in enumerate(routes[:JOINTS]):
                     merged[i] = r
                 self.routes = merged
+                if isinstance(foot, FootRoute):
+                    self.foot = foot
                 self.note(f"プロファイル受信  {len(routes)} 軸")
             else:
                 self.note("プロファイル不完全")
@@ -1313,6 +1387,7 @@ class LabApp(tk.Tk):
             "servo_ok": f.servo_ok,
             "mode": f.mode,
             "out_mask": f.out_mask,
+            "foot": foot_sample_dict(f),
         }
 
     def _m5_scan_dict(self) -> dict:
@@ -1351,7 +1426,16 @@ class LabApp(tk.Tk):
                     "ina_addr": r.ina_addr,
                 }
             )
-        return {"routes": out, "ina_options": self._ina_option_list(s) if s else ["なし"]}
+        return {
+            "routes": out,
+            "ina_options": self._ina_option_list(s) if s else ["なし"],
+            "foot": {
+                "hub": s.foot.hub if s else default_foot().hub,
+                "ch": s.foot.ch if s else default_foot().ch,
+                "addr": s.foot.addr if s else default_foot().addr,
+            },
+            "foot_options": self._foot_option_list(s) if s else ["なし"],
+        }
 
     def _m5_events_list(self) -> list[str]:
         s = self._m5_sess()
@@ -1548,7 +1632,7 @@ class LabApp(tk.Tk):
                         ina_ch=int(d.get("ina_ch", -1)),
                         ina_addr=int(d.get("ina_addr", 0)),
                     )
-                self._send_routes(s, routes, "プロファイル送信（iPad）")
+                self._send_routes(s, routes, "プロファイル送信（iPad）", foot=self._foot_from_msg(msg, s.foot))
         elif op == "cal_start":
             ch = int(msg.get("ch", 0))
             s.send(proto.cmd_cal(ch))
@@ -1678,6 +1762,30 @@ class LabApp(tk.Tk):
                 ent.grid(row=i + 1, column=c, padx=4, pady=2)
                 self.prof_entries.append(ent)
             self.prof_vars.append(vars_row)
+        foot_row = tk.Frame(self.tab_prof, bg=BG)
+        foot_row.pack(fill="x", padx=8, pady=(0, 8))
+        tk.Label(foot_row, text="右足スレーブ", bg=BG, fg=MUTED).pack(side="left", padx=(0, 8))
+        self.foot_vars: dict[str, tk.StringVar] = {}
+        foot0 = default_foot()
+        for key, label, val in (
+            ("hub", "hub", f"0x{foot0.hub:02X}"),
+            ("ch", "ch", str(foot0.ch)),
+            ("addr", "addr", f"0x{foot0.addr:02X}"),
+        ):
+            tk.Label(foot_row, text=label, bg=BG, fg=MUTED).pack(side="left")
+            var = tk.StringVar(value=val)
+            self.foot_vars[key] = var
+            ent = tk.Entry(
+                foot_row, textvariable=var, width=8, bg=CARD, fg=TEXT, insertbackground=TEXT, relief="flat"
+            )
+            ent.pack(side="left", padx=(4, 10))
+            self.prof_entries.append(ent)
+        tk.Label(
+            foot_row,
+            text="addr=0 で無効。既定は 0x71 CH2 / 0x28",
+            bg=BG,
+            fg=MUTED,
+        ).pack(side="left")
         self._prof_sig: object = None
 
     def _build_joint(self) -> None:
@@ -2280,6 +2388,32 @@ class LabApp(tk.Tk):
             return None
         return routes
 
+    def _foot_from_form(self) -> FootRoute | None:
+        """プロファイルタブの右足経路。失敗時は None。"""
+        try:
+            return FootRoute(
+                hub=self._parse_int_field(self.foot_vars["hub"].get()),
+                ch=self._parse_int_field(self.foot_vars["ch"].get()),
+                addr=self._parse_int_field(self.foot_vars["addr"].get()),
+            )
+        except (KeyError, ValueError) as exc:
+            messagebox.showerror("プロファイル", f"足経路の数値が不正です: {exc}")
+            return None
+
+    def _foot_from_msg(self, msg: dict, fallback: FootRoute) -> FootRoute:
+        """iPad の prof_put に載る foot 辞書。無ければ現状を残す。"""
+        raw = msg.get("foot")
+        if not isinstance(raw, dict):
+            return fallback
+        try:
+            return FootRoute(
+                hub=int(raw.get("hub", fallback.hub)),
+                ch=int(raw.get("ch", fallback.ch)),
+                addr=int(raw.get("addr", fallback.addr)),
+            )
+        except (TypeError, ValueError):
+            return fallback
+
     def _prof_put(self) -> None:
         if self._pc_locked():
             return
@@ -2287,11 +2421,10 @@ class LabApp(tk.Tk):
         if not s:
             return
         routes = self._routes_from_form()
-        if routes is None:
+        foot = self._foot_from_form()
+        if routes is None or foot is None:
             return
-        s.routes = routes
-        s.send(proto.cmd_prof_put([route_tuple(r) for r in routes]))
-        s.note("プロファイル送信")
+        self._send_routes(s, routes, "プロファイル送信", foot=foot)
 
     def _prof_from_scan(self) -> None:
         """スキャン結果の AS5600 を関節 0.. に仮割当（Hub CH 順）。サーボは手前 ch=i。"""
@@ -2339,13 +2472,20 @@ class LabApp(tk.Tk):
             routes[i].ina_ch = ic
             routes[i].ina_addr = ia
         s.routes = routes
-        self._fill_prof_form(routes)
+        foot_nodes = [n for n in s.nodes if n.kind == "foot"]
+        foot = s.foot
+        if foot_nodes:
+            fh, fc, fa = scan_node_path(foot_nodes[0])
+            foot = FootRoute(hub=fh, ch=fc, addr=fa)
+        s.foot = foot
+        self._fill_prof_form(routes, foot)
         s.note(
             f"SCANから仮割当  AS5600 {min(len(as_nodes), JOINTS)} 軸  "
-            f"INA {min(len(ina_nodes), JOINTS)} 台"
+            f"INA {min(len(ina_nodes), JOINTS)} 台  "
+            f"足 {'あり' if foot_nodes else 'なし'}"
         )
 
-    def _fill_prof_form(self, routes: list[JointRoute]) -> None:
+    def _fill_prof_form(self, routes: list[JointRoute], foot: FootRoute | None = None) -> None:
         self._syncing = True
         try:
             for i, r in enumerate(routes[:JOINTS]):
@@ -2360,9 +2500,14 @@ class LabApp(tk.Tk):
                 row["ina_hub"].set(f"0x{r.ina_hub:02X}" if r.ina_hub else "0")
                 row["ina_ch"].set(str(r.ina_ch))
                 row["ina_addr"].set(f"0x{r.ina_addr:02X}" if r.ina_addr else "0")
+            fr = foot if foot is not None else default_foot()
+            if getattr(self, "foot_vars", None):
+                self.foot_vars["hub"].set(f"0x{fr.hub:02X}" if fr.hub else "0")
+                self.foot_vars["ch"].set(str(fr.ch))
+                self.foot_vars["addr"].set(f"0x{fr.addr:02X}" if fr.addr else "0")
         finally:
             self._syncing = False
-        self._prof_sig = route_sig(routes)
+        self._prof_sig = route_sig(routes, foot)
 
     def _on_mode(self, _evt: object = None) -> None:
         if self._pc_locked():
@@ -2529,10 +2674,18 @@ class LabApp(tk.Tk):
                 return n
         return None
 
-    def _send_routes(self, s: AtomSession, routes: list[JointRoute], note: str) -> None:
+    def _send_routes(
+        self,
+        s: AtomSession,
+        routes: list[JointRoute],
+        note: str,
+        foot: FootRoute | None = None,
+    ) -> None:
         s.routes = routes
-        s.send(proto.cmd_prof_put([route_tuple(r) for r in routes]))
-        self._fill_prof_form(routes)
+        if foot is not None:
+            s.foot = foot
+        s.send(proto.cmd_prof_put([route_tuple(r) for r in routes], foot_tuple(s.foot)))
+        self._fill_prof_form(s.routes, s.foot)
         self._ina_ui_sig = None
         self._refresh_ina_combos(s)
         s.note(note)
@@ -2599,6 +2752,23 @@ class LabApp(tk.Tk):
             if lab not in seen:
                 opts.append(lab)
                 seen.add(lab)
+        return opts
+
+    def _foot_option_list(self, s: AtomSession) -> list[str]:
+        """スキャンで見えた足スレーブ + 現在の割当。"""
+        opts = ["なし"]
+        seen: set[str] = set()
+        for n in s.nodes:
+            if n.kind != "foot":
+                continue
+            hub, ch, addr = scan_node_path(n)
+            lab = ina_label(hub, ch, addr)
+            if lab not in seen:
+                opts.append(lab)
+                seen.add(lab)
+        lab = ina_label(s.foot.hub, s.foot.ch, s.foot.addr)
+        if lab not in seen:
+            opts.append(lab)
         return opts
 
     def _refresh_ina_combos(self, s: AtomSession) -> None:
@@ -2717,6 +2887,8 @@ class LabApp(tk.Tk):
         title = s.name or s.port
         f = s.last_frame
         extra = f"  {f.mode}  out={f.out_mask}" if f else ""
+        if f is not None and f.foot_ok:
+            extra += f"  足 {sum(f.foot_mv)}mV"
         text = f"{title}\n{s.port}  {'接続' if s.connected else '切断'}{extra}"
         return text, bg, fg
 
@@ -2766,9 +2938,9 @@ class LabApp(tk.Tk):
         if s.mode in ("lab", "robot") and self.mode_var.get() != s.mode:
             self.mode_var.set(s.mode)
         self._fill_tree(s)
-        if self._prof_sig != route_sig(s.routes):
-            self._fill_prof_form(s.routes)
-        ina_sig = (tuple(self._ina_option_list(s)), route_sig(s.routes))
+        if self._prof_sig != route_sig(s.routes, s.foot):
+            self._fill_prof_form(s.routes, s.foot)
+        ina_sig = (tuple(self._ina_option_list(s)), route_sig(s.routes, s.foot))
         if ina_sig != getattr(self, "_ina_ui_sig", None):
             self._ina_ui_sig = ina_sig
             self._refresh_ina_combos(s)

@@ -1,0 +1,184 @@
+/* 右脚タブ左列・模式図の上に載せるコンパクトな足裏 */
+
+.m5-foot {
+  --foot-line: rgba(213, 222, 234, 0.16);
+  padding: 0.45rem 0.4rem 0.35rem;
+  border-bottom: 1px solid var(--foot-line);
+}
+
+.m5-foot--idle {
+  opacity: 0.78;
+}
+
+.m5-foot__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.m5-foot__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #d5defe;
+}
+
+.m5-foot__badge {
+  font-size: 0.62rem;
+  font-family: ui-monospace, monospace;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(139, 155, 176, 0.18);
+  color: #8b9bb0;
+}
+
+.m5-foot__badge--ok {
+  background: rgba(16, 172, 132, 0.22);
+  color: #1dd1a1;
+}
+
+.m5-foot__orient {
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  color: rgba(180, 195, 230, 0.55);
+}
+
+.m5-foot__orient--heel {
+  margin-top: 0.15rem;
+}
+
+.m5-foot__plate {
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    "tl tr"
+    "bl br";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.28rem;
+  aspect-ratio: 0.78;
+  margin: 0.15rem 0.15rem 0.05rem;
+  padding: 0.45rem;
+  isolation: isolate;
+}
+
+.m5-foot__plate::before {
+  content: "";
+  position: absolute;
+  inset: 0.08rem;
+  border-radius: 12px;
+  border: 1px solid rgba(180, 200, 255, 0.28);
+  background:
+    linear-gradient(160deg, rgba(40, 55, 95, 0.32), transparent 55%),
+    rgba(10, 14, 24, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.m5-foot__pad {
+  --heat: hsl(190 80% 52%);
+  --ratio: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  min-height: 0;
+  border-radius: 9px;
+  padding: 0.28rem 0.1rem;
+  background: rgba(8, 12, 28, 0.5);
+  border: 1px solid rgba(160, 180, 230, 0.18);
+  overflow: hidden;
+}
+
+.m5-foot__pad::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--heat) calc(25% + var(--ratio) * 60%), transparent),
+    transparent 64%
+  );
+  opacity: calc(0.25 + var(--ratio) * 0.75);
+  pointer-events: none;
+}
+
+.m5-foot__pad--on {
+  border-color: color-mix(in srgb, var(--heat) 50%, rgba(160, 180, 230, 0.2));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--heat) 30%, transparent);
+}
+
+.m5-foot__pad-lab {
+  position: relative;
+  font-size: 0.52rem;
+  color: rgba(200, 210, 235, 0.72);
+  letter-spacing: 0.02em;
+}
+
+.m5-foot__pad-kg {
+  position: relative;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f3f6ff;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--heat) 45%, transparent);
+}
+
+.m5-foot__total {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.22rem 0.42rem;
+  border-radius: 9px;
+  background: rgba(10, 14, 30, 0.86);
+  border: 1px solid rgba(180, 200, 255, 0.2);
+  pointer-events: none;
+  min-width: 3.4rem;
+}
+
+.m5-foot__total span {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  color: rgba(170, 185, 220, 0.75);
+}
+
+.m5-foot__total strong {
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: #f4f7ff;
+  line-height: 1.15;
+}
+
+.m5-foot__total small {
+  margin-left: 0.12rem;
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: rgba(200, 210, 240, 0.7);
+}
+
+.m5-foot__cop {
+  position: absolute;
+  z-index: 3;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #f8fbff;
+  box-shadow:
+    0 0 0 2px rgba(14, 165, 233, 0.9),
+    0 0 14px rgba(14, 165, 233, 0.7);
+  pointer-events: none;
+  transition: left 0.12s ease-out, top 0.12s ease-out;
+}

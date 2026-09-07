@@ -113,10 +113,10 @@ ATOMS3 Lite（M5Stack ATOM）上の **20 Hz 制御ファーム** と、Windows P
 
 ## ■ atom-foot
 
-足裏 DF9-40 四隅の圧力を、脚側 ATOMS3 Lite（I2C マスター）と足側 ATOMS3 Lite（I2C スレーブ）で読むファームです。`atom-rt` とは別系統（足圧センシング）。
+足裏 DF9-40 四隅用の **I2C スレーブ**（ATOMS3 Lite）です。機体では [atom-rt](atom-rt/) がマスターになり、PaHub 経由で 20 Hz 読みします。専用脚マスターは机上確認用。
 
-- 書き込み: `cd atom-foot` → 先にスレーブ、次にマスター（`pio run -e i2c_slave -t upload` / `pio run -e i2c_master -t upload`）
-- GUI: `python tools/foot_pressure_gui.py`
+- スレーブ書き込み: `cd atom-foot` → `pio run -e i2c_slave -t upload`（書き込み後は USB を外し Grove 給電）
+- 表示: Hub の **実機テレメトリ（M5）** 右脚タブ（模式図の上）
 
 詳細は [atom-foot/README.md](atom-foot/README.md) を参照してください。
 

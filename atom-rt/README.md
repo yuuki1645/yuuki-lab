@@ -58,12 +58,12 @@ USB は **固定長バイナリフレーム**（マジック + 長さ + CRC）�
 机上では ATOM + 試したい Unit だけで足ります。機体では次が典型です。
 
 ```text
-ATOMS3 Lite Grove I2C
+ATOMS3 Lite / ATOM S3R Grove I2C
   ├ Unit 8Servos  0x25     Hub 手前
   ├ PaHub 0x70             軸 N = CHN の AS5600（0x36）
   └ PaHub 0x71
-       CHi = Unit INA226（0x41）。既定は CH0/CH1 を関節 0/1 へ。
-       関節 2 以降はプロファイルで割り当て（テレメトリ枠は 8）
+       CH0/CH1 = Unit INA226（0x41）。関節プロファイルで 8 枠まで
+       CH2     = 右足 ATOMS3 Lite スレーブ 0x28（DF9-40 四隅。経路は変更可）
 ```
 
 - Grove: SDA=GPIO2、SCL=GPIO1、LED=GPIO35、ボタン=GPIO41
@@ -74,6 +74,7 @@ ATOMS3 Lite Grove I2C
 - INA226: 既定は 10 A ユニット（シャント 5 mΩ）
 - 当面 8 軸（`kSnapJoints`）。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `rt_usb_proto.py` を揃える
 - INA 監視枠も 8（`kSnapIna`）。未割当は `ina_addr=0` で読まない
+- 右足圧スレーブは `FootRoute`（既定 `0x71` CH2 / `0x28`）。`addr=0` で読まない。USB テレメトリは **ver=10**
 
 机上では配線が毎回違って構いません。SCAN が実際に応答したデバイスを返します。
 
@@ -118,7 +119,7 @@ LED（Identify 中以外）:
 - 緑 … センサ OK でループに余裕
 - 赤点滅 … AS5600 が読めていない
 - 赤 … overrun、または Robot なのに 8Servos なし
-- 虹色 … Identify 中、または本体ボタン
+- 虹色 … Identify 中、または本体ボタン（割当済みなら足 Lite の LED も点灯）
 
 ---
 

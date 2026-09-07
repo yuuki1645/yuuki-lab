@@ -10,6 +10,7 @@
  * 配線の典型（機体）:
  *   Grove I2C → PaHub 0x70（軸 N = CHN の AS5600）
  *   PaHub 0x71 の INA226（既定は CH0/CH1。関節プロファイルで 8 枠まで）
+ *   PaHub 0x71 CH2 の右足 ATOMS3 Lite スレーブ（0x28、プロファイルで変更可）
  *   Unit 8Servos 0x25 は Hub 手前
  * 机上では挿抜自由。SCAN で実際の接続を返す。
  *
@@ -31,6 +32,7 @@
 #include <string.h>
 
 #include "as5600.hpp"
+#include "i2c_foot_proto.h"
 #include "ina226.hpp"
 #include "joint_profile.hpp"
 #include "pahub.hpp"
@@ -100,6 +102,10 @@ struct SensorFrame {
     float ina_amp[kInaCount];
     float ina_watt[kInaCount];
     bool ina_ok[kInaCount];
+    bool foot_ok;
+    uint8_t foot_mask;
+    uint32_t foot_seq;
+    uint16_t foot_mv[kFootCornerCount];
 };
 
 struct RobotState {
@@ -126,7 +132,7 @@ struct ScanNode {
     uint8_t hub;
     int8_t ch;
     uint8_t addr;
-    uint8_t kind;      // 0 unknown, 1 pahub, 2 as5600, 3 ina226, 4 servo
+    uint8_t kind;      // 0 unknown, 1 pahub, 2 as5600, 3 ina226, 4 servo, 5 foot
     uint8_t mag_code;  // AS5600 以外は 255
     uint8_t agc;
 };
@@ -137,6 +143,7 @@ enum ScanKind : uint8_t {
     kKindAs5600 = 2,
     kKindIna = 3,
     kKindServo = 4,
+    kKindFoot = 5,
 };
 
 // ---------------------------------------------------------------------------
@@ -167,6 +174,8 @@ static portMUX_TYPE gProfLock = portMUX_INITIALIZER_UNLOCKED;
 
 /** 論理関節 → 物理経路。NVS "jprof" または既定値 */
 static JointRoute gProf[kJointCount];
+/** 右足スレーブ経路。同じ NVS 名前空間の "foot" */
+static FootRoute gFoot;
 
 /** USB 受信の組み立て（マジック待ち → type/len → payload → CRC） */
 enum UsbRxState : uint8_t {
@@ -198,6 +207,7 @@ static uint32_t gMapRxLastMs = 0;
 
 static volatile uint8_t gProfDumpReq = 0;
 static JointRoute gProfRx[kJointCount];
+static FootRoute gFootRx;
 
 static portMUX_TYPE gSnapLock = portMUX_INITIALIZER_UNLOCKED;
 static Snapshot gSnapFront;
@@ -206,6 +216,8 @@ static volatile bool gSnapReady = false;
 static volatile WorkMode gMode = WorkMode::Lab;
 static volatile uint8_t gOutMask = 0;
 static volatile uint32_t gIdentifyUntilMs = 0;
+/** Identify 終了時に足 LED を戻すためのフラグ（制御コア専用） */
+static bool gFootIdentifyOn = false;
 static volatile uint8_t gScanReq = 0;    // 1=要求
 static volatile uint8_t gScanReady = 0;  // 1=結果あり
 static volatile uint8_t gHelloReq = 0;
@@ -488,9 +500,47 @@ static bool validateProfile(const JointRoute* p) {
     return true;
 }
 
+static void fillDefaultFoot(FootRoute& out) {
+    out.hub = kProfFootHubDefault;
+    out.ch = kProfFootChDefault;
+    out.addr = kProfFootAddrDefault;
+}
+
+/** addr==0 は無効。それ以外は関節 INA と同じ Hub 規則。 */
+static bool validateFootRoute(const FootRoute& r) {
+    if (r.addr == 0) {
+        return true;
+    }
+    if (r.hub != 0) {
+        if (r.hub < 0x70 || r.hub > 0x77) {
+            return false;
+        }
+        if (r.ch < 0 || r.ch >= PaHub::kChannelCount) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static FootRoute footRoute() {
+    FootRoute r;
+    portENTER_CRITICAL(&gProfLock);
+    r = gFoot;
+    portEXIT_CRITICAL(&gProfLock);
+    return r;
+}
+
+static void setFootLocked(const FootRoute& r) {
+    portENTER_CRITICAL(&gProfLock);
+    gFoot = r;
+    portEXIT_CRITICAL(&gProfLock);
+}
+
 static void loadProfile() {
     JointRoute tmp[kJointCount];
     fillDefaultProfile(tmp);
+    FootRoute foot{};
+    fillDefaultFoot(foot);
     gPrefs.begin("jprof", true);
     const int n = gPrefs.getInt("n", 0);
     bool ok = (n == kJointCount);
@@ -501,34 +551,46 @@ static void loadProfile() {
             fillDefaultProfile(tmp);
         }
     }
+    FootRoute loaded{};
+    if (gPrefs.getBytes("foot", &loaded, sizeof(loaded)) == sizeof(loaded) &&
+        validateFootRoute(loaded)) {
+        foot = loaded;
+    }
     gPrefs.end();
     portENTER_CRITICAL(&gProfLock);
     copyProfile(gProf, tmp);
+    gFoot = foot;
     portEXIT_CRITICAL(&gProfLock);
     resetEncAlive();
 }
 
 static bool saveProfile() {
     JointRoute tmp[kJointCount];
+    FootRoute foot{};
     portENTER_CRITICAL(&gProfLock);
     copyProfile(tmp, gProf);
+    foot = gFoot;
     portEXIT_CRITICAL(&gProfLock);
-    if (!validateProfile(tmp)) {
+    if (!validateProfile(tmp) || !validateFootRoute(foot)) {
         return false;
     }
     gPrefs.begin("jprof", false);
     gPrefs.putInt("n", kJointCount);
     const size_t bytes = sizeof(tmp);
-    const bool wrote = gPrefs.putBytes("r", tmp, bytes) == bytes;
+    const bool wroteJoints = gPrefs.putBytes("r", tmp, bytes) == bytes;
+    const bool wroteFoot = gPrefs.putBytes("foot", &foot, sizeof(foot)) == sizeof(foot);
     gPrefs.end();
-    return wrote;
+    return wroteJoints && wroteFoot;
 }
 
 static void applyDefaultProfile() {
     JointRoute tmp[kJointCount];
+    FootRoute foot{};
     fillDefaultProfile(tmp);
+    fillDefaultFoot(foot);
     portENTER_CRITICAL(&gProfLock);
     copyProfile(gProf, tmp);
+    gFoot = foot;
     portEXIT_CRITICAL(&gProfLock);
     resetEncAlive();
 }
@@ -626,6 +688,51 @@ static bool i2cPingTwice(uint8_t addr) {
     return i2cPing(addr);
 }
 
+/**
+ * レジスタポインタを STOP 付きで書いてから読む。
+ * 足スレーブ（ESP32 I2C slave）は Repeated START で欠ける。
+ */
+static bool i2cWriteRead(uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    if (Wire.endTransmission(true) != 0) {
+        return false;
+    }
+    delayMicroseconds(200);
+    const size_t got = Wire.requestFrom(static_cast<int>(addr), static_cast<int>(len));
+    if (got != len) {
+        return false;
+    }
+    for (size_t i = 0; i < len; ++i) {
+        data[i] = static_cast<uint8_t>(Wire.read());
+    }
+    return true;
+}
+
+static bool i2cWriteBytes(uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    if (data != nullptr && len > 0) {
+        Wire.write(data, len);
+    }
+    return Wire.endTransmission(true) == 0;
+}
+
+static uint16_t u16Le(const uint8_t* p) {
+    return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
+}
+
+static uint32_t u32Le(const uint8_t* p) {
+    return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
+           (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
+}
+
+/** いま開いている MUX 先の 0x28 が足スレーブか。スキャン用。 */
+static bool footWhoAmIOk(uint8_t addr) {
+    uint8_t who = 0;
+    return i2cWriteRead(addr, kFootRegWhoAmI, &who, 1) && who == kFootWhoAmIValue;
+}
+
 static uint8_t kindFromAddr(uint8_t addr) {
     if (addr >= 0x70 && addr <= 0x77) {
         return kKindPahub;
@@ -639,7 +746,19 @@ static uint8_t kindFromAddr(uint8_t addr) {
     if (addr == 0x25) {
         return kKindServo;
     }
+    if (addr == kI2cFootAddrDefault) {
+        return kKindFoot;
+    }
     return kKindUnknown;
+}
+
+/** スキャン用。0x28 は WHO_AM_I が 'F' のときだけ foot。 */
+static uint8_t classifyScanAddr(uint8_t a) {
+    const uint8_t kind = kindFromAddr(a);
+    if (kind == kKindFoot && !footWhoAmIOk(a)) {
+        return kKindUnknown;
+    }
+    return kind;
 }
 
 static uint8_t allOutMask() {
@@ -670,7 +789,7 @@ static void readAs5600Extras(uint8_t& magCode, uint8_t& agc) {
 
 /** 既知アドレス。Hub 先はフルスキャンすると遅いのでこれに限る */
 static const uint8_t kHubProbeAddr[] = {
-    0x25, 0x36, 0x38, 0x3C, 0x40, 0x41, 0x44, 0x48, 0x5D, 0x60, 0x62, 0x68,
+    0x25, 0x28, 0x36, 0x38, 0x3C, 0x40, 0x41, 0x44, 0x48, 0x5D, 0x60, 0x62, 0x68,
 };
 
 /**
@@ -692,7 +811,7 @@ static void runI2cScan() {
         rootHit[a] = 1;
         uint8_t mag = 255;
         uint8_t agc = 255;
-        const uint8_t kind = kindFromAddr(a);
+        const uint8_t kind = classifyScanAddr(a);
         if (kind == kKindAs5600) {
             readAs5600Extras(mag, agc);
         }
@@ -725,7 +844,7 @@ static void runI2cScan() {
                 }
                 uint8_t mag = 255;
                 uint8_t agc = 255;
-                const uint8_t kind = kindFromAddr(a);
+                const uint8_t kind = classifyScanAddr(a);
                 if (kind == kKindAs5600) {
                     readAs5600Extras(mag, agc);
                 }
@@ -841,6 +960,13 @@ static void runProbeRoot(uint8_t addr) {
         gProbeResult.ok = ok;
         return;
     }
+    if (kind == kKindFoot) {
+        uint8_t who = 0;
+        const bool ok = i2cWriteRead(addr, kFootRegWhoAmI, &who, 1) && who == kFootWhoAmIValue;
+        gProbeResult.found = kKindFoot;
+        gProbeResult.ok = ok ? 1 : 0;
+        return;
+    }
 }
 
 static void runProbeHub(uint8_t hub, int ch) {
@@ -877,6 +1003,13 @@ static void runProbeHub(uint8_t hub, int ch) {
         gProbeResult.f1 = a;
         gProbeResult.f2 = w;
         gProbeResult.ok = ok;
+        closeAllHubs();
+        return;
+    }
+    if (i2cPing(kI2cFootAddrDefault) && footWhoAmIOk(kI2cFootAddrDefault)) {
+        gProbeResult.found = kKindFoot;
+        gProbeResult.addr = kI2cFootAddrDefault;
+        gProbeResult.ok = 1;
         closeAllHubs();
         return;
     }
@@ -955,6 +1088,34 @@ static void readSensors(SensorFrame& out) {
         }
         closeMux(route.ina_hub);
     }
+
+    // 右足スレーブ（未割当 addr=0 は触らない）
+    {
+        const FootRoute fr = footRoute();
+        out.foot_ok = false;
+        out.foot_mask = 0;
+        out.foot_seq = 0;
+        memset(out.foot_mv, 0, sizeof(out.foot_mv));
+        if (fr.addr != 0) {
+            openMux(fr.hub, fr.ch);
+            delayMicroseconds(300);
+            uint8_t hdr[8] = {};
+            uint8_t rawMv[8] = {};
+            if (i2cWriteRead(fr.addr, kFootRegWhoAmI, hdr, sizeof(hdr)) &&
+                hdr[0] == kFootWhoAmIValue &&
+                i2cWriteRead(fr.addr, kFootRegMv0, rawMv, sizeof(rawMv))) {
+                out.foot_ok = true;
+                out.foot_mask = hdr[3];
+                out.foot_seq = u32Le(&hdr[4]);
+                for (int c = 0; c < kFootCornerCount; ++c) {
+                    out.foot_mv[c] = u16Le(&rawMv[c * 2]);
+                }
+            } else {
+                ++gI2cErr;
+            }
+            closeMux(fr.hub);
+        }
+    }
 }
 
 static void buildState(const SensorFrame& sense, RobotState& state) {
@@ -1014,6 +1175,19 @@ static void applyJoints(const Action& action) {
         gServo.setServoPulse(route.servo_ch, pulse);
         closeMux(route.act_hub);
     }
+}
+
+/** 右足スレーブの RGB。Identify 用。addr=0 なら何もしない。 */
+static void writeFootLedRgb(uint8_t r, uint8_t g, uint8_t b) {
+    const FootRoute fr = footRoute();
+    if (fr.addr == 0) {
+        return;
+    }
+    openMux(fr.hub, fr.ch);
+    delayMicroseconds(200);
+    const uint8_t rgb[3] = {r, g, b};
+    i2cWriteBytes(fr.addr, kFootRegLedR, rgb, sizeof(rgb));
+    closeMux(fr.hub);
 }
 
 // ---------------------------------------------------------------------------
@@ -1453,6 +1627,10 @@ static void fillSnapshot(Snapshot& snap,
     snap.servo_ok = gServoOk ? 1 : 0;
     snap.mode = static_cast<uint8_t>(gMode);
     snap.out_mask = gOutMask;
+    snap.foot_ok = sense.foot_ok ? 1 : 0;
+    snap.foot_mask = sense.foot_mask;
+    snap.foot_seq = sense.foot_seq;
+    memcpy(snap.foot_mv, sense.foot_mv, sizeof(snap.foot_mv));
 }
 
 // ---------------------------------------------------------------------------
@@ -1488,12 +1666,15 @@ static void usbPrintHello() {
 
 static void usbDumpProfile() {
     JointRoute tmp[kJointCount];
+    FootRoute foot{};
     portENTER_CRITICAL(&gProfLock);
     copyProfile(tmp, gProf);
+    foot = gFoot;
     portEXIT_CRITICAL(&gProfLock);
-    uint8_t raw[1 + sizeof(JointRoute) * kJointCount];
+    uint8_t raw[1 + sizeof(JointRoute) * kJointCount + sizeof(FootRoute)];
     raw[0] = static_cast<uint8_t>(kJointCount);
     memcpy(raw + 1, tmp, sizeof(tmp));
+    memcpy(raw + 1 + sizeof(tmp), &foot, sizeof(foot));
     usbSend(kUsbProf, raw, static_cast<uint16_t>(sizeof(raw)));
 }
 
@@ -1549,6 +1730,10 @@ static void usbPrintFrame(const Snapshot& s) {
     t.servo_ok = s.servo_ok;
     t.mode = s.mode;
     t.out_mask = s.out_mask;
+    t.foot_ok = s.foot_ok;
+    t.foot_mask = s.foot_mask;
+    t.foot_seq = s.foot_seq;
+    memcpy(t.foot_mv, s.foot_mv, sizeof(t.foot_mv));
     usbSend(kUsbTelemetry, &t, static_cast<uint16_t>(sizeof(t)));
 }
 
@@ -1782,17 +1967,20 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
             return;
         }
         const uint8_t n = p[0];
-        if (n != kJointCount || len != static_cast<uint16_t>(1 + n * sizeof(JointRoute))) {
+        const uint16_t need = static_cast<uint16_t>(1 + n * sizeof(JointRoute) + sizeof(FootRoute));
+        if (n != kJointCount || len != need) {
             profSendErr(kUsbReasonCount);
             return;
         }
         memcpy(gProfRx, p + 1, sizeof(gProfRx));
-        if (!validateProfile(gProfRx)) {
+        memcpy(&gFootRx, p + 1 + sizeof(gProfRx), sizeof(gFootRx));
+        if (!validateProfile(gProfRx) || !validateFootRoute(gFootRx)) {
             profSendErr(kUsbReasonBad);
             return;
         }
         portENTER_CRITICAL(&gProfLock);
         copyProfile(gProf, gProfRx);
+        gFoot = gFootRx;
         portEXIT_CRITICAL(&gProfLock);
         resetEncAlive();
         for (int i = 0; i < kInaCount; ++i) {
@@ -2108,7 +2296,14 @@ static void rtTask(void* /*arg*/) {
             const uint8_t hue = static_cast<uint8_t>((nowMs / 4) & 0xFF);
             gLeds[0] = CHSV(hue, 255, 160);
             FastLED.show();
+            writeFootLedRgb(gLeds[0].r, gLeds[0].g, gLeds[0].b);
+            gFootIdentifyOn = true;
         } else {
+            if (gFootIdentifyOn) {
+                // スレーブ起動時と同じ緑の待機色に戻す
+                writeFootLedRgb(0, 24, 0);
+                gFootIdentifyOn = false;
+            }
             bool anyAs = false;
             for (int i = 0; i < kJointCount; ++i) {
                 if (sense.as5600_ok[i]) {

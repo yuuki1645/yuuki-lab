@@ -1,9 +1,10 @@
 # atom-foot
 
-脚の ATOMS3 Lite を I2C マスター、足裏の ATOMS3 Lite を I2C スレーブにして、
-足裏四隅の DF9-40@2kg 圧力を PC の Python GUI で見るプロジェクトです。
+足裏の ATOMS3 Lite を I2C スレーブにして、四隅 DF9-40@2kg をレジスタ公開するファームです。
 
-`atom-rt` の GUI / USB フレームを参考に実装しています。由来は別リポジトリ `atoms3-on-foot` です。
+機体のマスターは **[atom-rt](../atom-rt/)**（ATOM S3R）です。専用脚マスター（`i2c_master`）は机上確認用に残していますが、本線では使いません。
+
+由来は別リポジトリ `atoms3-on-foot` です。
 
 ---
 

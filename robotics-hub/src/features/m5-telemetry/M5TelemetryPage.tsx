@@ -278,7 +278,7 @@ export default function M5TelemetryPage() {
         </button>
       </div>
 
-      <M5RecordBar rec={rec} atomOk={atomOk && stream.wsStatus === "connected"} />
+      <M5RecordBar rec={rec} camera={camera} atomOk={atomOk && stream.wsStatus === "connected"} />
       <M5RecordLibrary
         open={rec.libraryOpen}
         onClose={() => rec.setLibraryOpen(false)}

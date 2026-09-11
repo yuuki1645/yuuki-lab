@@ -76,6 +76,7 @@ export function useM5Recording(opts: {
 
   const startRecord = useCallback(
     (name: string, notes: string) => {
+      // 数値本記録はすぐ開始。映像は待って開始し、失敗はカメラ側の startError に残る
       send({ op: "record_start", name, notes });
       if (startCamera) {
         void startCamera();

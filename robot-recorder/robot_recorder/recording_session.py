@@ -11,11 +11,9 @@ from pathlib import Path
 import cv2
 
 
-def find_ffmpeg() -> str:
-  path = shutil.which("ffmpeg")
-  if not path:
-    raise RuntimeError("ffmpeg が見つかりません。PATH を確認してください。")
-  return path
+def find_ffmpeg() -> str | None:
+  """PATH 上の ffmpeg。無い環境では OpenCV 書き出しに落とす。"""
+  return shutil.which("ffmpeg")
 
 
 def find_ffprobe() -> str | None:
@@ -84,10 +82,23 @@ class RecordingSession:
     self._t0_perf = time.perf_counter()
     self._frames_written = 0
     self._last_frame_bytes: bytes | None = None
+    self._last_bgr = None
+    self._write_error: str | None = None
     self._ffmpeg = find_ffmpeg()
+    self._proc: subprocess.Popen[bytes] | None = None
+    self._writer: cv2.VideoWriter | None = None
     self.out_dir.mkdir(parents=True, exist_ok=True)
     (self.out_dir / "commands").mkdir(exist_ok=True)
     (self.out_dir / "sensors").mkdir(exist_ok=True)
+    if self._ffmpeg:
+      self._start_ffmpeg(width, height)
+    else:
+      # 新 PC など ffmpeg 未導入でも本記録できるようにする
+      self._start_opencv_writer(width, height)
+      print("ffmpeg が無いため OpenCV で video.mp4 を書きます", file=sys.stderr)
+
+  def _start_ffmpeg(self, width: int, height: int) -> None:
+    assert self._ffmpeg is not None
     playlist = str(self.out_dir / "index.m3u8")
     segment = str(self.out_dir / "seg%05d.ts")
     cmd = [
@@ -134,10 +145,35 @@ class RecordingSession:
       stdout=subprocess.DEVNULL,
       stderr=subprocess.PIPE,
     )
-    self._write_error: str | None = None
 
-  def _write_raw(self, raw: bytes) -> None:
-    if self._proc.stdin is None or self._proc.poll() is not None:
+  def _start_opencv_writer(self, width: int, height: int) -> None:
+    """ffmpeg 無しでも take に mp4 を残す。"""
+    path = str(self.out_dir / "video.mp4")
+    last_err = "VideoWriter を開けませんでした"
+    for fourcc_name in ("mp4v", "avc1", "XVID"):
+      writer = cv2.VideoWriter(
+        path,
+        cv2.VideoWriter_fourcc(*fourcc_name),
+        self.fps,
+        (width, height),
+      )
+      if writer.isOpened():
+        self._writer = writer
+        return
+      writer.release()
+      last_err = f"fourcc={fourcc_name} で開けません"
+    raise RuntimeError(f"映像ファイルを作成できません（{last_err}）。ffmpeg の導入を推奨します。")
+
+  def _alive(self) -> bool:
+    if self._writer is not None:
+      return self._writer.isOpened()
+    return self._proc is not None and self._proc.stdin is not None and self._proc.poll() is None
+
+  def _emit(self, frame, raw: bytes) -> None:  # noqa: ANN001
+    if self._writer is not None:
+      self._writer.write(frame)
+      return
+    if self._proc is None or self._proc.stdin is None or self._proc.poll() is not None:
       return
     try:
       self._proc.stdin.write(raw)
@@ -146,39 +182,48 @@ class RecordingSession:
     except OSError as e:
       self._write_error = str(e)
 
+  def _catchup_target(self) -> int:
+    now = time.perf_counter()
+    target = int((now - self._t0_perf) * self.fps) + 1
+    if target < 1:
+      target = 1
+    max_catchup = self._frames_written + int(self.fps * 2) + 1
+    return min(target, max_catchup)
+
   def write_frame(self, frame) -> None:  # noqa: ANN001
     """壁時計に合わせて不足フレームを直前フレームで埋め、再生時間が実時間に近くなるようにする。"""
-    if self._proc.stdin is None or self._proc.poll() is not None:
+    if not self._alive():
       return
     if frame.shape[1] != self.width or frame.shape[0] != self.height:
       frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
     raw = frame.tobytes()
     self._last_frame_bytes = raw
-    now = time.perf_counter()
-    # 経過実時間から「何枚目まで書いてあるべきか」を決め、足りなければ複製して埋める
-    target = int((now - self._t0_perf) * self.fps) + 1
-    if target < 1:
-      target = 1
-    # 暴走防止（一時停止などで巨大ギャップが開いた場合は最大 2 秒分まで）
-    max_catchup = self._frames_written + int(self.fps * 2) + 1
-    if target > max_catchup:
-      target = max_catchup
-    while self._frames_written < target:
-      self._write_raw(raw)
+    self._last_bgr = frame
+    while self._frames_written < self._catchup_target():
+      self._emit(frame, raw)
       self._frames_written += 1
 
   def stop(self) -> Path | None:
-    # 停止直前まで壁時計分を埋める
-    if self._last_frame_bytes is not None:
-      now = time.perf_counter()
-      target = int((now - self._t0_perf) * self.fps) + 1
-      max_catchup = self._frames_written + int(self.fps * 2) + 1
-      if target > max_catchup:
-        target = max_catchup
-      while self._frames_written < target:
-        self._write_raw(self._last_frame_bytes)
+    if self._last_bgr is not None and self._last_frame_bytes is not None and self._alive():
+      while self._frames_written < self._catchup_target():
+        self._emit(self._last_bgr, self._last_frame_bytes)
         self._frames_written += 1
 
+    if self._writer is not None:
+      self._writer.release()
+      self._writer = None
+      mp4_path = self.out_dir / "video.mp4"
+      if mp4_path.is_file() and mp4_path.stat().st_size > 1024:
+        print(
+          f"Recording saved (OpenCV): {mp4_path.name} frames_written={self._frames_written}",
+          file=sys.stderr,
+        )
+        return mp4_path
+      print(f"Recording OpenCV mp4 missing for {self.take_id}", file=sys.stderr)
+      return None
+
+    if self._proc is None:
+      return None
     if self._proc.stdin:
       try:
         self._proc.stdin.flush()
@@ -205,7 +250,6 @@ class RecordingSession:
 
     ensure_m3u8_endlist(playlist)
 
-    # 壊れた途中 mp4 が残っていれば消す
     if mp4_path.is_file():
       try:
         mp4_path.unlink()
@@ -214,7 +258,7 @@ class RecordingSession:
 
     mux = subprocess.run(
       [
-        self._ffmpeg,
+        self._ffmpeg or "ffmpeg",
         "-hide_banner",
         "-loglevel",
         "error",

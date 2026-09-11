@@ -42,6 +42,7 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
   const [status, setStatus] = useState<RecorderStatus | null>(null);
   const [experiments, setExperiments] = useState<RecorderExperiment[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -56,6 +57,8 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
       setStatus(st);
       setExperiments(ex.experiments);
       setError(null);
+      // 録画が本当に始まったら開始失敗表示を消す（ポーリング成功では消さない）
+      if (st.recording) setStartError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -97,15 +100,44 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
 
   const startCapture = useCallback(async () => {
     setBusy(true);
+    setStartError(null);
     try {
       await ensureExperiment();
-      const st = await startRecording();
-      setStatus(st);
-      setError(null);
-      return st;
+      const deadline = Date.now() + 12_000;
+      let lastMsg = "";
+      while (Date.now() < deadline) {
+        try {
+          const st = await startRecording();
+          setStatus(st);
+          setStartError(null);
+          return st;
+        } catch (e) {
+          lastMsg = e instanceof Error ? e.message : String(e);
+          // 既に録画中なら成功扱い（二重開始）
+          if (lastMsg.includes("既に録画") || lastMsg.includes("already_recording")) {
+            const st = await fetchRecorderStatus();
+            setStatus(st);
+            setStartError(null);
+            return st;
+          }
+          const retryable =
+            lastMsg.includes("フレーム") ||
+            lastMsg.includes("no_frame") ||
+            lastMsg.includes("開けません") ||
+            lastMsg.includes("実験");
+          if (!retryable || Date.now() + 350 >= deadline) {
+            throw e;
+          }
+          if (lastMsg.includes("実験")) {
+            await ensureExperiment();
+          }
+          await new Promise((r) => window.setTimeout(r, 400));
+        }
+      }
+      throw new Error(lastMsg || "映像の録画開始に失敗しました");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
+      setStartError(msg);
       return null;
     } finally {
       setBusy(false);
@@ -117,16 +149,40 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
     try {
       const st = await stopRecording();
       setStatus(st);
-      setError(null);
       return st;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
+      // 録画していない停止は本記録側の停止とずれていても正常
+      if (msg.includes("録画していません") || msg.includes("not_recording")) {
+        const st = await fetchRecorderStatus().catch(() => null);
+        if (st) setStatus(st);
+        return st;
+      }
+      setStartError(msg);
       return null;
     } finally {
       setBusy(false);
     }
   }, []);
+
+  // 映像開始に失敗しても、ライブラリで理由が残るようにする
+  useEffect(() => {
+    const id = recordStatus?.id;
+    if (!id || !recordStatus.recording || !startError) return;
+    void patchRecording(id, {
+      camera: {
+        experiment_id: status?.experiment_id ?? "",
+        take_id: "",
+        video_t0_unix: null,
+        mp4_url: null,
+        hls_url: null,
+        ok: false,
+        error: startError,
+      },
+    }).catch(() => {
+      /* ignore */
+    });
+  }, [recordStatus?.id, recordStatus?.recording, startError, status?.experiment_id]);
 
   // M5 本記録とカメラ take を meta に結び付ける
   useEffect(() => {
@@ -156,7 +212,9 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
     liveUrl,
     status,
     experiments,
-    error,
+    error: startError || error,
+    linkError: error,
+    startError,
     busy,
     expanded,
     setExpanded,

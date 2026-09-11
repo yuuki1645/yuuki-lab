@@ -17,7 +17,7 @@ from robot_recorder.config import AppConfig
 from robot_recorder.disk import DiskStatus, disk_status
 from robot_recorder.experiments import ExperimentStore
 from robot_recorder.imu_bridge import ImuBridge
-from robot_recorder.recording_session import RecordingSession
+from robot_recorder.recording_session import RecordingSession, find_ffmpeg
 from robot_recorder.timestamp_overlay import burn_jst_timestamp
 
 _JST = ZoneInfo("Asia/Tokyo")
@@ -42,6 +42,7 @@ class RecorderApp:
     self._imu_lock = threading.Lock()
     self._latest_imu: dict[str, Any] | None = None
     self._ingest_lock = threading.Lock()
+    self._capture_error: str | None = None
     self.imu_bridge: ImuBridge | None = None
 
   def start_background(self) -> None:
@@ -102,12 +103,14 @@ class RecorderApp:
       backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
       cap = cv2.VideoCapture(cap_cfg.device, backend)
       if not cap.isOpened():
+        self._capture_error = f"カメラを開けません: device={cap_cfg.device}"
         print(
           f"カメラを開けませんでした: device={cap_cfg.device}（再試行します）",
           file=__import__("sys").stderr,
         )
         time.sleep(2.0)
         continue
+      self._capture_error = None
       cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
       cap.set(cv2.CAP_PROP_FRAME_WIDTH, cap_cfg.width)
       cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cap_cfg.height)
@@ -209,15 +212,43 @@ class RecorderApp:
         "ok_for_record": disk.ok_for_record,
         "warning": disk_warn or disk.warning,
       },
+      "has_frame": self._frame_wh is not None,
+      "ffmpeg_ok": find_ffmpeg() is not None,
+      "capture_error": self._capture_error,
       "imu_bridge": self.imu_bridge.snapshot() if self.imu_bridge else {"status": "disabled"},
     }
 
+  def _wait_first_frame(self, timeout_sec: float = 8.0) -> bool:
+    """キャプチャ起動直後の開始でも、最初の1枚を待つ。"""
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() < deadline:
+      if self._frame_wh is not None:
+        return True
+      time.sleep(0.12)
+    return False
+
+  def _ensure_active_experiment(self) -> str:
+    """M5 本記録から来た開始で実験未選択でも take を作れるようにする。"""
+    exp_id = self.store.get_active_experiment_id()
+    if exp_id and self.store.get(exp_id) is not None:
+      return exp_id
+    for exp in self.store.list_experiments():
+      if exp.name == "M5テレメトリ":
+        self.store.set_active_experiment_id(exp.id)
+        return exp.id
+    created = self.store.create("M5テレメトリ")
+    self.store.set_active_experiment_id(created.id)
+    return created.id
+
   def start_recording(self) -> tuple[int, dict[str, Any]]:
     if self._frame_wh is None:
+      self._wait_first_frame()
+    if self._frame_wh is None:
+      hint = self._capture_error or "キャプチャから映像が来ていません。device と他ソフトの占有を確認してください。"
       return 503, {
         "ok": False,
         "error": "no_frame",
-        "message": "まだフレームがありません。",
+        "message": hint,
       }
     disk = self.check_disk()
     if not disk.ok_for_record:
@@ -231,13 +262,7 @@ class RecorderApp:
           "warning": disk.warning,
         },
       }
-    exp_id = self.store.get_active_experiment_id()
-    if not exp_id:
-      return 400, {
-        "ok": False,
-        "error": "no_experiment",
-        "message": "録り込む実験フォルダを選択してください。",
-      }
+    exp_id = self._ensure_active_experiment()
     exp = self.store.get(exp_id)
     if exp is None:
       return 400, {"ok": False, "error": "experiment_missing", "message": "実験がありません。"}

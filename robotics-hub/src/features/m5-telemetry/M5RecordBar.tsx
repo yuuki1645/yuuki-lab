@@ -1,10 +1,13 @@
+import type { useM5Camera } from "./useM5Camera";
 import type { useM5Recording } from "./useM5Recording";
 
 type Rec = ReturnType<typeof useM5Recording>;
+type Cam = ReturnType<typeof useM5Camera>;
 
 type Props = {
   rec: Rec;
   atomOk: boolean;
+  camera: Cam;
 };
 
 function fmtClock(sec: number): string {
@@ -26,9 +29,17 @@ function fmtClock(sec: number): string {
  * 記録開始／停止と、再生ヘッド（シーク・±1/5/10）。
  * sticky にしてタブを切り替えても同時刻のデータを見続けられる。
  */
-export function M5RecordBar({ rec, atomOk }: Props) {
+export function M5RecordBar({ rec, atomOk, camera }: Props) {
   const liveRec = Boolean(rec.recordStatus?.recording);
   const replaying = rec.mode === "replay";
+  const camRec = Boolean(camera.status?.recording);
+  const camHint = camera.startError
+    ? `映像を録画できていません: ${camera.startError}`
+    : camera.linkError
+      ? `カメラ未接続: ${camera.linkError}`
+      : camera.status?.capture_error && !camera.status.has_frame
+        ? camera.status.capture_error
+        : null;
 
   return (
     <section
@@ -43,7 +54,7 @@ export function M5RecordBar({ rec, atomOk }: Props) {
             <>
               <span className="m5-rec__dot" aria-hidden />
               <div>
-                <strong>記録中</strong>
+                <strong>記録中{camRec ? " · 映像REC" : camera.busy ? " · 映像開始中" : ""}</strong>
                 <p>
                   {rec.recordStatus?.name || "無題"}
                   {" · "}
@@ -197,6 +208,7 @@ export function M5RecordBar({ rec, atomOk }: Props) {
       ) : null}
 
       {rec.recordStatus?.error ? <p className="m5__error">{rec.recordStatus.error}</p> : null}
+      {camHint ? <p className="m5__error">{camHint}</p> : null}
       {rec.loadProgress ? (
         <p className="m5__meta">
           読み込み中{" "}

@@ -65,6 +65,10 @@ export type RecorderStatus = {
   data_root?: string;
   disk?: RecorderDiskStatus;
   imu_bridge?: RecorderImuBridgeSnapshot;
+  /** キャプチャから1枚以上来ている */
+  has_frame?: boolean;
+  ffmpeg_ok?: boolean;
+  capture_error?: string | null;
 };
 
 export type RecorderExperiment = {

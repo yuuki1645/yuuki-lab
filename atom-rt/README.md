@@ -36,7 +36,7 @@ PC:
 
 | ツール | 用途 |
 |---|---|
-| `tools/lab_debug.py` | **総合デバッグ**。複数 ATOM、トポロジ、関節、校正、電源、周期、記録。接続時（HELLO）に起動アナウンス WAV を再生 |
+| `tools/lab_debug.py` | **総合デバッグ**。複数 ATOM、トポロジ、関節、校正、電源、周期、本記録。接続時（HELLO）に起動アナウンス WAV を再生 |
 | `tools/m5_hub_bridge.py` | Hub `/m5-telemetry` 向け Socket.IO 中継（`lab_debug.py` が起動。既定 :8794） |
 | `tools/rt_monitor.py` | 1 台の 20 Hz グラフ（従来）。接続時に Robot モードへ切り替える |
 | `tools/rt_usb_log.py` | 解釈済みの送受信ログ。キーボードで `ping` / `scan` / `hold` などを送信 |
@@ -137,7 +137,9 @@ cd robotics-hub
 npm run dev:lab
 ```
 
-iPad ブラウザで `http://<PCのLAN IP>:5173/m5-telemetry` を開きます。`lab_debug.py` が Socket.IO **:8794** で中継します。iPad 接続中は PC 側のロボット操作は表示のみ（**全停止** と USB 接続／切断は残します）。COM のファイルダイアログ・WAV・ログ保存は PC 専用です。
+iPad ブラウザで `http://<PCのLAN IP>:5173/m5-telemetry` を開きます。`lab_debug.py` が Socket.IO **:8794** で中継します。iPad 接続中は PC 側のロボット操作は表示のみ（**全停止** と USB 接続／切断は残します）。COM のファイルダイアログ・WAV は PC 専用です。
+
+本記録（センサ＋指令の 20 Hz）は **明示開始〜停止だけ** `data/recordings/` に保存します。Hub のライブラリから一覧・メモ編集・再生（シーク / ±1・5・10 フレーム）できます。REST は同じ :8794 の `/api/m5/recordings` です。
 
 机に複数の ATOMS3 Lite を USB ハブでつなぎ、機体に載せた 1 台にも使えます。
 
@@ -340,12 +342,14 @@ src/rt_usb/joint_profile.hpp       関節経路（NVS / USB）
 src/rt_usb/snapshot.hpp            20 Hz 共有データ
 tools/rt_usb_proto.py              同じフレームの Python 実装
 tools/lab_debug.py                 総合 GUI
-tools/m5_hub_bridge.py             Hub / iPad 向け Socket.IO 中継（:8794）
+tools/m5_hub_bridge.py             Hub / iPad 向け Socket.IO 中継と本記録 REST（:8794）
+tools/m5_record_store.py           本記録（data/recordings、明示開始のみ）
 tools/rt_monitor.py
 tools/rt_usb_log.py
 tools/cal_map_io.py
 tools/requirements.txt
 data/cal_map_*.json            校正マップ（機体・机上）
+data/recordings/               本記録（gitignore。明示開始のみ）
 audio/right_leg_boot.wav       起動アナウンス
 audio/system_all_green.wav     異常なしアナウンス
 ```

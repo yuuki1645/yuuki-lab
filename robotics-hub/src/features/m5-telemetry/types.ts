@@ -146,7 +146,82 @@ export type M5Hello = {
   profile?: M5Profile;
   events?: string[];
   cal?: M5Cal;
+  record?: M5RecordStatus;
 };
+
+/** lab_debug 本記録のライブ状態（Socket.IO m5/record） */
+export type M5RecordStatus = {
+  recording: boolean;
+  id: string | null;
+  name: string;
+  notes?: string;
+  started_at?: string | null;
+  sample_count: number;
+  elapsed_sec: number;
+  error?: string;
+};
+
+/** PC ディスク上の 1 本（一覧・詳細） */
+export type M5RecordMeta = {
+  format_id: string;
+  id: string;
+  name: string;
+  notes: string;
+  started_at: string;
+  ended_at: string | null;
+  started_unix: number;
+  ended_unix: number | null;
+  duration_sec: number | null;
+  sample_count: number;
+  hz: number;
+  port: string;
+  atom_name: string;
+  mode: string;
+  hello: string;
+  recording: boolean;
+  bytes?: number;
+};
+
+export type M5RecordDetail = M5RecordMeta & {
+  profile?: M5Profile;
+  scan?: M5Scan;
+  control?: M5Control;
+};
+
+/** グラフ用のリングバッファ 1 点 */
+export function frameToHistory(frame: M5Frame): M5HistoryPoint {
+  return {
+    t: frame.t,
+    cmd: frame.cmd,
+    raw: frame.raw,
+    unwrap: frame.unwrap,
+    corr: frame.corr,
+    volt: frame.volt,
+    amp: frame.amp,
+    watt: frame.watt,
+    period_ms: frame.period_us / 1000,
+    loop_ms: frame.loop_us / 1000,
+    sense_ms: frame.sense_us / 1000,
+  };
+}
+
+/** 再生中のスライダ／PWM 表示を、そのフレームの指令に合わせる */
+export function controlFromFrame(frame: M5Frame, base?: M5Control | null): M5Control {
+  const cmd = frame.cmd.map((v) => (typeof v === "number" && Number.isFinite(v) ? v : 135));
+  const out = Array.from({ length: M5_JOINTS }, (_, i) => ((frame.out_mask >> i) & 1) === 1);
+  return {
+    out,
+    cmd,
+    rand: base?.rand ?? Array.from({ length: M5_JOINTS }, () => false),
+    amp_limit: base?.amp_limit ?? 8,
+    auto_scan: false,
+    rand_min: base?.rand_min ?? 40,
+    rand_max: base?.rand_max ?? 230,
+    rand_hold_min: base?.rand_hold_min ?? 0.7,
+    rand_hold_max: base?.rand_hold_max ?? 1.4,
+    rand_jump: base?.rand_jump ?? 25,
+  };
+}
 
 /** グラフ用のリングバッファ 1 点 */
 export type M5HistoryPoint = {

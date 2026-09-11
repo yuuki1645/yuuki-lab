@@ -39,11 +39,13 @@ from m5_hub_bridge import (
     EVT_EVENTS,
     EVT_FRAME,
     EVT_PROFILE,
+    EVT_RECORD,
     EVT_SCAN,
     EVT_STATUS,
     M5HubBridge,
     lan_ipv4,
 )
+from m5_record_store import M5RecordStore
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -1097,9 +1099,13 @@ class LabApp(tk.Tk):
         self._m5_st_sig: object = None
         # iPad コマンド処理中は PC 操作ガードを外す（同じハンドラを再利用するため）
         self._from_ipad = False
+        # 本記録は ATOM 接続 PC のディスク。明示開始まで書かない。
+        self._record_store = M5RecordStore()
+        self._record_pub_t = 0.0
         self._m5_bridge = M5HubBridge(
             on_command=self._m5_cmd_from_thread,
             on_clients_changed=self._m5_clients_from_thread,
+            store=self._record_store,
         )
 
         self._build()
@@ -1325,6 +1331,7 @@ class LabApp(tk.Tk):
             "profile": self._m5_profile_dict(),
             "events": self._m5_events_list(),
             "cal": self._m5_cal_dict(),
+            "record": self._record_store.status(),
         }
 
     def _m5_status_dict(self) -> dict:
@@ -1459,17 +1466,90 @@ class LabApp(tk.Tk):
     def _m5_publish_control(self) -> None:
         self._m5_bridge.publish(EVT_CONTROL, self._m5_control_dict())
 
+    def _m5_publish_record(self) -> None:
+        """記録状態を Hub へ。開始・停止・追記中の経過。"""
+        self._m5_bridge.publish(EVT_RECORD, self._record_store.status())
+
+    def _record_start(self, name: str = "", notes: str = "") -> dict:
+        """明示開始。ATOM が無いときは始めない。"""
+        if self._record_store.is_recording():
+            return {**self._record_store.status(), "ok": True, "already": True}
+        s = self._m5_sess()
+        if s is None or not s.connected:
+            err = {"ok": False, "error": "ATOM が未接続です", "recording": False, "id": None, "name": "", "sample_count": 0, "elapsed_sec": 0.0}
+            self._m5_bridge.publish(EVT_RECORD, err)
+            return err
+        meta = self._record_store.start(
+            name=name,
+            notes=notes,
+            port=s.port,
+            atom_name=s.name or s.port,
+            mode=s.mode,
+            hello=s.hello,
+            profile=self._m5_profile_dict(),
+            scan=self._m5_scan_dict(),
+            control=self._m5_control_dict(),
+        )
+        s.note(f"本記録開始  {meta.get('name')}  ({meta.get('id')})")
+        self._record_pub_t = 0.0
+        self._m5_publish_record()
+        self._refresh_record_ui()
+        return meta
+
+    def _record_stop(self, reason: str = "") -> dict:
+        """明示停止、または切断時のクローズ。"""
+        if not self._record_store.is_recording():
+            return {"ok": True, "recording": False}
+        out = self._record_store.stop(reason=reason)
+        s = self._m5_sess()
+        if s:
+            n = out.get("sample_count", 0)
+            s.note(f"本記録停止  {n}点  {reason}".rstrip())
+        self._m5_publish_record()
+        self._refresh_record_ui()
+        return out
+
+    def _refresh_record_ui(self) -> None:
+        """PC のイベントタブ表示。"""
+        lab = getattr(self, "log_state", None)
+        if lab is None:
+            return
+        st = self._record_store.status()
+        if st.get("recording"):
+            lab.configure(
+                text=f"記録中  {st.get('name')}  {int(st.get('sample_count') or 0)}点",
+                fg=GOOD,
+            )
+        else:
+            lab.configure(text="記録オフ（Hub からも開始可）", fg=MUTED)
+
     def _m5_publish_tick(self) -> None:
         """Tk 周期で iPad へ最新を流す。重い SCAN/PROFILE/CAL は変化時だけ。"""
-        if not self._m5_bridge.enabled:
-            return
         s = self._m5_sess()
+        # 記録中に ATOM が消えたらファイルを閉じる
+        if self._record_store.is_recording() and (s is None or not s.connected):
+            self._record_stop(reason="ATOM 切断")
+        if not self._m5_bridge.enabled:
+            if self._record_store.is_recording():
+                frame = self._m5_frame_dict()
+                if frame:
+                    self._record_store.append(frame)
+            return
         f = s.last_frame if s else None
         seq = (s.port, f.seq) if s and f else None
         if seq != self._m5_last_seq:
             self._m5_last_seq = seq
-            self._m5_bridge.publish(EVT_FRAME, self._m5_frame_dict())
+            frame = self._m5_frame_dict()
+            self._m5_bridge.publish(EVT_FRAME, frame)
             self._m5_bridge.publish(EVT_CONTROL, self._m5_control_dict())
+            if frame and self._record_store.is_recording():
+                self._record_store.append(frame)
+        if self._record_store.is_recording():
+            now = time.time()
+            if now - self._record_pub_t >= 0.5:
+                self._record_pub_t = now
+                self._m5_publish_record()
+                self._refresh_record_ui()
         st_sig = (
             s.port if s else "",
             bool(s and s.connected),
@@ -1512,6 +1592,12 @@ class LabApp(tk.Tk):
         if op == "hold":
             self._hold_all()
             self._m5_publish_control()
+            return
+        if op == "record_start":
+            self._record_start(str(msg.get("name") or ""), str(msg.get("notes") or ""))
+            return
+        if op == "record_stop":
+            self._record_stop()
             return
         if s is None:
             return
@@ -2245,11 +2331,18 @@ class LabApp(tk.Tk):
     def _build_evt(self) -> None:
         row = tk.Frame(self.tab_evt, bg=BG)
         row.pack(fill="x", padx=8, pady=6)
-        tk.Button(row, text="記録開始", command=self._start_log, bg=GOOD, fg=TEXT, relief="flat").pack(side="left")
-        tk.Button(row, text="記録停止", command=self._stop_log, bg=CARD_HI, fg=TEXT, relief="flat").pack(
+        tk.Label(row, text="データ名", bg=BG, fg=MUTED).pack(side="left")
+        self.rec_name_var = tk.StringVar()
+        tk.Entry(
+            row, textvariable=self.rec_name_var, width=22, bg=CARD, fg=TEXT, insertbackground=TEXT, relief="flat"
+        ).pack(side="left", padx=6)
+        tk.Button(row, text="記録開始", command=self._pc_record_start, bg=GOOD, fg=TEXT, relief="flat").pack(
+            side="left"
+        )
+        tk.Button(row, text="記録停止", command=self._pc_record_stop, bg=CARD_HI, fg=TEXT, relief="flat").pack(
             side="left", padx=6
         )
-        self.log_state = tk.Label(row, text="記録オフ", bg=BG, fg=MUTED)
+        self.log_state = tk.Label(row, text="記録オフ（Hub からも開始可）", bg=BG, fg=MUTED)
         self.log_state.pack(side="left", padx=8)
         self.evt_text = tk.Text(
             self.tab_evt, bg=CARD, fg=TEXT, insertbackground=TEXT, relief="flat",
@@ -2824,26 +2917,17 @@ class LabApp(tk.Tk):
                 s.send(proto.cmd_scan())
             self._scan_job = self.after(5000, self._auto_loop)
 
-    def _start_log(self) -> None:
-        s = self._sess()
-        if not s:
-            return
-        path = filedialog.asksaveasfilename(
-            title="記録ファイル",
-            defaultextension=".log",
-            initialfile=f"lab_{s.port}_{time.strftime('%Y%m%d_%H%M%S')}.log",
-        )
-        if path:
-            s.start_log(Path(path))
-            self.log_state.configure(text=f"記録中  {path}", fg=GOOD)
+    def _pc_record_start(self) -> None:
+        """PC GUI からの本記録開始。保存先は data/recordings（ダイアログなし）。"""
+        out = self._record_start(self.rec_name_var.get().strip(), "")
+        if not out.get("ok", True) and out.get("error"):
+            messagebox.showerror("記録", str(out["error"]))
 
-    def _stop_log(self) -> None:
-        s = self._sess()
-        if s:
-            s.stop_log()
-        self.log_state.configure(text="記録オフ", fg=MUTED)
+    def _pc_record_stop(self) -> None:
+        self._record_stop()
 
     def _on_close(self) -> None:
+        self._record_stop(reason="ツール終了")
         for s in self.sessions.values():
             s.disconnect()
         self.destroy()

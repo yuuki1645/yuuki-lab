@@ -12,7 +12,10 @@ import logging
 import queue
 import socket
 import threading
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from m5_record_store import M5RecordStore
 
 LOG = logging.getLogger("m5_hub_bridge")
 
@@ -28,6 +31,7 @@ EVT_SCAN = "m5/scan"
 EVT_PROFILE = "m5/profile"
 EVT_EVENTS = "m5/events"
 EVT_CAL = "m5/cal"
+EVT_RECORD = "m5/record"
 CMD_EVENT = "m5/cmd"
 
 
@@ -52,11 +56,13 @@ class M5HubBridge:
         on_clients_changed: Callable[[int], None],
         host: str = DEFAULT_HOST,
         port: int = DEFAULT_PORT,
+        store: "M5RecordStore | None" = None,
     ) -> None:
         self.on_command = on_command
         self.on_clients_changed = on_clients_changed
         self.host = host
         self.port = port
+        self.store = store
         self.enabled = False
         self.client_count = 0
         self._lock = threading.Lock()
@@ -67,7 +73,7 @@ class M5HubBridge:
         self._app = None
 
         try:
-            from flask import Flask, jsonify
+            from flask import Flask, jsonify, request
             from flask_cors import CORS
             from flask_socketio import SocketIO, emit
         except ImportError:
@@ -94,7 +100,100 @@ class M5HubBridge:
         def health():
             with self._lock:
                 n = self.client_count
-            return jsonify({"ok": True, "clients": n, "port": self.port})
+            body = {"ok": True, "clients": n, "port": self.port}
+            if self.store is not None:
+                body["record"] = self.store.status()
+            return jsonify(body)
+
+        # ----- 本記録 API（正本は PC ディスク。Hub はここ経由） -----
+        @app.get("/api/m5/record/status")
+        def record_status():
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            body = self.store.status()
+            body["ok"] = True
+            return jsonify(body)
+
+        @app.post("/api/m5/record/start")
+        def record_start():
+            body = request.get_json(silent=True) or {}
+            self.on_command(
+                {
+                    "op": "record_start",
+                    "name": body.get("name") or "",
+                    "notes": body.get("notes") or "",
+                }
+            )
+            return jsonify({"ok": True, "accepted": True})
+
+        @app.post("/api/m5/record/stop")
+        def record_stop():
+            self.on_command({"op": "record_stop"})
+            return jsonify({"ok": True, "accepted": True})
+
+        @app.get("/api/m5/recordings")
+        def recordings_list():
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            return jsonify({"ok": True, "recordings": self.store.list_recordings()})
+
+        @app.get("/api/m5/recordings/<rec_id>")
+        def recording_get(rec_id: str):
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            row = self.store.get_recording(rec_id)
+            if row is None:
+                return jsonify({"ok": False, "error": "not found"}), 404
+            row["ok"] = True
+            return jsonify(row)
+
+        @app.get("/api/m5/recordings/<rec_id>/frames")
+        def recording_frames(rec_id: str):
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            if self.store.get_recording(rec_id) is None:
+                return jsonify({"ok": False, "error": "not found"}), 404
+            try:
+                offset = int(request.args.get("offset", 0))
+                limit = int(request.args.get("limit", 4000))
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "error": "bad query"}), 400
+            frames, total = self.store.read_frames(rec_id, offset, limit)
+            return jsonify(
+                {
+                    "ok": True,
+                    "id": rec_id,
+                    "offset": max(0, offset),
+                    "total": total,
+                    "frames": frames,
+                }
+            )
+
+        @app.patch("/api/m5/recordings/<rec_id>")
+        def recording_patch(rec_id: str):
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            body = request.get_json(silent=True) or {}
+            name = body["name"] if "name" in body else None
+            notes = body["notes"] if "notes" in body else None
+            if name is not None and not isinstance(name, str):
+                return jsonify({"ok": False, "error": "name"}), 400
+            if notes is not None and not isinstance(notes, str):
+                return jsonify({"ok": False, "error": "notes"}), 400
+            row = self.store.patch(rec_id, name=name, notes=notes)
+            if row is None:
+                return jsonify({"ok": False, "error": "not found"}), 404
+            row["ok"] = True
+            return jsonify(row)
+
+        @app.delete("/api/m5/recordings/<rec_id>")
+        def recording_delete(rec_id: str):
+            if self.store is None:
+                return jsonify({"ok": False, "error": "store missing"}), 500
+            ok, err = self.store.delete(rec_id)
+            if not ok:
+                return jsonify({"ok": False, "error": err}), 400
+            return jsonify({"ok": True, "id": rec_id})
 
         @socketio.on("connect")
         def _on_connect():

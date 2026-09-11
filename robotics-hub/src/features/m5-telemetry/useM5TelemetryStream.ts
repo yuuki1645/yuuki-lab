@@ -9,29 +9,15 @@ import type {
   M5Hello,
   M5HistoryPoint,
   M5Profile,
+  M5RecordStatus,
   M5Scan,
   M5Status,
 } from "./types";
+import { frameToHistory } from "./types";
 
 export type M5WsStatus = "disconnected" | "connecting" | "connected";
 
 const HISTORY_MAX = 160;
-
-function frameToHistory(frame: M5Frame): M5HistoryPoint {
-  return {
-    t: frame.t,
-    cmd: frame.cmd,
-    raw: frame.raw,
-    unwrap: frame.unwrap,
-    corr: frame.corr,
-    volt: frame.volt,
-    amp: frame.amp,
-    watt: frame.watt,
-    period_ms: frame.period_us / 1000,
-    loop_ms: frame.loop_us / 1000,
-    sense_ms: frame.sense_us / 1000,
-  };
-}
 
 function applyHello(
   hello: M5Hello,
@@ -61,6 +47,13 @@ function applyHello(
   if (hello.cal) setCal(hello.cal);
 }
 
+function applyHelloRecord(
+  hello: M5Hello,
+  setRecordStatus: (v: M5RecordStatus | null) => void
+): void {
+  if (hello.record) setRecordStatus(hello.record);
+}
+
 export type M5TelemetryStream = {
   wsStatus: M5WsStatus;
   url: string;
@@ -71,6 +64,7 @@ export type M5TelemetryStream = {
   profile: M5Profile | null;
   events: string[];
   cal: M5Cal | null;
+  recordStatus: M5RecordStatus | null;
   history: M5HistoryPoint[];
   lastError: string | null;
   send: (cmd: M5Cmd) => void;
@@ -90,6 +84,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
   const [profile, setProfile] = useState<M5Profile | null>(null);
   const [events, setEvents] = useState<string[]>([]);
   const [cal, setCal] = useState<M5Cal | null>(null);
+  const [recordStatus, setRecordStatus] = useState<M5RecordStatus | null>(null);
   const [history, setHistory] = useState<M5HistoryPoint[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [url] = useState(() => getM5TelemetrySocketUrl());
@@ -152,6 +147,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
         historyRef,
         setHistory
       );
+      applyHelloRecord(payload ?? {}, setRecordStatus);
     });
 
     socket.on("m5/status", (payload: M5Status) => {
@@ -187,6 +183,10 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
       setCal(payload);
     });
 
+    socket.on("m5/record", (payload: M5RecordStatus) => {
+      setRecordStatus(payload);
+    });
+
     return () => {
       socketRef.current = null;
       socket.disconnect();
@@ -203,6 +203,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
     profile,
     events,
     cal,
+    recordStatus,
     history,
     lastError,
     send,

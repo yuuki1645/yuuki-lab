@@ -11,3 +11,4 @@ __pycache__/
 *.pyc
 .venv/
 tools/lab_nodes.json
+data/recordings/

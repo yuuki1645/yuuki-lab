@@ -16,6 +16,9 @@ import {
 } from "./types";
 import { buildTopoTree, type TopoItem } from "./topoTree";
 import { RightLegTab } from "./RightLegTab";
+import { M5RecordBar } from "./M5RecordBar";
+import { M5RecordLibrary } from "./M5RecordLibrary";
+import { useM5Recording } from "./useM5Recording";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
 
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "events";
@@ -96,7 +99,17 @@ function fmtRouteField(key: keyof M5Route, n: number): string {
 
 export default function M5TelemetryPage() {
   const stream = useM5TelemetryStream(true);
-  const { status, control, frame, scan, profile, events, cal, history, send } = stream;
+  const rec = useM5Recording({ recordStatus: stream.recordStatus, send: stream.send });
+  const replaying = rec.mode === "replay";
+  const status = stream.status;
+  const events = stream.events;
+  const cal = stream.cal;
+  const send = stream.send;
+  const frame = replaying ? rec.frame : stream.frame;
+  const history = replaying ? (rec.history ?? []) : stream.history;
+  const control = replaying ? rec.control : stream.control;
+  const scan = replaying ? (rec.replayScan ?? stream.scan) : stream.scan;
+  const profile = replaying ? (rec.replayProfile ?? stream.profile) : stream.profile;
   const [tab, setTab] = useState<TabId>("right-leg");
   const [panels, setPanels] = useState<number[]>([0, 1]);
   const [plotJoint, setPlotJoint] = useState(0);
@@ -117,10 +130,11 @@ export default function M5TelemetryPage() {
 
   const topoTree = useMemo(() => buildTopoTree(scan?.nodes ?? []), [scan?.nodes]);
 
-  const routes = draftRoutes ?? profile?.routes ?? [];
-  const foot = draftFoot ?? profile?.foot ?? emptyFoot();
+  const routes = replaying ? (profile?.routes ?? []) : (draftRoutes ?? profile?.routes ?? []);
+  const foot = replaying ? (profile?.foot ?? emptyFoot()) : (draftFoot ?? profile?.foot ?? emptyFoot());
   const atomOk = Boolean(status?.connected);
-  const canCmd = stream.wsStatus === "connected" && atomOk;
+  // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
+  const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
 
   const setPanelJoint = (panel: number, joint: number) => {
     setPanels((prev) => {
@@ -200,7 +214,8 @@ export default function M5TelemetryPage() {
         <h1>実機テレメトリ（M5）</h1>
         <p>
           ATOM は USB で Windows PC の <code>atom-rt/tools/lab_debug.py</code> に接続し、この画面は Wi‑Fi で PC を中継します。
-          右脚タブ左上は ATOM S3R + 足裏 ATOMS3 Lite スレーブの DF9-40 四隅です。iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。既存の「実機テレメトリ」（IMU / Pico 足圧）とは別です。
+          本記録は明示開始した区間だけ PC に保存し、ライブラリから再生すると全タブが同時刻に連動します。
+          右脚タブ左上は ATOM S3R + 足裏 ATOMS3 Lite スレーブの DF9-40 四隅です。iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。
         </p>
       </header>
 
@@ -217,7 +232,9 @@ export default function M5TelemetryPage() {
           {atomOk ? `ATOM ${status?.name || status?.port || ""}` : "ATOM 未接続"}
         </span>
         {status?.hello ? <span className="m5__meta">{status.hello}</span> : null}
-        <span className="m5__meta">モード {status?.mode || "—"}</span>
+        <span className="m5__meta">モード {replaying ? (frame?.mode || rec.meta?.mode || "—") : status?.mode || "—"}</span>
+        {replaying ? <span className="m5__badge m5__badge--replay">再生表示</span> : null}
+        {stream.recordStatus?.recording ? <span className="m5__badge m5__badge--rec">記録中</span> : null}
       </div>
 
       {stream.lastError ? <div className="m5__error">{stream.lastError}</div> : null}
@@ -252,6 +269,21 @@ export default function M5TelemetryPage() {
           再接続
         </button>
       </div>
+
+      <M5RecordBar rec={rec} atomOk={atomOk && stream.wsStatus === "connected"} />
+      <M5RecordLibrary
+        open={rec.libraryOpen}
+        onClose={() => rec.setLibraryOpen(false)}
+        rows={rec.library}
+        loading={rec.libraryLoading}
+        error={rec.libraryError}
+        busy={rec.busy}
+        playingId={replaying ? rec.meta?.id ?? null : null}
+        onRefresh={() => void rec.refreshLibrary()}
+        onPlay={(id) => void rec.loadReplay(id)}
+        onSave={(id, name, notes) => rec.saveMeta(id, name, notes)}
+        onDelete={(id) => rec.removeRecording(id)}
+      />
 
       <div className="m5__tabs" role="tablist">
         {TABS.map((t) => (
@@ -739,7 +771,10 @@ export default function M5TelemetryPage() {
 
       {tab === "events" ? (
         <section className="m5__section">
-          <p className="m5__meta">PC 側のログファイル記録は lab_debug の「記録開始」を使ってください。</p>
+          <p className="m5__meta">
+            本記録（センサ＋指令）は上のバーから開始します。保存先は ATOM 接続 PC の{" "}
+            <code>atom-rt/data/recordings</code>。ライブラリで再生すると、この画面の全タブが同時刻に連動します。
+          </p>
           <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
         </section>
       ) : null}

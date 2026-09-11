@@ -905,6 +905,19 @@
   font-size: 0.82rem;
 }
 
+/* 経過時間・点数など毎秒変わる値。プロポーショナルだと桁が横に揺れる */
+.m5-rec__nums {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  white-space: nowrap;
+}
+
+.m5-rec__nums--count {
+  display: inline-block;
+  min-width: 8ch;
+}
+
 .m5-rec__actions {
   display: flex;
   flex-wrap: wrap;

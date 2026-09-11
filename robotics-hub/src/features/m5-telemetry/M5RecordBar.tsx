@@ -8,14 +8,18 @@ type Props = {
 };
 
 function fmtClock(sec: number): string {
-  if (!Number.isFinite(sec) || sec < 0) return "0:00.00";
+  if (!Number.isFinite(sec) || sec < 0) return "00:00.00";
   const ms = Math.floor((sec % 1) * 100);
   const s = Math.floor(sec);
   const m = Math.floor(s / 60);
   const r = s % 60;
   const h = Math.floor(m / 60);
-  const mm = h > 0 ? `${h}:${String(m % 60).padStart(2, "0")}` : String(m);
-  return `${mm}:${String(r).padStart(2, "0")}.${String(ms).padStart(2, "0")}`;
+  const mm = String(m % 60).padStart(2, "0");
+  const ss = String(r).padStart(2, "0");
+  const cc = String(ms).padStart(2, "0");
+  // 分は常に 2 桁。1 時間超だけ時を足す（桁位置が秒ごとに動かない）
+  if (h > 0) return `${h}:${mm}:${ss}.${cc}`;
+  return `${mm}:${ss}.${cc}`;
 }
 
 /**
@@ -41,8 +45,13 @@ export function M5RecordBar({ rec, atomOk }: Props) {
               <div>
                 <strong>記録中</strong>
                 <p>
-                  {rec.recordStatus?.name || "無題"} · {fmtClock(rec.recordStatus?.elapsed_sec ?? 0)} ·{" "}
-                  {(rec.recordStatus?.sample_count ?? 0).toLocaleString()} 点
+                  {rec.recordStatus?.name || "無題"}
+                  {" · "}
+                  <span className="m5-rec__nums">{fmtClock(rec.recordStatus?.elapsed_sec ?? 0)}</span>
+                  {" · "}
+                  <span className="m5-rec__nums m5-rec__nums--count">
+                    {(rec.recordStatus?.sample_count ?? 0).toLocaleString()} 点
+                  </span>
                 </p>
               </div>
             </>
@@ -52,7 +61,13 @@ export function M5RecordBar({ rec, atomOk }: Props) {
               <div>
                 <strong>{rec.meta?.name || "記録"}</strong>
                 <p>
-                  {fmtClock(rec.tNow)} / {fmtClock(rec.tEnd)} · {rec.index + 1} / {rec.sampleCount} 点
+                  <span className="m5-rec__nums">
+                    {fmtClock(rec.tNow)} / {fmtClock(rec.tEnd)}
+                  </span>
+                  {" · "}
+                  <span className="m5-rec__nums m5-rec__nums--count">
+                    {rec.index + 1} / {rec.sampleCount} 点
+                  </span>
                 </p>
               </div>
             </>
@@ -184,7 +199,10 @@ export function M5RecordBar({ rec, atomOk }: Props) {
       {rec.recordStatus?.error ? <p className="m5__error">{rec.recordStatus.error}</p> : null}
       {rec.loadProgress ? (
         <p className="m5__meta">
-          読み込み中 {rec.loadProgress.loaded.toLocaleString()} / {rec.loadProgress.total.toLocaleString()}
+          読み込み中{" "}
+          <span className="m5-rec__nums">
+            {rec.loadProgress.loaded.toLocaleString()} / {rec.loadProgress.total.toLocaleString()}
+          </span>
         </p>
       ) : null}
     </section>

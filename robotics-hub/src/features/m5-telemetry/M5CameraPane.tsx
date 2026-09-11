@@ -25,7 +25,7 @@ function fmtClock(sec: number): string {
 }
 
 /**
- * 右脚タブ中央の実機映像。
+ * 右脚タブ左カラム上段の実機映像。
  * ライブは MJPEG（iframe 隔離）、再生は mp4/HLS を記録バーの時刻に合わせる。
  */
 export function M5CameraPane({ camera, replaying, replayCamera, playheadSec, playing }: Props) {

@@ -482,24 +482,36 @@
 
 .m5-leg__layout {
   display: grid;
-  grid-template-columns: minmax(220px, 0.28fr) minmax(300px, 0.40fr) minmax(260px, 0.32fr);
-  gap: 0.55rem 0.65rem;
+  /* 左=映像+足圧（旧模式図より少し広い）。右=バー+グラフをほぼ従来幅のまま */
+  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+  gap: 0.65rem 0.75rem;
   align-items: stretch;
-  min-height: min(70vh, 860px);
+}
+
+.m5-leg__sense {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.m5-leg__cam {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 }
 
 .m5-leg__foot {
+  flex: 0 0 auto;
   min-width: 0;
   background: radial-gradient(ellipse at 50% 12%, #1c2734 0%, #0e1318 70%);
   border: 1px solid rgba(213, 222, 234, 0.12);
   border-radius: 14px;
   overflow: hidden;
-}
-
-.m5-leg__cam {
-  min-width: 0;
-  min-height: 0;
-  overflow: visible;
 }
 
 .m5-leg__schematic {
@@ -615,8 +627,9 @@
 
 .m5-jrow__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(110px, 26%);
-  gap: 0.35rem 0.45rem;
+  /* バーをほんの少し譲り、グラフは従来どおり 36% 前後を確保 */
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 36%);
+  gap: 0.4rem 0.65rem;
   align-items: stretch;
   flex: 1 1 auto;
   width: 100%;
@@ -1210,6 +1223,10 @@
 
   .m5-leg__layout {
     grid-template-columns: 1fr;
+  }
+
+  .m5-leg__cam {
+    min-height: 220px;
   }
 
   .m5-leg__foot {

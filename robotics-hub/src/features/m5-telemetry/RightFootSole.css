@@ -10,22 +10,20 @@
   opacity: 0.78;
 }
 
+/* 左カラム下段。映像の下に収まるよう高さは伸ばさない */
 .m5-foot--large {
-  padding: 0.65rem 0.55rem 0.55rem;
-  height: 100%;
+  padding: 0.5rem 0.45rem 0.4rem;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
 }
 
 .m5-foot--large .m5-foot__title {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .m5-foot--large .m5-foot__plate {
-  flex: 1 1 auto;
-  aspect-ratio: auto;
-  min-height: 240px;
+  aspect-ratio: 0.78;
+  min-height: 0;
+  max-height: 220px;
 }
 
 .m5-foot--large .m5-foot__pad-lab {

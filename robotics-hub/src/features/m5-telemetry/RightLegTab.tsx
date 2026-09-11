@@ -17,7 +17,7 @@ type Props = {
   frame: M5Frame | null;
   history: M5HistoryPoint[];
   send: (cmd: M5Cmd) => void;
-  /** 中央カラム。実機カメラ（ライブ／再生） */
+  /** 左カラム上段。実機カメラ（ライブ／再生） */
   cameraPane: ReactNode;
 };
 
@@ -151,10 +151,13 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
       </div>
 
       <div className="m5-leg__layout">
-        <div className="m5-leg__foot">
-          <RightFootSole sample={frame?.foot} large />
+        {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}
+        <div className="m5-leg__sense">
+          <div className="m5-leg__cam">{cameraPane}</div>
+          <div className="m5-leg__foot">
+            <RightFootSole sample={frame?.foot} large />
+          </div>
         </div>
-        <div className="m5-leg__cam">{cameraPane}</div>
         <div className="m5-leg__rows">
           {RIGHT_LEG_JOINTS.map((j) => {
             const pwmOn = Boolean(at(control?.out, j.ch));

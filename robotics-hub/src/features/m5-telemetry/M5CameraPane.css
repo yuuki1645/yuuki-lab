@@ -1,22 +1,23 @@
-/* 右脚タブ中央：実機映像。祖先に overflow:hidden を付けない（MJPEG） */
+/* 右脚タブ左カラム上段：実機映像。祖先に overflow:hidden を付けない（MJPEG） */
 
 .m5-cam__slot {
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
   height: 100%;
 }
 
 .m5-cam__slot--hold {
-  min-height: 280px;
+  min-height: 180px;
 }
 
 .m5-cam {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 280px;
+  min-height: 0;
   height: 100%;
   background: #0b1016;
   border: 1px solid rgba(213, 222, 234, 0.14);
@@ -30,8 +31,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.4rem 0.65rem;
-  padding: 0.4rem 0.55rem;
+  gap: 0.28rem 0.4rem;
+  padding: 0.28rem 0.4rem;
 }
 
 .m5-cam__chrome {
@@ -108,7 +109,7 @@
 .m5-cam__stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: 220px;
+  min-height: 140px;
   background: #000;
   overflow: visible;
 }
@@ -118,7 +119,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  min-height: 140px;
 }
 
 .m5-cam__live .live-capture__stage,
@@ -129,7 +130,7 @@
   border: 0;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  min-height: 140px;
   max-height: none;
 }
 
@@ -137,7 +138,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  min-height: 140px;
   object-fit: contain;
   background: #000;
 }

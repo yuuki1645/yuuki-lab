@@ -172,6 +172,7 @@ function ScrubVideo({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const srcRef = useRef<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -179,6 +180,7 @@ function ScrubVideo({
     if (srcRef.current !== src) {
       el.src = src;
       srcRef.current = src;
+      setFailed(false);
     }
   }, [src]);
 
@@ -194,7 +196,7 @@ function ScrubVideo({
     }
     if (playing) {
       void el.play().catch(() => {
-        /* iPad はユーザー操作待ち */
+        /* iPad はユーザー操作待ち。シークだけでもコマは出す */
       });
     } else {
       el.pause();
@@ -209,8 +211,21 @@ function ScrubVideo({
 
   return (
     <div className="m5-cam__review">
-      <video ref={ref} className="m5-cam__video" playsInline preload="auto" />
+      <video
+        ref={ref}
+        className="m5-cam__video"
+        playsInline
+        muted
+        preload="auto"
+        onError={() => setFailed(true)}
+      />
       <span className="m5-cam__kind">{kind}</span>
+      {failed ? (
+        <div className="m5-cam__empty">
+          <p>映像ファイルを開けませんでした</p>
+          <span>{src}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

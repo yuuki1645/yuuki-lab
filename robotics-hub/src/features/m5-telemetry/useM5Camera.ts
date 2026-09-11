@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
 import {
   createExperiment,
@@ -10,26 +10,9 @@ import {
   type RecorderExperiment,
   type RecorderStatus,
 } from "@/shared/recorderApi";
+import { cameraFromRecorderStatus, resolveReplayVideoSrc as resolveReplaySrc } from "./m5CameraResolve";
 import { patchRecording } from "./m5RecordApi";
-import type { M5RecordCamera, M5RecordStatus } from "./types";
-
-function absMedia(base: string, path: string | null | undefined): string | null {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return base.replace(/\/$/, "") + (path.startsWith("/") ? path : `/${path}`);
-}
-
-function cameraFromStatus(st: RecorderStatus): M5RecordCamera {
-  return {
-    experiment_id: st.experiment_id ?? "",
-    take_id: st.take_id ?? "",
-    video_t0_unix: st.video_t0_unix ?? null,
-    mp4_url: st.mp4_url ?? null,
-    hls_url: st.hls_url ?? null,
-    ok: true,
-    error: "",
-  };
-}
+import type { M5RecordStatus } from "./types";
 
 /**
  * 実機カメラ（robot-recorder :8766）を M5 画面に載せる。
@@ -45,6 +28,8 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
   const [startError, setStartError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  /** 本記録停止後は status.id が消えるので、結び用に残す */
+  const lastRecIdRef = useRef<string | null>(null);
 
   const liveUrl = useMemo(
     () => getCaptureRealtimeStreamUrl() + "?t=" + String(nonce),
@@ -63,6 +48,18 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
       setError(e instanceof Error ? e.message : String(e));
     }
   }, []);
+
+  useEffect(() => {
+    if (recordStatus?.id && recordStatus.recording) {
+      lastRecIdRef.current = recordStatus.id;
+    }
+  }, [recordStatus?.id, recordStatus?.recording]);
+
+  const attachCamera = useCallback(async (st: RecorderStatus, recId?: string | null) => {
+    const id = recId || recordStatus?.id || lastRecIdRef.current;
+    if (!id || !st.take_id) return;
+    await patchRecording(id, { camera: cameraFromRecorderStatus(st) });
+  }, [recordStatus?.id]);
 
   useEffect(() => {
     void refresh();
@@ -149,6 +146,9 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
     try {
       const st = await stopRecording();
       setStatus(st);
+      await attachCamera(st).catch(() => {
+        /* 停止後の結びは再生時 lookup でも拾う */
+      });
       return st;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -163,12 +163,13 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [attachCamera]);
 
-  // 映像開始に失敗しても、ライブラリで理由が残るようにする
+  // 開始失敗は take が無いときだけ書く。成功した take を空で上書きしない
   useEffect(() => {
     const id = recordStatus?.id;
     if (!id || !recordStatus.recording || !startError) return;
+    if (status?.take_id) return;
     void patchRecording(id, {
       camera: {
         experiment_id: status?.experiment_id ?? "",
@@ -182,29 +183,26 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
     }).catch(() => {
       /* ignore */
     });
-  }, [recordStatus?.id, recordStatus?.recording, startError, status?.experiment_id]);
-
-  // M5 本記録とカメラ take を meta に結び付ける
-  useEffect(() => {
-    const id = recordStatus?.id;
-    if (!id || !recordStatus.recording || !status?.take_id) return;
-    void patchRecording(id, { camera: cameraFromStatus(status) }).catch(() => {
-      /* 次の tick で再試行 */
-    });
-  }, [recordStatus?.id, recordStatus?.recording, status?.take_id, status?.video_t0_unix]);
+  }, [recordStatus?.id, recordStatus?.recording, startError, status?.experiment_id, status?.take_id]);
 
   useEffect(() => {
-    const id = recordStatus?.id;
-    if (!id || recordStatus.recording) return;
-    if (!status?.mp4_url && !status?.hls_url) return;
-    void patchRecording(id, { camera: cameraFromStatus(status) }).catch(() => {
-      /* ignore */
+    if (!recordStatus?.recording || !status?.take_id) return;
+    void attachCamera(status, recordStatus.id).catch(() => {
+      /* 次の tick */
     });
-  }, [recordStatus?.id, recordStatus?.recording, status?.mp4_url, status?.hls_url]);
+  }, [
+    recordStatus?.recording,
+    recordStatus?.id,
+    status?.take_id,
+    status?.mp4_url,
+    status?.hls_url,
+    status?.video_t0_unix,
+    attachCamera,
+  ]);
 
   const reviewSrc = useMemo(() => {
     if (!status?.take_id) return null;
-    return absMedia(baseUrl, status.mp4_url) ?? absMedia(baseUrl, status.hls_url);
+    return resolveReplaySrc(baseUrl, cameraFromRecorderStatus(status));
   }, [baseUrl, status]);
 
   return {
@@ -227,10 +225,4 @@ export function useM5Camera(opts: { recordStatus: M5RecordStatus | null }) {
   };
 }
 
-export function resolveReplayVideoSrc(
-  baseUrl: string,
-  camera: M5RecordCamera | null | undefined
-): string | null {
-  if (!camera) return null;
-  return absMedia(baseUrl, camera.mp4_url) ?? absMedia(baseUrl, camera.hls_url);
-}
+export { resolveReplayVideoSrc } from "./m5CameraResolve";

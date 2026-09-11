@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lookupCameraForRecording } from "./m5CameraResolve";
 import {
   deleteRecording,
   fetchAllRecordingFrames,
@@ -110,10 +111,17 @@ export function useM5Recording(opts: {
     setLoadProgress({ loaded: 0, total: 1 });
     try {
       const detail = await fetchRecording(id);
+      const camera = await lookupCameraForRecording(detail);
+      const linked = camera ? { ...detail, camera } : detail;
+      if (camera && (!detail.camera?.mp4_url || !detail.camera.take_id)) {
+        void patchRecording(id, { camera }).catch(() => {
+          /* 次回の一覧用。再生自体は linked で進める */
+        });
+      }
       const all = await fetchAllRecordingFrames(id, (loaded, total) => {
         setLoadProgress({ loaded, total });
       });
-      setMeta(detail);
+      setMeta(linked);
       setFrames(all);
       setReplayProfile(detail.profile ?? null);
       setReplayScan(detail.scan ?? null);

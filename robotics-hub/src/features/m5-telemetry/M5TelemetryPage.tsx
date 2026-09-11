@@ -16,8 +16,10 @@ import {
 } from "./types";
 import { buildTopoTree, type TopoItem } from "./topoTree";
 import { RightLegTab } from "./RightLegTab";
+import { M5CameraPane } from "./M5CameraPane";
 import { M5RecordBar } from "./M5RecordBar";
 import { M5RecordLibrary } from "./M5RecordLibrary";
+import { useM5Camera } from "./useM5Camera";
 import { useM5Recording } from "./useM5Recording";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
 
@@ -99,7 +101,15 @@ function fmtRouteField(key: keyof M5Route, n: number): string {
 
 export default function M5TelemetryPage() {
   const stream = useM5TelemetryStream(true);
-  const rec = useM5Recording({ recordStatus: stream.recordStatus, send: stream.send });
+  const camera = useM5Camera({
+    recordStatus: stream.recordStatus,
+  });
+  const rec = useM5Recording({
+    recordStatus: stream.recordStatus,
+    send: stream.send,
+    startCamera: camera.startCapture,
+    stopCamera: camera.stopCapture,
+  });
   const replaying = rec.mode === "replay";
   const status = stream.status;
   const events = stream.events;
@@ -213,9 +223,7 @@ export default function M5TelemetryPage() {
       <header className="m5__header">
         <h1>実機テレメトリ（M5）</h1>
         <p>
-          ATOM は USB で Windows PC の <code>atom-rt/tools/lab_debug.py</code> に接続し、この画面は Wi‑Fi で PC を中継します。
-          本記録は明示開始した区間だけ PC に保存し、ライブラリから再生すると全タブが同時刻に連動します。
-          右脚タブ左上は ATOM S3R + 足裏 ATOMS3 Lite スレーブの DF9-40 四隅です。iPad 接続中は PC GUI は表示のみ（全停止と USB 接続／切断は PC 側）。
+          記録開始でセンサと実機カメラを同時に残します。再生するとバー・足圧・映像が同じ時刻になります。
         </p>
       </header>
 
@@ -307,6 +315,19 @@ export default function M5TelemetryPage() {
           frame={frame}
           history={history}
           send={send}
+          cameraPane={
+            <M5CameraPane
+              camera={camera}
+              replaying={replaying}
+              replayCamera={rec.meta?.camera}
+              playheadSec={
+                replaying && rec.frame && typeof rec.meta?.camera?.video_t0_unix === "number"
+                  ? Math.max(0, rec.frame.t - rec.meta.camera.video_t0_unix)
+                  : rec.tNow
+              }
+              playing={rec.playing}
+            />
+          }
         />
       ) : null}
 

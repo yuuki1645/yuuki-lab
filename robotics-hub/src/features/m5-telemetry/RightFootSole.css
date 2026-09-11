@@ -10,6 +10,36 @@
   opacity: 0.78;
 }
 
+.m5-foot--large {
+  padding: 0.65rem 0.55rem 0.55rem;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.m5-foot--large .m5-foot__title {
+  font-size: 0.88rem;
+}
+
+.m5-foot--large .m5-foot__plate {
+  flex: 1 1 auto;
+  aspect-ratio: auto;
+  min-height: 240px;
+}
+
+.m5-foot--large .m5-foot__pad-lab {
+  font-size: 0.68rem;
+}
+
+.m5-foot--large .m5-foot__pad-kg {
+  font-size: 1.15rem;
+}
+
+.m5-foot--large .m5-foot__total strong {
+  font-size: 1.2rem;
+}
+
 .m5-foot__head {
   display: flex;
   align-items: center;

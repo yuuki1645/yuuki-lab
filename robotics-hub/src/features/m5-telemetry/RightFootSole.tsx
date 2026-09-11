@@ -14,6 +14,8 @@ const CORNERS: { id: CornerId; label: string; area: string }[] = [
 
 type Props = {
   sample: M5FootSample | null | undefined;
+  /** 右脚タブ左列向け。パッドと数字を大きくする */
+  large?: boolean;
 };
 
 function clamp01(x: number): number {
@@ -43,7 +45,7 @@ function cornerKg(c: M5FootCorner | null | undefined): number {
  * 右脚タブ左列用のコンパクトな足裏四隅 + 圧力中心。
  * 実機テレメトリ（Pico）の FootSolePressureMap と同じ熱色・CoP の考え方。
  */
-export function RightFootSole({ sample }: Props) {
+export function RightFootSole({ sample, large }: Props) {
   const corners = sample?.corners ?? null;
   const ok = Boolean(sample?.ok);
   const totalKg = sample?.force_kg ?? 0;
@@ -100,7 +102,7 @@ export function RightFootSole({ sample }: Props) {
   }, [corners, ok]);
 
   return (
-    <div className={"m5-foot" + (ok ? "" : " m5-foot--idle")}>
+    <div className={"m5-foot" + (ok ? "" : " m5-foot--idle") + (large ? " m5-foot--large" : "")}>
       <div className="m5-foot__head">
         <span className="m5-foot__title">右足裏</span>
         <span className={"m5-foot__badge" + (ok ? " m5-foot__badge--ok" : "")}>

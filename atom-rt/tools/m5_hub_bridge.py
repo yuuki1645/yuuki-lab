@@ -176,11 +176,14 @@ class M5HubBridge:
             body = request.get_json(silent=True) or {}
             name = body["name"] if "name" in body else None
             notes = body["notes"] if "notes" in body else None
+            camera = body["camera"] if "camera" in body else None
             if name is not None and not isinstance(name, str):
                 return jsonify({"ok": False, "error": "name"}), 400
             if notes is not None and not isinstance(notes, str):
                 return jsonify({"ok": False, "error": "notes"}), 400
-            row = self.store.patch(rec_id, name=name, notes=notes)
+            if camera is not None and not isinstance(camera, dict):
+                return jsonify({"ok": False, "error": "camera"}), 400
+            row = self.store.patch(rec_id, name=name, notes=notes, camera=camera)
             if row is None:
                 return jsonify({"ok": False, "error": "not found"}), 404
             row["ok"] = True

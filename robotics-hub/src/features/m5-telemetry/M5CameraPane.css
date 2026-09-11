@@ -1,0 +1,228 @@
+/* 右脚タブ中央：実機映像。祖先に overflow:hidden を付けない（MJPEG） */
+
+.m5-cam__slot {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.m5-cam__slot--hold {
+  min-height: 280px;
+}
+
+.m5-cam {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 280px;
+  height: 100%;
+  background: #0b1016;
+  border: 1px solid rgba(213, 222, 234, 0.14);
+  border-radius: 14px;
+  overflow: visible;
+}
+
+.m5-cam__chrome,
+.m5-cam__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.65rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.m5-cam__chrome {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.m5-cam__foot {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.m5-cam__titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+}
+
+.m5-cam__titles strong {
+  font-size: 0.88rem;
+}
+
+.m5-cam__badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+
+.m5-cam__badge--live {
+  background: rgba(16, 172, 132, 0.22);
+  color: #1dd1a1;
+}
+
+.m5-cam__badge--rec {
+  background: rgba(238, 82, 83, 0.28);
+  color: #ff6b81;
+}
+
+.m5-cam__badge--replay {
+  background: rgba(84, 160, 255, 0.22);
+  color: #74b9ff;
+}
+
+.m5-cam__nums,
+.m5-cam__meta {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  color: #8b9bb0;
+}
+
+.m5-cam__chrome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.m5-cam__mini {
+  min-height: 34px;
+  padding: 0.2rem 0.55rem;
+  border: 0;
+  border-radius: 8px;
+  background: #1f2a36;
+  color: #e8eef4;
+  font-size: 0.78rem;
+}
+
+.m5-cam__mini--on {
+  background: #54a0ff;
+  color: #0e1318;
+}
+
+.m5-cam__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 220px;
+  background: #000;
+  overflow: visible;
+}
+
+.m5-cam__live,
+.m5-cam__review {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+}
+
+.m5-cam__live .live-capture__stage,
+.m5-cam__live .live-capture__iframe,
+.m5-cam__live .live-capture__img,
+.m5-cam__live iframe {
+  display: block;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  max-height: none;
+}
+
+.m5-cam__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  object-fit: contain;
+  background: #000;
+}
+
+.m5-cam__kind {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.4rem;
+  font-size: 0.68rem;
+  color: #c5d0db;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+}
+
+.m5-cam__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(8, 12, 18, 0.88);
+  color: #8b9bb0;
+  text-align: center;
+  padding: 1rem;
+}
+
+.m5-cam__empty p {
+  margin: 0;
+  color: #e8eef4;
+}
+
+.m5-cam__exp {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #8b9bb0;
+}
+
+.m5-cam__exp select {
+  min-height: 34px;
+  max-width: 12rem;
+  background: #1f2a36;
+  color: #e8eef4;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+.m5-cam__warn {
+  color: #feca57;
+  font-size: 0.75rem;
+}
+
+.m5-cam__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.m5-cam__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(6, 10, 14, 0.72);
+}
+
+.m5-cam--expanded {
+  position: relative;
+  z-index: 51;
+  width: min(96vw, 1400px);
+  height: min(88vh, 900px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.m5-cam--expanded .m5-cam__stage,
+.m5-cam--expanded .m5-cam__live,
+.m5-cam--expanded .m5-cam__review,
+.m5-cam--expanded .m5-cam__video,
+.m5-cam--expanded .live-capture__iframe {
+  min-height: 60vh;
+}

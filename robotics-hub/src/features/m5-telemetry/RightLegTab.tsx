@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { JointTripleBar } from "./JointTripleBar";
-import { RightLegSchematic } from "./RightLegSchematic";
 import { RightFootSole } from "./RightFootSole";
 import {
   LEG_PLOT_DEFAULT,
@@ -17,6 +17,8 @@ type Props = {
   frame: M5Frame | null;
   history: M5HistoryPoint[];
   send: (cmd: M5Cmd) => void;
+  /** 中央カラム。実機カメラ（ライブ／再生） */
+  cameraPane: ReactNode;
 };
 
 /** 指令バー無操作で自動ロック（誤タッチ防止） */
@@ -30,7 +32,7 @@ function at<T>(xs: T[] | undefined, i: number): T | undefined {
  * 右脚 5 軸の操作画面。
  * 指令バーは操作ロック解除かつ PWM ON の軸だけ動く。バー操作では PWM を入れない。
  */
-export function RightLegTab({ canCmd, control, frame, history, send }: Props) {
+export function RightLegTab({ canCmd, control, frame, history, send, cameraPane }: Props) {
   const [selected, setSelected] = useState<RightLegJointId>("kneePitch");
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
   const [cmdLocked, setCmdLocked] = useState(true);
@@ -71,10 +73,6 @@ export function RightLegTab({ canCmd, control, frame, history, send }: Props) {
   const togglePlot = (key: LegPlotKey) => {
     setPlotOn((prev) => ({ ...prev, [key]: !prev[key] }));
   };
-
-  const angles = Object.fromEntries(
-    RIGHT_LEG_JOINTS.map((j) => [j.id, at(frame?.corr, j.ch) ?? at(control?.cmd, j.ch)])
-  ) as Record<RightLegJointId, number | null | undefined>;
 
   const setCmd = (ch: number, deg: number) => {
     if (!canCmd || cmdLocked) return;
@@ -153,10 +151,10 @@ export function RightLegTab({ canCmd, control, frame, history, send }: Props) {
       </div>
 
       <div className="m5-leg__layout">
-        <div className="m5-leg__schematic">
-          <RightFootSole sample={frame?.foot} />
-          <RightLegSchematic angles={angles} selected={selected} onSelect={setSelected} />
+        <div className="m5-leg__foot">
+          <RightFootSole sample={frame?.foot} large />
         </div>
+        <div className="m5-leg__cam">{cameraPane}</div>
         <div className="m5-leg__rows">
           {RIGHT_LEG_JOINTS.map((j) => {
             const pwmOn = Boolean(at(control?.out, j.ch));

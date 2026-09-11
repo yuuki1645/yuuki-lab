@@ -180,6 +180,19 @@ export type M5RecordMeta = {
   hello: string;
   recording: boolean;
   bytes?: number;
+  /** robot-recorder の take。映像が無い記録は null */
+  camera?: M5RecordCamera | null;
+};
+
+/** M5 本記録と実機カメラ take の結び */
+export type M5RecordCamera = {
+  experiment_id?: string;
+  take_id?: string;
+  video_t0_unix?: number | null;
+  mp4_url?: string | null;
+  hls_url?: string | null;
+  ok?: boolean;
+  error?: string;
 };
 
 export type M5RecordDetail = M5RecordMeta & {

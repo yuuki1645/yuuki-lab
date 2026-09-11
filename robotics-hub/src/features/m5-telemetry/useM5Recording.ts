@@ -32,8 +32,11 @@ function elapsedOf(frames: M5Frame[], i: number): number {
 export function useM5Recording(opts: {
   recordStatus: M5RecordStatus | null;
   send: (cmd: M5Cmd) => void;
+  /** 本記録と同時に robot-recorder を切る */
+  startCamera?: () => Promise<unknown>;
+  stopCamera?: () => Promise<unknown>;
 }) {
-  const { recordStatus, send } = opts;
+  const { recordStatus, send, startCamera, stopCamera } = opts;
   const [library, setLibrary] = useState<M5RecordMeta[]>([]);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryError, setLibraryError] = useState<string | null>(null);
@@ -74,14 +77,20 @@ export function useM5Recording(opts: {
   const startRecord = useCallback(
     (name: string, notes: string) => {
       send({ op: "record_start", name, notes });
+      if (startCamera) {
+        void startCamera();
+      }
     },
-    [send]
+    [send, startCamera]
   );
 
   const stopRecord = useCallback(() => {
     send({ op: "record_stop" });
+    if (stopCamera) {
+      void stopCamera();
+    }
     window.setTimeout(() => void refreshLibrary(), 400);
-  }, [send, refreshLibrary]);
+  }, [send, stopCamera, refreshLibrary]);
 
   const exitReplay = useCallback(() => {
     setPlaying(false);

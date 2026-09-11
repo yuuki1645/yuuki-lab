@@ -62,6 +62,24 @@ def _safe_meta(raw: dict[str, Any]) -> dict[str, Any]:
         "hello": str(raw.get("hello") or ""),
         "recording": bool(raw.get("recording")),
         "bytes": int(raw.get("bytes") or 0),
+        "camera": _camera_meta(raw),
+    }
+
+
+def _camera_meta(raw: dict[str, Any]) -> dict[str, Any] | None:
+    """robot-recorder の take との結び。無ければ None。"""
+    cam = raw.get("camera")
+    if not isinstance(cam, dict):
+        return None
+    t0 = cam.get("video_t0_unix")
+    return {
+        "experiment_id": str(cam.get("experiment_id") or ""),
+        "take_id": str(cam.get("take_id") or ""),
+        "video_t0_unix": float(t0) if isinstance(t0, (int, float)) else None,
+        "mp4_url": cam.get("mp4_url") if isinstance(cam.get("mp4_url"), str) else None,
+        "hls_url": cam.get("hls_url") if isinstance(cam.get("hls_url"), str) else None,
+        "ok": bool(cam.get("ok", True)),
+        "error": str(cam.get("error") or ""),
     }
 
 
@@ -321,17 +339,30 @@ class M5RecordStore:
                 total = max(total, int(self._meta.get("sample_count") or total))
         return frames, total
 
-    def patch(self, rec_id: str, *, name: str | None = None, notes: str | None = None) -> dict[str, Any] | None:
-        """データ名と実験メモだけ後から直す。"""
+    def patch(
+        self,
+        rec_id: str,
+        *,
+        name: str | None = None,
+        notes: str | None = None,
+        camera: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """データ名・メモ・カメラ take の結びを後から直す。"""
         folder = self._folder(rec_id)
         if folder is None:
             return None
+
+        def apply(meta: dict[str, Any]) -> None:
+            if name is not None:
+                meta["name"] = name.strip() or meta.get("name") or rec_id
+            if notes is not None:
+                meta["notes"] = notes
+            if camera is not None:
+                meta["camera"] = camera
+
         with self._lock:
             if self._id == rec_id and self._meta is not None:
-                if name is not None:
-                    self._meta["name"] = name.strip() or self._meta.get("name") or rec_id
-                if notes is not None:
-                    self._meta["notes"] = notes
+                apply(self._meta)
                 self._write_meta_unlocked(folder, self._meta)
                 return _safe_meta(self._meta)
         try:
@@ -340,10 +371,7 @@ class M5RecordStore:
             return None
         if not isinstance(raw, dict):
             return None
-        if name is not None:
-            raw["name"] = name.strip() or raw.get("name") or rec_id
-        if notes is not None:
-            raw["notes"] = notes
+        apply(raw)
         self._write_meta_unlocked(folder, raw)
         return _safe_meta(raw)
 

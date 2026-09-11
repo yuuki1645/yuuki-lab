@@ -1,10 +1,11 @@
 /* iPad 向け。数値は等幅で桁位置を固定する */
 
 .m5 {
-  max-width: 1280px;
+  max-width: none;
   width: 100%;
-  margin: 0 auto;
-  padding: 0.75rem 1rem 2rem;
+  margin: 0;
+  padding: 0.45rem 0.55rem 1.1rem;
+  box-sizing: border-box;
   color: #e8eef4;
   /* iPad の長押しで「コピー / Google で検索」が出ないようにする */
   -webkit-user-select: none;
@@ -13,16 +14,25 @@
   -webkit-user-drag: none;
 }
 
+.m5__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 1rem;
+  margin-bottom: 0.4rem;
+}
+
 .m5__header h1 {
-  margin: 0 0 0.35rem;
-  font-size: 1.3rem;
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 .m5__header p {
-  margin: 0 0 0.75rem;
+  margin: 0;
   color: #8b9bb0;
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  flex: 1 1 16rem;
 }
 
 .m5__header code {
@@ -472,22 +482,28 @@
 
 .m5-leg__layout {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) 1fr;
-  gap: 0.75rem 1rem;
+  grid-template-columns: minmax(220px, 0.28fr) minmax(300px, 0.40fr) minmax(260px, 0.32fr);
+  gap: 0.55rem 0.65rem;
   align-items: stretch;
+  min-height: min(70vh, 860px);
 }
 
-.m5-leg__schematic {
-  position: sticky;
-  top: 0.4rem;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
+.m5-leg__foot {
+  min-width: 0;
   background: radial-gradient(ellipse at 50% 12%, #1c2734 0%, #0e1318 70%);
   border: 1px solid rgba(213, 222, 234, 0.12);
   border-radius: 14px;
-  padding: 0;
   overflow: hidden;
+}
+
+.m5-leg__cam {
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.m5-leg__schematic {
+  display: none;
 }
 
 .m5-leg-svg {
@@ -599,8 +615,8 @@
 
 .m5-jrow__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 36%);
-  gap: 0.4rem 0.65rem;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 26%);
+  gap: 0.35rem 0.45rem;
   align-items: stretch;
   flex: 1 1 auto;
   width: 100%;
@@ -1196,10 +1212,8 @@
     grid-template-columns: 1fr;
   }
 
-  .m5-leg__schematic {
-    position: static;
-    max-width: 260px;
-    margin: 0 auto;
+  .m5-leg__foot {
+    max-width: none;
   }
 
   .m5-jrow__body {

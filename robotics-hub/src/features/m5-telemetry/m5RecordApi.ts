@@ -3,7 +3,7 @@
  * ブラウザはディスクを直接触れないので、この API 経由で一覧・配信・メモ編集する。
  */
 import { getM5TelemetrySocketUrl } from "@/shared/constants";
-import type { M5Frame, M5RecordDetail, M5RecordMeta, M5RecordStatus } from "./types";
+import type { M5Frame, M5RecordCamera, M5RecordDetail, M5RecordMeta, M5RecordStatus } from "./types";
 
 function recordBaseUrl(): string {
   return getM5TelemetrySocketUrl().replace(/\/$/, "");
@@ -82,7 +82,7 @@ export async function fetchAllRecordingFrames(
 
 export async function patchRecording(
   id: string,
-  body: { name?: string; notes?: string }
+  body: { name?: string; notes?: string; camera?: M5RecordCamera }
 ): Promise<M5RecordMeta> {
   return recordFetch<M5RecordMeta>(`/api/m5/recordings/${encodeURIComponent(id)}`, {
     method: "PATCH",

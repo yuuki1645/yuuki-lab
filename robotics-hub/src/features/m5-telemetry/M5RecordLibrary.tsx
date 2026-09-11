@@ -119,6 +119,9 @@ export function M5RecordLibrary({
                   <div className="m5-lib__card-top">
                     <strong>{row.name || row.id}</strong>
                     {row.recording ? <span className="m5-lib__tag m5-lib__tag--rec">記録中</span> : null}
+                    {row.camera?.take_id || row.camera?.mp4_url ? (
+                      <span className="m5-lib__tag">映像</span>
+                    ) : null}
                     {active ? <span className="m5-lib__tag">再生中</span> : null}
                   </div>
                   <dl className="m5-lib__meta">

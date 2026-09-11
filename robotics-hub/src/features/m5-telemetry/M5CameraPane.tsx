@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
 import type { M5RecordCamera } from "./types";
 import { resolveReplayVideoSrc, type useM5Camera } from "./useM5Camera";
@@ -161,10 +161,13 @@ export function M5CameraPane({ camera, replaying, replayCamera, playheadSec, pla
   return <div className="m5-cam__slot">{body}</div>;
 }
 
+/**
+ * 再生の時計はテレメトリ側。video.play() すると iPad で
+ * currentTime シークと衝突して数秒で止まるので、常に pause してコマ送りする。
+ */
 function ScrubVideo({
   src,
   currentTime,
-  playing,
 }: {
   src: string;
   currentTime: number;
@@ -172,36 +175,58 @@ function ScrubVideo({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const srcRef = useRef<string | null>(null);
+  const wantRef = useRef(currentTime);
+  const seekingRef = useRef(false);
   const [failed, setFailed] = useState(false);
+  wantRef.current = currentTime;
+
+  const applySeek = useCallback(() => {
+    const el = ref.current;
+    if (!el || el.readyState < 1 || seekingRef.current) return;
+    if (!Number.isFinite(wantRef.current)) return;
+    const dur = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : Number.POSITIVE_INFINITY;
+    const t = Math.min(Math.max(0, wantRef.current), Math.max(0, dur - 0.04));
+    if (Math.abs(el.currentTime - t) < 0.04) return;
+    seekingRef.current = true;
+    try {
+      el.pause();
+      el.currentTime = t;
+    } catch {
+      seekingRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (srcRef.current !== src) {
+      el.pause();
       el.src = src;
       srcRef.current = src;
+      seekingRef.current = false;
       setFailed(false);
     }
-  }, [src]);
+    const onSeeked = () => {
+      seekingRef.current = false;
+      applySeek();
+    };
+    const onReady = () => {
+      seekingRef.current = false;
+      applySeek();
+    };
+    el.addEventListener("seeked", onSeeked);
+    el.addEventListener("loadedmetadata", onReady);
+    el.addEventListener("loadeddata", onReady);
+    return () => {
+      el.removeEventListener("seeked", onSeeked);
+      el.removeEventListener("loadedmetadata", onReady);
+      el.removeEventListener("loadeddata", onReady);
+    };
+  }, [src, applySeek]);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el || !Number.isFinite(currentTime)) return;
-    if (Math.abs(el.currentTime - currentTime) > 0.08) {
-      try {
-        el.currentTime = Math.max(0, currentTime);
-      } catch {
-        /* 未ロード */
-      }
-    }
-    if (playing) {
-      void el.play().catch(() => {
-        /* iPad はユーザー操作待ち。シークだけでもコマは出す */
-      });
-    } else {
-      el.pause();
-    }
-  }, [currentTime, playing]);
+    applySeek();
+  }, [currentTime, applySeek]);
 
   const kind = useMemo(() => {
     if (src.includes(".m3u8")) return "HLS";

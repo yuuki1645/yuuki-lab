@@ -10,10 +10,14 @@
   opacity: 0.78;
 }
 
-/* 左カラム下段。映像の下に収まるよう高さは伸ばさない */
+/* 左カラム下段。映像が 16:9 で低くなった分、足圧を大きく見せる */
 .m5-foot--large {
   padding: 0.5rem 0.45rem 0.4rem;
   box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .m5-foot--large .m5-foot__title {
@@ -21,9 +25,10 @@
 }
 
 .m5-foot--large .m5-foot__plate {
+  width: 100%;
   aspect-ratio: 0.78;
-  min-height: 0;
-  max-height: 220px;
+  min-height: 160px;
+  max-height: none;
 }
 
 .m5-foot--large .m5-foot__pad-lab {

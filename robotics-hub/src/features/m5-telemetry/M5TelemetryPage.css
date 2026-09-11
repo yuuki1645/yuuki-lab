@@ -497,17 +497,21 @@
 }
 
 .m5-leg__cam {
-  flex: 1 1 0;
+  /* 横長 16:9 に合わせて高さは内容任せ。余りは足圧へ */
+  flex: 0 0 auto;
   min-width: 0;
-  min-height: 180px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
 }
 
 .m5-leg__foot {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: radial-gradient(ellipse at 50% 12%, #1c2734 0%, #0e1318 70%);
   border: 1px solid rgba(213, 222, 234, 0.12);
   border-radius: 14px;
@@ -1226,7 +1230,7 @@
   }
 
   .m5-leg__cam {
-    min-height: 220px;
+    min-height: 0;
   }
 
   .m5-leg__foot {

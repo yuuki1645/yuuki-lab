@@ -610,6 +610,125 @@
   font-size: 0.78rem;
 }
 
+/* かかとピッチ COP 中心化（右脚タブ下部） */
+.m5-cop {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.75rem 0.8rem;
+  border-radius: 12px;
+  background: #17202a;
+  border: 1px solid rgba(247, 201, 72, 0.22);
+}
+
+.m5-cop__head h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+.m5-cop__head p {
+  margin: 0 0 0.55rem;
+  color: #8b9bb0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.m5-cop__neutral {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 1.2rem;
+  margin-bottom: 0.45rem;
+}
+
+.m5-cop__neutral-lab {
+  display: block;
+  color: #8b9bb0;
+  font-size: 0.75rem;
+}
+
+.m5-cop__neutral-val {
+  font-size: 1.85rem;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, Consolas, monospace;
+  color: #f7c948;
+  line-height: 1.1;
+}
+
+.m5-cop__neutral-sub {
+  display: flex;
+  gap: 1rem;
+  color: #c5d0dc;
+  font-size: 0.85rem;
+}
+
+.m5-cop__neutral-sub b {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+}
+
+.m5-cop__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 0.45rem;
+}
+
+.m5-cop__metrics dt {
+  margin: 0;
+  color: #8b9bb0;
+  font-size: 0.72rem;
+}
+
+.m5-cop__metrics dd {
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.95rem;
+}
+
+.m5-cop__warn {
+  color: #ff9f43;
+}
+
+.m5-cop__status {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  color: #c5d0dc;
+}
+
+.m5-cop__status--p {
+  color: #3ee07f;
+}
+
+.m5-cop__status--sweep {
+  color: #f7c948;
+}
+
+.m5-cop__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  margin-bottom: 0.4rem;
+  align-items: center;
+}
+
+.m5-cop__kp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #8b9bb0;
+  font-size: 0.8rem;
+}
+
+.m5-cop__kp input {
+  width: 4.2rem;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #0e1318;
+  color: #e8eef4;
+  padding: 0.2rem 0.4rem;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
 .m5-plot-tog {
   min-height: 36px;
   min-width: 3.5rem;
@@ -1239,5 +1358,9 @@
 
   .m5-jrow__body {
     grid-template-columns: 1fr;
+  }
+
+  .m5-cop__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

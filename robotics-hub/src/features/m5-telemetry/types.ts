@@ -41,6 +41,51 @@ export type M5Control = {
   rand_hold_min: number;
   rand_hold_max: number;
   rand_jump: number;
+  /** かかとピッチ COP 中心化（lab_debug の PC 閉ループ） */
+  cop?: M5CopState;
+};
+
+/** PC 側 CopCtrl.to_dict() と揃える */
+export type M5CopState = {
+  p_on: boolean;
+  sweep_on: boolean;
+  sign: number;
+  kp: number;
+  neutral_confirmed: number | null;
+  neutral_estimated: number | null;
+  neutral_display: number | null;
+  cop_y: number | null;
+  cop_x: number | null;
+  force_kg: number;
+  force_ok: boolean;
+  held: boolean;
+  status: string;
+  cmd_min: number;
+  cmd_max: number;
+  p_slew_dps: number;
+  sweep_slew_dps: number;
+  heel_ch: number;
+};
+
+export const M5_COP_IDLE: M5CopState = {
+  p_on: false,
+  sweep_on: false,
+  sign: 1,
+  kp: 10,
+  neutral_confirmed: null,
+  neutral_estimated: null,
+  neutral_display: null,
+  cop_y: null,
+  cop_x: null,
+  force_kg: 0,
+  force_ok: false,
+  held: false,
+  status: "待機",
+  cmd_min: 100,
+  cmd_max: 170,
+  p_slew_dps: 5,
+  sweep_slew_dps: 2,
+  heel_ch: 3,
 };
 
 export type M5Frame = {

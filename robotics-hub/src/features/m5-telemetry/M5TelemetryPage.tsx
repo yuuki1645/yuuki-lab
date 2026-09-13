@@ -377,8 +377,8 @@ export default function M5TelemetryPage() {
                   <input
                     className="m5__slider"
                     type="range"
-                    min={40}
-                    max={230}
+                    min={100}
+                    max={170}
                     step={0.5}
                     disabled={!canCmd}
                     value={at(control?.cmd, j) ?? 135}

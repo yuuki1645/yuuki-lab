@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { CopAnklePanel } from "./CopAnklePanel";
 import { JointTripleBar } from "./JointTripleBar";
 import { RightFootSole } from "./RightFootSole";
 import {
@@ -96,7 +97,8 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
     >
       <div className="m5-leg__toolbar">
         <p className="m5__meta">
-          右脚のみ。指令バーはつまみを掴んでドラッグ。PWM は下のボタンで入れます。ズレは指令と補正の区間だけ赤く塗ります。
+          右脚のみ。指令バーはつまみを掴んでドラッグ。PWM は下のボタンで入れます。ライブ指令は
+          100〜170°。ズレは指令と補正の区間だけ赤く塗ります。
         </p>
         <div className="m5-leg__lock" role="group" aria-label="指令バー操作ロック">
           <span
@@ -184,6 +186,8 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
           })}
         </div>
       </div>
+
+      <CopAnklePanel canCmd={canCmd} cop={control?.cop} send={send} />
     </section>
   );
 }

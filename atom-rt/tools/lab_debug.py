@@ -31,6 +31,7 @@ import serial
 import serial.tools.list_ports
 
 from cal_map_io import load_map, save_map
+import cop_ankle_ctrl as copctrl
 import df9_force
 import rt_usb_proto as proto
 from m5_hub_bridge import (
@@ -1102,6 +1103,8 @@ class LabApp(tk.Tk):
         # 本記録は ATOM 接続 PC のディスク。明示開始まで書かない。
         self._record_store = M5RecordStore()
         self._record_pub_t = 0.0
+        # かかとピッチ COP 中心化（PC 閉ループ。再起動で消える）
+        self._cop = copctrl.CopCtrl()
         self._m5_bridge = M5HubBridge(
             on_command=self._m5_cmd_from_thread,
             on_clients_changed=self._m5_clients_from_thread,
@@ -1364,6 +1367,7 @@ class LabApp(tk.Tk):
             "rand_hold_min": h0,
             "rand_hold_max": h1,
             "rand_jump": jump,
+            "cop": self._cop.to_dict(),
         }
 
     def _m5_frame_dict(self) -> dict | None:
@@ -1590,6 +1594,7 @@ class LabApp(tk.Tk):
         op = str(msg.get("op") or "")
         s = self._m5_sess()
         if op == "hold":
+            self._cop_stop("全停止", clear_hold=True)
             self._hold_all()
             self._m5_publish_control()
             return
@@ -1603,6 +1608,8 @@ class LabApp(tk.Tk):
             return
         if op == "mode":
             robot = bool(msg.get("robot"))
+            if robot:
+                self._cop_stop("Robot モードへ切替")
             self.mode_var.set("robot" if robot else "lab")
             s.send(proto.cmd_mode(robot))
         elif op == "scan":
@@ -1619,14 +1626,17 @@ class LabApp(tk.Tk):
                 self.out_vars[j].set(on)
                 s.send(proto.cmd_out(j, on))
                 if on:
-                    s.send(proto.cmd_joint(j, float(self.cmd_vars[j].get())))
+                    self._send_live_joint(s, j, float(self.cmd_vars[j].get()))
                 else:
                     self.rand_vars[j].set(False)
+                    if j == copctrl.HEEL_CH:
+                        self._cop_stop("かかとピッチ PWM OFF")
         elif op == "joint":
             j = int(msg.get("ch", 0))
             if 0 <= j < JOINTS:
-                deg = float(msg.get("deg", 135.0))
-                deg = max(40.0, min(230.0, deg))
+                if j == copctrl.HEEL_CH and (self._cop.p_on or self._cop.sweep_on):
+                    self._cop_stop("手動指令で P/スイープ停止")
+                deg = copctrl.clamp_cmd(float(msg.get("deg", 135.0)))
                 self._syncing = True
                 try:
                     self.cmd_vars[j].set(round(deg, 1))
@@ -1728,8 +1738,161 @@ class LabApp(tk.Tk):
         elif op == "map_get":
             ch = int(msg.get("ch", 0))
             s.send(proto.cmd_map_get(ch))
+        elif op.startswith("cop_"):
+            self._m5_handle_cop(s, op, msg)
         self._m5_publish_control()
         self._m5_publish_status()
+
+    def _send_live_joint(self, s: AtomSession, j: int, deg: float) -> None:
+        """ライブ PWM。実験用に 100〜170° へクランプして送る（校正スイープは使わない）。"""
+        deg = copctrl.clamp_cmd(deg)
+        self._syncing = True
+        try:
+            if 0 <= j < len(self.cmd_vars):
+                self.cmd_vars[j].set(round(deg, 1))
+        finally:
+            self._syncing = False
+        if 0 <= j < len(self.out_vars) and self.out_vars[j].get():
+            s.send(proto.cmd_joint(j, deg))
+            self._last_cmd_t[j] = time.time()
+
+    def _heel_cmd(self) -> float:
+        """かかとピッチの現在指令。Tk 変数が壊れていても 135 に倒す。"""
+        try:
+            return copctrl.clamp_cmd(float(self.cmd_vars[copctrl.HEEL_CH].get()))
+        except (tk.TclError, TypeError, ValueError, IndexError):
+            return 135.0
+
+    def _cop_stop(self, reason: str, *, clear_hold: bool = False) -> None:
+        """P / スイープだけ止める。PWM と最後の指令は残す。"""
+        was = self._cop.p_on or self._cop.sweep_on
+        self._cop.stop_motion(reason)
+        if clear_hold:
+            self._cop.held = False
+        if was:
+            s = self._m5_sess()
+            if s:
+                s.note(f"COP  {reason}")
+
+    def _cop_stop_auto_scan(self) -> None:
+        """探索中はスキャンで周期が伸びないように止める。"""
+        if not self._auto_scan.get():
+            return
+        self._auto_scan.set(False)
+        if self._scan_job is not None:
+            self.after_cancel(self._scan_job)
+            self._scan_job = None
+
+    def _ensure_lab_for_cop(self, s: AtomSession) -> None:
+        """Robot は全軸 135° 固定なので COP 実験は Lab へ戻す。"""
+        if s.mode == "robot" or self.mode_var.get() == "robot":
+            self.mode_var.set("lab")
+            s.send(proto.cmd_mode(False))
+            s.note("COP  Lab へ切替")
+
+    def _cop_hold_fixed(self, s: AtomSession) -> None:
+        """股・膝・踵ロールを今の指令角で PWM ON。かかとピッチも出す。補正角は使わない。"""
+        self._ensure_lab_for_cop(s)
+        self._cop_stop_auto_scan()
+        for i in (*copctrl.HOLD_CHS, copctrl.HEEL_CH):
+            if i < len(self.rand_vars):
+                self.rand_vars[i].set(False)
+            try:
+                deg = copctrl.clamp_cmd(float(self.cmd_vars[i].get()))
+            except (tk.TclError, TypeError, ValueError):
+                deg = 135.0
+            self.out_vars[i].set(True)
+            s.send(proto.cmd_out(i, True))
+            self._send_live_joint(s, i, deg)
+        self._cop.held = True
+        self._cop.status = "4軸を指令角で固定"
+        s.note("COP  4軸固定（指令角）")
+
+    def _m5_handle_cop(self, s: AtomSession, op: str, msg: dict) -> None:
+        """Hub 右脚タブからの COP 作業指令。"""
+        if op == "cop_hold_fixed":
+            self._cop_hold_fixed(s)
+        elif op == "cop_step":
+            self._cop.sweep_on = False
+            self._cop.p_on = False
+            self._cop_hold_fixed(s)
+            try:
+                delta = float(msg.get("delta", copctrl.STEP_DEG))
+            except (TypeError, ValueError):
+                delta = copctrl.STEP_DEG
+            nxt = copctrl.clamp_cmd(self._heel_cmd() + delta)
+            self._send_live_joint(s, copctrl.HEEL_CH, nxt)
+            self._cop.update_cop(foot_sample_dict(s.last_frame) if s.last_frame else None)
+            self._cop.note_sample(nxt)
+            if self._cop.estimated is None:
+                self._cop.status = f"手動 {nxt:.1f}°  推定 —"
+            else:
+                self._cop.status = f"手動 {nxt:.1f}°  推定 {self._cop.estimated:.1f}°"
+        elif op == "cop_sweep_start":
+            self._cop.p_on = False
+            self._cop_hold_fixed(s)
+            self._cop.sweep_on = True
+            cur = self._heel_cmd()
+            # 遠い端へ先に進み、可動域をゆっくり往復する
+            self._cop.sweep_dir = 1.0 if cur < 135.0 else -1.0
+            self._cop.last_t = None
+            self._cop.status = "自動スイープ開始"
+            s.note("COP  自動スイープ開始")
+        elif op == "cop_sweep_stop":
+            self._cop.sweep_on = False
+            self._cop.status = "スイープ停止"
+            s.note("COP  スイープ停止")
+        elif op == "cop_neutral_confirm":
+            self._cop.confirm_neutral(self._heel_cmd())
+            s.note(f"COP  ニュートラル確定  {self._cop.confirmed:.1f}°")
+        elif op == "cop_neutral_clear":
+            self._cop.clear_confirmed()
+        elif op == "cop_p_on":
+            if self._cop.active_neutral() is None:
+                self._cop.status = "P制御不可（ニュートラル未確定）"
+                return
+            self._cop.sweep_on = False
+            self._cop_hold_fixed(s)
+            self._cop.p_on = True
+            self._cop.last_t = None
+            self._cop.status = "P制御 ON"
+            s.note("COP  P制御 ON")
+        elif op == "cop_p_off":
+            self._cop.p_on = False
+            self._cop.status = "P制御 OFF（PWM 維持）"
+            s.note("COP  P制御 OFF")
+        elif op == "cop_sign":
+            try:
+                sgn = float(msg.get("sign", 1))
+            except (TypeError, ValueError):
+                sgn = 1.0
+            self._cop.sign = -1.0 if sgn < 0 else 1.0
+            self._cop.status = f"符号 {'+' if self._cop.sign > 0 else '−'}"
+        elif op == "cop_kp":
+            try:
+                self._cop.kp = copctrl.clamp_kp(float(msg.get("kp", copctrl.KP_DEFAULT)))
+            except (TypeError, ValueError):
+                pass
+        else:
+            self._cop.status = f"未知の COP 指令  {op}"
+
+    def _update_cop_ctrl(self) -> None:
+        """Tk 周期で COP を見て、かかとピッチだけゆっくり指令する。"""
+        s = self._m5_sess()
+        if s is None or not s.connected:
+            if self._cop.p_on or self._cop.sweep_on:
+                self._cop_stop("ATOM 切断", clear_hold=True)
+            return
+        f = s.last_frame
+        self._cop.update_cop(foot_sample_dict(f) if f else None)
+        if not (self._cop.p_on or self._cop.sweep_on):
+            return
+        nxt = self._cop.tick(time.time(), self._heel_cmd())
+        if nxt is None:
+            return
+        if abs(nxt - self._heel_cmd()) < 0.01:
+            return
+        self._send_live_joint(s, copctrl.HEEL_CH, nxt)
 
     def _build_topo(self) -> None:
         hint = tk.Label(
@@ -2687,10 +2850,15 @@ class LabApp(tk.Tk):
                 continue
             if not self.out_vars[i].get():
                 continue
+            # COP 実験中は固定軸とかかとピッチをランダムから外す
+            if self._cop.held and i in copctrl.HOLD_CHS:
+                continue
+            if (self._cop.p_on or self._cop.sweep_on or self._cop.held) and i == copctrl.HEEL_CH:
+                continue
             if now < self._rand_until[i]:
                 continue
             cur = float(self.cmd_vars[i].get())
-            tgt = self._next_random_target(cur)
+            tgt = copctrl.clamp_cmd(self._next_random_target(cur))
             hold = random.uniform(hold_min, hold_max)
             self._rand_until[i] = now + hold
             self._rand_target[i] = tgt
@@ -2714,9 +2882,10 @@ class LabApp(tk.Tk):
         self._last_cmd_t[j] = now
         s = self._sess()
         if s and self.out_vars[j].get():
-            s.send(proto.cmd_joint(j, float(self.cmd_vars[j].get())))
+            self._send_live_joint(s, j, float(self.cmd_vars[j].get()))
 
     def _hold_all(self) -> None:
+        self._cop_stop("全停止", clear_hold=True)
         for s in self.sessions.values():
             s.send(proto.cmd_hold())
         for v in self.out_vars:
@@ -2950,6 +3119,7 @@ class LabApp(tk.Tk):
                 )
                 if over and not getattr(s, "amp_tripped", False):
                     s.amp_tripped = True
+                    self._cop_stop("過電流で停止", clear_hold=True)
                     s.send(proto.cmd_hold())
                     for v in self.rand_vars:
                         v.set(False)
@@ -2959,6 +3129,7 @@ class LabApp(tk.Tk):
                 elif not over:
                     s.amp_tripped = False
         self._update_random()
+        self._update_cop_ctrl()
         self._sync_detail()
         self._draw_cards()
         self._m5_publish_tick()

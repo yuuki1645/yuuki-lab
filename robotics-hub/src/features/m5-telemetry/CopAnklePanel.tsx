@@ -137,7 +137,7 @@ export function CopAnklePanel({ canCmd, cop, send }: Props) {
           disabled={!canCmd}
           onClick={() => send({ op: "cop_neutral_confirm" })}
         >
-          この角を確定
+          いまの踵指令を確定
         </button>
         <button
           type="button"

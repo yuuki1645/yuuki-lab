@@ -128,10 +128,10 @@ class CopCtrl:
     _prev_sample: tuple[float, float] | None = None
 
     def display_neutral(self) -> float | None:
-        """UI 常時表示。計算中の推定を優先し、無ければ確定値。"""
-        if self.estimated is not None:
-            return self.estimated
-        return self.confirmed
+        """UI 常時表示。確定済みなら確定、未確定なら推定（計算中）。"""
+        if self.confirmed is not None:
+            return self.confirmed
+        return self.estimated
 
     def active_neutral(self) -> float | None:
         """P 制御が使う目標。確定があればそれを使う。"""
@@ -191,9 +191,8 @@ class CopCtrl:
         self._prev_sample = (cmd, self.cop_y)
 
     def confirm_neutral(self, current_cmd: float) -> float:
-        """推定があればそれを確定。無ければ今の指令角。"""
-        src = self.estimated if self.estimated is not None else clamp_cmd(current_cmd)
-        self.confirmed = clamp_cmd(src)
+        """いまの踵指令をニュートラルとして確定（何度でも上書き可）。推定は使わない。"""
+        self.confirmed = clamp_cmd(current_cmd)
         self.status = f"ニュートラル確定  {self.confirmed:.1f}°"
         return self.confirmed
 

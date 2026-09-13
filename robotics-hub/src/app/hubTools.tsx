@@ -1,11 +1,25 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
+/** グローバルメニューのグループ。ヘッダーを1行に保つためドロップダウン内で使う */
+export type HubToolGroupId = "edit" | "device" | "learn" | "data";
+
+export const hubToolGroupOrder: HubToolGroupId[] = ["edit", "device", "learn", "data"];
+
+export const hubToolGroupLabels: Record<HubToolGroupId, string> = {
+  edit: "編集",
+  device: "実機",
+  learn: "学習・シミュ",
+  data: "データ",
+};
+
 export interface HubTool {
   id: string;
   /** URL パス（先頭スラッシュ付き・一意） */
   path: string;
   /** ナビ表示名 */
   label: string;
+  /** ドロップダウン内のグループ */
+  group: HubToolGroupId;
   /** 一覧やヘルプ用の短い説明 */
   description: string;
   /** 遅延読み込みするページコンポーネント */
@@ -14,7 +28,7 @@ export interface HubTool {
 
 /**
  * ハブに載せるツール一覧。
- * 新規ツールは `src/features/<名前>/` に実装し、ここに 1 行追加する。
+ * 新規ツールは `src/features/<名前>/` に実装し、ここに 1 件追加する（`group` も指定）。
  */
 const MotionEditorPage = lazy(() => import("@/features/motion-editor/MotionEditorPage"));
 const LegServoTunerPage = lazy(() => import("@/features/leg-servo-tuner/LegServoTunerPage"));
@@ -38,6 +52,7 @@ export const hubTools: HubTool[] = [
     id: "motion-editor",
     path: "/motion",
     label: "モーションエディタ",
+    group: "edit",
     description: "タイムラインでキーフレームを編集し、モーションを再生します。",
     LazyPage: MotionEditorPage,
   },
@@ -45,6 +60,7 @@ export const hubTools: HubTool[] = [
     id: "leg-servo-tuner",
     path: "/leg-tuner",
     label: "レッグサーボ調整",
+    group: "edit",
     description: "脚サーボを1本ずつ、論理角／物理角で動かして調整します。",
     LazyPage: LegServoTunerPage,
   },
@@ -52,6 +68,7 @@ export const hubTools: HubTool[] = [
     id: "pose-editor",
     path: "/pose",
     label: "ポーズエディタ",
+    group: "edit",
     description: "メモ風スケッチで脚の関節をドラッグし、論理角を編集します。",
     LazyPage: PoseEditorPage,
   },
@@ -59,6 +76,7 @@ export const hubTools: HubTool[] = [
     id: "daemon-socket-test",
     path: "/daemon-socket-test",
     label: "Daemon Socket Test",
+    group: "device",
     description: "robot-daemon との Socket.IO 通信を確認します。",
     LazyPage: DaemonSocketTestPage,
   },
@@ -66,6 +84,7 @@ export const hubTools: HubTool[] = [
     id: "live-capture",
     path: "/live-capture",
     label: "実機カメラ",
+    group: "device",
     description:
       "robot-recorder（MJPEG）でビデオカメラを低遅延表示・実験フォルダへ記録。npm run dev:lab で Hub と同時起動。",
     LazyPage: LiveCapturePage,
@@ -74,6 +93,7 @@ export const hubTools: HubTool[] = [
     id: "device-telemetry",
     path: "/device-telemetry",
     label: "実機テレメトリ",
+    group: "device",
     description: "robot-daemon の実機 IMU をリアルタイム表示し、CSV ログを操作します。",
     LazyPage: DeviceTelemetryPage,
   },
@@ -81,6 +101,7 @@ export const hubTools: HubTool[] = [
     id: "m5-telemetry",
     path: "/m5-telemetry",
     label: "実機テレメトリ（M5）",
+    group: "device",
     description:
       "Windows PC の atom-rt/tools/lab_debug.py 経由で ATOM の関節・電源・校正を iPad から操作します（Socket.IO :8794）。",
     LazyPage: M5TelemetryPage,
@@ -89,6 +110,7 @@ export const hubTools: HubTool[] = [
     id: "training-telemetry",
     path: "/training-telemetry",
     label: "学習テレメトリ",
+    group: "learn",
     description:
       "強化学習（mujoco_rl_sim）の観測・行動・報酬を Socket.IO（rl_telemetry/*）で表示します。",
     LazyPage: TrainingTelemetryPage,
@@ -97,6 +119,7 @@ export const hubTools: HubTool[] = [
     id: "data-viewer",
     path: "/data-viewer",
     label: "データビュワー",
+    group: "data",
     description:
       "IMU / サーボの CSV と動画を wall_unix で突き合わせ、シーク位置のログを確認します。",
     LazyPage: DataViewerPage,
@@ -105,6 +128,7 @@ export const hubTools: HubTool[] = [
     id: "lab-data-viewer",
     path: "/lab-data-viewer",
     label: "ラボデータビュワー",
+    group: "data",
     description:
       "robot-recorder の実験／take を format_id 別ビュワーで確認します（既存データビュワーとは別）。",
     LazyPage: LabDataViewerPage,
@@ -113,6 +137,7 @@ export const hubTools: HubTool[] = [
     id: "mujoco-viewer-aux",
     path: "/mujoco-viewer-aux",
     label: "MuJoCo ビュワー補助",
+    group: "learn",
     description:
       "mujoco_test_009 と連携し、パッシブ viewer の状態をリアルタイム表示し、再生・リセット・表示オプションを操作します。",
     LazyPage: MujocoViewerAuxPage,
@@ -121,6 +146,7 @@ export const hubTools: HubTool[] = [
     id: "isaac-rl-log",
     path: "/isaac-rl-log",
     label: "Isaac 学習進捗",
+    group: "learn",
     description:
       "isaac-lab の TensorBoard ログを読み取り、平均報酬・エピソード長などの学習曲線を PC / スマホで表示します。",
     LazyPage: IsaacRlLogPage,

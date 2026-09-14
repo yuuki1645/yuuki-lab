@@ -2,7 +2,8 @@
 """
 ATOMS3 Lite 総合デバッグ（机上ラボ / 機体の両用）。
 
-複数の USB を同時に開き、I2C トポロジ・磁石・電源・周期・手動 PWM を見る。
+起動時は先頭 1 台の ATOM（VID 303A）へ自動接続する。複数 USB も開ける。
+I2C トポロジ・磁石・電源・周期・手動 PWM を見る。
 Lab ではサーボは明示するまで動かない。Robot は従来どおり出力オン。
 
   pip install -r tools/requirements.txt
@@ -180,11 +181,25 @@ def mag_color(code: int) -> str:
     return MUTED
 
 
+def _is_atom_hwid(hwid: str | None) -> bool:
+    """Espressif USB VID 303A（ATOMS3 系）かどうか。"""
+    return "303A" in (hwid or "")
+
+
 def list_ports() -> list[tuple[str, str]]:
     """(COM, 説明) ATOMS3(303A) を先頭に。"""
     ports = list(serial.tools.list_ports.comports())
-    ports.sort(key=lambda p: (0 if "303A" in (p.hwid or "") else 1, p.device))
+    ports.sort(key=lambda p: (0 if _is_atom_hwid(p.hwid) else 1, p.device))
     return [(p.device, p.description or "") for p in ports]
+
+
+def first_atom_port() -> str | None:
+    """接続対象にする 1 台目の ATOM COM。303A が無ければ None。"""
+    atoms = [p for p in serial.tools.list_ports.comports() if _is_atom_hwid(p.hwid)]
+    if not atoms:
+        return None
+    atoms.sort(key=lambda p: p.device)
+    return atoms[0].device
 
 
 def load_names() -> dict[str, str]:
@@ -1075,6 +1090,8 @@ class LabApp(tk.Tk):
         self.names = load_names()
         self.sessions: dict[str, AtomSession] = {}
         self.current: str | None = None
+        # 先頭 ATOM への自動接続は一度だけ。手動切断後は再開しない
+        self._auto_connect_done = False
         self._ports_raw: list[str] = []
         self._last_plot = 0.0
         self._amp_limit = tk.DoubleVar(value=8.0)
@@ -1121,7 +1138,8 @@ class LabApp(tk.Tk):
             print("iPad ブリッジ無効。pip install -r tools/requirements.txt")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(50, self._tick)
-        self.after(2000, self._refresh_ports)
+        # ポート列挙後に 1 台目 ATOM へ自動接続する
+        self.after(200, self._refresh_ports)
 
     def _build(self) -> None:
         top = tk.Frame(self, bg=CARD)
@@ -1131,7 +1149,7 @@ class LabApp(tk.Tk):
         )
         tk.Label(
             top,
-            text="机上: Lab（PWM オフ）  機体: Robot  |  複数 ATOM を USB ハブで同時接続可",
+            text="机上: Lab（PWM オフ）  機体: Robot  |  1台目の ATOM に自動接続",
             bg=CARD,
             fg=MUTED,
         ).pack(side="left", padx=8)
@@ -2526,7 +2544,41 @@ class LabApp(tk.Tk):
         if self.current and self.current in self._ports_raw:
             idx = self._ports_raw.index(self.current)
             self.port_list.selection_set(idx)
+        # 未接続なら、見つかった 1 台目の ATOM を開く
+        self._maybe_auto_connect_first()
         self.after(2500, self._refresh_ports)
+
+    def _select_port_in_list(self, port: str) -> None:
+        """左の COM 一覧で port を選択し、current と名前欄を合わせる。"""
+        self.current = port
+        self.name_var.set(self.names.get(port, ""))
+        if port not in self._ports_raw:
+            return
+        idx = self._ports_raw.index(port)
+        self.port_list.selection_clear(0, "end")
+        self.port_list.selection_set(idx)
+        self.port_list.activate(idx)
+        self.port_list.see(idx)
+
+    def _session_opening(self) -> bool:
+        """ワーカー起動中または接続済みのセッションがあるか。"""
+        return any(s.worker is not None or s.connected for s in self.sessions.values())
+
+    def _maybe_auto_connect_first(self) -> None:
+        """1 台目の ATOM（VID 303A）へ自動接続する。
+
+        起動直後や、起動時にまだ COM が見えていない場合に使う。
+        手動で接続／切断したあとは再実行しない。
+        """
+        if self._auto_connect_done or self._session_opening():
+            self._auto_connect_done = True
+            return
+        port = first_atom_port()
+        if not port:
+            return
+        self._auto_connect_done = True
+        self._select_port_in_list(port)
+        self._ensure(port).connect()
 
     def _sel_port(self) -> str | None:
         sel = self.port_list.curselection()
@@ -2560,18 +2612,23 @@ class LabApp(tk.Tk):
         port = self._sel_port()
         if not port:
             return
+        # 手動接続したあとは自動接続を再開しない
+        self._auto_connect_done = True
         self.current = port
         self._ensure(port).connect()
 
     def _disconnect_sel(self) -> None:
+        # 切断は意図的なので、次のポート更新で自動再接続しない
+        self._auto_connect_done = True
         s = self._sess()
         if s:
             s.disconnect()
 
     def _connect_all(self) -> None:
         """Espressif(303A) の COM だけ開く。机の USB ハブ向け。"""
+        self._auto_connect_done = True
         for p in serial.tools.list_ports.comports():
-            if "303A" not in (p.hwid or ""):
+            if not _is_atom_hwid(p.hwid):
                 continue
             s = self._ensure(p.device)
             if not s.connected:

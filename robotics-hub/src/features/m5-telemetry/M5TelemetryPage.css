@@ -1008,11 +1008,8 @@
   font-size: 0.72rem;
 }
 
-/* ----- 本記録 / 再生バー（タブ切替中も同時刻を維持） ----- */
+/* ----- 本記録 / 再生バー（ページ先頭に置き、スクロールでは追従しない） ----- */
 .m5-rec {
-  position: sticky;
-  top: 0.35rem;
-  z-index: 20;
   margin: 0 0 0.9rem;
   padding: 0.8rem 0.9rem 0.85rem;
   border-radius: 16px;

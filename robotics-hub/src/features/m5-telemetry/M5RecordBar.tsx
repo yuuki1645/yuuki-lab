@@ -27,7 +27,7 @@ function fmtClock(sec: number): string {
 
 /**
  * 記録開始／停止と、再生ヘッド（シーク・±1/5/10）。
- * sticky にしてタブを切り替えても同時刻のデータを見続けられる。
+ * ページ先頭に置き、スクロールでは追従しない。
  */
 export function M5RecordBar({ rec, atomOk, camera }: Props) {
   const liveRec = Boolean(rec.recordStatus?.recording);

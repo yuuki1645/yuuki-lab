@@ -23,7 +23,7 @@
 
 - Node.js（推奨: 現在の LTS）
 - 実機連携時は **`robot-daemon`** を起動（既定ポート **5000**。REST のホストはブラウザと同じ `hostname` + `:5000`。IMU は同一オリジンへの Socket.IO）
-- ATOM（M5）操作時は [atom-rt](../atom-rt/) で `python tools/lab_debug.py` を起動（Socket.IO 既定 **8794**）
+- ATOM（M5）操作時は **`npm run dev:m5`**（Hub + `lab_debug.py`）、または [atom-rt](../atom-rt/) で `python tools/lab_debug.py` を別起動（Socket.IO 既定 **8794**）
 - 実機カメラ表示時は **`robot-recorder`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
 
 ## セットアップ
@@ -64,6 +64,21 @@ npm run dev:lab
 - 記録は選択中の実験フォルダ配下の take に保存（詳細は robot-recorder README）
 
 カメラ未接続時は `npm run dev` のみで問題ありません。
+
+### ATOM / M5 用（Hub + lab_debug 同時起動）
+
+実機テレメトリ（M5）を使う場合:
+
+```bash
+cd robotics-hub
+npm run dev:m5
+```
+
+- Vite を **`--host 0.0.0.0:5173`** で起動（iPad から LAN アクセス可）
+- あわせて [atom-rt](../atom-rt/) の `tools/lab_debug.py` を起動（Socket.IO 既定 **:8794**、Tk ウィンドウも開く）
+- iPad では Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）を開く
+- 先に `atom-rt` で `pip install -r tools/requirements.txt` が必要。`:8794` は 1 プロセスだけ
+
 ### LAN に公開する（同一ネット内の他端末からアクセス）
 
 開発 PC ですべてのインターフェースにバインドして起動します。

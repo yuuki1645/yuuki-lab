@@ -130,11 +130,11 @@ pip install -r tools/requirements.txt
 python tools/lab_debug.py
 ```
 
-iPad から操作するときは、同じ PC で親リポジトリの Hub を起動します。
+iPad から操作するときは、同じ PC で親リポジトリの Hub とこのスクリプトをまとめて起動します。
 
 ```text
 cd robotics-hub
-npm run dev:lab
+npm run dev:m5
 ```
 
 iPad ブラウザで `http://<PCのLAN IP>:5173/m5-telemetry` を開きます。`lab_debug.py` が Socket.IO **:8794** で中継します。iPad 接続中は PC 側のロボット操作は表示のみ（**全停止** と USB 接続／切断は残します）。COM のファイルダイアログ・WAV は PC 専用です。

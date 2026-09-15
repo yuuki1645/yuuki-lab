@@ -123,6 +123,15 @@ RAND_MAX_DEG = 230.0
 RAND_HOLD_MIN_S = 0.7
 RAND_HOLD_MAX_S = 1.4
 RAND_MIN_JUMP_DEG = 25.0
+# サーボ校正（PC が PWM を出す）。COP ライブの 100〜170 クランプは使わない
+CAL_MIN_DEG = 40.0
+CAL_MAX_DEG = 230.0
+CAL_STEP_DEG = 1.0
+CAL_SETTLE_S = 0.18
+CAL_FIRST_MOVE_S = 0.80
+CAL_FRAME_WAIT_S = 3.0
+CAL_MIN_MAP_POINTS = 80
+CAL_MIN_UNWRAP_SPAN = 40.0
 # リポジトリ直下の audio/（tools/ の親）
 REPO_ROOT = Path(__file__).resolve().parent.parent
 NODES_PATH = Path(__file__).resolve().parent / "lab_nodes.json"
@@ -285,6 +294,63 @@ class FootRoute:
     hub: int = 0x71
     ch: int = 2
     addr: int = 0x28
+
+
+@dataclass
+class PcCalSweep:
+    """lab_debug が 40→230→40° を PWM 掃引し、AS5600 と組んでマップを作る。"""
+
+    port: str
+    ch: int
+    cmds: list[float]
+    index: int = 0
+    wait_until: float = 0.0
+    seq_at_cmd: int | None = None
+    samples: list[tuple[float, float]] = field(default_factory=list)
+    prev_out: bool = False
+    abort: bool = False
+
+
+def cal_sweep_cmds(lo: float = CAL_MIN_DEG, hi: float = CAL_MAX_DEG, step: float = CAL_STEP_DEG) -> list[float]:
+    """往路 lo→hi、復路 hi-step→lo の 1° 指令列。"""
+    lo_i = int(round(lo))
+    hi_i = int(round(hi))
+    st = max(1, int(round(step)))
+    up = [float(d) for d in range(lo_i, hi_i + 1, st)]
+    down = [float(d) for d in range(hi_i - st, lo_i - 1, -st)]
+    return up + down
+
+
+def clamp_cal_deg(deg: float) -> float:
+    """校正用 PWM。40〜230° に収める（ライブ実験の狭いクランプは掛けない）。"""
+    if deg < CAL_MIN_DEG:
+        return CAL_MIN_DEG
+    if deg > CAL_MAX_DEG:
+        return CAL_MAX_DEG
+    return deg
+
+
+def build_cal_map_points(samples: list[tuple[float, float]]) -> list[tuple[float, float]] | None:
+    """(unwrap, servo_cmd) を整数°ごとに平均し、AS5600 昇順のマップにする。"""
+    bins: dict[int, list[float]] = {}
+    for unw, cmd in samples:
+        idx = int(round(cmd))
+        if idx < int(CAL_MIN_DEG) or idx > int(CAL_MAX_DEG):
+            continue
+        bins.setdefault(idx, []).append(unw)
+    points: list[tuple[float, float]] = []
+    for deg in range(int(CAL_MIN_DEG), int(CAL_MAX_DEG) + 1):
+        xs = bins.get(deg)
+        if not xs:
+            continue
+        points.append((sum(xs) / len(xs), float(deg)))
+    points.sort(key=lambda p: p[0])
+    if len(points) < CAL_MIN_MAP_POINTS:
+        return None
+    span = points[-1][0] - points[0][0]
+    if span < CAL_MIN_UNWRAP_SPAN:
+        return None
+    return points
 
 
 FOOT_CORNER_KEYS = ("top_left", "top_right", "bottom_right", "bottom_left")
@@ -1122,6 +1188,8 @@ class LabApp(tk.Tk):
         self._record_pub_t = 0.0
         # かかとピッチ COP 中心化（PC 閉ループ。再起動で消える）
         self._cop = copctrl.CopCtrl()
+        # PC 側サーボ校正（40〜230° PWM）。実行中だけ入る
+        self._pc_cal: PcCalSweep | None = None
         self._m5_bridge = M5HubBridge(
             on_command=self._m5_cmd_from_thread,
             on_clients_changed=self._m5_clients_from_thread,
@@ -1624,6 +1692,11 @@ class LabApp(tk.Tk):
             return
         if s is None:
             return
+        if self._pc_cal is not None and (
+            op in ("out", "joint", "random", "mode") or str(op).startswith("cop_")
+        ):
+            # 校正掃引中は 40〜230° PWM を PC が握る
+            return
         if op == "mode":
             robot = bool(msg.get("robot"))
             if robot:
@@ -1749,10 +1822,9 @@ class LabApp(tk.Tk):
                 self._send_routes(s, routes, "プロファイル送信（iPad）", foot=self._foot_from_msg(msg, s.foot))
         elif op == "cal_start":
             ch = int(msg.get("ch", 0))
-            s.send(proto.cmd_cal(ch))
-            self.cal_status_lab.configure(text=f"状態: 開始要求 ch{ch}")
+            self._cal_run(ch, s)
         elif op == "cal_abort":
-            s.send(proto.cmd_cal_abort())
+            self._cal_abort()
         elif op == "map_get":
             ch = int(msg.get("ch", 0))
             s.send(proto.cmd_map_get(ch))
@@ -1763,6 +1835,8 @@ class LabApp(tk.Tk):
 
     def _send_live_joint(self, s: AtomSession, j: int, deg: float) -> None:
         """ライブ PWM。実験用に 100〜170° へクランプして送る（校正スイープは使わない）。"""
+        if self._pc_cal is not None:
+            return
         deg = copctrl.clamp_cmd(deg)
         self._syncing = True
         try:
@@ -1896,6 +1970,8 @@ class LabApp(tk.Tk):
 
     def _update_cop_ctrl(self) -> None:
         """Tk 周期で COP を見て、かかとピッチだけゆっくり指令する。"""
+        if self._pc_cal is not None:
+            return
         s = self._m5_sess()
         if s is None or not s.connected:
             if self._cop.p_on or self._cop.sweep_on:
@@ -2311,11 +2387,12 @@ class LabApp(tk.Tk):
         self.plot_ang.redraw()
 
     def _build_cal(self) -> None:
-        """サーボ↔AS5600 の 1° マップ校正。実機が 40〜230° を往復する。"""
+        """サーボ↔AS5600 の 1° マップ校正。PC が 40〜230° の PWM を出す。"""
         hint = tk.Label(
             self.tab_cal,
-            text="周囲を空けてから実行。40→230→40°（1°・静止待ち）でマップを作り NVS に保存し、続けて #MAP を送出します。"
-            " 所要約数分。中断は「中止」または全停止。",
+            text="周囲を空けてから実行。PC がサーボ PWM を 40→230→40°（1°・静止待ち）で掃引し、"
+            "AS5600 と組んだマップを NVS へ送ります。所要約 2 分。中断は「中止」または全停止。"
+            " ライブ実験の 100〜170° 制限は校正には使いません。",
             bg=BG, fg=MUTED, anchor="w", wraplength=900, justify="left",
         )
         hint.pack(fill="x", padx=8, pady=6)
@@ -2369,20 +2446,155 @@ class LabApp(tk.Tk):
         ch = int(self.cal_ch_var.get())
         if not messagebox.askokcancel(
             "校正",
-            f"関節 {ch} を 40→230→40° で動かします。\n"
-            "干渉・配線を確認しましたか？\n（数分かかります）",
+            f"関節 {ch} を PWM 40→230→40° で動かします。\n"
+            "干渉・配線を確認しましたか？\n（約 2 分かかります）",
         ):
             return
-        # Lab でも校正中はボードが当該軸の PWM を一時オンする
-        s.send(proto.cmd_cal(ch))
-        s.note(f"校正開始要求  ch{ch}")
-        self.cal_status_lab.configure(text=f"状態: 開始要求 ch{ch}")
+        self._cal_run(ch)
+
+    def _cal_run(self, ch: int, s: AtomSession | None = None) -> None:
+        """校正開始。Lab で当該軸の PWM を 40〜230° 掃引する。"""
+        if s is None:
+            s = self._sess()
+        if not s or not s.connected:
+            self.cal_status_lab.configure(text="状態: ATOM が未接続です")
+            return
+        if ch < 0 or ch >= JOINTS:
+            self.cal_status_lab.configure(text=f"状態: 関節番号が不正 ch{ch}")
+            return
+        if self._pc_cal is not None:
+            self.cal_status_lab.configure(text="状態: 校正中です")
+            return
+        self._cop_stop("校正開始")
+        if ch < len(self.rand_vars):
+            self.rand_vars[ch].set(False)
+        if self._auto_scan.get():
+            self._auto_scan.set(False)
+            self._toggle_auto()
+            s.note("校正のため自動スキャンを停止")
+        # Robot だと PC の関節指令が 135° 固定になるので Lab にする
+        self.mode_var.set("lab")
+        s.send(proto.cmd_mode(False))
+        cmds = cal_sweep_cmds()
+        prev_out = bool(ch < len(self.out_vars) and self.out_vars[ch].get())
+        seq = s.last_frame.seq if s.last_frame is not None else None
+        self._pc_cal = PcCalSweep(
+            port=s.port,
+            ch=ch,
+            cmds=cmds,
+            wait_until=time.time() + CAL_FIRST_MOVE_S,
+            seq_at_cmd=seq,
+            prev_out=prev_out,
+        )
+        self._send_cal_pwm(s, ch, cmds[0])
+        msg = f"校正開始  ch{ch}  PWM {CAL_MIN_DEG:.0f}→{CAL_MAX_DEG:.0f}→{CAL_MIN_DEG:.0f}°"
+        s.cal_status = msg
+        s.note(msg)
+        self.cal_status_lab.configure(text=f"状態: {msg}")
+
+    def _send_cal_pwm(self, s: AtomSession, ch: int, deg: float) -> None:
+        """校正専用の PWM。40〜230° をそのまま Joint 指令する。"""
+        deg = clamp_cal_deg(deg)
+        self._syncing = True
+        try:
+            if 0 <= ch < len(self.cmd_vars):
+                self.cmd_vars[ch].set(round(deg, 1))
+            if 0 <= ch < len(self.out_vars):
+                self.out_vars[ch].set(True)
+        finally:
+            self._syncing = False
+        s.send(proto.cmd_out(ch, True))
+        s.send(proto.cmd_joint(ch, deg))
 
     def _cal_abort(self) -> None:
         s = self._sess()
         if s:
             s.send(proto.cmd_cal_abort())
-            s.note("校正中止要求")
+        self._pc_cal_stop("中止", restore=True)
+
+    def _pc_cal_stop(self, reason: str, *, restore: bool = True, ok: bool = False) -> None:
+        """掃引を終えて PWM を元に戻す。ok ならマップ送信済み。"""
+        cal = self._pc_cal
+        self._pc_cal = None
+        if cal is None:
+            return
+        s = self.sessions.get(cal.port)
+        if s is None:
+            return
+        if restore:
+            # 掃引後は 135° に戻し、開始前の PWM ON/OFF を復元する
+            s.send(proto.cmd_joint(cal.ch, 135.0))
+            s.send(proto.cmd_out(cal.ch, cal.prev_out))
+            self._syncing = True
+            try:
+                if cal.ch < len(self.cmd_vars):
+                    self.cmd_vars[cal.ch].set(135.0)
+                if cal.ch < len(self.out_vars):
+                    self.out_vars[cal.ch].set(cal.prev_out)
+            finally:
+                self._syncing = False
+        status = f"校正完了  ch{cal.ch}  {len(s.map_points)}点" if ok else f"校正終了  {reason}"
+        s.cal_status = status
+        s.note(status)
+        self.cal_status_lab.configure(text=f"状態: {status}")
+        self._refresh_cal_labels(s)
+
+    def _update_pc_cal(self) -> None:
+        """毎 tick。静止待ちのあと AS5600 を取り、次の PWM 角へ進める。"""
+        cal = self._pc_cal
+        if cal is None:
+            return
+        if cal.abort:
+            self._pc_cal_stop("中止")
+            return
+        s = self.sessions.get(cal.port)
+        if s is None or not s.connected:
+            self._pc_cal_stop("ATOM 切断")
+            return
+        now = time.time()
+        if now < cal.wait_until:
+            return
+        f = s.last_frame
+        if f is None:
+            if now > cal.wait_until + CAL_FRAME_WAIT_S:
+                self._pc_cal_stop("テレメトリなし")
+            return
+        if cal.seq_at_cmd is not None and f.seq == cal.seq_at_cmd:
+            if now > cal.wait_until + CAL_FRAME_WAIT_S:
+                self._pc_cal_stop("テレメトリ待ちタイムアウト")
+            return
+        cmd = cal.cmds[cal.index]
+        if not (0 <= cal.ch < len(f.as_ok) and f.as_ok[cal.ch]):
+            self._pc_cal_stop("AS5600 欠測")
+            return
+        unw = f.unwrap[cal.ch] if cal.ch < len(f.unwrap) else None
+        if unw is None:
+            self._pc_cal_stop("unwrap なし")
+            return
+        cal.samples.append((float(unw), cmd))
+        total = len(cal.cmds)
+        pct = int((cal.index + 1) * 100 / total) if total else 100
+        status = f"校正  ch{cal.ch}  {pct}%  {cmd:.0f}°"
+        s.cal_status = status
+        self.cal_status_lab.configure(text=f"状態: {status}")
+        cal.index += 1
+        if cal.index >= total:
+            points = build_cal_map_points(cal.samples)
+            if points is None:
+                self._pc_cal_stop(
+                    f"マップ失敗  {len(cal.samples)}サンプル（{CAL_MIN_MAP_POINTS}点以上必要）"
+                )
+                return
+            s.map_ch = cal.ch
+            s.map_points = points
+            s.send_map(cal.ch, points)
+            s.note(f"マップ送信  ch{cal.ch}  {len(points)}点")
+            self._pc_cal_stop("完了", ok=True)
+            return
+        nxt = cal.cmds[cal.index]
+        cal.seq_at_cmd = f.seq
+        cal.wait_until = now + CAL_SETTLE_S
+        self._send_cal_pwm(s, cal.ch, nxt)
 
     def _map_get(self) -> None:
         if self._pc_locked():
@@ -2830,7 +3042,7 @@ class LabApp(tk.Tk):
             s.send(proto.cmd_mode(self.mode_var.get() == "robot"))
 
     def _toggle_out(self, panel: int) -> None:
-        if self._syncing or self._pc_locked():
+        if self._syncing or self._pc_locked() or self._pc_cal is not None:
             return
         s = self._sess()
         if not s:
@@ -2907,6 +3119,9 @@ class LabApp(tk.Tk):
                 continue
             if not self.out_vars[i].get():
                 continue
+            # 校正掃引中の軸はランダムしない
+            if self._pc_cal is not None and i == self._pc_cal.ch:
+                continue
             # COP 実験中は固定軸とかかとピッチをランダムから外す
             if self._cop.held and i in copctrl.HOLD_CHS:
                 continue
@@ -2927,7 +3142,7 @@ class LabApp(tk.Tk):
             s.send(proto.cmd_joint(i, tgt))
 
     def _cmd_drag(self, panel: int) -> None:
-        if self._syncing or self._pc_locked():
+        if self._syncing or self._pc_locked() or self._pc_cal is not None:
             return
         j = self._panel_joint(panel)
         # 手動操作したらその軸のランダムを止める
@@ -2942,6 +3157,7 @@ class LabApp(tk.Tk):
             self._send_live_joint(s, j, float(self.cmd_vars[j].get()))
 
     def _hold_all(self) -> None:
+        self._pc_cal_stop("全停止", restore=False)
         self._cop_stop("全停止", clear_hold=True)
         for s in self.sessions.values():
             s.send(proto.cmd_hold())
@@ -3153,6 +3369,7 @@ class LabApp(tk.Tk):
         self._record_stop()
 
     def _on_close(self) -> None:
+        self._pc_cal_stop("ツール終了", restore=False)
         self._record_stop(reason="ツール終了")
         for s in self.sessions.values():
             s.disconnect()
@@ -3176,6 +3393,7 @@ class LabApp(tk.Tk):
                 )
                 if over and not getattr(s, "amp_tripped", False):
                     s.amp_tripped = True
+                    self._pc_cal_stop("過電流で停止", restore=False)
                     self._cop_stop("過電流で停止", clear_hold=True)
                     s.send(proto.cmd_hold())
                     for v in self.rand_vars:
@@ -3186,6 +3404,7 @@ class LabApp(tk.Tk):
                 elif not over:
                     s.amp_tripped = False
         self._update_random()
+        self._update_pc_cal()
         self._update_cop_ctrl()
         self._sync_detail()
         self._draw_cards()
@@ -3340,8 +3559,9 @@ class LabApp(tk.Tk):
             self._fill_joint_panel(f, p)
 
         # チェック ON なのにボード側がオフなら、短周期で再送（校正終了・取りこぼし対策）
+        # 校正掃引中は PC が PWM を握るので再送しない
         now = time.time()
-        if now - self._last_out_reassert >= 0.4:
+        if self._pc_cal is None and now - self._last_out_reassert >= 0.4:
             resent = False
             for i in range(JOINTS):
                 if self.out_vars[i].get() and not (f.out_mask & (1 << i)):

@@ -346,6 +346,12 @@ tools/lab_debug.py                 起動: 総合 GUI
 tools/rt_monitor.py                起動: 1 台グラフ（従来）
 tools/rt_usb_log.py                起動: 解釈済み USB ログ
 tools/lib/                         部品（直接起動しない）
+  lab_app.py                       Tk GUI（apply_op が USB 操作の入口）
+  lab_usb.py                       ATOM 1 台の USB セッション
+  lab_model.py                     Frame / JointRoute
+  lab_const.py                     色・軸数・WAV
+  lab_plot.py                      折れ線
+  lab_pc_cal.py                    PC 掃引校正
   rt_usb_proto.py                  同じフレームの Python 実装
   cal_map_io.py                    校正マップ JSON
   m5_hub_bridge.py                 Hub / iPad 中継と本記録 REST（:8794）

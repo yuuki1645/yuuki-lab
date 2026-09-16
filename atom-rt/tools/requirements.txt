@@ -1,5 +1,7 @@
+# lab_debug / rt_monitor / rt_usb_log 用。
+# pyserial: ATOM の USB CDC
+# flask*: lab_debug が起動する Hub 中継（lib/m5_hub_bridge.py）。無いと GUI は動くが iPad 中継だけ無効
 pyserial>=3.5
 flask>=3.0
 flask-cors>=4.0
 flask-socketio>=5.3
-

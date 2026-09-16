@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rt-usb の USB フレームをターミナルに出す CLI。
+rt-usb の USB フレームをターミナルに出す CLI（起動エントリ）。
 
 GUI（rt_monitor.py / lab_debug.py）は使わない。COM は同時に 1 プロセスだけなので、
 モニタを開いているときは閉じてから起動する。
@@ -9,6 +9,7 @@ GUI（rt_monitor.py / lab_debug.py）は使わない。COM は同時に 1 プロ
   python tools/rt_usb_log.py COM11
 
 受信は解釈済み 1 行、送信も短い説明。生のバイナリは出さない。
+フレーム分解は lib/rt_usb_proto.py。
 
 キーボード例: ping / scan / hold / identify / mode lab|robot / out 0 1 / cmd 0 135
 終了は Ctrl+C。
@@ -22,12 +23,13 @@ import threading
 import time
 from pathlib import Path
 
+# tools/ を import パスへ。lib/ パッケージを読む。
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import serial
 import serial.tools.list_ports
 
-import rt_usb_proto as proto
+import lib.rt_usb_proto as proto
 
 BAUD = 115200
 

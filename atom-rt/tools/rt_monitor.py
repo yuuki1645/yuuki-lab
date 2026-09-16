@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-rt-usb ファーム専用のリアルタイムモニタ（atom-rt）。
+rt-usb ファーム専用のリアルタイムモニタ（起動エントリ）。
 
 USB シリアルで 20 Hz スナップショットを受け、
 グラフと数値を同じ画面に出す（Wi-Fi は使わない）。
-servo_monitor.py とは別アプリ。
+接続すると Robot モード（全軸 135°）になる。机上は lab_debug.py を使う。
+
+部品は tools/lib/（rt_usb_proto / cal_map_io）。本線 GUI は lab_debug.py。
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# tools/ を import パスへ。lib/ パッケージを読む。
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import queue
@@ -22,8 +25,8 @@ from collections import deque
 from dataclasses import dataclass, field
 from tkinter import filedialog, messagebox, ttk
 
-from cal_map_io import load_map, save_map
-import rt_usb_proto as proto
+from lib.cal_map_io import load_map, save_map
+import lib.rt_usb_proto as proto
 
 import serial
 import serial.tools.list_ports

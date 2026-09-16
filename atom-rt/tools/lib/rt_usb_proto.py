@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-rt-usb バイナリフレームの組み立て／分解（ファーム usb_proto.hpp と欄を揃える）。
+USB バイナリフレームの組み立て／分解（ライブラリ。直接起動しない）。
+
+ファーム `src/rt_usb/usb_proto.hpp` と欄を揃える。lab_debug / rt_monitor / rt_usb_log が import する。
 
 フレーム: AA 55 | type | len_lo | len_hi | payload | crc16_le
 CRC は type+len16+payload（CRC-16-CCITT、初期値 0xFFFF）。

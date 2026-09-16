@@ -1,5 +1,8 @@
 """
-DF9-40@2kg の抵抗→力換算。
+DF9-40@2kg の抵抗→力換算（ライブラリ。直接起動しない）。
+
+lab_debug.py が足裏テレメトリのミリボルトを kg に変えるときに使う。
+USB 上はミリボルトだけ送り、換算は PC 側。
 
 データシート（Velleman / DF9-40 series）:
   https://cdn.velleman.eu/downloads/25/infosheets/fsr_datasheet.pdf

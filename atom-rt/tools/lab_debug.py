@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ATOMS3 Lite 総合デバッグ（机上ラボ / 機体の両用）。
+ATOMS3 Lite 総合デバッグ（机上ラボ / 機体の両用）。起動エントリ。
 
 起動時は先頭 1 台の ATOM（VID 303A）へ自動接続する。複数 USB も開ける。
 I2C トポロジ・磁石・電源・周期・手動 PWM を見る。
@@ -12,12 +12,23 @@ Lab ではサーボは明示するまで動かない。Robot は従来どおり�
 iPad（robotics-hub の「実機テレメトリ（M5）」）へは、このプロセスが
 Socket.IO :8794 で中継する。iPad 接続中は PC 側のロボット操作は表示のみ
 （全停止と USB 接続／切断は残す）。
+
+依存マップ（tools/ は起動物、tools/lib/ は部品）:
+  このファイル            GUI・接続・タブ・tick の本体
+  lib/rt_usb_proto.py     USB フレーム（ファーム usb_proto.hpp と揃える）
+  lib/cal_map_io.py       校正マップ JSON
+  lib/m5_hub_bridge.py    Hub / iPad 中継 :8794（このプロセスが起動）
+  lib/m5_record_store.py  本記録（data/recordings、明示開始のみ）
+  lib/cop_ankle_ctrl.py   かかとピッチ COP（指令はここから USB に出す）
+  lib/df9_force.py        足裏 DF9-40 の電圧→力
+他の起動物: rt_monitor.py（1台グラフ）、rt_usb_log.py（CLI ログ）
 """
 
 from __future__ import annotations
 
 import json
 import queue
+import sys
 import threading
 import time
 from collections import deque
@@ -28,14 +39,19 @@ import random
 from tkinter import filedialog, messagebox, ttk
 import tkinter as tk
 
+# tools/ を import パスへ。lib/ を `import lib.xxx` で読むため。
+_TOOLS_DIR = Path(__file__).resolve().parent
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))
+
 import serial
 import serial.tools.list_ports
 
-from cal_map_io import load_map, save_map
-import cop_ankle_ctrl as copctrl
-import df9_force
-import rt_usb_proto as proto
-from m5_hub_bridge import (
+from lib.cal_map_io import load_map, save_map
+import lib.cop_ankle_ctrl as copctrl
+import lib.df9_force as df9_force
+import lib.rt_usb_proto as proto
+from lib.m5_hub_bridge import (
     EVT_CAL,
     EVT_CONTROL,
     EVT_EVENTS,
@@ -47,7 +63,7 @@ from m5_hub_bridge import (
     M5HubBridge,
     lan_ipv4,
 )
-from m5_record_store import M5RecordStore
+from lib.m5_record_store import M5RecordStore
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -132,8 +148,9 @@ CAL_FIRST_MOVE_S = 0.80
 CAL_FRAME_WAIT_S = 3.0
 CAL_MIN_MAP_POINTS = 80
 CAL_MIN_UNWRAP_SPAN = 40.0
-# リポジトリ直下の audio/（tools/ の親）
+# リポジトリ直下の audio/（tools/ の親 = atom-rt/）
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# COM の表示名。tools/ 直下（gitignore）。lib/ には置かない。
 NODES_PATH = Path(__file__).resolve().parent / "lab_nodes.json"
 # 右脚制御の起動アナウンス。将来は ATOMS3R AI Chatbot 側で再生する想定
 BOOT_WAV = REPO_ROOT / "audio" / "right_leg_boot.wav"

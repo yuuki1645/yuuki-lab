@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-atom-rt の lab_debug.py 用 iPad / robotics-hub 中継（Socket.IO）。
+Hub / iPad 向け Socket.IO 中継（ライブラリ。直接起動しない）。
 
-ATOM の USB は触らない。Tk スレッドから publish し、iPad からの操作は
-コールバックで Tk に戻す。既定ポート 8794（学習 8791 / Isaac 8792 / 圧力 8793）。
+lab_debug.py がプロセス内で M5HubBridge を起動する。ATOM の USB は触らない。
+Tk スレッドから publish し、iPad からの操作はコールバックで Tk に戻す。
+既定ポート 8794（学習 8791 / Isaac 8792 / 圧力 8793）。
 """
 
 from __future__ import annotations
@@ -15,7 +16,8 @@ import threading
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from m5_record_store import M5RecordStore
+    # 同じ lib パッケージ内。実行時は lab_debug が M5RecordStore を渡す。
+    from .m5_record_store import M5RecordStore
 
 LOG = logging.getLogger("m5_hub_bridge")
 

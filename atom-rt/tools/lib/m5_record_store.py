@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-ATOM / M5 テレメトリの本記録ストア。
+ATOM テレメトリの本記録ストア（ライブラリ。直接起動しない）。
 
 明示開始〜停止のあいだだけ、ATOM 接続 PC のディスクへ書く。
-robotics-hub は HTTP API（m5_hub_bridge）経由で一覧・配信・メタ編集する。
+robotics-hub は m5_hub_bridge の HTTP API 経由で一覧・配信・メタ編集する。
 """
 
 from __future__ import annotations

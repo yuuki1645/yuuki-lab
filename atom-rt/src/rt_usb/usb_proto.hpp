@@ -9,7 +9,7 @@
  * len は LE uint16。8 関節×8 INA + 足 4 隅のテレメトリが 255 を超えるため。
  *
  * 途中で USB パケットが分かれても、受信側はマジックと CRC で組み立て／破棄する。
- * Python 側は tools/rt_usb_proto.py と欄の並びを揃えること。
+ * Python 側は tools/lib/rt_usb_proto.py と欄の並びを揃えること。
  */
 
 #include <stddef.h>

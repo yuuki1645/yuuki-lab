@@ -1,7 +1,8 @@
 """
-AS5600 unwrap → サーボ指令の校正マップを JSON で読み書きする。
+校正マップ JSON の読み書き（ライブラリ。直接起動しない）。
 
-servo_monitor / rt_monitor の共通形式。
+AS5600 unwrap → サーボ指令。形式は as5600-servo-map-v1。
+lab_debug / rt_monitor が共通で使う。
 """
 
 from __future__ import annotations

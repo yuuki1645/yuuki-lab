@@ -34,10 +34,11 @@ python tools/lab_debug.py
 
 PC:
 
+起動するツールは `tools/` 直下の 3 本。部品は `tools/lib/`（手では起動しない）。
+
 | ツール | 用途 |
 |---|---|
-| `tools/lab_debug.py` | **総合デバッグ**。複数 ATOM、トポロジ、関節、校正、電源、周期、本記録。接続時（HELLO）に起動アナウンス WAV を再生 |
-| `tools/m5_hub_bridge.py` | Hub `/m5-telemetry` 向け Socket.IO 中継（`lab_debug.py` が起動。既定 :8794） |
+| `tools/lab_debug.py` | **総合デバッグ**。複数 ATOM、トポロジ、関節、校正、電源、周期、本記録。接続時（HELLO）に起動アナウンス WAV を再生。Hub 中継（:8794）もこのプロセスが起動 |
 | `tools/rt_monitor.py` | 1 台の 20 Hz グラフ（従来）。接続時に Robot モードへ切り替える |
 | `tools/rt_usb_log.py` | 解釈済みの送受信ログ。キーボードで `ping` / `scan` / `hold` などを送信 |
 
@@ -51,7 +52,7 @@ USB は **固定長バイナリフレーム**（マジック + 長さ + CRC）�
 
 - PlatformIO Core（`pio`）
 - Python 3.10 以降
-- `pip install -r tools/requirements.txt`（`pyserial`）
+- `pip install -r tools/requirements.txt`（USB は `pyserial`。Hub 中継は flask / flask-socketio）
 - ATOMS3 Lite
 - データ通信できる USB ケーブル
 
@@ -72,7 +73,7 @@ ATOMS3 Lite / ATOM S3R Grove I2C
 - 拡張ポートは CH0〜CH5
 - サーボ: RDS51150 想定。500〜2500 µs = 0〜270°。指令は **40〜230°**
 - INA226: 既定は 10 A ユニット（シャント 5 mΩ）
-- 当面 8 軸（`kSnapJoints`）。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `rt_usb_proto.py` を揃える
+- 当面 8 軸（`kSnapJoints`）。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `tools/lib/rt_usb_proto.py` を揃える
 - INA 監視枠も 8（`kSnapIna`）。未割当は `ina_addr=0` で読まない
 - 右足圧スレーブは `FootRoute`（既定 `0x71` CH2 / `0x28`）。`addr=0` で読まない。USB テレメトリは **ver=10**
 
@@ -92,7 +93,7 @@ USB CDC です。**lab_debug / rt_monitor / rt_usb_log を開いたままでは�
 pio run -t upload
 ```
 
-既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=7** です。焼き直してください。
+既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=10** です。焼き直してください。
 
 通信の確認はシリアルモニタではなく:
 
@@ -100,7 +101,7 @@ pio run -t upload
 python tools/rt_usb_log.py
 ```
 
-`pio device monitor` はバイナリをテキストとして出すので使えません。HELLO の `ver=7` が出れば新しいファームです。
+`pio device monitor` はバイナリをテキストとして出すので使えません。HELLO の `ver=10` が出れば新しいファームです。
 
 ---
 
@@ -215,7 +216,7 @@ calabort
 
 USB CDC（仮想 COM）のまま、中身だけバイナリです。WinUSB 専用ドライバは不要です。115200 は CDC ではほぼ飾りです。
 
-旧 ASCII CSV（`#S` / `#PING` など）との互換はありません。ファーム `kUsbFwVer = 9` と `tools/rt_usb_proto.py` の `FW_VER = 9` を揃えます（len が uint16 になったため、旧ファームとは非互換）。
+旧 ASCII CSV（`#S` / `#PING` など）との互換はありません。ファーム `kUsbFwVer = 10` と `tools/lib/rt_usb_proto.py` の `FW_VER = 10` を揃えます（len が uint16、足 4 隅つき。旧ファームとは非互換）。
 
 ### フレーム
 
@@ -231,7 +232,7 @@ USB CDC（仮想 COM）のまま、中身だけバイナリです。WinUSB 専�
 定義の正本:
 
 - ファーム: `src/rt_usb/usb_proto.hpp`
-- Python: `tools/rt_usb_proto.py`
+- Python: `tools/lib/rt_usb_proto.py`
 
 ### PC → ボード（type 0x80…）
 
@@ -296,7 +297,7 @@ HELLO の `ina` は **INA 監視枠の数**（現状 8。関節数と同じ）�
 
 中断は「中止」または CalAbort / Hold。
 
-校正マップの JSON 形式（`as5600-servo-map-v1`）は変わりません（`tools/cal_map_io.py`）。`data/cal_map_*.json` を流用できます。
+校正マップの JSON 形式（`as5600-servo-map-v1`）は変わりません（`tools/lib/cal_map_io.py`）。`data/cal_map_*.json` を流用できます。
 
 ---
 
@@ -336,17 +337,21 @@ platformio.ini
 src/as5600.hpp  src/as5600.cpp     角度・磁石・AGC・magnitude
 src/robot/pahub.hpp                PCA9548A
 src/robot/ina226.hpp               Unit INA226
+src/robot/i2c_foot_proto.h         右足スレーブ I2C
 src/rt_usb/main.cpp                ファーム本体
 src/rt_usb/usb_proto.hpp           USB バイナリフレーム
 src/rt_usb/joint_profile.hpp       関節経路（NVS / USB）
 src/rt_usb/snapshot.hpp            20 Hz 共有データ
-tools/rt_usb_proto.py              同じフレームの Python 実装
-tools/lab_debug.py                 総合 GUI
-tools/m5_hub_bridge.py             Hub / iPad 向け Socket.IO 中継と本記録 REST（:8794）
-tools/m5_record_store.py           本記録（data/recordings、明示開始のみ）
-tools/rt_monitor.py
-tools/rt_usb_log.py
-tools/cal_map_io.py
+tools/lab_debug.py                 起動: 総合 GUI
+tools/rt_monitor.py                起動: 1 台グラフ（従来）
+tools/rt_usb_log.py                起動: 解釈済み USB ログ
+tools/lib/                         部品（直接起動しない）
+  rt_usb_proto.py                  同じフレームの Python 実装
+  cal_map_io.py                    校正マップ JSON
+  m5_hub_bridge.py                 Hub / iPad 中継と本記録 REST（:8794）
+  m5_record_store.py               本記録（data/recordings、明示開始のみ）
+  cop_ankle_ctrl.py                かかとピッチ COP
+  df9_force.py                     足裏 DF9-40 の力換算
 tools/requirements.txt
 data/cal_map_*.json            校正マップ（機体・机上）
 data/recordings/               本記録（gitignore。明示開始のみ）
@@ -365,7 +370,7 @@ audio/system_all_green.wav     異常なしアナウンス
 | 症状 | 確認 |
 |---|---|
 | 書けない | ツールを閉じる。緑のダウンロードモード。USB は 1 台 |
-| GUI が空 / 壊れた表示 | このディレクトリのファーム（HELLO `ver=7`）か。古い ASCII CSV や ver=6 とは話せない |
+| GUI が空 / 壊れた表示 | このディレクトリのファーム（HELLO `ver=10`）か。古い ASCII CSV や ver=9 以前とは話せない |
 | `pio device monitor` が文字化け | 仕様。バイナリなので `rt_usb_log.py` を使う |
 | 校正が fit/map で失敗 | 磁石・ギア・干渉。AS5600 がサーボに追従しているか |
 | スキャンに出ない | Grove、PaHub DIP、5V。未知アドレスは Hub 先だと既知リスト外のことがある |
@@ -373,6 +378,6 @@ audio/system_all_green.wav     異常なしアナウンス
 | `rt_monitor` で突然動く | 仕様。接続時に Robot になる |
 | COM が PermissionError | 前の Python を残していないか。切断してから数秒待つ |
 | 周期 overrun | 自動スキャンを止める。軸・INA が増えると `t_sense` が伸びる |
-| 過電流で止まる | メカ干渉・配線。再許可する前に原因を切る。INA 未接続なのに 8 A ならファームを ver=7 に |
+| 過電流で止まる | メカ干渉・配線。再許可する前に原因を切る。INA 未接続なのに 8 A ならファームを ver=10 に |
 
 複数 ATOM をモニタするときは USB ハブで足ります。**書き込みのときだけ 1 台**にしてください。

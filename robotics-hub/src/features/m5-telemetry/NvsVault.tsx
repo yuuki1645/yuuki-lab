@@ -1,8 +1,8 @@
 /**
- * ATOM フラッシュ NVS の保管庫。実キーは USB nvs_list、意味は既知の名前空間で補う。
+ * ATOM フラッシュ NVS の保管庫。キーだけでなく実バイトを解読して見せる。
  */
-import { useMemo } from "react";
-import type { M5Cmd, M5Nvs, M5NvsEntry, M5Profile } from "./types";
+import { useMemo, useState } from "react";
+import type { M5Cmd, M5Nvs, M5NvsEntry } from "./types";
 import { M5_JOINTS } from "./types";
 import "./NvsVault.css";
 
@@ -24,8 +24,8 @@ type ExpectKey = { ns: string; key: string; hint: string };
 function expectedKeys(): ExpectKey[] {
   const out: ExpectKey[] = [
     { ns: "jprof", key: "n", hint: "関節数" },
-    { ns: "jprof", key: "r", hint: "JointRoute × 8（80 B）" },
-    { ns: "jprof", key: "foot", hint: "FootRoute（3 B）" },
+    { ns: "jprof", key: "r", hint: "JointRoute × 8" },
+    { ns: "jprof", key: "foot", hint: "FootRoute" },
   ];
   for (let i = 0; i < M5_JOINTS; i += 1) {
     out.push({ ns: "cal", key: `mk${i}`, hint: `軸${i} マップ有効` });
@@ -41,33 +41,150 @@ function typeLabel(t: number): string {
   return NVS_TYPE[t] ?? `0x${t.toString(16)}`;
 }
 
-function fmtRoute(r: M5Profile["routes"][number] | undefined): string {
-  if (!r) return "—";
-  const enc = r.enc_addr
-    ? `${r.enc_hub ? r.enc_hub.toString(16) : "root"}/${r.enc_ch} @${r.enc_addr.toString(16)}`
-    : "encなし";
-  const ina = r.ina_addr ? ` ina ${r.ina_addr.toString(16)}` : "";
-  return `servo ${r.servo_ch} · ${enc}${ina}`;
+function hexToBytes(hex: string): Uint8Array {
+  const h = hex.replace(/[^0-9a-fA-F]/g, "");
+  const n = Math.floor(h.length / 2);
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i += 1) {
+    out[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
 }
 
-function hintFor(ns: string, key: string): string {
-  return expectedKeys().find((e) => e.ns === ns && e.key === key)?.hint ?? "未知のキー";
+function viewOf(b: Uint8Array): DataView {
+  return new DataView(b.buffer, b.byteOffset, b.byteLength);
+}
+
+function cString(b: Uint8Array): string {
+  const z = b.indexOf(0);
+  const slice = z >= 0 ? b.subarray(0, z) : b;
+  return new TextDecoder("utf-8", { fatal: false }).decode(slice);
+}
+
+function hexDump(b: Uint8Array, max = 64): string {
+  const n = Math.min(b.length, max);
+  const parts: string[] = [];
+  for (let i = 0; i < n; i += 1) {
+    parts.push(b[i]!.toString(16).padStart(2, "0"));
+  }
+  return parts.join(" ") + (b.length > max ? " …" : "");
+}
+
+function floatsLe(b: Uint8Array): number[] {
+  const n = Math.floor(b.length / 4);
+  const v = viewOf(b);
+  const out: number[] = [];
+  for (let i = 0; i < n; i += 1) {
+    out.push(v.getFloat32(i * 4, true));
+  }
+  return out;
+}
+
+function intByType(e: M5NvsEntry, b: Uint8Array): string | null {
+  const v = viewOf(b);
+  try {
+    if (e.type === 0x01 && b.length >= 1) return String(v.getUint8(0));
+    if (e.type === 0x11 && b.length >= 1) return String(v.getInt8(0));
+    if (e.type === 0x02 && b.length >= 2) return String(v.getUint16(0, true));
+    if (e.type === 0x12 && b.length >= 2) return String(v.getInt16(0, true));
+    if (e.type === 0x04 && b.length >= 4) return String(v.getUint32(0, true));
+    if (e.type === 0x14 && b.length >= 4) return String(v.getInt32(0, true));
+    if ((e.type === 0x08 || e.type === 0x18) && b.length >= 8) {
+      return String(v.getBigUint64(0, true));
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function fmtRouteBytes(b: Uint8Array, i: number): string {
+  const o = i * 10;
+  if (o + 10 > b.length) return `J${i} （短い）`;
+  const v = viewOf(b.subarray(o, o + 10));
+  const encHub = v.getUint8(0);
+  const encCh = v.getInt8(1);
+  const encAddr = v.getUint8(2);
+  const actHub = v.getUint8(3);
+  const actCh = v.getInt8(4);
+  const actAddr = v.getUint8(5);
+  const servo = v.getUint8(6);
+  const inaHub = v.getUint8(7);
+  const inaCh = v.getInt8(8);
+  const inaAddr = v.getUint8(9);
+  const enc = encAddr
+    ? `enc ${encHub ? "0x" + encHub.toString(16) : "root"} CH${encCh} 0x${encAddr.toString(16)}`
+    : "encなし";
+  const ina = inaAddr ? ` ina 0x${inaHub.toString(16)} CH${inaCh}` : "";
+  return `J${i}  servo ${servo} @ 0x${actAddr.toString(16)}${actHub ? " hub" : ""} CH${actCh} · ${enc}${ina}`;
+}
+
+function formatValue(e: M5NvsEntry): { summary: string; detail: string } {
+  const hex = e.data_hex ?? "";
+  if (!hex) {
+    return { summary: "値未受信（ファーム焼き直し）", detail: "" };
+  }
+  const b = hexToBytes(hex);
+  const asInt = intByType(e, b);
+  if (asInt != null) {
+    if ((e.key.startsWith("mk") || e.key.startsWith("ok")) && e.ns === "cal") {
+      return { summary: Number(asInt) ? "有効" : "無効", detail: `生値 ${asInt}` };
+    }
+    return { summary: asInt, detail: `hex ${hexDump(b)}` };
+  }
+  if (e.type === 0x21) {
+    const s = cString(b);
+    return { summary: s || "(空)", detail: hexDump(b) };
+  }
+  if (e.ns === "jprof" && e.key === "r") {
+    const lines = Array.from({ length: M5_JOINTS }, (_, i) => fmtRouteBytes(b, i));
+    return { summary: `${Math.floor(b.length / 10)} 軸の経路`, detail: lines.join("\n") };
+  }
+  if (e.ns === "jprof" && e.key === "foot" && b.length >= 3) {
+    const hub = b[0]!;
+    const ch = new DataView(b.buffer, b.byteOffset, b.byteLength).getInt8(1);
+    const addr = b[2]!;
+    const s = addr ? `0x${hub.toString(16)} CH${ch} / 0x${addr.toString(16)}` : "なし";
+    return { summary: s, detail: hexDump(b) };
+  }
+  if (e.ns === "cal" && (e.key.startsWith("mx") || e.key.startsWith("my"))) {
+    const xs = floatsLe(b);
+    if (!xs.length) return { summary: "空", detail: "" };
+    const lo = Math.min(...xs);
+    const hi = Math.max(...xs);
+    const head = xs
+      .slice(0, 8)
+      .map((x) => x.toFixed(2))
+      .join(", ");
+    return {
+      summary: `${xs.length} 点  ${lo.toFixed(1)} … ${hi.toFixed(1)}`,
+      detail: `${head}${xs.length > 8 ? " …" : ""}\n${hexDump(b, 32)}`,
+    };
+  }
+  if (e.ns === "phy" && e.key === "cal_mac" && b.length >= 6) {
+    const mac = Array.from(b.subarray(0, 6))
+      .map((x) => x.toString(16).padStart(2, "0"))
+      .join(":");
+    return { summary: mac, detail: hexDump(b) };
+  }
+  const text = cString(b);
+  if (text.length >= 2 && /^[\x20-\x7e]+$/.test(text)) {
+    return { summary: text, detail: hexDump(b) };
+  }
+  return { summary: hexDump(b, 24), detail: `${b.length} B\n${hexDump(b, 256)}` };
 }
 
 export function NvsVault({
   nvs,
-  profile,
-  mapOk,
   canCmd,
   send,
 }: {
   nvs: M5Nvs | null;
-  profile: M5Profile | null;
-  mapOk: boolean[];
   canCmd: boolean;
   send: (cmd: M5Cmd) => void;
 }) {
   const entries = nvs?.entries ?? [];
+  const [openId, setOpenId] = useState<string | null>(null);
   const byNs = useMemo(() => {
     const m = new Map<string, M5NvsEntry[]>();
     for (const e of entries) {
@@ -82,28 +199,6 @@ export function NvsVault({
   const used = nvs?.bytes ?? 0;
   const nKeys = entries.length;
 
-  const decode = (e: M5NvsEntry): string => {
-    if (e.ns === "jprof" && e.key === "n") return `${profile?.routes.length ?? "—"} 軸`;
-    if (e.ns === "jprof" && e.key === "r") {
-      const filled = (profile?.routes ?? []).filter((r) => r.enc_addr || r.ina_addr).length;
-      return `経路 ${filled}/${M5_JOINTS} 割当`;
-    }
-    if (e.ns === "jprof" && e.key === "foot") {
-      const f = profile?.foot;
-      if (!f?.addr) return "右足なし";
-      return `0x${f.hub.toString(16)} CH${f.ch} / 0x${f.addr.toString(16)}`;
-    }
-    const m = /^(mk|mn|mx|my|ok)(\d)$/.exec(e.key);
-    if (e.ns === "cal" && m) {
-      const i = Number(m[2]);
-      const live = mapOk[i] ? "RAM 有効" : "RAM 空";
-      if (e.key.startsWith("mk") || e.key.startsWith("ok")) return live;
-      if (e.key.startsWith("mn")) return `${e.size >= 4 ? "点数キー" : live}`;
-      return `${e.size} B · ${live}`;
-    }
-    return hintFor(e.ns, e.key);
-  };
-
   const missing = (ns: string) =>
     expectedKeys().filter((k) => k.ns === ns && !entries.some((e) => e.ns === k.ns && e.key === k.key));
 
@@ -114,7 +209,7 @@ export function NvsVault({
           <span className="nvs__chip-mark">NVS</span>
           <div>
             <strong>0x9000</strong>
-            <span>プログラム区画とは別。upload しても通常は残る。</span>
+            <span>キーを押すと中身（数値・文字列・hex）を開きます。upload しても通常は残ります。</span>
           </div>
         </div>
         <div className="nvs__chip-bar" aria-hidden="true">
@@ -130,12 +225,7 @@ export function NvsVault({
         <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "nvs_list" })}>
           ボードから読む
         </button>
-        <button
-          type="button"
-          className="m5__btn"
-          disabled={!canCmd}
-          onClick={() => send({ op: "prof_default" })}
-        >
+        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_default" })}>
           経路を既定に戻す
         </button>
         <button
@@ -165,9 +255,7 @@ export function NvsVault({
       </div>
 
       {!nvs?.ok ? (
-        <p className="nvs__hint">
-          「ボードから読む」で実キーを列挙します。新しいファーム（NVS 一覧コマンド）が必要です。
-        </p>
+        <p className="nvs__hint">「ボードから読む」で実キーと値を取ります。値表示には新しいファームが必要です。</p>
       ) : null}
 
       <div className="nvs__vaults">
@@ -184,17 +272,29 @@ export function NvsVault({
                 </span>
               </header>
               <ul>
-                {keys.map((e) => (
-                  <li key={e.ns + "/" + e.key} className="nvs__row">
-                    <span className="nvs__key">{e.key}</span>
-                    <span className="nvs__type">{typeLabel(e.type)}</span>
-                    <span className="nvs__size">{e.size} B</span>
-                    <span className="nvs__bar">
-                      <i style={{ width: `${Math.min(100, (e.size / 800) * 100)}%` }} />
-                    </span>
-                    <span className="nvs__hint-line">{decode(e)}</span>
-                  </li>
-                ))}
+                {keys.map((e) => {
+                  const id = e.ns + "/" + e.key;
+                  const shown = formatValue(e);
+                  const open = openId === id;
+                  return (
+                    <li key={id} className={"nvs__row" + (open ? " is-open" : "")}>
+                      <button
+                        type="button"
+                        className="nvs__row-btn"
+                        onClick={() => setOpenId(open ? null : id)}
+                      >
+                        <span className="nvs__key">{e.key}</span>
+                        <span className="nvs__type">{typeLabel(e.type)}</span>
+                        <span className="nvs__size">{e.size} B</span>
+                        <span className="nvs__bar">
+                          <i style={{ width: `${Math.min(100, (e.size / 800) * 100)}%` }} />
+                        </span>
+                        <span className="nvs__hint-line">{shown.summary}</span>
+                      </button>
+                      {open && shown.detail ? <pre className="nvs__detail">{shown.detail}</pre> : null}
+                    </li>
+                  );
+                })}
                 {ghost.map((g) => (
                   <li key={"miss-" + g.key} className="nvs__row nvs__row--ghost">
                     <span className="nvs__key">{g.key}</span>
@@ -205,15 +305,6 @@ export function NvsVault({
                   </li>
                 ))}
               </ul>
-              {ns === "jprof" && profile ? (
-                <div className="nvs__decode">
-                  {profile.routes.map((r, i) => (
-                    <p key={i}>
-                      J{i} {fmtRoute(r)}
-                    </p>
-                  ))}
-                </div>
-              ) : null}
             </article>
           );
         })}

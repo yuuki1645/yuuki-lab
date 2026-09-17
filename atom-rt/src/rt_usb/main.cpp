@@ -1717,6 +1717,129 @@ static uint16_t nvsValueSize(nvs_handle_t h, const char* key, nvs_type_t t) {
     }
 }
 
+static constexpr size_t kNvsValCap = 2048;
+
+/** 型に応じて NVS 値を buf へ読む。成功時 *outLen に実バイト。 */
+static bool nvsReadValue(nvs_handle_t h, const char* key, nvs_type_t t, uint8_t* buf, size_t cap,
+                         uint16_t* outLen) {
+    if (buf == nullptr || outLen == nullptr || cap == 0) {
+        return false;
+    }
+    *outLen = 0;
+    switch (t) {
+        case NVS_TYPE_U8: {
+            uint8_t v = 0;
+            if (nvs_get_u8(h, key, &v) != ESP_OK) {
+                return false;
+            }
+            buf[0] = v;
+            *outLen = 1;
+            return true;
+        }
+        case NVS_TYPE_I8: {
+            int8_t v = 0;
+            if (nvs_get_i8(h, key, &v) != ESP_OK) {
+                return false;
+            }
+            buf[0] = static_cast<uint8_t>(v);
+            *outLen = 1;
+            return true;
+        }
+        case NVS_TYPE_U16: {
+            uint16_t v = 0;
+            if (nvs_get_u16(h, key, &v) != ESP_OK || cap < 2) {
+                return false;
+            }
+            memcpy(buf, &v, 2);
+            *outLen = 2;
+            return true;
+        }
+        case NVS_TYPE_I16: {
+            int16_t v = 0;
+            if (nvs_get_i16(h, key, &v) != ESP_OK || cap < 2) {
+                return false;
+            }
+            memcpy(buf, &v, 2);
+            *outLen = 2;
+            return true;
+        }
+        case NVS_TYPE_U32: {
+            uint32_t v = 0;
+            if (nvs_get_u32(h, key, &v) != ESP_OK || cap < 4) {
+                return false;
+            }
+            memcpy(buf, &v, 4);
+            *outLen = 4;
+            return true;
+        }
+        case NVS_TYPE_I32: {
+            int32_t v = 0;
+            if (nvs_get_i32(h, key, &v) != ESP_OK || cap < 4) {
+                return false;
+            }
+            memcpy(buf, &v, 4);
+            *outLen = 4;
+            return true;
+        }
+        case NVS_TYPE_U64: {
+            uint64_t v = 0;
+            if (nvs_get_u64(h, key, &v) != ESP_OK || cap < 8) {
+                return false;
+            }
+            memcpy(buf, &v, 8);
+            *outLen = 8;
+            return true;
+        }
+        case NVS_TYPE_I64: {
+            int64_t v = 0;
+            if (nvs_get_i64(h, key, &v) != ESP_OK || cap < 8) {
+                return false;
+            }
+            memcpy(buf, &v, 8);
+            *outLen = 8;
+            return true;
+        }
+        case NVS_TYPE_STR: {
+            size_t n = cap;
+            if (nvs_get_str(h, key, reinterpret_cast<char*>(buf), &n) != ESP_OK) {
+                return false;
+            }
+            *outLen = static_cast<uint16_t>(n);
+            return true;
+        }
+        case NVS_TYPE_BLOB: {
+            size_t n = cap;
+            if (nvs_get_blob(h, key, buf, &n) != ESP_OK) {
+                return false;
+            }
+            *outLen = static_cast<uint16_t>(n);
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+/** 1 キーの中身をチャンクで送る。 */
+static void usbSendNvsData(const char* ns, const char* key, const uint8_t* data, uint16_t total) {
+    uint16_t start = 0;
+    while (start < total) {
+        const uint8_t n = static_cast<uint8_t>(
+            (total - start) > kUsbNvsChunk ? kUsbNvsChunk : (total - start));
+        uint8_t raw[sizeof(UsbNvsDataHdr) + kUsbNvsChunk];
+        UsbNvsDataHdr h{};
+        strncpy(h.ns, ns, sizeof(h.ns) - 1);
+        strncpy(h.key, key, sizeof(h.key) - 1);
+        h.total = total;
+        h.start = start;
+        h.n = n;
+        memcpy(raw, &h, sizeof(h));
+        memcpy(raw + sizeof(h), data + start, n);
+        usbSend(kUsbNvsData, raw, static_cast<uint16_t>(sizeof(h) + n));
+        start = static_cast<uint16_t>(start + n);
+    }
+}
+
 /** パーティション "nvs" の全キーを USB で送る。Core 0 専用。 */
 static void usbDumpNvs() {
     usbSend(kUsbNvsBegin, nullptr, 0);
@@ -1744,6 +1867,13 @@ static void usbDumpNvs() {
         e.type = static_cast<uint8_t>(info.type);
         e.size = haveH ? nvsValueSize(handle, info.key, info.type) : 0;
         usbSend(kUsbNvsEntry, &e, sizeof(e));
+        if (haveH && e.size > 0) {
+            uint8_t val[kNvsValCap];
+            uint16_t got = 0;
+            if (nvsReadValue(handle, info.key, info.type, val, sizeof(val), &got) && got > 0) {
+                usbSendNvsData(e.ns, e.key, val, got);
+            }
+        }
         count = static_cast<uint8_t>(count + 1);
         bytes = static_cast<uint16_t>(bytes + e.size);
         if (count >= 64) {

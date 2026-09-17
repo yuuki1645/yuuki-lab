@@ -124,18 +124,52 @@
 }
 
 .nvs__row {
+  padding: 0.15rem 0.1rem 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nvs__row-btn {
   display: grid;
   grid-template-columns: 4.2rem 2.6rem 3.2rem 1fr;
   grid-template-rows: auto auto;
   column-gap: 0.4rem;
   row-gap: 0.1rem;
   align-items: center;
-  padding: 0.32rem 0.2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+  margin: 0;
+  padding: 0.28rem 0.15rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nvs__row.is-open .nvs__row-btn {
+  background: rgba(254, 202, 87, 0.08);
+  border-radius: 6px;
+}
+
+.nvs__detail {
+  margin: 0 0.2rem 0.35rem;
+  padding: 0.45rem 0.5rem;
+  background: #0b1016;
+  border-radius: 8px;
+  color: #d7e4f0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 12rem;
 }
 
 .nvs__row--ghost {
   opacity: 0.4;
+  display: grid;
+  grid-template-columns: 4.2rem 2.6rem 3.2rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  padding: 0.28rem 0.15rem;
 }
 
 .nvs__key {

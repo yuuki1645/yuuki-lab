@@ -189,6 +189,8 @@ export type M5NvsEntry = {
   key: string;
   type: number;
   size: number;
+  /** 実バイトの hex（ファームが値を送ったとき） */
+  data_hex?: string;
 };
 
 export type M5Nvs = {

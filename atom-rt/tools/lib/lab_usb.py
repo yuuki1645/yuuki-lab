@@ -234,6 +234,11 @@ class AtomWorker:
             if e is not None:
                 self._put("nvs_entry", e)
             return
+        if msg_type == proto.MSG_NVS_DATA:
+            d = proto.decode_nvs_data(payload)
+            if d is not None:
+                self._put("nvs_data", d)
+            return
         if msg_type == proto.MSG_NVS_END:
             self._put("nvs_end", proto.decode_nvs_end(payload))
             return
@@ -455,8 +460,20 @@ class AtomSession:
         elif kind == "nvs_entry":
             if isinstance(payload, proto.NvsEntryBin):
                 self._nvs_acc.append(
-                    {"ns": payload.ns, "key": payload.key, "type": payload.type, "size": payload.size}
+                    {
+                        "ns": payload.ns,
+                        "key": payload.key,
+                        "type": payload.type,
+                        "size": payload.size,
+                        "data_hex": "",
+                    }
                 )
+        elif kind == "nvs_data":
+            if isinstance(payload, proto.NvsDataChunk) and self._nvs_acc:
+                last = self._nvs_acc[-1]
+                if last.get("ns") == payload.ns and last.get("key") == payload.key:
+                    prev = str(last.get("data_hex") or "")
+                    last["data_hex"] = prev + payload.data.hex()
         elif kind == "nvs_end":
             self.nvs_entries = list(self._nvs_acc)
             self._nvs_acc = []

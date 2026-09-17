@@ -54,6 +54,7 @@ enum UsbMsg : uint8_t {
     kUsbNvsBegin = 0x15,
     kUsbNvsEntry = 0x16,
     kUsbNvsEnd = 0x17,
+    kUsbNvsData = 0x18,
 
     kUsbCmdPing = 0x80,
     kUsbCmdScan = 0x81,
@@ -264,6 +265,17 @@ struct UsbNvsEnd {
     uint16_t bytes;
 };
 
+/** NVS 値の断片。hdr の直後に n バイト。 */
+struct UsbNvsDataHdr {
+    char ns[16];
+    char key[16];
+    uint16_t total;
+    uint16_t start;
+    uint8_t n;
+};
+
+static constexpr uint8_t kUsbNvsChunk = 192;
+
 /** 消してよい名前空間だけ受ける（"cal" / "jprof"）。 */
 struct UsbCmdNvsErase {
     char ns[16];
@@ -280,6 +292,7 @@ static_assert(sizeof(JointRoute) == 10, "JointRoute must be 10 bytes");
 static_assert(sizeof(FootRoute) == 3, "FootRoute must be 3 bytes");
 static_assert(sizeof(UsbNvsEntry) == 35, "UsbNvsEntry layout");
 static_assert(sizeof(UsbNvsEnd) == 3, "UsbNvsEnd layout");
+static_assert(sizeof(UsbNvsDataHdr) == 37, "UsbNvsDataHdr layout");
 
 // ---------------------------------------------------------------------------
 // CRC-16-CCITT

@@ -714,7 +714,13 @@ class LabApp(tk.Tk):
             if cal_sig != self._m5_cal_sig:
                 self._m5_cal_sig = cal_sig
                 self._m5_bridge.publish(EVT_CAL, self._m5_cal_dict())
-            nvs_sig = (s.nvs_ok, tuple((e.get("ns"), e.get("key"), e.get("size")) for e in s.nvs_entries))
+            nvs_sig = (
+                s.nvs_ok,
+                tuple(
+                    (e.get("ns"), e.get("key"), e.get("size"), len(str(e.get("data_hex") or "")))
+                    for e in s.nvs_entries
+                ),
+            )
             if nvs_sig != self._m5_nvs_sig:
                 self._m5_nvs_sig = nvs_sig
                 self._m5_bridge.publish(EVT_NVS, self._m5_nvs_dict())

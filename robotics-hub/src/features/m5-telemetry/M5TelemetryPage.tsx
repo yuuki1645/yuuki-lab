@@ -804,15 +804,7 @@ export default function M5TelemetryPage() {
         </section>
       ) : null}
 
-      {tab === "nvs" ? (
-        <NvsVault
-          nvs={stream.nvs}
-          profile={profile}
-          mapOk={frame?.map_ok ?? []}
-          canCmd={canCmd}
-          send={send}
-        />
-      ) : null}
+      {tab === "nvs" ? <NvsVault nvs={stream.nvs} canCmd={canCmd} send={send} /> : null}
 
       {tab === "events" ? (
         <section className="m5__section">

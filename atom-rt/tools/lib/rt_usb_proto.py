@@ -52,6 +52,7 @@ MSG_PROBE = 0x14
 MSG_NVS_BEGIN = 0x15
 MSG_NVS_ENTRY = 0x16
 MSG_NVS_END = 0x17
+MSG_NVS_DATA = 0x18
 
 # PC → ボード
 CMD_PING = 0x80
@@ -153,6 +154,7 @@ _CMD_PROBE = struct.Struct("<BBb")
 _CMD_MAPGET = struct.Struct("<B")
 _NVS_ENTRY = struct.Struct("<16s16sBH")
 _NVS_END = struct.Struct("<BH")
+_NVS_DATA = struct.Struct("<16s16sHHB")
 _CMD_NVSERASE = struct.Struct("<16s")
 
 
@@ -606,11 +608,28 @@ def decode_nvs_entry(payload: bytes) -> NvsEntryBin | None:
     return NvsEntryBin(_nvs_cstr(ns), _nvs_cstr(key), int(typ), int(size))
 
 
+@dataclass
+class NvsDataChunk:
+    ns: str
+    key: str
+    total: int
+    start: int
+    data: bytes
+
+
 def decode_nvs_end(payload: bytes) -> tuple[int, int]:
     if len(payload) < _NVS_END.size:
         return (0, 0)
     n, nb = _NVS_END.unpack(payload[: _NVS_END.size])
     return (int(n), int(nb))
+
+
+def decode_nvs_data(payload: bytes) -> NvsDataChunk | None:
+    if len(payload) < _NVS_DATA.size:
+        return None
+    ns, key, total, start, n = _NVS_DATA.unpack(payload[: _NVS_DATA.size])
+    blob = payload[_NVS_DATA.size : _NVS_DATA.size + int(n)]
+    return NvsDataChunk(_nvs_cstr(ns), _nvs_cstr(key), int(total), int(start), blob)
 
 
 def decode_probe(payload: bytes) -> Probe | None:
@@ -746,6 +765,11 @@ def format_rx(msg_type: int, payload: bytes) -> str:
         if e is None:
             return "NVS キー（形式不正）"
         return f"NVS  {e.ns}/{e.key}  type=0x{e.type:02X}  {e.size}B"
+    if msg_type == MSG_NVS_DATA:
+        d = decode_nvs_data(payload)
+        if d is None:
+            return "NVS 値（形式不正）"
+        return f"NVS 値  {d.ns}/{d.key}  {d.start}+{len(d.data)}/{d.total}"
     if msg_type == MSG_NVS_END:
         if len(payload) >= _NVS_END.size:
             n, nb = _NVS_END.unpack(payload[: _NVS_END.size])

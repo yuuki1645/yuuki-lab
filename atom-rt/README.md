@@ -2,7 +2,7 @@
 
 等身大ロボットの **ATOMS3 Lite**（M5Stack ATOM）用リアルタイム制御ファームと、机上・機体の両方で使う総合デバッグツールです。
 
-本ディレクトリは公開リポジトリ [yuuki-lab](../README.md) の一部です（旧称 `yuuki-lab-robot-side`）。ラズパイ側のサーボ／IMU は [`robot-daemon`](../robot-daemon/README.md)、ブラウザ UI は [`robotics-hub`](../robotics-hub/README.md) です。ATOM の USB はここの `lab_debug.py` が受け、Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）へ Socket.IO（既定 **:8794**）で中継します。
+本ディレクトリは公開リポジトリ [yuuki-lab](../README.md) の一部です（旧称 `yuuki-lab-robot-side`）。ラズパイ側のサーボ／IMU は [`robot-daemon`](../robot-daemon/README.md)、ブラウザ UI は [`robotics-hub`](../robotics-hub/README.md) です。ATOM の USB はここの `lab_debug.py` が受け、Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）へ Socket.IO（既定 **:8794**）で中継します。操作と今後の UI 改善は Hub 側です。`lab_debug.py` の Tk 画面は非推奨（USB 中継のため起動は必要、機能は残しています）。現場手帳は [`docs/field-manual/`](docs/field-manual/)（Hub の「ATOM 手帳」から読めます）。
 
 作業は **このディレクトリをカレント** にしてください。
 
@@ -38,7 +38,7 @@ PC:
 
 | ツール | 用途 |
 |---|---|
-| `tools/lab_debug.py` | **総合デバッグ**。複数 ATOM、トポロジ、関節、校正、電源、周期、本記録。接続時（HELLO）に起動アナウンス WAV を再生。Hub 中継（:8794）もこのプロセスが起動 |
+| `tools/lab_debug.py` | **USB デーモン + Tk**。複数 ATOM、トポロジ、関節、校正、電源、周期、本記録。接続時（HELLO）に起動アナウンス WAV を再生。Hub 中継（:8794）もこのプロセスが起動。**Tk GUI は非推奨**（機能は残す）。操作は Hub の [実機テレメトリ（M5）](../robotics-hub/README.md)（`/m5-telemetry`） |
 | `tools/rt_monitor.py` | 1 台の 20 Hz グラフ（従来）。接続時に Robot モードへ切り替える |
 | `tools/rt_usb_log.py` | 解釈済みの送受信ログ。キーボードで `ping` / `scan` / `hold` などを送信 |
 
@@ -125,6 +125,8 @@ LED（Identify 中以外）:
 ---
 
 ## 総合デバッグ `lab_debug.py`
+
+**Tk GUI は非推奨です。** 操作と今後の UI 改善は `robotics-hub` の **実機テレメトリ（M5）**（PC なら `http://127.0.0.1:5173/m5-telemetry`）を使ってください。USB と Hub 中継のため `lab_debug.py` は起動したままにします。Tk の機能はまだ使えます。
 
 ```text
 pip install -r tools/requirements.txt
@@ -342,11 +344,11 @@ src/rt_usb/main.cpp                ファーム本体
 src/rt_usb/usb_proto.hpp           USB バイナリフレーム
 src/rt_usb/joint_profile.hpp       関節経路（NVS / USB）
 src/rt_usb/snapshot.hpp            20 Hz 共有データ
-tools/lab_debug.py                 起動: 総合 GUI
+tools/lab_debug.py                 起動: USB + Tk（Tk は非推奨。操作は Hub）
 tools/rt_monitor.py                起動: 1 台グラフ（従来）
 tools/rt_usb_log.py                起動: 解釈済み USB ログ
 tools/lib/                         部品（直接起動しない）
-  lab_app.py                       Tk GUI（apply_op が USB 操作の入口）
+  lab_app.py                       Tk GUI（非推奨。apply_op が USB 操作の入口）
   lab_usb.py                       ATOM 1 台の USB セッション
   lab_model.py                     Frame / JointRoute
   lab_const.py                     色・軸数・WAV
@@ -359,6 +361,7 @@ tools/lib/                         部品（直接起動しない）
   cop_ankle_ctrl.py                かかとピッチ COP
   df9_force.py                     足裏 DF9-40 の力換算
 tools/requirements.txt
+docs/field-manual/             現場手帳（Hub「ATOM 手帳」が読む）
 data/cal_map_*.json            校正マップ（機体・机上）
 data/recordings/               本記録（gitignore。明示開始のみ）
 audio/right_leg_boot.wav       起動アナウンス

@@ -3,12 +3,16 @@ lab_debug の Tk GUI（ライブラリ。直接起動しない）。
 
 起動は tools/lab_debug.py。タブ・接続・tick は本ファイルの LabApp。
 USB 操作は apply_op() に集約する（PC ボタンと iPad が同じ入口）。
+
+Tk 画面は非推奨。操作と今後の UI 改善は robotics-hub の
+実機テレメトリ（M5）（/m5-telemetry）。USB 中継のため本プロセスは必要。
 """
 
 from __future__ import annotations
 
 import random
 import time
+import webbrowser
 from tkinter import filedialog, messagebox, ttk
 import tkinter as tk
 
@@ -123,7 +127,8 @@ def _value_label(parent: tk.Misc, fg: str, font: tuple = MONO, *, anchor: str = 
 class LabApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("yuuki-lab  総合デバッグ")
+        # Tk 画面は非推奨。操作・改善の本線は robotics-hub の Web UI。
+        self.title("yuuki-lab  総合デバッグ（非推奨）")
         self.configure(bg=BG)
         self.geometry("1280x820")
         self.minsize(960, 640)
@@ -175,8 +180,8 @@ class LabApp(tk.Tk):
         self._m5_bridge.set_snapshot(self._m5_snapshot)
         self._m5_bridge.start()
         if self._m5_bridge.enabled:
-            lan = lan_ipv4() or "<PCのLAN IP>"
-            print(f"iPad: http://{lan}:5173/m5-telemetry  （ブリッジ :8794）")
+            local_url, lan_url = self._web_ui_urls()
+            print(f"Web UI（推奨）: {local_url}    iPad: {lan_url}  （USB はこのプロセス / ブリッジ :8794）")
         else:
             print("iPad ブリッジ無効。pip install -r tools/requirements.txt")
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -209,6 +214,38 @@ class LabApp(tk.Tk):
             top, text="iPad 未接続  ブリッジ :8794", bg=CARD, fg=MUTED, anchor="e"
         )
         self._ipad_banner.pack(side="right", padx=12)
+
+        # 機能は残すが、今後の UI 改善は Hub（ブラウザ / iPad）側。常に見える誘導。
+        self._web_nudge = tk.Frame(self, bg="#3d2e12")
+        self._web_nudge.pack(fill="x")
+        local_url, lan_url = self._web_ui_urls()
+        nudge_text = (
+            "この Python GUI は非推奨です。操作と今後の改善は Web UI を使ってください"
+            "（機能はまだ使えます）。  "
+            f"PC  {local_url}    iPad  {lan_url}    "
+            "Hub 未起動なら robotics-hub で  npm run dev:m5"
+        )
+        self._web_nudge_lbl = tk.Label(
+            self._web_nudge,
+            text=nudge_text,
+            bg="#3d2e12",
+            fg=WARN,
+            font=("Segoe UI", 10),
+            wraplength=1100,
+            justify="left",
+            anchor="w",
+        )
+        self._web_nudge_lbl.pack(side="left", fill="x", expand=True, padx=12, pady=6)
+        self._web_nudge.bind("<Configure>", self._on_web_nudge_resize)
+        tk.Button(
+            self._web_nudge,
+            text="Web UI を開く",
+            command=self._open_web_ui,
+            bg=WARN,
+            fg=BG,
+            relief="flat",
+            font=("Segoe UI Semibold", 10),
+        ).pack(side="right", padx=10, pady=4)
 
         body = tk.Frame(self, bg=BG)
         body.pack(fill="both", expand=True, padx=8, pady=8)
@@ -299,6 +336,26 @@ class LabApp(tk.Tk):
         self._build_time()
         self._build_evt()
         self._register_robot_controls()
+
+    def _web_ui_urls(self) -> tuple[str, str]:
+        """Hub 実機テレメトリ（M5）の PC 用と LAN 用 URL。"""
+        local = "http://127.0.0.1:5173/m5-telemetry"
+        lan = lan_ipv4()
+        remote = (
+            f"http://{lan}:5173/m5-telemetry"
+            if lan
+            else "http://<PCのLAN IP>:5173/m5-telemetry"
+        )
+        return local, remote
+
+    def _open_web_ui(self) -> None:
+        """既定ブラウザで Web UI を開く。Hub 未起動ならページは繋がらない。"""
+        local, _ = self._web_ui_urls()
+        webbrowser.open(local)
+
+    def _on_web_nudge_resize(self, ev: tk.Event) -> None:
+        """誘導バーの幅に合わせて文言を折り返す。"""
+        self._web_nudge_lbl.configure(wraplength=max(400, ev.width - 140))
 
     def _add_robot_ctrl(self, w: tk.Misc, enabled: str = "normal") -> None:
         """iPad 接続時に無効化するウィジェット。"""

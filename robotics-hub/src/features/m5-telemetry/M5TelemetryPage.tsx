@@ -22,6 +22,7 @@ import { M5RecordLibrary } from "./M5RecordLibrary";
 import { useM5Camera } from "./useM5Camera";
 import { useM5Recording } from "./useM5Recording";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
+import FieldManual, { useFieldManual } from "./field-manual/FieldManual";
 
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "events";
 
@@ -137,6 +138,7 @@ export default function M5TelemetryPage() {
   const [calCh, setCalCh] = useState(0);
   const [draftRoutes, setDraftRoutes] = useState<M5Route[] | null>(null);
   const [draftFoot, setDraftFoot] = useState<M5FootRoute | null>(null);
+  const manual = useFieldManual();
 
   const topoTree = useMemo(() => buildTopoTree(scan?.nodes ?? []), [scan?.nodes]);
 
@@ -221,7 +223,12 @@ export default function M5TelemetryPage() {
   return (
     <div className="m5">
       <header className="m5__header">
-        <h1>実機テレメトリ（M5）</h1>
+        <div className="m5__header-title">
+          <h1>実機テレメトリ（M5）</h1>
+          <button type="button" className="m5__manual-btn" onClick={() => manual.openTo("map")}>
+            ATOM 手帳
+          </button>
+        </div>
         <p>
           記録開始でセンサと実機カメラを同時に残します。再生するとバー・足圧・映像が同じ時刻になります。
         </p>
@@ -799,6 +806,13 @@ export default function M5TelemetryPage() {
           <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
         </section>
       ) : null}
+
+      <FieldManual
+        open={manual.open}
+        chapterId={manual.chapterId}
+        onChapter={manual.selectChapter}
+        onClose={manual.close}
+      />
     </div>
   );
 }

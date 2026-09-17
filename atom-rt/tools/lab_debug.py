@@ -5,6 +5,10 @@ ATOMS3 Lite 総合デバッグ（机上ラボ / 機体の両用）。起動エ�
   pip install -r tools/requirements.txt
   python tools/lab_debug.py
 
+Tk GUI は非推奨。操作と今後の UI 改善は robotics-hub の
+「実機テレメトリ（M5）」http://127.0.0.1:5173/m5-telemetry。
+USB 中継のため本プロセスは起動したままにする（機能は残している）。
+
 iPad（robotics-hub の「実機テレメトリ（M5）」）へは、このプロセスが
 Socket.IO :8794 で中継する。iPad 接続中は PC 側のロボット操作は表示のみ
 （全停止と USB 接続／切断は残す）。

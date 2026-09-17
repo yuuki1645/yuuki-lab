@@ -27,6 +27,24 @@
   font-size: 1.15rem;
 }
 
+.m5__header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.m5__manual-btn {
+  min-height: 40px;
+  padding: 0.2rem 0.85rem;
+  border: 1px solid #feca57;
+  border-radius: 999px;
+  background: transparent;
+  color: #feca57;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
 .m5__header p {
   margin: 0;
   color: #8b9bb0;

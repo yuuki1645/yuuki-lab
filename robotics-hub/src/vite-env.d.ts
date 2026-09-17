@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+/** atom-rt/docs/field-manual の本文。Vite がビルド時に文字列化する。 */
+declare module "*.md?raw" {
+  const src: string;
+  export default src;
+}
+
 interface ImportMetaEnv {
   readonly VITE_MUJOCO_SIM_URL?: string;
   /** ``mujoco_test_009.py`` のビュワー補助 API（既定は同一ホスト :8788） */

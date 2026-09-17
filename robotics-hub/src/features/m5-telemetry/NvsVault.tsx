@@ -1,7 +1,7 @@
 /**
  * ATOM フラッシュ NVS の保管庫。キーだけでなく実バイトを解読して見せる。
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { M5Cmd, M5Nvs, M5NvsEntry } from "./types";
 import { M5_JOINTS } from "./types";
 import "./NvsVault.css";
@@ -61,13 +61,26 @@ function cString(b: Uint8Array): string {
   return new TextDecoder("utf-8", { fatal: false }).decode(slice);
 }
 
-function hexDump(b: Uint8Array, max = 64): string {
+function hexDump(b: Uint8Array, max = 64, cols = 16): string {
   const n = Math.min(b.length, max);
-  const parts: string[] = [];
-  for (let i = 0; i < n; i += 1) {
-    parts.push(b[i]!.toString(16).padStart(2, "0"));
+  const lines: string[] = [];
+  for (let i = 0; i < n; i += cols) {
+    const end = Math.min(i + cols, n);
+    const parts: string[] = [];
+    for (let j = i; j < end; j += 1) {
+      parts.push(b[j]!.toString(16).padStart(2, "0"));
+    }
+    lines.push(parts.join(" "));
   }
-  return parts.join(" ") + (b.length > max ? " …" : "");
+  if (b.length > max) {
+    lines.push("…");
+  }
+  return lines.join("\n");
+}
+
+/** サイズが大きく、一覧に載せると溢れる値。 */
+function isLongEntry(e: M5NvsEntry): boolean {
+  return e.size > 24 || e.key.startsWith("mx") || e.key.startsWith("my") || e.key === "r";
 }
 
 function floatsLe(b: Uint8Array): number[] {
@@ -119,59 +132,57 @@ function fmtRouteBytes(b: Uint8Array, i: number): string {
   return `J${i}  servo ${servo} @ 0x${actAddr.toString(16)}${actHub ? " hub" : ""} CH${actCh} · ${enc}${ina}`;
 }
 
-function formatValue(e: M5NvsEntry): { summary: string; detail: string } {
+function formatValue(e: M5NvsEntry): { summary: string; full: string } {
   const hex = e.data_hex ?? "";
   if (!hex) {
-    return { summary: "値未受信（ファーム焼き直し）", detail: "" };
+    return { summary: "値未受信（ファーム焼き直し）", full: "" };
   }
   const b = hexToBytes(hex);
+  const hexAll = hexDump(b, b.length);
   const asInt = intByType(e, b);
   if (asInt != null) {
     if ((e.key.startsWith("mk") || e.key.startsWith("ok")) && e.ns === "cal") {
-      return { summary: Number(asInt) ? "有効" : "無効", detail: `生値 ${asInt}` };
+      return { summary: Number(asInt) ? "有効" : "無効", full: `生値 ${asInt}\n${hexAll}` };
     }
-    return { summary: asInt, detail: `hex ${hexDump(b)}` };
+    return { summary: asInt, full: `hex\n${hexAll}` };
   }
   if (e.type === 0x21) {
     const s = cString(b);
-    return { summary: s || "(空)", detail: hexDump(b) };
+    return { summary: s || "(空)", full: `${s}\n\n${hexAll}` };
   }
   if (e.ns === "jprof" && e.key === "r") {
     const lines = Array.from({ length: M5_JOINTS }, (_, i) => fmtRouteBytes(b, i));
-    return { summary: `${Math.floor(b.length / 10)} 軸の経路`, detail: lines.join("\n") };
+    return { summary: `${Math.floor(b.length / 10)} 軸の経路`, full: `${lines.join("\n")}\n\n${hexAll}` };
   }
   if (e.ns === "jprof" && e.key === "foot" && b.length >= 3) {
     const hub = b[0]!;
     const ch = new DataView(b.buffer, b.byteOffset, b.byteLength).getInt8(1);
     const addr = b[2]!;
     const s = addr ? `0x${hub.toString(16)} CH${ch} / 0x${addr.toString(16)}` : "なし";
-    return { summary: s, detail: hexDump(b) };
+    return { summary: s, full: `${s}\n${hexAll}` };
   }
   if (e.ns === "cal" && (e.key.startsWith("mx") || e.key.startsWith("my"))) {
     const xs = floatsLe(b);
-    if (!xs.length) return { summary: "空", detail: "" };
+    if (!xs.length) return { summary: "空", full: "" };
     const lo = Math.min(...xs);
     const hi = Math.max(...xs);
-    const head = xs
-      .slice(0, 8)
-      .map((x) => x.toFixed(2))
-      .join(", ");
+    const numbered = xs.map((x, i) => `${String(i).padStart(3, " ")}  ${x.toFixed(4)}`).join("\n");
     return {
       summary: `${xs.length} 点  ${lo.toFixed(1)} … ${hi.toFixed(1)}`,
-      detail: `${head}${xs.length > 8 ? " …" : ""}\n${hexDump(b, 32)}`,
+      full: `${numbered}\n\n${hexAll}`,
     };
   }
   if (e.ns === "phy" && e.key === "cal_mac" && b.length >= 6) {
     const mac = Array.from(b.subarray(0, 6))
       .map((x) => x.toString(16).padStart(2, "0"))
       .join(":");
-    return { summary: mac, detail: hexDump(b) };
+    return { summary: mac, full: `${mac}\n${hexAll}` };
   }
   const text = cString(b);
   if (text.length >= 2 && /^[\x20-\x7e]+$/.test(text)) {
-    return { summary: text, detail: hexDump(b) };
+    return { summary: text, full: `${text}\n\n${hexAll}` };
   }
-  return { summary: hexDump(b, 24), detail: `${b.length} B\n${hexDump(b, 256)}` };
+  return { summary: `${b.length} B`, full: hexAll };
 }
 
 export function NvsVault({
@@ -184,7 +195,9 @@ export function NvsVault({
   send: (cmd: M5Cmd) => void;
 }) {
   const entries = nvs?.entries ?? [];
-  const [openId, setOpenId] = useState<string | null>(null);
+  // 既定はキー一覧のみ。値はスイッチで出す。
+  const [showValues, setShowValues] = useState(false);
+  const [popup, setPopup] = useState<M5NvsEntry | null>(null);
   const byNs = useMemo(() => {
     const m = new Map<string, M5NvsEntry[]>();
     for (const e of entries) {
@@ -194,6 +207,19 @@ export function NvsVault({
     }
     return m;
   }, [entries]);
+
+  useEffect(() => {
+    if (!popup) {
+      return;
+    }
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        setPopup(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [popup]);
 
   const vaults = ["jprof", "cal", ...[...byNs.keys()].filter((k) => k !== "jprof" && k !== "cal")];
   const used = nvs?.bytes ?? 0;
@@ -209,7 +235,7 @@ export function NvsVault({
           <span className="nvs__chip-mark">NVS</span>
           <div>
             <strong>0x9000</strong>
-            <span>キーを押すと中身（数値・文字列・hex）を開きます。upload しても通常は残ります。</span>
+            <span>プログラム区画とは別。値は既定で隠し、長いデータはポップアップで全部見られます。</span>
           </div>
         </div>
         <div className="nvs__chip-bar" aria-hidden="true">
@@ -222,6 +248,13 @@ export function NvsVault({
       </div>
 
       <div className="nvs__toolbar">
+        <button
+          type="button"
+          className={"m5__btn" + (showValues ? " m5__btn--on" : "")}
+          onClick={() => setShowValues((v) => !v)}
+        >
+          {showValues ? "値を隠す" : "値を表示"}
+        </button>
         <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "nvs_list" })}>
           ボードから読む
         </button>
@@ -275,29 +308,37 @@ export function NvsVault({
                 {keys.map((e) => {
                   const id = e.ns + "/" + e.key;
                   const shown = formatValue(e);
-                  const open = openId === id;
+                  const long = isLongEntry(e);
                   return (
-                    <li key={id} className={"nvs__row" + (open ? " is-open" : "")}>
-                      <button
-                        type="button"
-                        className="nvs__row-btn"
-                        onClick={() => setOpenId(open ? null : id)}
-                      >
-                        <span className="nvs__key">{e.key}</span>
+                    <li key={id} className="nvs__row">
+                      <div className="nvs__row-btn">
+                        <span className="nvs__key" title={e.key}>
+                          {e.key}
+                        </span>
                         <span className="nvs__type">{typeLabel(e.type)}</span>
                         <span className="nvs__size">{e.size} B</span>
                         <span className="nvs__bar">
                           <i style={{ width: `${Math.min(100, (e.size / 800) * 100)}%` }} />
                         </span>
-                        <span className="nvs__hint-line">{shown.summary}</span>
-                      </button>
-                      {open && shown.detail ? <pre className="nvs__detail">{shown.detail}</pre> : null}
+                        {showValues ? <span className="nvs__hint-line">{shown.summary}</span> : null}
+                        {showValues && long && shown.full ? (
+                          <button
+                            type="button"
+                            className="nvs__full-btn"
+                            onClick={() => setPopup(e)}
+                          >
+                            全部見る
+                          </button>
+                        ) : null}
+                      </div>
                     </li>
                   );
                 })}
                 {ghost.map((g) => (
                   <li key={"miss-" + g.key} className="nvs__row nvs__row--ghost">
-                    <span className="nvs__key">{g.key}</span>
+                    <span className="nvs__key" title={g.key}>
+                      {g.key}
+                    </span>
                     <span className="nvs__type">空</span>
                     <span className="nvs__size">—</span>
                     <span className="nvs__bar" />
@@ -309,6 +350,27 @@ export function NvsVault({
           );
         })}
       </div>
+
+      {popup ? (
+        <div className="nvs-pop" role="dialog" aria-modal="true" aria-labelledby="nvs-pop-title">
+          <button type="button" className="nvs-pop__veil" aria-label="閉じる" onClick={() => setPopup(null)} />
+          <div className="nvs-pop__sheet">
+            <header className="nvs-pop__top">
+              <div>
+                <p className="nvs-pop__ns">{popup.ns}</p>
+                <h2 id="nvs-pop-title">{popup.key}</h2>
+                <p className="nvs-pop__meta">
+                  {typeLabel(popup.type)} · {popup.size} B
+                </p>
+              </div>
+              <button type="button" className="m5__btn" onClick={() => setPopup(null)}>
+                閉じる
+              </button>
+            </header>
+            <pre className="nvs-pop__body">{formatValue(popup).full || "（値なし）"}</pre>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

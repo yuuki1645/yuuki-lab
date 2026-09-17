@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sparkline } from "./Sparkline";
 import "./M5TelemetryPage.css";
 import {
@@ -23,8 +23,9 @@ import { useM5Camera } from "./useM5Camera";
 import { useM5Recording } from "./useM5Recording";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
 import FieldManual, { useFieldManual } from "./field-manual/FieldManual";
+import { NvsVault } from "./NvsVault";
 
-type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "events";
+type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "nvs" | "events";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "right-leg", label: "右脚" },
@@ -34,6 +35,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "topo", label: "トポロジ" },
   { id: "profile", label: "プロファイル" },
   { id: "cal", label: "校正" },
+  { id: "nvs", label: "NVS" },
   { id: "events", label: "イベント" },
 ];
 
@@ -147,6 +149,11 @@ export default function M5TelemetryPage() {
   const atomOk = Boolean(status?.connected);
   // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
   const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
+
+  useEffect(() => {
+    if (tab !== "nvs" || !canCmd) return;
+    send({ op: "nvs_list" });
+  }, [tab, canCmd, send]);
 
   const setPanelJoint = (panel: number, joint: number) => {
     setPanels((prev) => {
@@ -795,6 +802,16 @@ export default function M5TelemetryPage() {
             マップ ch{cal?.map_ch ?? 0} / 点数 {cal?.map_count ?? 0}
           </p>
         </section>
+      ) : null}
+
+      {tab === "nvs" ? (
+        <NvsVault
+          nvs={stream.nvs}
+          profile={profile}
+          mapOk={frame?.map_ok ?? []}
+          canCmd={canCmd}
+          send={send}
+        />
       ) : null}
 
       {tab === "events" ? (

@@ -51,6 +51,9 @@ enum UsbMsg : uint8_t {
     kUsbEvtBtn = 0x12,
     kUsbIdentifyOk = 0x13,
     kUsbProbe = 0x14,
+    kUsbNvsBegin = 0x15,
+    kUsbNvsEntry = 0x16,
+    kUsbNvsEnd = 0x17,
 
     kUsbCmdPing = 0x80,
     kUsbCmdScan = 0x81,
@@ -67,6 +70,8 @@ enum UsbMsg : uint8_t {
     kUsbCmdProfPut = 0x8C,
     kUsbCmdMapGet = 0x8D,
     kUsbCmdMapChunk = 0x8E,
+    kUsbCmdNvsList = 0x8F,
+    kUsbCmdNvsErase = 0x90,
 };
 
 /** 失敗理由。GUI 表示用の短い名前は Python 側の REASON と揃える。 */
@@ -246,6 +251,24 @@ struct UsbCmdMapGet {
     uint8_t ch;
 };
 
+/** NVS 1 キー。ns/key は NUL 終端。type は nvs_type_t。 */
+struct UsbNvsEntry {
+    char ns[16];
+    char key[16];
+    uint8_t type;
+    uint16_t size;
+};
+
+struct UsbNvsEnd {
+    uint8_t count;
+    uint16_t bytes;
+};
+
+/** 消してよい名前空間だけ受ける（"cal" / "jprof"）。 */
+struct UsbCmdNvsErase {
+    char ns[16];
+};
+
 #pragma pack(pop)
 
 static_assert(sizeof(UsbTelemetry) <= kUsbMaxPayload, "telemetry too big");
@@ -255,6 +278,8 @@ static_assert(sizeof(UsbHello) == 6, "UsbHello layout");
 static_assert(sizeof(UsbProbe) == 21, "UsbProbe layout");
 static_assert(sizeof(JointRoute) == 10, "JointRoute must be 10 bytes");
 static_assert(sizeof(FootRoute) == 3, "FootRoute must be 3 bytes");
+static_assert(sizeof(UsbNvsEntry) == 35, "UsbNvsEntry layout");
+static_assert(sizeof(UsbNvsEnd) == 3, "UsbNvsEnd layout");
 
 // ---------------------------------------------------------------------------
 // CRC-16-CCITT

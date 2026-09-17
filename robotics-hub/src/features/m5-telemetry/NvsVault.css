@@ -1,0 +1,188 @@
+/* NVS 保管庫。フラッシュ上のキーをチップ＋2 つの金庫として見せる。 */
+
+.nvs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nvs__chip {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background:
+    linear-gradient(120deg, rgba(254, 202, 87, 0.12), transparent 45%),
+    #17202a;
+  border: 1px solid rgba(254, 202, 87, 0.28);
+}
+
+.nvs__chip-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nvs__chip-mark {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  letter-spacing: 0.22em;
+  font-size: 0.72rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #feca57;
+  color: #feca57;
+  border-radius: 4px;
+}
+
+.nvs__chip-meta strong {
+  display: block;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+.nvs__chip-meta span {
+  color: #8b9bb0;
+  font-size: 0.78rem;
+}
+
+.nvs__chip-bar {
+  margin-top: 0.65rem;
+  height: 8px;
+  border-radius: 99px;
+  background: #0e1318;
+  overflow: hidden;
+}
+
+.nvs__chip-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #feca57, #10ac84);
+}
+
+.nvs__chip-stats {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.78rem;
+  color: #feca57;
+}
+
+.nvs__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.nvs__hint {
+  margin: 0;
+  color: #8b9bb0;
+  font-size: 0.82rem;
+}
+
+.nvs__vaults {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.7rem;
+}
+
+.nvs__vault {
+  background: #101820;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.nvs__vault--jprof {
+  border-color: rgba(29, 209, 161, 0.28);
+}
+
+.nvs__vault--cal {
+  border-color: rgba(254, 202, 87, 0.28);
+}
+
+.nvs__vault header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.55rem 0.75rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.nvs__vault h3 {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+}
+
+.nvs__vault header span {
+  color: #8b9bb0;
+  font-size: 0.75rem;
+}
+
+.nvs__vault ul {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0.55rem 0.6rem;
+}
+
+.nvs__row {
+  display: grid;
+  grid-template-columns: 4.2rem 2.6rem 3.2rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  row-gap: 0.1rem;
+  align-items: center;
+  padding: 0.32rem 0.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nvs__row--ghost {
+  opacity: 0.4;
+}
+
+.nvs__key {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: #feca57;
+  font-size: 0.82rem;
+}
+
+.nvs__type,
+.nvs__size {
+  font-size: 0.72rem;
+  color: #8b9bb0;
+}
+
+.nvs__bar {
+  grid-column: 4;
+  height: 5px;
+  border-radius: 99px;
+  background: #0e1318;
+  overflow: hidden;
+}
+
+.nvs__bar i {
+  display: block;
+  height: 100%;
+  background: #1dd1a1;
+}
+
+.nvs__hint-line {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  color: #9aa8b8;
+}
+
+.nvs__decode {
+  padding: 0.35rem 0.75rem 0.7rem;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.72rem;
+  color: #c5d0dc;
+}
+
+.nvs__decode p {
+  margin: 0.1rem 0;
+}
+
+@media (max-width: 640px) {
+  .nvs__row {
+    grid-template-columns: 3.6rem 2.2rem 2.8rem 1fr;
+  }
+}

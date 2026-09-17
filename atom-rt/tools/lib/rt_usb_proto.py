@@ -49,6 +49,9 @@ MSG_EVT_OC = 0x11
 MSG_EVT_BTN = 0x12
 MSG_IDENTIFY_OK = 0x13
 MSG_PROBE = 0x14
+MSG_NVS_BEGIN = 0x15
+MSG_NVS_ENTRY = 0x16
+MSG_NVS_END = 0x17
 
 # PC → ボード
 CMD_PING = 0x80
@@ -66,6 +69,8 @@ CMD_PROFDEFAULT = 0x8B
 CMD_PROFPUT = 0x8C
 CMD_MAPGET = 0x8D
 CMD_MAPCHUNK = 0x8E
+CMD_NVSLIST = 0x8F
+CMD_NVSERASE = 0x90
 
 REASON = {
     0: "ok",
@@ -146,6 +151,9 @@ _CMD_OUT = struct.Struct("<BB")
 _CMD_JOINT = struct.Struct("<Bf")
 _CMD_PROBE = struct.Struct("<BBb")
 _CMD_MAPGET = struct.Struct("<B")
+_NVS_ENTRY = struct.Struct("<16s16sBH")
+_NVS_END = struct.Struct("<BH")
+_CMD_NVSERASE = struct.Struct("<16s")
 
 
 def crc16(data: bytes) -> int:
@@ -301,6 +309,17 @@ def cmd_prof_put(
 
 def cmd_map_get(ch: int) -> bytes:
     return encode_frame(CMD_MAPGET, _CMD_MAPGET.pack(ch))
+
+
+def cmd_nvs_list() -> bytes:
+    """フラッシュ NVS のキー一覧を要求する。"""
+    return encode_frame(CMD_NVSLIST)
+
+
+def cmd_nvs_erase(ns: str) -> bytes:
+    """名前空間を消す。ファームは cal / jprof だけ受け付ける。"""
+    raw = ns.encode("ascii", "ignore")[:15]
+    return encode_frame(CMD_NVSERASE, _CMD_NVSERASE.pack(raw))
 
 
 def cmd_map_chunks(ch: int, points: list[tuple[float, float]]) -> list[bytes]:
@@ -568,6 +587,32 @@ def decode_map_chunk(payload: bytes) -> MapChunk | None:
     return MapChunk(ch, total, start, pts)
 
 
+@dataclass
+class NvsEntryBin:
+    ns: str
+    key: str
+    type: int
+    size: int
+
+
+def _nvs_cstr(raw: bytes) -> str:
+    return raw.split(b"\0", 1)[0].decode("ascii", "replace")
+
+
+def decode_nvs_entry(payload: bytes) -> NvsEntryBin | None:
+    if len(payload) < _NVS_ENTRY.size:
+        return None
+    ns, key, typ, size = _NVS_ENTRY.unpack(payload[: _NVS_ENTRY.size])
+    return NvsEntryBin(_nvs_cstr(ns), _nvs_cstr(key), int(typ), int(size))
+
+
+def decode_nvs_end(payload: bytes) -> tuple[int, int]:
+    if len(payload) < _NVS_END.size:
+        return (0, 0)
+    n, nb = _NVS_END.unpack(payload[: _NVS_END.size])
+    return (int(n), int(nb))
+
+
 def decode_probe(payload: bytes) -> Probe | None:
     if len(payload) != _PROBE.size:
         return None
@@ -694,6 +739,18 @@ def format_rx(msg_type: int, payload: bytes) -> str:
                 f"{p.f0:.3f}V {p.f1:.3f}A {p.f2:.3f}W  ok={int(p.ok)}"
             )
         return f"PROBE なし  {where}  0x{p.addr:02X}"
+    if msg_type == MSG_NVS_BEGIN:
+        return "NVS 一覧開始"
+    if msg_type == MSG_NVS_ENTRY:
+        e = decode_nvs_entry(payload)
+        if e is None:
+            return "NVS キー（形式不正）"
+        return f"NVS  {e.ns}/{e.key}  type=0x{e.type:02X}  {e.size}B"
+    if msg_type == MSG_NVS_END:
+        if len(payload) >= _NVS_END.size:
+            n, nb = _NVS_END.unpack(payload[: _NVS_END.size])
+            return f"NVS 一覧  {n} キー  {nb}B"
+        return "NVS 一覧終了"
     return f"type=0x{msg_type:02X}  {len(payload)}B"
 
 
@@ -718,6 +775,8 @@ def format_tx(data: bytes) -> str:
         CMD_PROFPUT: "PROFPUT",
         CMD_MAPGET: "MAPGET",
         CMD_MAPCHUNK: "MAPCHUNK",
+        CMD_NVSLIST: "NVSLIST",
+        CMD_NVSERASE: "NVSERASE",
     }
     return names.get(t, f"cmd=0x{t:02X}")
 
@@ -756,4 +815,8 @@ def parse_cli_line(text: str) -> list[bytes]:
     if k == "mapget":
         ch = int(parts[1]) if len(parts) >= 2 else 0
         return [cmd_map_get(ch)]
+    if k in ("nvslist", "nvs"):
+        return [cmd_nvs_list()]
+    if k == "nvserase" and len(parts) >= 2:
+        return [cmd_nvs_erase(parts[1])]
     return []

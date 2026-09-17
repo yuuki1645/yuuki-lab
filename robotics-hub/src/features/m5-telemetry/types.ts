@@ -111,6 +111,7 @@ export type M5Frame = {
   servo_ok: boolean;
   mode: string;
   out_mask: number;
+  map_ok?: boolean[];
   /** 右足 DF9-40（ATOM S3 Lite スレーブ）。未割当・欠測なら ok=false */
   foot?: M5FootSample | null;
 };
@@ -183,6 +184,19 @@ export type M5Cal = {
   map_count: number;
 };
 
+export type M5NvsEntry = {
+  ns: string;
+  key: string;
+  type: number;
+  size: number;
+};
+
+export type M5Nvs = {
+  ok: boolean;
+  entries: M5NvsEntry[];
+  bytes: number;
+};
+
 export type M5Hello = {
   status?: M5Status;
   control?: M5Control;
@@ -191,6 +205,7 @@ export type M5Hello = {
   profile?: M5Profile;
   events?: string[];
   cal?: M5Cal;
+  nvs?: M5Nvs;
   record?: M5RecordStatus;
 };
 

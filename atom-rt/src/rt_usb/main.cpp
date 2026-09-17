@@ -26,6 +26,7 @@
 #include <M5_UNIT_8SERVO.h>
 #include <Preferences.h>
 #include <freertos/FreeRTOS.h>
+#include <nvs.h>
 #include <freertos/portmacro.h>
 #include <freertos/task.h>
 #include <math.h>
@@ -208,6 +209,9 @@ static uint32_t gMapRxLastMs = 0;
 static volatile uint8_t gProfDumpReq = 0;
 static JointRoute gProfRx[kJointCount];
 static FootRoute gFootRx;
+static volatile uint8_t gNvsDumpReq = 0;
+static volatile uint8_t gNvsEraseReq = 0;
+static char gNvsEraseNs[16] = {};
 
 static portMUX_TYPE gSnapLock = portMUX_INITIALIZER_UNLOCKED;
 static Snapshot gSnapFront;
@@ -1682,6 +1686,105 @@ static void profSendErr(uint8_t reason) {
     usbSend(kUsbProfErr, &reason, 1);
 }
 
+/** NVS 値のバイト数。Preferences の int/bool/bytes を UI で見せるため。 */
+static uint16_t nvsValueSize(nvs_handle_t h, const char* key, nvs_type_t t) {
+    size_t n = 0;
+    switch (t) {
+        case NVS_TYPE_U8:
+        case NVS_TYPE_I8:
+            return 1;
+        case NVS_TYPE_U16:
+        case NVS_TYPE_I16:
+            return 2;
+        case NVS_TYPE_U32:
+        case NVS_TYPE_I32:
+            return 4;
+        case NVS_TYPE_U64:
+        case NVS_TYPE_I64:
+            return 8;
+        case NVS_TYPE_STR:
+            if (nvs_get_str(h, key, nullptr, &n) == ESP_OK) {
+                return static_cast<uint16_t>(n);
+            }
+            return 0;
+        case NVS_TYPE_BLOB:
+            if (nvs_get_blob(h, key, nullptr, &n) == ESP_OK) {
+                return static_cast<uint16_t>(n);
+            }
+            return 0;
+        default:
+            return 0;
+    }
+}
+
+/** パーティション "nvs" の全キーを USB で送る。Core 0 専用。 */
+static void usbDumpNvs() {
+    usbSend(kUsbNvsBegin, nullptr, 0);
+    uint8_t count = 0;
+    uint16_t bytes = 0;
+    nvs_iterator_t it = nvs_entry_find("nvs", nullptr, NVS_TYPE_ANY);
+    nvs_handle_t handle = 0;
+    char openNs[16] = {};
+    bool haveH = false;
+    while (it != nullptr) {
+        nvs_entry_info_t info{};
+        nvs_entry_info(it, &info);
+        if (!haveH || strncmp(openNs, info.namespace_name, sizeof(openNs)) != 0) {
+            if (haveH) {
+                nvs_close(handle);
+                haveH = false;
+            }
+            haveH = (nvs_open(info.namespace_name, NVS_READONLY, &handle) == ESP_OK);
+            memset(openNs, 0, sizeof(openNs));
+            strncpy(openNs, info.namespace_name, sizeof(openNs) - 1);
+        }
+        UsbNvsEntry e{};
+        strncpy(e.ns, info.namespace_name, sizeof(e.ns) - 1);
+        strncpy(e.key, info.key, sizeof(e.key) - 1);
+        e.type = static_cast<uint8_t>(info.type);
+        e.size = haveH ? nvsValueSize(handle, info.key, info.type) : 0;
+        usbSend(kUsbNvsEntry, &e, sizeof(e));
+        count = static_cast<uint8_t>(count + 1);
+        bytes = static_cast<uint16_t>(bytes + e.size);
+        if (count >= 64) {
+            nvs_release_iterator(it);
+            it = nullptr;
+            break;
+        }
+        it = nvs_entry_next(it);
+    }
+    if (haveH) {
+        nvs_close(handle);
+    }
+    UsbNvsEnd end{};
+    end.count = count;
+    end.bytes = bytes;
+    usbSend(kUsbNvsEnd, &end, sizeof(end));
+}
+
+/** cal / jprof だけ消せる。jprof は消した直後に既定を書き戻す。 */
+static void nvsEraseNamespace(const char* ns) {
+    if (strcmp(ns, "cal") == 0) {
+        gPrefs.begin("cal", false);
+        gPrefs.clear();
+        gPrefs.end();
+        portENTER_CRITICAL(&gMapLock);
+        for (int i = 0; i < kJointCount; ++i) {
+            memset(&gCal[i], 0, sizeof(gCal[i]));
+        }
+        portEXIT_CRITICAL(&gMapLock);
+        return;
+    }
+    if (strcmp(ns, "jprof") == 0) {
+        gPrefs.begin("jprof", false);
+        gPrefs.clear();
+        gPrefs.end();
+        applyDefaultProfile();
+        saveProfile();
+        gProfDumpReq = 1;
+    }
+}
+
 static void usbDumpScan() {
     const uint8_t n = static_cast<uint8_t>(gScanCount);
     usbSend(kUsbScanBegin, &n, 1);
@@ -2006,6 +2109,21 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         gMapDumpCh = ch;
         return;
     }
+    if (type == kUsbCmdNvsList) {
+        gNvsDumpReq = 1;
+        return;
+    }
+    if (type == kUsbCmdNvsErase && len >= sizeof(UsbCmdNvsErase)) {
+        UsbCmdNvsErase c{};
+        memcpy(&c, p, sizeof(c));
+        c.ns[sizeof(c.ns) - 1] = 0;
+        if (strcmp(c.ns, "cal") == 0 || strcmp(c.ns, "jprof") == 0) {
+            memset(gNvsEraseNs, 0, sizeof(gNvsEraseNs));
+            strncpy(gNvsEraseNs, c.ns, sizeof(gNvsEraseNs) - 1);
+            gNvsEraseReq = 1;
+        }
+        return;
+    }
     if (type == kUsbCmdMapChunk && len >= sizeof(UsbMapChunkHdr)) {
         UsbMapChunkHdr h{};
         memcpy(&h, p, sizeof(h));
@@ -2188,6 +2306,15 @@ static void usbTask(void* /*arg*/) {
         if (gProfDumpReq) {
             gProfDumpReq = 0;
             usbDumpProfile();
+        }
+        if (gNvsEraseReq) {
+            gNvsEraseReq = 0;
+            nvsEraseNamespace(gNvsEraseNs);
+            gNvsDumpReq = 1;
+        }
+        if (gNvsDumpReq) {
+            gNvsDumpReq = 0;
+            usbDumpNvs();
         }
         if (gProbeReady) {
             gProbeReady = 0;

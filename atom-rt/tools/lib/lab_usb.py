@@ -226,6 +226,17 @@ class AtomWorker:
             return
         if msg_type == proto.MSG_MAP_CHUNK:
             return
+        if msg_type == proto.MSG_NVS_BEGIN:
+            self._put("nvs_begin", None)
+            return
+        if msg_type == proto.MSG_NVS_ENTRY:
+            e = proto.decode_nvs_entry(payload)
+            if e is not None:
+                self._put("nvs_entry", e)
+            return
+        if msg_type == proto.MSG_NVS_END:
+            self._put("nvs_end", proto.decode_nvs_end(payload))
+            return
         if msg_type in (
             proto.MSG_PROF_OK,
             proto.MSG_PROF_ERR,
@@ -286,6 +297,10 @@ class AtomSession:
         self.map_points: list[tuple[float, float]] = []
         self.map_ch = 0
         self.cal_status = ""
+        self.nvs_entries: list[dict[str, object]] = []
+        self.nvs_bytes = 0
+        self.nvs_ok = False
+        self._nvs_acc: list[dict[str, object]] = []
         self.events: deque[str] = deque(maxlen=200)
         self.history: deque[Frame] = deque(maxlen=400)
         self.flash_until = 0.0
@@ -434,6 +449,22 @@ class AtomSession:
                 self.note(f"プロファイル受信  {len(routes)} 軸")
             else:
                 self.note("プロファイル不完全")
+        elif kind == "nvs_begin":
+            self._nvs_acc = []
+            self.nvs_ok = False
+        elif kind == "nvs_entry":
+            if isinstance(payload, proto.NvsEntryBin):
+                self._nvs_acc.append(
+                    {"ns": payload.ns, "key": payload.key, "type": payload.type, "size": payload.size}
+                )
+        elif kind == "nvs_end":
+            self.nvs_entries = list(self._nvs_acc)
+            self._nvs_acc = []
+            n = int(payload[0]) if isinstance(payload, tuple) and payload else len(self.nvs_entries)
+            nb = int(payload[1]) if isinstance(payload, tuple) and len(payload) > 1 else 0
+            self.nvs_bytes = nb
+            self.nvs_ok = True
+            self.note(f"NVS  {n} キー  {nb}B")
         elif kind == "map_done":
             if isinstance(payload, tuple) and len(payload) == 2:
                 self.map_ch = int(payload[0])

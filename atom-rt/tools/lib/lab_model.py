@@ -35,6 +35,7 @@ class Frame:
     as_ok: list[bool] = field(default_factory=lambda: [False] * JOINTS)
     mag: list[int] = field(default_factory=lambda: [255] * JOINTS)
     agc: list[int] = field(default_factory=lambda: [255] * JOINTS)
+    map_ok: list[bool] = field(default_factory=lambda: [False] * JOINTS)
     volt: list[float | None] = field(default_factory=lambda: [None] * INA_CHS)
     amp: list[float | None] = field(default_factory=lambda: [None] * INA_CHS)
     watt: list[float | None] = field(default_factory=lambda: [None] * INA_CHS)
@@ -131,6 +132,7 @@ def frame_from_telem(t: proto.Telemetry) -> Frame:
         as_ok=list(t.as_ok),
         mag=list(t.mag),
         agc=list(t.agc),
+        map_ok=list(t.map_ok),
         volt=list(t.volt),
         amp=list(t.amp),
         watt=list(t.watt),

@@ -101,6 +101,7 @@ from .m5_hub_bridge import (
     EVT_CONTROL,
     EVT_EVENTS,
     EVT_FRAME,
+    EVT_NVS,
     EVT_PROFILE,
     EVT_RECORD,
     EVT_SCAN,
@@ -160,6 +161,7 @@ class LabApp(tk.Tk):
         self._m5_scan_sig: object = None
         self._m5_prof_sig: object = None
         self._m5_cal_sig: object = None
+        self._m5_nvs_sig: object = None
         self._m5_st_sig: object = None
         # iPad コマンド処理中は PC 操作ガードを外す（同じハンドラを再利用するため）
         self._from_ipad = False
@@ -452,6 +454,7 @@ class LabApp(tk.Tk):
             "profile": self._m5_profile_dict(),
             "events": self._m5_events_list(),
             "cal": self._m5_cal_dict(),
+            "nvs": self._m5_nvs_dict(),
             "record": self._record_store.status(),
         }
 
@@ -516,6 +519,7 @@ class LabApp(tk.Tk):
             "servo_ok": f.servo_ok,
             "mode": f.mode,
             "out_mask": f.out_mask,
+            "map_ok": list(f.map_ok),
             "foot": foot_sample_dict(f),
         }
 
@@ -580,6 +584,17 @@ class LabApp(tk.Tk):
             "status": s.cal_status,
             "map_ch": s.map_ch,
             "map_count": len(s.map_points),
+        }
+
+    def _m5_nvs_dict(self) -> dict:
+        """フラッシュ NVS のキー一覧。未取得なら ok=false。"""
+        s = self._m5_sess()
+        if not s:
+            return {"ok": False, "entries": [], "bytes": 0}
+        return {
+            "ok": bool(s.nvs_ok),
+            "entries": list(s.nvs_entries),
+            "bytes": int(s.nvs_bytes),
         }
 
     def _m5_publish_status(self) -> None:
@@ -699,6 +714,10 @@ class LabApp(tk.Tk):
             if cal_sig != self._m5_cal_sig:
                 self._m5_cal_sig = cal_sig
                 self._m5_bridge.publish(EVT_CAL, self._m5_cal_dict())
+            nvs_sig = (s.nvs_ok, tuple((e.get("ns"), e.get("key"), e.get("size")) for e in s.nvs_entries))
+            if nvs_sig != self._m5_nvs_sig:
+                self._m5_nvs_sig = nvs_sig
+                self._m5_bridge.publish(EVT_NVS, self._m5_nvs_dict())
 
     def _m5_handle_cmd(self, msg: dict) -> None:
         """iPad からの操作。Tk スレッドで apply_op に渡す。"""
@@ -871,6 +890,12 @@ class LabApp(tk.Tk):
         elif op == "map_get":
             ch = int(msg.get("ch", 0))
             s.send(proto.cmd_map_get(ch))
+        elif op == "nvs_list":
+            s.send(proto.cmd_nvs_list())
+        elif op == "nvs_erase":
+            ns = str(msg.get("ns") or "")
+            if ns in ("cal", "jprof"):
+                s.send(proto.cmd_nvs_erase(ns))
         elif op.startswith("cop_"):
             self._m5_handle_cop(s, op, msg)
         self._m5_publish_control()

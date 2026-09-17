@@ -33,6 +33,7 @@ EVT_SCAN = "m5/scan"
 EVT_PROFILE = "m5/profile"
 EVT_EVENTS = "m5/events"
 EVT_CAL = "m5/cal"
+EVT_NVS = "m5/nvs"
 EVT_RECORD = "m5/record"
 CMD_EVENT = "m5/cmd"
 

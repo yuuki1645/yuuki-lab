@@ -8,6 +8,7 @@ import type {
   M5Frame,
   M5Hello,
   M5HistoryPoint,
+  M5Nvs,
   M5Profile,
   M5RecordStatus,
   M5Scan,
@@ -28,6 +29,7 @@ function applyHello(
   setProfile: (v: M5Profile | null) => void,
   setEvents: (v: string[]) => void,
   setCal: (v: M5Cal | null) => void,
+  setNvs: (v: M5Nvs | null) => void,
   historyRef: { current: M5HistoryPoint[] },
   setHistory: (v: M5HistoryPoint[]) => void
 ): void {
@@ -45,6 +47,7 @@ function applyHello(
   if (hello.profile) setProfile(hello.profile);
   if (hello.events) setEvents(hello.events);
   if (hello.cal) setCal(hello.cal);
+  if (hello.nvs) setNvs(hello.nvs);
 }
 
 function applyHelloRecord(
@@ -64,6 +67,7 @@ export type M5TelemetryStream = {
   profile: M5Profile | null;
   events: string[];
   cal: M5Cal | null;
+  nvs: M5Nvs | null;
   recordStatus: M5RecordStatus | null;
   history: M5HistoryPoint[];
   lastError: string | null;
@@ -84,6 +88,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
   const [profile, setProfile] = useState<M5Profile | null>(null);
   const [events, setEvents] = useState<string[]>([]);
   const [cal, setCal] = useState<M5Cal | null>(null);
+  const [nvs, setNvs] = useState<M5Nvs | null>(null);
   const [recordStatus, setRecordStatus] = useState<M5RecordStatus | null>(null);
   const [history, setHistory] = useState<M5HistoryPoint[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -144,6 +149,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
         setProfile,
         setEvents,
         setCal,
+        setNvs,
         historyRef,
         setHistory
       );
@@ -183,6 +189,10 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
       setCal(payload);
     });
 
+    socket.on("m5/nvs", (payload: M5Nvs) => {
+      setNvs(payload);
+    });
+
     socket.on("m5/record", (payload: M5RecordStatus) => {
       setRecordStatus(payload);
     });
@@ -203,6 +213,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
     profile,
     events,
     cal,
+    nvs,
     recordStatus,
     history,
     lastError,

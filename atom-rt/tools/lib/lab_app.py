@@ -785,7 +785,10 @@ class LabApp(tk.Tk):
                 self.out_vars[j].set(on)
                 s.send(proto.cmd_out(j, on))
                 if on:
-                    self._send_live_joint(s, j, float(self.cmd_vars[j].get()))
+                    # 机上ラボから来た PWM ON は、いまの指令角（40〜230°）を保つ
+                    self._send_live_joint(
+                        s, j, float(self.cmd_vars[j].get()), wide=bool(msg.get("wide"))
+                    )
                 else:
                     self.rand_vars[j].set(False)
                     if j == copctrl.HEEL_CH:
@@ -795,7 +798,8 @@ class LabApp(tk.Tk):
             if 0 <= j < JOINTS:
                 if j == copctrl.HEEL_CH and (self._cop.p_on or self._cop.sweep_on):
                     self._cop_stop("手動指令で P/スイープ停止")
-                deg = copctrl.clamp_cmd(float(msg.get("deg", 135.0)))
+                # wide は机上ラボ（1 サーボ）用。ファーム可動域 40〜230° をそのまま使う
+                deg = self._clamp_live_deg(float(msg.get("deg", 135.0)), bool(msg.get("wide")))
                 self._syncing = True
                 try:
                     self.cmd_vars[j].set(round(deg, 1))
@@ -907,11 +911,20 @@ class LabApp(tk.Tk):
         self._m5_publish_control()
         self._m5_publish_status()
 
-    def _send_live_joint(self, s: AtomSession, j: int, deg: float) -> None:
-        """ライブ PWM。実験用に 100〜170° へクランプして送る（校正スイープは使わない）。"""
+    def _clamp_live_deg(self, deg: float, wide: bool) -> float:
+        """
+        ライブ指令のクランプ。
+
+        既定は右脚実験の 100〜170°。wide=True（机上ラボの単軸テスト）だけ
+        ファームの可動域 40〜230° をそのまま通す。
+        """
+        return clamp_cal_deg(deg) if wide else copctrl.clamp_cmd(deg)
+
+    def _send_live_joint(self, s: AtomSession, j: int, deg: float, *, wide: bool = False) -> None:
+        """ライブ PWM。既定は 100〜170° へクランプして送る（校正スイープは使わない）。"""
         if self._pc_cal is not None:
             return
-        deg = copctrl.clamp_cmd(deg)
+        deg = self._clamp_live_deg(deg, wide)
         self._syncing = True
         try:
             if 0 <= j < len(self.cmd_vars):

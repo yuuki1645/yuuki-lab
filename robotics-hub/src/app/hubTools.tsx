@@ -38,6 +38,7 @@ const DaemonSocketTestPage = lazy(
 );
 const DeviceTelemetryPage = lazy(() => import("@/features/telemetry/DeviceTelemetryPage"));
 const M5TelemetryPage = lazy(() => import("@/features/m5-telemetry/M5TelemetryPage"));
+const BenchLabPage = lazy(() => import("@/features/atom-bench/BenchLabPage"));
 const TrainingTelemetryPage = lazy(
   () => import("@/features/telemetry/TrainingTelemetryPage")
 );
@@ -105,6 +106,15 @@ export const hubTools: HubTool[] = [
     description:
       "Windows PC の atom-rt/tools/lab_debug.py 経由で ATOM の関節・電源・校正を iPad から操作します（Socket.IO :8794）。ATOM 手帳でファームと USB プロトコルを読めます。",
     LazyPage: M5TelemetryPage,
+  },
+  {
+    id: "atom-bench",
+    path: "/atom-bench",
+    label: "ATOM 机上ラボ",
+    group: "device",
+    description:
+      "机上の ATOM + サーボ 1 本で校正・単体テスト。Lab のまま 40〜230° を出し、AS5600 の生角・補正・ズレ、INA226、トポロジ、NVS を見ます（同じ lab_debug.py :8794）。",
+    LazyPage: BenchLabPage,
   },
   {
     id: "training-telemetry",

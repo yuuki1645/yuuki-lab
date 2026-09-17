@@ -2,19 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Sparkline } from "./Sparkline";
 import "./M5TelemetryPage.css";
 import {
-  KIND_META,
   MAG_LABEL,
   M5_COLORS,
   M5_INA_CHS,
-  M5_INA_DEFAULT_ASSIGNED,
   M5_INA_PLOT_COLORS,
   M5_JOINTS,
   M5_PANEL_COUNT,
-  kindMeta,
-  type M5FootRoute,
-  type M5Route,
 } from "./types";
-import { buildTopoTree, type TopoItem } from "./topoTree";
+import { at, fmt, fmtMs, Metric, NumField } from "./m5Widgets";
+import { inaSelectValue, parseInaOption } from "./m5Route";
+import { ProfilePanel } from "./ProfilePanel";
+import { TopologyPanel } from "./TopologyPanel";
 import { RightLegTab } from "./RightLegTab";
 import { M5CameraPane } from "./M5CameraPane";
 import { M5RecordBar } from "./M5RecordBar";
@@ -38,69 +36,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "nvs", label: "NVS" },
   { id: "events", label: "イベント" },
 ];
-
-function fmt(v: number | null | undefined, unit: string): string {
-  if (typeof v !== "number" || !Number.isFinite(v)) return `— ${unit}`;
-  return `${v.toFixed(2).padStart(8, " ")} ${unit}`;
-}
-
-function fmtMs(us: number | undefined): string {
-  if (typeof us !== "number" || !Number.isFinite(us)) return "— ms";
-  return `${(us / 1000).toFixed(1).padStart(6, " ")} ms`;
-}
-
-function at<T>(xs: T[] | undefined, i: number): T | undefined {
-  return xs && i >= 0 && i < xs.length ? xs[i] : undefined;
-}
-
-function emptyRoute(i: number): M5Route {
-  return {
-    enc_hub: i < 6 ? 0x70 : 0,
-    enc_ch: i < 6 ? i : -1,
-    enc_addr: i < 6 ? 0x36 : 0,
-    act_hub: 0,
-    act_ch: -1,
-    act_addr: 0x25,
-    servo_ch: i,
-    ina_hub: i < M5_INA_DEFAULT_ASSIGNED ? 0x71 : 0,
-    ina_ch: i < M5_INA_DEFAULT_ASSIGNED ? i : -1,
-    ina_addr: i < M5_INA_DEFAULT_ASSIGNED ? 0x41 : 0,
-  };
-}
-
-function emptyFoot(): M5FootRoute {
-  return { hub: 0x71, ch: 2, addr: 0x28 };
-}
-
-function fmtFootRoute(r: M5FootRoute): string {
-  if (!r.addr) return "なし";
-  if (!r.hub) return `root  0x${r.addr.toString(16).toUpperCase().padStart(2, "0")}`;
-  const hub = r.hub.toString(16).toUpperCase().padStart(2, "0");
-  return `${hub} CH${r.ch}  0x${r.addr.toString(16).toUpperCase().padStart(2, "0")}`;
-}
-
-function parseFootOption(text: string): M5FootRoute | null {
-  const s = text.trim();
-  if (s === "なし" || s === "" || s === "—") return { hub: 0, ch: -1, addr: 0 };
-  if (s.startsWith("root")) {
-    const parts = s.split(/\s+/);
-    const addr = Number.parseInt(parts[parts.length - 1] ?? "", 16);
-    if (!Number.isFinite(addr)) return null;
-    return { hub: 0, ch: -1, addr };
-  }
-  const bits = s.replace(/CH/i, " ").replace(/\s+/g, " ").trim().split(" ");
-  const hub = Number.parseInt(bits[0] ?? "", 16);
-  const ch = Number.parseInt(bits[1] ?? "", 10);
-  const addr = Number.parseInt(bits[bits.length - 1] ?? "", 16);
-  if (![hub, ch, addr].every(Number.isFinite)) return null;
-  return { hub, ch, addr };
-}
-
-function fmtRouteField(key: keyof M5Route, n: number): string {
-  if (key.endsWith("ch") || key === "servo_ch") return String(n);
-  if (key.endsWith("hub") && n === 0) return "0";
-  return `0x${n.toString(16).toUpperCase().padStart(2, "0")}`;
-}
 
 export default function M5TelemetryPage() {
   const stream = useM5TelemetryStream(true);
@@ -135,17 +70,10 @@ export default function M5TelemetryPage() {
     a: true,
     w: false,
   });
-  const [topoSel, setTopoSel] = useState<number | null>(null);
-  const [topoInaJoint, setTopoInaJoint] = useState(0);
   const [calCh, setCalCh] = useState(0);
-  const [draftRoutes, setDraftRoutes] = useState<M5Route[] | null>(null);
-  const [draftFoot, setDraftFoot] = useState<M5FootRoute | null>(null);
   const manual = useFieldManual();
 
-  const topoTree = useMemo(() => buildTopoTree(scan?.nodes ?? []), [scan?.nodes]);
-
-  const routes = replaying ? (profile?.routes ?? []) : (draftRoutes ?? profile?.routes ?? []);
-  const foot = replaying ? (profile?.foot ?? emptyFoot()) : (draftFoot ?? profile?.foot ?? emptyFoot());
+  const routes = profile?.routes ?? [];
   const atomOk = Boolean(status?.connected);
   // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
   const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
@@ -210,21 +138,6 @@ export default function M5TelemetryPage() {
     );
     if (!ok) return;
     send({ op: "cal_start", ch: calCh });
-  };
-
-  const selectedNode = topoSel != null ? scan?.nodes[topoSel] : undefined;
-
-  const applyDraft = (i: number, key: keyof M5Route, raw: string) => {
-    const base = (draftRoutes ?? profile?.routes ?? Array.from({ length: M5_JOINTS }, (_, k) => emptyRoute(k))).map(
-      (r) => ({ ...r })
-    );
-    while (base.length < M5_JOINTS) base.push(emptyRoute(base.length));
-    const n = raw.trim().toLowerCase().startsWith("0x") ? parseInt(raw, 16) : Number(raw);
-    if (!Number.isFinite(n)) return;
-    const next: M5Route = { ...emptyRoute(i), ...base[i] };
-    next[key] = n;
-    base[i] = next;
-    setDraftRoutes(base);
   };
 
   return (
@@ -572,199 +485,9 @@ export default function M5TelemetryPage() {
         </section>
       ) : null}
 
-      {tab === "topo" ? (
-        <section className="m5__section">
-          <div className="m5__toolbar">
-            <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "scan" })}>
-              スキャン
-            </button>
-            <button
-              type="button"
-              className="m5__btn"
-              disabled={!canCmd || !selectedNode}
-              onClick={() => {
-                if (!selectedNode) return;
-                send({ op: "probe", hub: selectedNode.hub, ch: selectedNode.ch, addr: selectedNode.addr });
-              }}
-            >
-              1回読む
-            </button>
-            <label>
-              INA→関節
-              <select value={topoInaJoint} onChange={(e) => setTopoInaJoint(Number(e.target.value))}>
-                {Array.from({ length: M5_JOINTS }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="m5__btn m5__btn--on"
-              disabled={!canCmd || selectedNode?.kind !== "ina226"}
-              onClick={() => {
-                if (!selectedNode || selectedNode.kind !== "ina226") return;
-                const hub = selectedNode.hub === "root" ? 0 : parseInt(String(selectedNode.hub), 16) || 0;
-                const addr = parseInt(String(selectedNode.addr), 16) || 0;
-                send({
-                  op: "ina_assign",
-                  ch: topoInaJoint,
-                  ina_hub: hub,
-                  ina_ch: selectedNode.ch,
-                  ina_addr: addr,
-                });
-              }}
-            >
-              選択を割当
-            </button>
-            <button
-              type="button"
-              className="m5__btn"
-              disabled={!canCmd}
-              onClick={() =>
-                send({ op: "ina_assign", ch: topoInaJoint, ina_hub: 0, ina_ch: -1, ina_addr: 0 })
-              }
-            >
-              割当を外す
-            </button>
-          </div>
-          <div className="m5__legend">
-            {Object.entries(KIND_META).map(([k, meta]) => (
-              <span key={k} className="m5__legend-item">
-                <i style={{ background: meta.color }} />
-                {meta.label}
-              </span>
-            ))}
-          </div>
-          <div className="m5__tree">
-            <div className="m5__tree-root">Grove I2C</div>
-            {topoTree.map((item) => (
-              <TopoNode
-                key={`${item.kind}-${item.title}-${item.srcIndex}`}
-                item={item}
-                depth={0}
-                selected={topoSel}
-                onSelect={setTopoSel}
-              />
-            ))}
-          </div>
-          {!scan?.nodes?.length ? <p className="m5__meta">スキャン結果がありません。</p> : null}
-        </section>
-      ) : null}
+      {tab === "topo" ? <TopologyPanel scan={scan} canCmd={canCmd} send={send} /> : null}
 
-      {tab === "profile" ? (
-        <section className="m5__section">
-          <div className="m5__toolbar">
-            <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_get" })}>
-              ボードから取得
-            </button>
-            <button
-              type="button"
-              className="m5__btn m5__btn--on"
-              disabled={!canCmd}
-              onClick={() => {
-                send({
-                  op: "prof_put",
-                  routes: draftRoutes ?? profile?.routes ?? [],
-                  foot: draftFoot ?? profile?.foot ?? emptyFoot(),
-                });
-                setDraftRoutes(null);
-                setDraftFoot(null);
-              }}
-            >
-              ボードへ送信
-            </button>
-            <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_default" })}>
-              既定に戻す
-            </button>
-            <button
-              type="button"
-              className="m5__btn"
-              disabled={!canCmd}
-              onClick={() => send({ op: "prof_from_scan" })}
-            >
-              SCANから仮割当
-            </button>
-          </div>
-          <div className="m5__table-wrap">
-            <table className="m5__table">
-              <thead>
-                <tr>
-                  <th>関節</th>
-                  <th>enc_hub</th>
-                  <th>enc_ch</th>
-                  <th>enc_addr</th>
-                  <th>act_hub</th>
-                  <th>act_ch</th>
-                  <th>act_addr</th>
-                  <th>servo</th>
-                  <th>ina_hub</th>
-                  <th>ina_ch</th>
-                  <th>ina_addr</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: M5_JOINTS }, (_, i) => {
-                  const r = routes[i] ?? emptyRoute(i);
-                  return (
-                    <tr key={i}>
-                      <td>{i}</td>
-                      {(
-                        [
-                          "enc_hub",
-                          "enc_ch",
-                          "enc_addr",
-                          "act_hub",
-                          "act_ch",
-                          "act_addr",
-                          "servo_ch",
-                          "ina_hub",
-                          "ina_ch",
-                          "ina_addr",
-                        ] as const
-                      ).map((key) => (
-                        <td key={key}>
-                          <input
-                            disabled={!canCmd}
-                            defaultValue={fmtRouteField(key, r[key])}
-                            key={`${i}-${key}-${r[key]}`}
-                            onBlur={(e) => applyDraft(i, key, e.target.value)}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="m5-foot-prof">
-            <p className="m5__meta">右足スレーブ（ATOM S3 Lite / DF9-40）。SCAN で見えた 0x28 を選べます。addr=0 は無効。</p>
-            <label className="m5-foot-prof__lab">
-              経路
-              <select
-                disabled={!canCmd}
-                value={fmtFootRoute(foot)}
-                onChange={(e) => {
-                  const parsed = parseFootOption(e.target.value);
-                  if (parsed) setDraftFoot(parsed);
-                }}
-              >
-                {(
-                  profile?.foot_options?.includes(fmtFootRoute(foot))
-                    ? profile.foot_options
-                    : [...(profile?.foot_options ?? ["なし"]), fmtFootRoute(foot)]
-                ).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
-      ) : null}
+      {tab === "profile" ? <ProfilePanel profile={profile} canCmd={canCmd} send={send} /> : null}
 
       {tab === "cal" ? (
         <section className="m5__section">
@@ -826,154 +549,3 @@ export default function M5TelemetryPage() {
   );
 }
 
-function Metric({
-  title,
-  text,
-  color,
-  large,
-}: {
-  title: string;
-  text: string;
-  color: string;
-  large?: boolean;
-}) {
-  return (
-    <div className={"m5__metric" + (large ? " m5__metric--large" : "")}>
-      <span>{title}</span>
-      <strong style={{ color }}>{text}</strong>
-    </div>
-  );
-}
-
-function magColor(code: number): string {
-  if (code === 0) return "#10ac84";
-  if (code === 1 || code === 4) return "#ee5253";
-  if (code === 2 || code === 3) return "#feca57";
-  return "#8b9bb0";
-}
-
-function TopoNode({
-  item,
-  depth,
-  selected,
-  onSelect,
-}: {
-  item: TopoItem;
-  depth: number;
-  selected: number | null;
-  onSelect: (i: number) => void;
-}) {
-  const meta = kindMeta(item.kind);
-  const on = item.srcIndex != null && selected === item.srcIndex;
-  const isHub = item.kind === "pahub";
-  return (
-    <div className={"m5__branch" + (depth > 0 ? " m5__branch--child" : "")}>
-      <button
-        type="button"
-        className={
-          "m5__node m5__node--" +
-          item.kind +
-          (on ? " m5__node--on" : "") +
-          (isHub ? " m5__node--hub" : "")
-        }
-        style={{ borderLeftColor: meta.color }}
-        onClick={() => {
-          if (item.srcIndex != null) onSelect(item.srcIndex);
-        }}
-      >
-        <span className="m5__kind" style={{ background: meta.color }}>
-          {meta.label}
-        </span>
-        <span className="m5__node-title">{item.title}</span>
-        <span className="m5__node-detail">{item.detail}</span>
-        {item.magLabel ? (
-          <span className="m5__node-mag" style={{ color: magColor(item.magCode) }}>
-            {item.magLabel}
-          </span>
-        ) : null}
-        {isHub ? (
-          <span className="m5__node-count">{item.children.length} ch</span>
-        ) : null}
-      </button>
-      {item.children.length ? (
-        <div className="m5__kids">
-          {item.children.map((ch) => (
-            <TopoNode
-              key={`${ch.kind}-${ch.title}-${ch.srcIndex}`}
-              item={ch}
-              depth={depth + 1}
-              selected={selected}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function NumField({
-  label,
-  value,
-  disabled,
-  onCommit,
-}: {
-  label: string;
-  value: number;
-  disabled?: boolean;
-  onCommit: (v: number) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [local, setLocal] = useState(String(value));
-  return (
-    <label className="m5__num">
-      {label}
-      <input
-        type="number"
-        disabled={disabled}
-        value={editing ? local : String(value)}
-        onFocus={() => {
-          setEditing(true);
-          setLocal(String(value));
-        }}
-        onChange={(e) => setLocal(e.target.value)}
-        onBlur={() => {
-          setEditing(false);
-          const n = Number(local);
-          if (Number.isFinite(n)) onCommit(n);
-        }}
-      />
-    </label>
-  );
-}
-
-function inaSelectValue(route: M5Route | undefined): string {
-  if (!route || !route.ina_addr) return "なし";
-  const addr = `0x${route.ina_addr.toString(16).toUpperCase().padStart(2, "0")}`;
-  if (!route.ina_hub) return `root  ${addr}`;
-  const hub = route.ina_hub.toString(16).toUpperCase().padStart(2, "0");
-  return `${hub} CH${route.ina_ch}  ${addr}`;
-}
-
-function parseInaOption(label: string): { hub: number; ch: number; addr: number } | null {
-  const s = label.trim();
-  if (s === "なし" || s === "" || s === "—") return { hub: 0, ch: -1, addr: 0 };
-  if (s.startsWith("root")) {
-    const parts = s.split(/\s+/);
-    const last = parts[parts.length - 1];
-    if (!last) return null;
-    const addr = parseInt(last, 16);
-    if (!Number.isFinite(addr)) return null;
-    return { hub: 0, ch: -1, addr };
-  }
-  const bits = s.replace(/CH/i, " ").replace(/\s+/g, " ").trim().split(" ");
-  const hubStr = bits[0];
-  const chStr = bits[1];
-  const addrStr = bits[bits.length - 1];
-  if (!hubStr || !chStr || !addrStr || bits.length < 3) return null;
-  const hub = parseInt(hubStr, 16);
-  const ch = Number(chStr);
-  const addr = parseInt(addrStr, 16);
-  if (![hub, ch, addr].every((n) => Number.isFinite(n))) return null;
-  return { hub, ch, addr };
-}

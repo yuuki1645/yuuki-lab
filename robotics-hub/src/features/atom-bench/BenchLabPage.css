@@ -1,0 +1,139 @@
+/* ATOM 机上ラボ。土台は M5TelemetryPage.css（m5__* / m5-bar 系）を借りる。 */
+
+.bench__warn {
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(255, 159, 67, 0.12);
+  border: 1px solid rgba(255, 159, 67, 0.5);
+  color: #ffb56b;
+  font-size: 0.85rem;
+}
+
+/* 対象サーボと配線・磁石の一行サマリ */
+.bench__target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: #17202a;
+  border: 1px solid rgba(84, 160, 255, 0.28);
+}
+
+.bench__target-lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #8b9bb0;
+  font-size: 0.8rem;
+}
+
+.bench__target-lab select {
+  min-height: 36px;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #0e1318;
+  color: #e8eef4;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.bench__chip {
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #8b9bb0;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.bench__chip--ok {
+  border-color: rgba(62, 224, 127, 0.5);
+  color: #3ee07f;
+}
+
+.bench__chip--bad {
+  border-color: rgba(238, 82, 83, 0.55);
+  color: #ff7675;
+}
+
+.bench__servo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* 1 サーボ分のバー束。右脚と同じ行レイアウトに目盛りの注記を足す */
+.bench-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-radius: 12px;
+  background: #17202a;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.bench-bars__enc {
+  color: #8b9bb0;
+  font-size: 0.72rem !important;
+}
+
+.bench-bars__enc--on {
+  color: #54a0ff !important;
+}
+
+.bench-barrow {
+  grid-template-columns: 3.4rem 4.6rem 1fr 5.2rem;
+}
+
+.bench-barrow__scale {
+  color: #6d7c8d;
+  font-size: 0.68rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bench-bar__fill--raw {
+  background: repeating-linear-gradient(-55deg, #54a0ff, #54a0ff 5px, #3a76c4 5px, #3a76c4 10px);
+}
+
+.bench-bar__fill--unwrap {
+  background: repeating-linear-gradient(-55deg, #1dd1a1, #1dd1a1 5px, #12a37c 5px, #12a37c 10px);
+}
+
+.bench__bar-togs,
+.bench__plot-togs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bench__ina {
+  max-width: 34rem;
+}
+
+.bench__ina .m5__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.bench__ina h2 {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .bench-barrow {
+    grid-template-columns: 3rem 4.2rem 1fr;
+  }
+
+  .bench-barrow__scale {
+    display: none;
+  }
+}

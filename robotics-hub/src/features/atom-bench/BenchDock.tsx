@@ -85,7 +85,28 @@ export function BenchDock({ events, onLayout }: Props) {
     }
     setTab(id);
     setOpen(true);
+    if (id === "events") pinBottom.current = true;
   };
+
+  const logRef = useRef<HTMLPreElement>(null);
+  /** 下端付近にいるときだけ追従。上にスクロールしたら止め、また下まで来たら再開 */
+  const pinBottom = useRef(true);
+
+  const onLogScroll = () => {
+    const el = logRef.current;
+    if (!el) return;
+    pinBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+  };
+
+  // PC は新しい行を先頭に積む。ターミナルと同じく古い→新しい（下が最新）で描く
+  const logLines = events.slice().reverse();
+
+  useEffect(() => {
+    if (!open || tab !== "events") return;
+    const el = logRef.current;
+    if (!el || !pinBottom.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [events, open, tab, height]);
 
   return (
     <div className={"bench-dock" + (open ? " bench-dock--open" : "")} aria-label="下部パネル">
@@ -129,8 +150,8 @@ export function BenchDock({ events, onLayout }: Props) {
       {open ? (
         <div className="bench-dock__body" style={{ height }}>
           {tab === "events" ? (
-            <pre className="bench-dock__log">
-              {events.length ? events.join("\n") : "（イベントなし）"}
+            <pre className="bench-dock__log" ref={logRef} onScroll={onLogScroll}>
+              {logLines.length ? logLines.join("\n") : "（イベントなし）"}
             </pre>
           ) : (
             <EmptyTab tab={tab} />

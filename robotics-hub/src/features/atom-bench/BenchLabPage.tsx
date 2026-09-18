@@ -5,7 +5,7 @@
  * 実機テレメトリ（M5）と同じ lab_debug.py（Socket.IO :8794）につなぐので、
  * ファームの焼き分けは不要。違いは「机上向けに Lab を保ち、1 軸だけ触る」点。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "@/features/m5-telemetry/M5TelemetryPage.css";
 import "./BenchLabPage.css";
 import { NvsVault } from "@/features/m5-telemetry/NvsVault";
@@ -26,6 +26,7 @@ import {
 } from "@/features/m5-telemetry/types";
 import { BenchServoBars } from "./BenchServoBars";
 import { BenchStatusBar } from "./BenchStatusBar";
+import { BenchDock } from "./BenchDock";
 import {
   BENCH_BAR,
   BENCH_MAX_DEG,
@@ -38,15 +39,14 @@ import {
   type BenchPlotVisibility,
 } from "./benchConst";
 
-/** トポロジは常設パネルに移したのでタブからは外している */
-type TabId = "servo" | "cal" | "profile" | "nvs" | "events";
+/** トポロジは常設パネルに移したのでタブからは外している。イベントは下部ドック */
+type TabId = "servo" | "cal" | "profile" | "nvs";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "servo", label: "サーボ" },
   { id: "cal", label: "校正" },
   { id: "profile", label: "プロファイル" },
   { id: "nvs", label: "NVS" },
-  { id: "events", label: "イベント" },
 ];
 
 export default function BenchLabPage() {
@@ -54,6 +54,11 @@ export default function BenchLabPage() {
   const { status, frame, control, profile, scan, cal, events, history, send } = stream;
 
   const [tab, setTab] = useState<TabId>("servo");
+  /** 下部ドック（イベント等）の本体高さ。0 ならタブ帯だけ */
+  const [dockBodyH, setDockBodyH] = useState(0);
+  const onDockLayout = useCallback((_open: boolean, heightPx: number) => {
+    setDockBodyH(heightPx);
+  }, []);
   /** 机上はいまのところ 1 軸だけ触る。対象はここで選ぶ */
   const [ch, setCh] = useState(0);
   const [plotOn, setPlotOn] = useState<BenchPlotVisibility>(BENCH_PLOT_DEFAULT);
@@ -112,7 +117,10 @@ export default function BenchLabPage() {
   };
 
   return (
-    <div className="m5 bench">
+    <div
+      className="m5 bench"
+      style={{ ["--bench-dock-h" as string]: `${dockBodyH}px` }}
+    >
       <header className="m5__header">
         <div className="m5__header-title">
           <h1>ATOM 机上ラボ</h1>
@@ -364,12 +372,6 @@ export default function BenchLabPage() {
           </div>
 
           {tab === "nvs" ? <NvsVault nvs={stream.nvs} canCmd={canCmd} send={send} /> : null}
-
-          {tab === "events" ? (
-            <section className="m5__section">
-              <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
-            </section>
-          ) : null}
         </div>
       </div>
 
@@ -379,6 +381,8 @@ export default function BenchLabPage() {
         onChapter={manual.selectChapter}
         onClose={manual.close}
       />
+
+      <BenchDock events={events} onLayout={onDockLayout} />
 
       <BenchStatusBar
         wsStatus={stream.wsStatus}

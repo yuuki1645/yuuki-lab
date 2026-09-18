@@ -3,7 +3,9 @@
 /* 固定ステータスバーの高さ。本文の下に隠れないよう余白を取る */
 .bench {
   --bench-sb-h: 3.6rem;
-  padding-bottom: calc(var(--bench-sb-h) + 0.8rem);
+  --bench-dock-tabs-h: 2.15rem;
+  --bench-dock-h: 0px;
+  padding-bottom: calc(var(--bench-sb-h) + var(--bench-dock-tabs-h) + var(--bench-dock-h) + 0.45rem);
 }
 
 /* 左にトポロジを常設、右がタブの中身 */
@@ -181,8 +183,135 @@
 }
 
 /* ---------------------------------------------------------------------------
-   固定ステータスバー
+   下部ドック（ステータスバー直上。Cursor の Terminal ペインに近い）
    --------------------------------------------------------------------------- */
+
+.bench-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--bench-sb-h);
+  z-index: 59;
+  display: flex;
+  flex-direction: column;
+  background: #0c1116;
+  border-top: 1px solid rgba(84, 160, 255, 0.22);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.bench-dock__resize {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex: 0 0 auto;
+  cursor: ns-resize;
+  background: transparent;
+  touch-action: none;
+}
+
+.bench-dock__resize:hover,
+.bench-dock__resize:focus-visible {
+  background: rgba(84, 160, 255, 0.35);
+}
+
+.bench-dock__body {
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.bench-dock__log {
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 0.45rem 0.7rem 0.55rem;
+  overflow: auto;
+  background: #0c1116;
+  color: #c5d0dc;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.bench-dock__empty {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  color: #8b9bb0;
+  font-size: 0.82rem;
+}
+
+.bench-dock__empty p {
+  margin: 0;
+}
+
+.bench-dock__empty-sub {
+  font-size: 0.72rem;
+  color: #6d7c8d;
+}
+
+.bench-dock__tabs {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--bench-dock-tabs-h);
+  padding: 0 0.25rem 0 0.15rem;
+  background: #101820;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bench-dock--open .bench-dock__tabs {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bench-dock__tab {
+  min-height: 0;
+  padding: 0 0.75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #8b9bb0;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.bench-dock__tab:hover {
+  color: #e8eef4;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bench-dock__tab--on {
+  color: #e8eef4;
+  border-bottom-color: #54a0ff;
+  background: rgba(84, 160, 255, 0.08);
+}
+
+.bench-dock__tabs-sp {
+  flex: 1 1 auto;
+}
+
+.bench-dock__hide {
+  min-width: 2rem;
+  border: 0;
+  background: transparent;
+  color: #8b9bb0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.bench-dock__hide:hover {
+  color: #e8eef4;
+}
 
 .bench-sb {
   position: fixed;

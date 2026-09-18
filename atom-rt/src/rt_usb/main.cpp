@@ -373,13 +373,11 @@ static float lookupMap(int ch, float as5600Unwrapped) {
     return y;
 }
 
-/** COM 再接続の USB リセットと、フラッシュ中の TX 待ちでタスクが死ぬのを防ぐ */
+/** COM 再接続で CPU を落とさない。TX 待ちはここでは短くしない（NVS 一覧が欠ける） */
 static void usbHoldRebootOff() {
 #if defined(RTC_CNTL_USB_CONF_REG) && defined(RTC_CNTL_USB_RESET_DISABLE)
-    // S3 USB-Serial-JTAG。セットすると再列挙で CPU を落とさない
     REG_SET_BIT(RTC_CNTL_USB_CONF_REG, RTC_CNTL_USB_RESET_DISABLE);
 #endif
-    Serial.setTxTimeoutMs(80);
 }
 
 /** 開きっぱなしの Preferences を閉じてから ns を開く。begin 失敗を無視すると NVS が黙って書けない */
@@ -1749,20 +1747,36 @@ static void fillSnapshot(Snapshot& snap,
 // USB（Core 0）
 // ---------------------------------------------------------------------------
 /** 1 フレームをバッファに組んでから、できるだけ 1 回の write で出す。 */
-static void usbSend(uint8_t type, const void* payload, uint16_t len) {
+static bool usbSendWait(uint8_t type, const void* payload, uint16_t len, uint32_t waitMs) {
     uint8_t buf[kUsbFrameOverhead + kUsbMaxPayload];
     const size_t n = usbBuildFrame(buf, sizeof(buf), type, payload, len);
     if (n == 0) {
-        return;
+        return false;
     }
     const uint32_t t0 = millis();
     while (Serial.availableForWrite() < static_cast<int>(n)) {
-        if ((millis() - t0) > 80) {
-            break;
+        if ((millis() - t0) > waitMs) {
+            return false;
         }
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(2));
     }
-    Serial.write(buf, n);
+    return Serial.write(buf, n) == n;
+}
+
+static void usbSend(uint8_t type, const void* payload, uint16_t len) {
+    // テレメトリは 1 枚落ちても次がある。待ちすぎると 20 Hz が止まる
+    (void)usbSendWait(type, payload, len, 80);
+}
+
+/** NVS 一覧など、欠けたらやり直しになる転送。バッファが空くまで待つ */
+static void usbSendBulk(uint8_t type, const void* payload, uint16_t len) {
+    for (int i = 0; i < 4; ++i) {
+        if (usbSendWait(type, payload, len, 500)) {
+            vTaskDelay(pdMS_TO_TICKS(2));
+            return;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
 }
 
 static void usbPrintHello() {
@@ -1949,14 +1963,15 @@ static void usbSendNvsData(const char* ns, const char* key, const uint8_t* data,
         h.n = n;
         memcpy(raw, &h, sizeof(h));
         memcpy(raw + sizeof(h), data + start, n);
-        usbSend(kUsbNvsData, raw, static_cast<uint16_t>(sizeof(h) + n));
+        usbSendBulk(kUsbNvsData, raw, static_cast<uint16_t>(sizeof(h) + n));
         start = static_cast<uint16_t>(start + n);
     }
 }
 
-/** パーティション "nvs" の全キーを USB で送る。Core 0 専用。 */
+/** パーティション "nvs" の全キーを USB で送る。Core 0 専用。途中欠けると Hub は未読取のまま */
 static void usbDumpNvs() {
-    usbSend(kUsbNvsBegin, nullptr, 0);
+    Serial.setTxTimeoutMs(500);
+    usbSendBulk(kUsbNvsBegin, nullptr, 0);
     uint8_t count = 0;
     uint16_t bytes = 0;
     nvs_iterator_t it = nvs_entry_find("nvs", nullptr, NVS_TYPE_ANY);
@@ -1980,7 +1995,7 @@ static void usbDumpNvs() {
         strncpy(e.key, info.key, sizeof(e.key) - 1);
         e.type = static_cast<uint8_t>(info.type);
         e.size = haveH ? nvsValueSize(handle, info.key, info.type) : 0;
-        usbSend(kUsbNvsEntry, &e, sizeof(e));
+        usbSendBulk(kUsbNvsEntry, &e, sizeof(e));
         if (haveH && e.size > 0) {
             uint8_t val[kNvsValCap];
             uint16_t got = 0;
@@ -2003,7 +2018,8 @@ static void usbDumpNvs() {
     UsbNvsEnd end{};
     end.count = count;
     end.bytes = bytes;
-    usbSend(kUsbNvsEnd, &end, sizeof(end));
+    usbSendBulk(kUsbNvsEnd, &end, sizeof(end));
+    Serial.setTxTimeoutMs(100);
 }
 
 /** cal / jprof だけ消せる。jprof は消した直後に既定を書き戻す。 */
@@ -2744,6 +2760,8 @@ static void findIna226() {
 
 void setup() {
     Serial.begin(115200);
+    Serial.setTxBufferSize(4096);
+    Serial.setTxTimeoutMs(100);
     usbHoldRebootOff();
     delay(400);
 

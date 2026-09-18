@@ -180,7 +180,11 @@ class AtomWorker:
 
     def _put(self, kind: str, payload: object) -> None:
         # テレメトリを落とすと生角が固まる。frame は余裕を大きく取る。
+        # NVS 一覧は欠けたら「未読取」のままなので、キューが混んでいても捨てない。
         q = self.out.qsize()
+        if kind.startswith("nvs_"):
+            self.out.put((self.port, kind, payload))
+            return
         limit = 500 if kind == "frame" else 200
         if q < limit:
             self.out.put((self.port, kind, payload))
@@ -549,6 +553,7 @@ class AtomSession:
         elif kind == "nvs_begin":
             self._nvs_acc = []
             self.nvs_ok = False
+            self.note("NVS 読み取り開始")
         elif kind == "nvs_entry":
             if isinstance(payload, proto.NvsEntryBin):
                 self._nvs_acc.append(

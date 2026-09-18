@@ -8,6 +8,7 @@ USB バイナリフレームの組み立て／分解（ライブラリ。直接�
 CRC は type+len16+payload（CRC-16-CCITT、初期値 0xFFFF）。
 len は LE uint16（ver=12 以降。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
 ver=13 はプロファイル PUT の ProfOk を NVS readback 後に出す。
+ver=14 は NVS 一覧を CDC で欠かさない。
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 MAGIC = b"\xAA\x55"
 MAX_PAYLOAD = 512
-FW_VER = 13
+FW_VER = 14
 MAP_CHUNK = 16
 JOINTS = 8
 INA_CHS = 8

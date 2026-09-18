@@ -297,7 +297,10 @@ export function NvsVault({
       </div>
 
       {!nvs?.ok ? (
-        <p className="nvs__hint">「ボードから読む」で実キーと値を取ります。値表示には新しいファームが必要です。</p>
+        <p className="nvs__hint">
+          まだボードから一覧が届いていません（キーが消えた状態ではありません）。「ボードから読む」のあと、イベントに「NVS
+          読み取り開始」→「NVS ○キー」と出れば成功です。
+        </p>
       ) : null}
 
       <div className="nvs__vaults">

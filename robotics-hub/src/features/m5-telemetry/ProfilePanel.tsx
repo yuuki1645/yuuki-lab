@@ -7,7 +7,7 @@
  * 有効チェックは経路と独立。機体のアドレスはそのまま残し、無効軸は
  * 20 Hz の I2C と PWM から外す（机上で未配線の軸を切る用）。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   emptyFoot,
   emptyRoute,
@@ -49,6 +49,26 @@ export function ProfilePanel({
   const routes = draftRoutes ?? profile?.routes ?? [];
   const foot = draftFoot ?? profile?.foot ?? emptyFoot();
 
+  // 送信直後に下書きを捨てると、まだ古い「全部有効」の profile で描画が戻る。
+  // ボード／PC のエコーが同じ有効マスクになったときだけ下書きを外す。
+  useEffect(() => {
+    if (!draftRoutes || !profile?.routes?.length) return;
+    const n = M5_JOINTS;
+    let same = true;
+    for (let i = 0; i < n; i += 1) {
+      if (isOn(draftRoutes[i]) !== isOn(profile.routes[i])) {
+        same = false;
+        break;
+      }
+    }
+    const echoFoot = profile.foot ?? emptyFoot();
+    const localFoot = draftFoot ?? echoFoot;
+    if (same && isOn(localFoot) === isOn(echoFoot)) {
+      setDraftRoutes(null);
+      setDraftFoot(null);
+    }
+  }, [profile, draftRoutes, draftFoot]);
+
   const baseRoutes = (): M5Route[] => {
     const base = (
       draftRoutes ??
@@ -78,7 +98,16 @@ export function ProfilePanel({
   return (
     <section className="m5__section">
       <div className="m5__toolbar">
-        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_get" })}>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd}
+          onClick={() => {
+            setDraftRoutes(null);
+            setDraftFoot(null);
+            send({ op: "prof_get" });
+          }}
+        >
           ボードから取得
         </button>
         <button
@@ -88,19 +117,35 @@ export function ProfilePanel({
           onClick={() => {
             send({
               op: "prof_put",
-              routes: draftRoutes ?? profile?.routes ?? [],
-              foot: draftFoot ?? profile?.foot ?? emptyFoot(),
+              routes: Array.from({ length: M5_JOINTS }, (_, i) => routes[i] ?? emptyRoute(i)),
+              foot,
             });
-            setDraftRoutes(null);
-            setDraftFoot(null);
           }}
         >
           ボードへ送信
         </button>
-        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_default" })}>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd}
+          onClick={() => {
+            setDraftRoutes(null);
+            setDraftFoot(null);
+            send({ op: "prof_default" });
+          }}
+        >
           既定に戻す
         </button>
-        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_from_scan" })}>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd}
+          onClick={() => {
+            setDraftRoutes(null);
+            setDraftFoot(null);
+            send({ op: "prof_from_scan" });
+          }}
+        >
           SCANから仮割当
         </button>
       </div>

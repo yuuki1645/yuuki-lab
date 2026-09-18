@@ -6,7 +6,7 @@ USB バイナリフレームの組み立て／分解（ライブラリ。直接�
 
 フレーム: AA 55 | type | len_lo | len_hi | payload | crc16_le
 CRC は type+len16+payload（CRC-16-CCITT、初期値 0xFFFF）。
-len は LE uint16（ver=10。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
+len は LE uint16（ver=11。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 MAGIC = b"\xAA\x55"
 MAX_PAYLOAD = 512
-FW_VER = 10
+FW_VER = 11
 MAP_CHUNK = 16
 JOINTS = 8
 INA_CHS = 8
@@ -564,7 +564,10 @@ def decode_scan_node(payload: bytes) -> ScanNodeBin | None:
     return ScanNodeBin(hub, ch, addr, kind, mag, agc)
 
 
-def decode_prof(payload: bytes) -> tuple[list[RouteBin], FootRouteBin] | None:
+def decode_prof(payload: bytes) -> tuple[list[RouteBin], FootRouteBin, bool] | None:
+    """
+    @return (routes, foot, has_en)。has_en が False のときは旧ファーム（有効マスク無し）。
+    """
     if len(payload) < 1:
         return None
     n = payload[0]
@@ -579,14 +582,15 @@ def decode_prof(payload: bytes) -> tuple[list[RouteBin], FootRouteBin] | None:
         off += _ROUTE.size
     fh, fc, fa = _FOOT.unpack_from(payload, off)
     off += _FOOT.size
+    has_en = len(payload) >= off + 2
     jen = 0xFF
     fen = 1
-    if len(payload) >= off + 2:
+    if has_en:
         jen = payload[off]
         fen = payload[off + 1]
     for i, r in enumerate(out):
         r.enabled = bool(jen & (1 << i))
-    return out, FootRouteBin(fh, fc, fa, enabled=bool(fen))
+    return out, FootRouteBin(fh, fc, fa, enabled=bool(fen)), has_en
 
 
 def decode_map_chunk(payload: bytes) -> MapChunk | None:
@@ -702,7 +706,7 @@ def format_rx(msg_type: int, payload: bytes) -> str:
         got = decode_prof(payload)
         if got is None:
             return "プロファイル（形式不正）"
-        rs, foot = got
+        rs, foot, _has_en = got
         return (
             f"プロファイル  {len(rs)} 軸  "
             f"foot={foot.hub:02X}/CH{foot.ch}/0x{foot.addr:02X}"

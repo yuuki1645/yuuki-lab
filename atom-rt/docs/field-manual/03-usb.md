@@ -2,7 +2,7 @@
 
 仮想 COM（USB CDC）のまま、中身だけバイナリです。WinUSB 専用ドライバは不要です。115200 は CDC ではほぼ飾りです。
 
-旧 ASCII（`#S,...` など）との互換はありません。ファーム `kUsbFwVer = 10` と Python `FW_VER = 10` を揃えます。
+旧 ASCII（`#S,...` など）との互換はありません。ファーム `kUsbFwVer = 11` と Python `FW_VER = 11` を揃えます。
 
 正本:
 

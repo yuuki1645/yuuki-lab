@@ -236,7 +236,7 @@ calabort
 
 USB CDC（仮想 COM）のまま、中身だけバイナリです。WinUSB 専用ドライバは不要です。115200 は CDC ではほぼ飾りです。
 
-旧 ASCII CSV（`#S` / `#PING` など）との互換はありません。ファーム `kUsbFwVer = 10` と `tools/lib/rt_usb_proto.py` の `FW_VER = 10` を揃えます（len が uint16、足 4 隅つき。旧ファームとは非互換）。
+旧 ASCII CSV（`#S` / `#PING` など）との互換はありません。ファーム `kUsbFwVer = 11` と `tools/lib/rt_usb_proto.py` の `FW_VER = 11` を揃えます（len が uint16、足 4 隅つき。プロファイル末尾に関節／足の有効マスク 2 バイト）。
 
 ### フレーム
 

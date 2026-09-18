@@ -225,8 +225,11 @@ class AtomWorker:
         if msg_type == proto.MSG_PROF:
             got = proto.decode_prof(payload)
             if got is not None:
-                rs, foot = got
-                self._put("prof", ([route_from_bin(r) for r in rs], foot_from_bin(foot)))
+                rs, foot, has_en = got
+                self._put(
+                    "prof",
+                    ([route_from_bin(r) for r in rs], foot_from_bin(foot), bool(has_en)),
+                )
             return
         if msg_type == proto.MSG_MAP_CHUNK:
             return
@@ -450,14 +453,24 @@ class AtomSession:
         elif kind == "prof":
             routes = None
             foot = None
-            if isinstance(payload, tuple) and len(payload) == 2:
-                routes, foot = payload
+            has_en = True
+            if isinstance(payload, tuple) and len(payload) >= 2:
+                routes, foot = payload[0], payload[1]
+                if len(payload) >= 3:
+                    has_en = bool(payload[2])
             elif isinstance(payload, list):
                 routes = payload
             if isinstance(routes, list) and routes:
                 merged = default_routes()
                 for i, r in enumerate(routes[:JOINTS]):
                     merged[i] = r
+                # 旧ダンプは有効マスクが無く decode が全オンにする。手元の無効化を潰さない
+                if not has_en:
+                    for i, r in enumerate(merged):
+                        if i < len(self.routes):
+                            r.enabled = self.routes[i].enabled
+                    if isinstance(foot, FootRoute):
+                        foot.enabled = self.foot.enabled
                 self.routes = merged
                 if isinstance(foot, FootRoute):
                     self.foot = foot

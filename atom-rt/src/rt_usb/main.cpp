@@ -2301,6 +2301,7 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         ok.n = n;
         ok.is_default = 0;
         usbSend(kUsbProfOk, &ok, sizeof(ok));
+        gProfDumpReq = 1;
         return;
     }
     if (type == kUsbCmdMapGet && len >= sizeof(UsbCmdMapGet)) {

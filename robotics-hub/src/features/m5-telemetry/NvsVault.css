@@ -67,6 +67,7 @@
 .nvs__toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.45rem;
 }
 

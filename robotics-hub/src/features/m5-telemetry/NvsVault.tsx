@@ -2,6 +2,7 @@
  * ATOM フラッシュ NVS の保管庫。キーだけでなく実バイトを解読して見せる。
  */
 import { useEffect, useMemo, useState } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import type { M5Cmd, M5Nvs, M5NvsEntry } from "./types";
 import { M5_JOINTS } from "./types";
 import "./NvsVault.css";
@@ -242,6 +243,9 @@ export function NvsVault({
       <div className="nvs__chip">
         <div className="nvs__chip-meta">
           <span className="nvs__chip-mark">NVS</span>
+          <UiHelp title="NVS" wide>
+            フラッシュの設定区画です。プログラム（app）とは別なので、焼き直しても通常は残ります。灰色の行はファームが知っている名前で、キーがまだ無いと空です。未読取はダンプが終わっていないことで、空のフラッシュとは限りません。
+          </UiHelp>
           <div>
             <strong>0x9000</strong>
             <span>プログラム区画とは別。値は既定で隠し、長いデータはポップアップで全部見られます。</span>
@@ -257,6 +261,9 @@ export function NvsVault({
       </div>
 
       <div className="nvs__toolbar">
+        <UiHelp title="NVS の操作" wide>
+          ボードから読むはキーと値の全文を CDC で送ります。校正マップがあるとパイプを殺して HELLO が来ることがあります。そのときはタブを閉じて再接続の輪が止まるのを待ってください。値の表示は画面上のトグルだけで、ボードは触りません。
+        </UiHelp>
         <button
           type="button"
           className={"m5__btn" + (showValues ? " m5__btn--on" : "")}

@@ -84,12 +84,26 @@
 }
 
 .bench__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   padding: 0.16rem 0.5rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #8b9bb0;
   font-size: 0.74rem;
   white-space: nowrap;
+}
+
+.bench .m5__header h1,
+.bench .m5-leg__plot-togs-lab,
+.bench .m5__tabs {
+  align-items: center;
+}
+
+.bench .m5__header h1,
+.bench .m5-leg__plot-togs-lab {
+  display: inline-flex;
 }
 
 .bench__chip--ok {
@@ -131,7 +145,12 @@
 }
 
 .bench-barrow {
-  grid-template-columns: 3.4rem 4.6rem 1fr 5.2rem;
+  grid-template-columns: minmax(4.4rem, auto) 4.6rem 1fr 5.2rem;
+}
+
+.bench-barrow .m5-barrow__lab {
+  display: inline-flex;
+  align-items: center;
 }
 
 .bench-barrow__scale {
@@ -170,6 +189,8 @@
 
 .bench__ina h2 {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 @media (max-width: 640px) {
@@ -263,7 +284,7 @@
 
 .bench-dock__tabs {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   min-height: var(--bench-dock-tabs-h);
   padding: 0 0.25rem 0 0.15rem;
   background: #101820;
@@ -275,6 +296,7 @@
 }
 
 .bench-dock__tab {
+  align-self: stretch;
   min-height: 0;
   padding: 0 0.75rem;
   border: 0;
@@ -347,10 +369,17 @@
 }
 
 .bench-sb__lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   color: #6d7c8d;
   font-size: 0.62rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.bench-sb__lab .ui-help {
+  margin-left: 0.12rem;
 }
 
 .bench-sb__body {
@@ -464,6 +493,8 @@
 .m5-topo-mini__head h2 {
   margin: 0;
   font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .m5-topo-mini__count {

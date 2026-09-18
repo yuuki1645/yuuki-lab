@@ -5,6 +5,7 @@
  * 「いまボードと何が繋がっていて、何が動いていて、どこが壊れているか」だけを載せる。
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import { at } from "@/features/m5-telemetry/m5Widgets";
 import { MAG_LABEL, type M5Control, type M5Frame, type M5Status } from "@/features/m5-telemetry/types";
 import type { M5WsStatus } from "@/features/m5-telemetry/useM5TelemetryStream";
@@ -111,17 +112,26 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
 
   return (
     <footer className="bench-sb" aria-label="机上ラボ ステータス">
-      <Cell label="ブリッジ">
+      <Cell
+        label="ブリッジ"
+        help="Hub と lab_debug.py の Socket.IO（既定 :8794）です。ブラウザは ATOM の COM を直接開きません。ここが切れていると、ボードが動いていても画面の値は止まります。"
+      >
         <Dot tone={linked ? "ok" : "bad"} pulse={linked} />
         <b>{linked ? "接続" : wsStatus === "connecting" ? "接続中" : "切断"}</b>
       </Cell>
 
-      <Cell label="ATOM">
+      <Cell
+        label="ATOM"
+        help="Python が掴んでいる仮想 COM です。未接続ならボードの電源・データ線のあるケーブル・lab_debug.py が起動しているかを見てください。COM は 1 プロセス専有です。"
+      >
         <Dot tone={atomOk ? "ok" : "bad"} />
         <b>{atomOk ? status?.name || status?.port || "接続" : "未接続"}</b>
       </Cell>
 
-      <Cell label="USB">
+      <Cell
+        label="USB"
+        help="HELLO で届くプロトコル番号です。関節の有効マスクは ver 13 以上、いまの正本は 14 です。「要更新」ならファームと Python の FW_VER を揃えて焼き直してください。"
+      >
         <Dot tone={!atomOk ? "idle" : fwOk ? "ok" : fwVer != null ? "warn" : "idle"} />
         <b className={"bench-sb__val" + (atomOk && fwVer != null && !fwOk ? " bench-sb__hot" : "")}>
           {fwVer != null ? `ver ${fwVer}` : "—"}
@@ -131,28 +141,43 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
         </span>
       </Cell>
 
-      <Cell label="モード">
+      <Cell
+        label="モード"
+        help="Lab は机上用で、PWM は明示するまで出ません。Robot は全軸オンで 135° に保持します。机では Lab に戻してください。rt_monitor.py は開くだけで Robot になります。"
+      >
         <b className={isRobot ? "bench-sb__hot" : "bench-sb__cool"}>{status?.mode || "—"}</b>
       </Cell>
 
-      <Cell label="PWM">
+      <Cell
+        label="PWM"
+        help="選択中の軸にパルスが出ているかです。右の「出力」は out_mask でオンの軸です。プロファイルで無効にした軸には出ません。黄色の点はどこかの軸が動いている印です。"
+      >
         <Dot tone={anyPwm ? "warn" : "idle"} pulse={anyPwm} />
         <b className={pwmOn ? "bench-sb__hot" : ""}>{pwmOn ? `ch${ch} ON` : "OFF"}</b>
         <span className="bench-sb__sub">出力 {outList(control)}</span>
       </Cell>
 
-      <Cell label={`ch${ch} 指令`}>
+      <Cell
+        label={`ch${ch} 指令`}
+        help="ファームへ送っている指令角です。下の「補正」は校正マップを通したあとの角で、マップが無いときは指令と同じか欠測です。机上ラボは 40〜230° を通します。"
+      >
         <b className="bench-sb__val">{num(at(control?.cmd, ch), 1, "°")}</b>
         <span className="bench-sb__sub">補正 {num(at(frame?.corr, ch), 1, "°")}</span>
       </Cell>
 
-      <Cell label="AS5600">
+      <Cell
+        label="AS5600"
+        help="エンコーダの生角（0〜360°）と磁石 STATUS です。なし・遠い・弱いときは磁石の向きと隙間を見てください。関節が無効、または経路のアドレスが 0 なら読みに行きません。"
+      >
         <Dot tone={encOk ? "ok" : "idle"} />
         <b className="bench-sb__val">{num(at(frame?.raw, ch), 1, "°")}</b>
         <span className="bench-sb__sub">{MAG_LABEL[magCode] ?? String(magCode)}</span>
       </Cell>
 
-      <Cell label="電源">
+      <Cell
+        label="電源"
+        help="この軸に割り当てた INA226 の電圧・電流・電力です。欠測は未配線か、有効オフか、割当が「なし」です。約 8 A を超えるとファームが全 PWM を止めます。"
+      >
         <Dot tone={inaOk ? "ok" : "idle"} />
         <b className="bench-sb__val">{num(at(frame?.volt, ch), 2, "V")}</b>
         <span className="bench-sb__sub">
@@ -160,14 +185,20 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
         </span>
       </Cell>
 
-      <Cell label="周期">
+      <Cell
+        label="周期"
+        help="制御ループの周期です。20 Hz なら約 50 ms。loop が period に近づくと overrun します。自動 SCAN や欠測デバイスのリトライで伸びます。"
+      >
         <b className="bench-sb__val">{ms(frame?.period_us)}</b>
         <span className="bench-sb__sub">
           loop {ms(frame?.loop_us)} / {fps ? `${fps.toFixed(1)}Hz` : "—Hz"}
         </span>
       </Cell>
 
-      <Cell label="I2C err">
+      <Cell
+        label="I2C err"
+        help="ボード起動からの I2C 失敗累計です。+N/s が赤いときは、有効なのに応答しないデバイスを毎周期叩いています。机ならプロファイルでその軸を無効にしてください。"
+      >
         <Dot tone={i2cPerSec > 0 ? "bad" : "ok"} pulse={i2cPerSec > 0} />
         <b className={"bench-sb__val" + (i2cPerSec > 0 ? " bench-sb__hot" : "")}>
           {frame ? frame.i2c_err : "—"}
@@ -175,7 +206,10 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
         <span className="bench-sb__sub">{i2cPerSec > 0 ? `+${i2cPerSec.toFixed(0)}/s` : "増加なし"}</span>
       </Cell>
 
-      <Cell label="8Servos">
+      <Cell
+        label="8Servos"
+        help="Grove 直結の Unit 8Servos（既定 0x25）です。なしなら PWM は出せません。seq はテレメトリの連番。overrun は 20 Hz 周期を超過した印です。"
+      >
         <Dot tone={frame?.servo_ok ? "ok" : "bad"} />
         <b>{frame?.servo_ok ? "OK" : "なし"}</b>
         <span className="bench-sb__sub">{frame?.overrun ? "overrun" : `seq ${frame?.seq ?? "—"}`}</span>
@@ -184,10 +218,15 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
   );
 }
 
-function Cell({ label, children }: { label: string; children: ReactNode }) {
+function Cell({ label, help, children }: { label: string; help: string; children: ReactNode }) {
   return (
     <div className="bench-sb__cell">
-      <span className="bench-sb__lab">{label}</span>
+      <span className="bench-sb__lab">
+        {label}
+        <UiHelp title={label} placement="top" size="sm" wide>
+          {help}
+        </UiHelp>
+      </span>
       <span className="bench-sb__body">{children}</span>
     </div>
   );

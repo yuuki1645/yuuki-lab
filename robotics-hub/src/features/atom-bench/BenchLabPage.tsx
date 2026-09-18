@@ -25,6 +25,7 @@ import {
   type M5HistoryPoint,
   type M5Route,
 } from "@/features/m5-telemetry/types";
+import { UiHelp } from "@/shared/components/UiHelp";
 import { BenchServoBars } from "./BenchServoBars";
 import { BenchStatusBar } from "./BenchStatusBar";
 import { BenchDock } from "./BenchDock";
@@ -147,7 +148,12 @@ export default function BenchLabPage() {
     >
       <header className="m5__header">
         <div className="m5__header-title">
-          <h1>ATOM 机上ラボ</h1>
+          <h1>
+            ATOM 机上ラボ
+            <UiHelp title="机上ラボ" wide>
+              机の上の ATOM とサーボ 1 本向けです。機体用の実機テレメトリと同じ lab_debug.py に繋ぐので、ファームの焼き分けは不要です。違いは Lab モードを保ち、1 軸だけ触ることです。詳しい層の話は「ATOM 手帳」にあります。
+            </UiHelp>
+          </h1>
           <button type="button" className="m5__manual-btn" onClick={() => manual.openTo("map")}>
             ATOM 手帳
           </button>
@@ -174,6 +180,9 @@ export default function BenchLabPage() {
       ) : null}
 
       <div className="m5__toolbar">
+        <UiHelp title="操作" wide>
+          全停止は全軸の PWM を切ります。Lab に戻すは Robot のときだけ使います。スキャンは今刺さっている I2C を一度読みます。自動 SCAN は毎周期近く走るので overrun の原因になります。Identify は本体 LED を虹色にします。再接続は Hub と Python の Socket.IO です（COM の抜き差しではありません）。
+        </UiHelp>
         <button type="button" className="m5__btn m5__btn--danger" onClick={() => send({ op: "hold" })}>
           全停止
         </button>
@@ -207,6 +216,9 @@ export default function BenchLabPage() {
       <div className="bench__target">
         <label className="bench__target-lab">
           対象サーボ
+          <UiHelp title="対象サーボ">
+            この画面が触る論理関節です。8Servos の物理 ch はプロファイルの経路で決まります。机上では ch0 が典型です。
+          </UiHelp>
           <select value={ch} onChange={(e) => setCh(Number(e.target.value))}>
             {Array.from({ length: M5_JOINTS }, (_, i) => (
               <option key={i} value={i}>
@@ -223,13 +235,27 @@ export default function BenchLabPage() {
         </span>
         <span className={"bench__chip" + (routes[ch]?.enabled === false ? " bench__chip--bad" : " bench__chip--ok")}>
           {routes[ch]?.enabled === false ? "関節 無効" : "関節 有効"}
+          <UiHelp title="関節の有効" placement="bottom">
+            経路（アドレス）は残したまま、20 Hz の I2C と PWM から外すスイッチです。PWM の ON/OFF とは別です。変更はプロファイルタブで「ボードへ送信」するまでフラッシュに残りません。
+          </UiHelp>
         </span>
         <span className={"bench__chip" + (encOk ? " bench__chip--ok" : "")}>
           磁石 {MAG_LABEL[magCode] ?? String(magCode)}
+          <UiHelp title="磁石 STATUS">
+            AS5600 が見ている磁石の状態です。なし・遠い・弱いときはホルダの向きと隙間を見てください。関節が無効だと読みに行きません。
+          </UiHelp>
         </span>
-        <span className="bench__chip">AGC {at(frame?.agc, ch) === 255 ? "—" : (at(frame?.agc, ch) ?? "—")}</span>
+        <span className="bench__chip">
+          AGC {at(frame?.agc, ch) === 255 ? "—" : (at(frame?.agc, ch) ?? "—")}
+          <UiHelp title="AGC">
+            AS5600 の自動ゲインです。255 は未読。極端に高い・低いときは磁石が遠すぎるか近すぎます。
+          </UiHelp>
+        </span>
         <span className={"bench__chip" + (mapOk ? " bench__chip--ok" : "")}>
           マップ {mapOk ? "あり" : "なし"}
+          <UiHelp title="校正マップ">
+            NVS の cal に、この軸の unwrap→指令 の対応があるかです。ないと補正角は作れません。校正タブで掃引して作ります。
+          </UiHelp>
         </span>
       </div>
 
@@ -246,6 +272,9 @@ export default function BenchLabPage() {
             {t.label}
           </button>
         ))}
+        <UiHelp title="タブ" wide>
+          サーボは机上の 1 軸操作、校正は PC 掃引、プロファイルは経路と有効マスク、NVS はフラッシュの実キーです。タブは URL の ?tab= に残るので、再読み込みしても同じページに戻れます。
+        </UiHelp>
       </div>
 
       {/* トポロジはどのタブでも見えるよう左に常設し、右カラムだけタブで切り替える */}
@@ -258,6 +287,9 @@ export default function BenchLabPage() {
           {tab === "servo" ? (
             <section className="m5__section bench__servo">
               <div className="m5__toolbar">
+                <UiHelp title="PWM と指令" wide>
+                  PWM を入れないと角度は出ません。プリセットは 40〜230° の安全域です。ランダム動作は PC 側の共通レンジ（既定 100〜170°）で動くので、机上のフル可動域とは違います。指令バーはつまみだけドラッグできます。
+                </UiHelp>
                 <button
                   type="button"
                   className={"m5__btn" + (pwmOn ? " m5__btn--on" : "")}
@@ -292,7 +324,12 @@ export default function BenchLabPage() {
               </p>
 
               <div className="bench__bar-togs" role="group" aria-label="バー表示項目">
-                <span className="m5-leg__plot-togs-lab">バー</span>
+                <span className="m5-leg__plot-togs-lab">
+                  バー
+                  <UiHelp title="バー">
+                    指令は 40〜230° の可動域、生角と unwrap は AS5600 の 0〜360° です。校正では生角が主役なので、必要なときだけ unwrap を足してください。
+                  </UiHelp>
+                </span>
                 <button
                   type="button"
                   className={"m5-plot-tog" + (showRaw ? " m5-plot-tog--on" : "")}
@@ -331,7 +368,12 @@ export default function BenchLabPage() {
               />
 
               <div className="bench__plot-togs" role="group" aria-label="グラフ表示項目">
-                <span className="m5-leg__plot-togs-lab">グラフ</span>
+                <span className="m5-leg__plot-togs-lab">
+                  グラフ
+                  <UiHelp title="グラフ">
+                    直近の履歴を折線にします。角度は 0〜360° 軸、電源は自動スケールです。色はバーと同じです。
+                  </UiHelp>
+                </span>
                 {BENCH_PLOT_ITEMS.map((item) => {
                   const on = plotOn[item.key];
                   return (
@@ -362,6 +404,9 @@ export default function BenchLabPage() {
                 AS5600 と組んだマップを NVS の <code>cal</code> に書きます。周囲を空けてから実行してください。
               </p>
               <div className="m5__toolbar">
+                <UiHelp title="校正" wide>
+                  PC が PWM を握って 40→230→40° を 1° 刻みで掃引し、できたマップを NVS の cal に書きます。AS5600 が読めていないと点は溜まりません。JSON の保存は lab_debug.py 側です。マップ取得はボードからチャンクで吸い上げます（この間テレメトリは止まります）。
+                </UiHelp>
                 <span className="m5__meta">対象 ch{ch}</span>
                 <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd} onClick={startCal}>
                   校正開始
@@ -446,7 +491,12 @@ function InaPanel({
   return (
     <article className="m5__card bench__ina">
       <div className="m5__card-head">
-        <h2>電源（INA226）</h2>
+        <h2>
+          電源（INA226）
+          <UiHelp title="INA226">
+            この軸の電流センサです。割当はプロファイルの ina_hub / ch / addr で、ここから仮に変えられます。ボードへ送信するまでフラッシュには残りません。欠測のまま有効だと I2C エラーが増えます。
+          </UiHelp>
+        </h2>
         <label className="m5__ina">
           割当
           <select

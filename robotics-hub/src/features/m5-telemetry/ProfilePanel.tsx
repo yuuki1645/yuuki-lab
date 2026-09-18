@@ -8,6 +8,7 @@
  * 20 Hz の I2C と PWM から外す（机上で未配線の軸を切る用）。
  */
 import { useState } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import {
   emptyFoot,
   emptyRoute,
@@ -81,6 +82,9 @@ export function ProfilePanel({
   return (
     <section className="m5__section">
       <div className="m5__toolbar">
+        <UiHelp title="プロファイル" wide>
+          経路（アドレス）と有効は別です。有効を外しても hub/addr は残ります。ボードへ送信するまで ATOM の RAM と NVS には入りません。ver 13 未満はマスクを落とします。ボードから取得は RAM 上のいまの値で、フラッシュの確認は NVS タブの en を見てください。
+        </UiHelp>
         <button
           type="button"
           className="m5__btn"
@@ -140,7 +144,12 @@ export function ProfilePanel({
         <table className="m5__table">
           <thead>
             <tr>
-              <th>有効</th>
+              <th>
+                有効
+                <UiHelp title="有効" size="sm">
+                  この軸の AS5600・INA・PWM を 20 Hz から外します。アドレスは消しません。机上で未配線の軸を切る用です。
+                </UiHelp>
+              </th>
               <th>関節</th>
               <th>enc_hub</th>
               <th>enc_ch</th>
@@ -201,6 +210,9 @@ export function ProfilePanel({
             aria-label="右足スレーブを有効"
           />
           有効
+          <UiHelp title="右足の有効" size="sm">
+            経路は残したまま、20 Hz の足圧読みだけ止めます。
+          </UiHelp>
         </label>
         <p className="m5__meta">
           右足スレーブ（ATOM S3 Lite / DF9-40）。経路は残したまま、無効にすると 20 Hz の読みを止めます。

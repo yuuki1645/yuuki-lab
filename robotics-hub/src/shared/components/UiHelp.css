@@ -1,0 +1,85 @@
+/* 丸に「?」の解説。ポップアップ本体は portal なのでここではボタンだけ整える。 */
+
+.ui-help {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  flex: 0 0 auto;
+  margin-left: 0.28rem;
+}
+
+.ui-help__btn {
+  box-sizing: border-box;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 155, 176, 0.55);
+  background: rgba(16, 24, 32, 0.35);
+  color: #8b9bb0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+.ui-help__btn--sm {
+  width: 0.92rem;
+  height: 0.92rem;
+  font-size: 0.64rem;
+}
+
+.ui-help__btn:hover,
+.ui-help__btn:focus-visible,
+.ui-help--open .ui-help__btn {
+  border-color: #54a0ff;
+  color: #d6e8ff;
+  background: rgba(84, 160, 255, 0.18);
+  outline: none;
+}
+
+.ui-help__pop {
+  position: fixed;
+  z-index: 200;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 1rem));
+  padding: 0.5rem 0.7rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(84, 160, 255, 0.38);
+  background: #151e28;
+  color: #e8eef4;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.ui-help__pop--wide {
+  max-width: min(28rem, calc(100vw - 1rem));
+}
+
+.ui-help__pop strong {
+  display: block;
+  margin: 0 0 0.22rem;
+  color: #7eb6ff;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ui-help__body {
+  color: #d5deea;
+}
+
+.ui-help__body p {
+  margin: 0 0 0.35rem;
+}
+
+.ui-help__body p:last-child {
+  margin-bottom: 0;
+}

@@ -5,6 +5,7 @@
  * ログ領域が出る。上端ドラッグで高さを変える。今後タブを足せるよう id だけ先に置く。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import { EventsLog } from "@/features/m5-telemetry/EventsLog";
 
 /** 今後ここへタブを足す。content が無いものは空プレースホルダ */
@@ -120,6 +121,9 @@ export function BenchDock({ events, eventHeadSeq, eventTailSeq, onLayout }: Prop
             {t.label}
           </button>
         ))}
+        <UiHelp title="下部パネル" placement="top" wide>
+          イベントは lab_debug.py が溜めたログです。新しい行が下、最大 5000 行です。上にスクロールすると追従を止めます。出力とデバッグは予約枠です。上端をドラッグすると高さを変えられます。
+        </UiHelp>
         <span className="bench-dock__tabs-sp" />
         {open ? (
           <button

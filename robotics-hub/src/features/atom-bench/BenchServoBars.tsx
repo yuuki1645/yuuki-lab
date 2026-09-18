@@ -6,6 +6,7 @@
  * AS5600 が付いていない単体テストでは、指令バーだけが生きる。
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import { BENCH_MAX_DEG, BENCH_MIN_DEG, BENCH_BAR } from "./benchConst";
 
 /** つまみからの許容距離（px）。トラックの空きをタップしても指令しない */
@@ -123,7 +124,13 @@ export function BenchServoBars({
       </header>
 
       <div className="m5-jrow__bars">
-        <BarRow label="指令" value={fmtDeg(shownCmd)} color={BENCH_BAR.cmd} scale="40〜230°">
+        <BarRow
+          label="指令"
+          help="ファームへ送る目標角です。つまみだけドラッグできます。PWM がオフのときは動きません。範囲は 40〜230° です。"
+          value={fmtDeg(shownCmd)}
+          color={BENCH_BAR.cmd}
+          scale="40〜230°"
+        >
           <div
             ref={trackRef}
             className={"m5-bar m5-bar--cmd" + (disabled ? " m5-bar--off" : "")}
@@ -156,7 +163,13 @@ export function BenchServoBars({
         </BarRow>
 
         {showRaw ? (
-          <BarRow label="生角" value={fmtDeg(rawVal)} color={BENCH_BAR.raw} scale="0〜360°">
+          <BarRow
+            label="生角"
+            help="AS5600 の 0〜360° 読みです。磁石が回ったままの値で、サーボ指令の 40〜230° とは原点もスケールも違います。"
+            value={fmtDeg(rawVal)}
+            color={BENCH_BAR.raw}
+            scale="0〜360°"
+          >
             <div className={"m5-bar" + (encOk ? "" : " m5-bar--off")}>
               <i
                 className="m5-bar__fill bench-bar__fill--raw"
@@ -167,7 +180,13 @@ export function BenchServoBars({
         ) : null}
 
         {showUnwrap ? (
-          <BarRow label="unwrap" value={fmtDeg(unwrapVal)} color={BENCH_BAR.unwrap} scale="0〜360°">
+          <BarRow
+            label="unwrap"
+            help="生角の飛びをほどいた連続角です。校正マップの入力側です。表示は必要なときだけオンにしてください。"
+            value={fmtDeg(unwrapVal)}
+            color={BENCH_BAR.unwrap}
+            scale="0〜360°"
+          >
             <div className={"m5-bar" + (encOk ? "" : " m5-bar--off")}>
               <i
                 className="m5-bar__fill bench-bar__fill--unwrap"
@@ -177,7 +196,13 @@ export function BenchServoBars({
           </BarRow>
         ) : null}
 
-        <BarRow label="ズレ" value={fmtSigned(err)} color={BENCH_BAR.err} scale="指令−補正">
+        <BarRow
+          label="ズレ"
+          help="補正角 − 指令角です。マップがあれば、いまの追従誤差に近い値になります。センサが無いときは空です。"
+          value={fmtSigned(err)}
+          color={BENCH_BAR.err}
+          scale="指令−補正"
+        >
           <div className={"m5-bar m5-bar--err" + (encOk ? "" : " m5-bar--off")}>
             {corrVal != null ? (
               <i
@@ -191,7 +216,13 @@ export function BenchServoBars({
           </div>
         </BarRow>
 
-        <BarRow label="補正" value={fmtDeg(corrVal)} color={BENCH_BAR.corr} scale="40〜230°">
+        <BarRow
+          label="補正"
+          help="校正マップで unwrap を指令角に直した値です。マップが無い、または AS5600 が読めないと出ません。"
+          value={fmtDeg(corrVal)}
+          color={BENCH_BAR.corr}
+          scale="40〜230°"
+        >
           <div className={"m5-bar" + (encOk ? "" : " m5-bar--off")}>
             <i
               className="m5-bar__fill m5-bar__fill--hatch-corr"
@@ -206,12 +237,14 @@ export function BenchServoBars({
 
 function BarRow({
   label,
+  help,
   value,
   color,
   scale,
   children,
 }: {
   label: string;
+  help: string;
   value: string;
   color: string;
   /** バーの目盛りの意味。指令系と AS5600 系で範囲が違うので明示する */
@@ -222,6 +255,9 @@ function BarRow({
     <div className="m5-barrow bench-barrow">
       <span className="m5-barrow__lab" style={{ color }}>
         {label}
+        <UiHelp title={label} size="sm">
+          {help}
+        </UiHelp>
       </span>
       <span className="m5-barrow__val" style={{ color }}>
         {value}

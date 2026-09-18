@@ -5,6 +5,7 @@
  * ノードだけを木にするので、机上で挿抜しても表示が追従する。
  */
 import { useState } from "react";
+import { UiHelp } from "@/shared/components/UiHelp";
 import { buildTopoTree, type TopoItem } from "./topoTree";
 import { magColor } from "./m5Widgets";
 import { KIND_META, M5_JOINTS, kindMeta, type M5Cmd, type M5Scan } from "./types";
@@ -30,7 +31,12 @@ export function TopologyPanel({
     return (
       <section className="m5__section m5-topo-mini">
         <header className="m5-topo-mini__head">
-          <h2>トポロジ</h2>
+          <h2>
+            トポロジ
+            <UiHelp title="トポロジ" wide>
+              SCAN で実際に応答した I2C デバイスだけが出ます。プロファイルの既定配線そのものではありません。スキャンは今刺さっている相手、1回読むは選んだノードをその場で PROBE します。
+            </UiHelp>
+          </h2>
           <span className="m5-topo-mini__count">{scan?.nodes?.length ?? 0} ノード</span>
         </header>
         <div className="m5-topo-mini__acts">
@@ -79,6 +85,9 @@ export function TopologyPanel({
   return (
     <section className="m5__section">
       <div className="m5__toolbar">
+        <UiHelp title="トポロジ" wide>
+          SCAN で実際に応答した I2C デバイスだけが出ます。プロファイルの既定配線そのものではありません。
+        </UiHelp>
         <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "scan" })}>
           スキャン
         </button>

@@ -40,12 +40,30 @@ from .lab_model import (
     describe_i2c_fails,
     foot_from_bin,
     frame_from_telem,
+    joint_en_mask,
     route_from_bin,
     scan_node_from_bin,
 )
 
 # 同じ欠測が続くときは、この間隔で 1 行にまとめる（毎フレームの累計連打を止める）
 _I2C_NOTE_S = 2.0
+
+
+def _hello_fw_ver(text: str) -> int:
+    """HELLO `rt-usb ver=11 lab ...` から USB プロトコル版を取る。取れなければ 0。"""
+    marker = "ver="
+    i = text.find(marker)
+    if i < 0:
+        return 0
+    digits = []
+    for ch in text[i + len(marker) :]:
+        if ch.isdigit():
+            digits.append(ch)
+        else:
+            break
+    if not digits:
+        return 0
+    return int("".join(digits))
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -298,6 +316,7 @@ class AtomSession:
         self.q: queue.Queue = queue.Queue()
         self.connected = False
         self.hello = ""
+        self.fw_ver = 0
         self.mode = "lab"
         self.out_mask = 0
         self.nodes: list[ScanNode] = []
@@ -368,6 +387,7 @@ class AtomSession:
         self._startup_overrun = False
         self._startup_overcurrent = False
         self._i2c_err_at_hello = None
+        self.fw_ver = 0
         self.amp_tripped = False
         self._i2c_fail_sig = ()
         self._i2c_note_at = 0.0
@@ -421,6 +441,7 @@ class AtomSession:
             self._green_sound_failed = True
         elif kind == "hello":
             self.hello = str(payload)
+            self.fw_ver = _hello_fw_ver(self.hello)
             self.note(str(payload))
             self._got_hello = True
             if not self._boot_sound_played:
@@ -474,7 +495,10 @@ class AtomSession:
                 self.routes = merged
                 if isinstance(foot, FootRoute):
                     self.foot = foot
-                self.note(f"プロファイル受信  {len(routes)} 軸")
+                jen = joint_en_mask(self.routes)
+                fen = int(bool(self.foot.enabled))
+                extra = "" if has_en else " マスク無し"
+                self.note(f"プロファイル受信  {len(routes)} 軸  jen=0x{jen:02X} fen={fen}{extra}")
             else:
                 self.note("プロファイル不完全")
         elif kind == "nvs_begin":

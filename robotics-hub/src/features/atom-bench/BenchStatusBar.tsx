@@ -77,11 +77,30 @@ function outList(control: M5Control | null): string {
   return on.length ? on.map((i) => `ch${i}`).join(" ") : "なし";
 }
 
+/**
+ * 有効マスク付き PUT が入った版。これ未満は経路だけ送り、無効化がボードに残らない。
+ * atom-rt の kUsbFwVer / FW_VER と揃える。
+ */
+const USB_FW_EN_MASK = 11;
+
+/** HELLO `rt-usb ver=11 lab ...` または status.fw_ver */
+function usbFwVer(status: M5Status | null): number | null {
+  const n = status?.fw_ver;
+  if (typeof n === "number" && n > 0) return n;
+  const m = /ver=(\d+)/.exec(status?.hello ?? "");
+  if (!m) return null;
+  const v = Number(m[1]);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) {
   const { fps, i2cPerSec } = useRates(frame);
 
   const linked = wsStatus === "connected";
   const atomOk = Boolean(status?.connected);
+  // 切断後に残った HELLO 文字列で版を出し続けない
+  const fwVer = atomOk ? usbFwVer(status) : null;
+  const fwOk = fwVer != null && fwVer >= USB_FW_EN_MASK;
   const isRobot = status?.mode === "robot";
   const pwmOn = Boolean(at(control?.out, ch));
   const encOk = Boolean(at(frame?.as_ok, ch));
@@ -99,6 +118,16 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
       <Cell label="ATOM">
         <Dot tone={atomOk ? "ok" : "bad"} />
         <b>{atomOk ? status?.name || status?.port || "接続" : "未接続"}</b>
+      </Cell>
+
+      <Cell label="USB">
+        <Dot tone={!atomOk ? "idle" : fwOk ? "ok" : fwVer != null ? "warn" : "idle"} />
+        <b className={"bench-sb__val" + (atomOk && fwVer != null && !fwOk ? " bench-sb__hot" : "")}>
+          {fwVer != null ? `ver ${fwVer}` : "—"}
+        </b>
+        <span className="bench-sb__sub">
+          {!atomOk ? "未接続" : fwVer == null ? "未受信" : fwOk ? "rt-usb" : "要更新"}
+        </span>
       </Cell>
 
       <Cell label="モード">

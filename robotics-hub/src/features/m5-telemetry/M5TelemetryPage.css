@@ -174,6 +174,11 @@
   border-color: #54a0ff;
 }
 
+/* プロファイルをタブ外でもマウントしたままにする */
+.m5 > [hidden] {
+  display: none !important;
+}
+
 .m5__panels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

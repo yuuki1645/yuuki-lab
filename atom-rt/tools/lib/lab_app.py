@@ -468,6 +468,7 @@ class LabApp(tk.Tk):
             "port": s.port if s else "",
             "name": (s.name or s.port) if s else "",
             "hello": s.hello if s else "",
+            "fw_ver": int(getattr(s, "fw_ver", 0) or 0) if s else 0,
             "mode": s.mode if s else self.mode_var.get(),
             "bridge_port": 8794,
         }
@@ -2281,18 +2282,20 @@ class LabApp(tk.Tk):
         s.routes = routes
         if foot is not None:
             s.foot = foot
+        jen = joint_en_mask(routes)
+        fen = int(bool(s.foot.enabled))
         s.send(
             proto.cmd_prof_put(
                 [route_tuple(r) for r in routes],
                 foot_tuple(s.foot),
-                joint_en=joint_en_mask(routes),
-                foot_en=int(bool(s.foot.enabled)),
+                joint_en=jen,
+                foot_en=fen,
             )
         )
         self._fill_prof_form(s.routes, s.foot)
         self._ina_ui_sig = None
         self._refresh_ina_combos(s)
-        s.note(note)
+        s.note(f"{note}  jen=0x{jen:02X} fen={fen}")
 
     def _assign_ina_from_tree(self) -> None:
         """トポロジで選んだ INA226 を指定関節の電源監視にする。"""

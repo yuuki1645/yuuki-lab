@@ -26,6 +26,8 @@ export type M5Status = {
   port: string;
   name: string;
   hello: string;
+  /** ATOM USB プロトコル版。HELLO の ver=。0 / 未指定は未受信 */
+  fw_ver?: number;
   mode: string;
   bridge_port: number;
 };

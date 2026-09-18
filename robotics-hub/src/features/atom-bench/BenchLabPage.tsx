@@ -358,7 +358,10 @@ export default function BenchLabPage() {
             </section>
           ) : null}
 
-          {tab === "profile" ? <ProfilePanel profile={profile} canCmd={canCmd} send={send} /> : null}
+          {/* タブを外しても下書き（有効チェック）を残す */}
+          <div hidden={tab !== "profile"}>
+            <ProfilePanel profile={profile} canCmd={canCmd} send={send} />
+          </div>
 
           {tab === "nvs" ? <NvsVault nvs={stream.nvs} canCmd={canCmd} send={send} /> : null}
 

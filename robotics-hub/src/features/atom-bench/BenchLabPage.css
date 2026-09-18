@@ -27,6 +27,11 @@
   min-width: 0;
 }
 
+/* プロファイルをタブ外でもマウントしたままにする。hidden が flex に負けないようにする */
+.bench__main > [hidden] {
+  display: none !important;
+}
+
 @media (max-width: 900px) {
   .bench__layout {
     grid-template-columns: 1fr;

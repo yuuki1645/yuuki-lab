@@ -7,7 +7,7 @@
  * 有効チェックは経路と独立。機体のアドレスはそのまま残し、無効軸は
  * 20 Hz の I2C と PWM から外す（机上で未配線の軸を切る用）。
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   emptyFoot,
   emptyRoute,
@@ -49,25 +49,8 @@ export function ProfilePanel({
   const routes = draftRoutes ?? profile?.routes ?? [];
   const foot = draftFoot ?? profile?.foot ?? emptyFoot();
 
-  // 送信直後に下書きを捨てると、まだ古い「全部有効」の profile で描画が戻る。
-  // ボード／PC のエコーが同じ有効マスクになったときだけ下書きを外す。
-  useEffect(() => {
-    if (!draftRoutes || !profile?.routes?.length) return;
-    const n = M5_JOINTS;
-    let same = true;
-    for (let i = 0; i < n; i += 1) {
-      if (isOn(draftRoutes[i]) !== isOn(profile.routes[i])) {
-        same = false;
-        break;
-      }
-    }
-    const echoFoot = profile.foot ?? emptyFoot();
-    const localFoot = draftFoot ?? echoFoot;
-    if (same && isOn(localFoot) === isOn(echoFoot)) {
-      setDraftRoutes(null);
-      setDraftFoot(null);
-    }
-  }, [profile, draftRoutes, draftFoot]);
+  // 下書きは「ボードから取得 / 既定 / SCAN」以外では捨てない。
+  // 送信エコーが古い全オンのまま来ても、チェックが勝手に戻らないようにする。
 
   const baseRoutes = (): M5Route[] => {
     const base = (

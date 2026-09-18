@@ -23,7 +23,7 @@ static constexpr uint8_t kUsbMagic0 = 0xAA;
 static constexpr uint8_t kUsbMagic1 = 0x55;
 // 8 関節×8 INA テレメトリは 302 バイト。len は uint16
 static constexpr uint16_t kUsbMaxPayload = 512;
-static constexpr uint8_t kUsbFwVer = 12;
+static constexpr uint8_t kUsbFwVer = 13;  // ProfOk は NVS の en readback 後。DTR リセットなし
 static constexpr uint8_t kUsbFrameOverhead = 7;  // magic2 + type + len2 + crc2
 static constexpr uint8_t kUsbMapChunkLen = 16;
 

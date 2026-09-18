@@ -31,7 +31,9 @@ EVT_FRAME = "m5/frame"
 EVT_CONTROL = "m5/control"
 EVT_SCAN = "m5/scan"
 EVT_PROFILE = "m5/profile"
+# 接続直後の全文は EVT_HELLO.events。以降の増分は APPEND のみ
 EVT_EVENTS = "m5/events"
+EVT_EVENTS_APPEND = "m5/events/append"
 EVT_CAL = "m5/cal"
 EVT_NVS = "m5/nvs"
 EVT_RECORD = "m5/record"
@@ -69,7 +71,8 @@ class M5HubBridge:
         self.enabled = False
         self.client_count = 0
         self._lock = threading.Lock()
-        self._emit_q: queue.Queue[tuple[str, Any]] = queue.Queue(maxsize=32)
+        # frame が高頻度。ログ追記を落とさないよう余裕を持たせる
+        self._emit_q: queue.Queue[tuple[str, Any]] = queue.Queue(maxsize=128)
         self._snapshot: Callable[[], dict[str, Any]] | None = None
         self._thread: threading.Thread | None = None
         self._socketio = None
@@ -266,23 +269,40 @@ class M5HubBridge:
         self._thread.start()
 
     def publish(self, event: str, payload: Any) -> None:
-        """最新を優先してキューに載せる。満杯なら古い frame を捨てる。"""
+        """最新を優先してキューに載せる。満杯なら古い frame / control を捨て、ログ追記は残す。"""
         if not self.enabled:
             return
         with self._lock:
             if self.client_count <= 0:
                 return
+        item = (event, payload)
         try:
-            self._emit_q.put_nowait((event, payload))
+            self._emit_q.put_nowait(item)
+            return
         except queue.Full:
+            pass
+        # テレメトリは最新1枚で足りる。イベント追記は欠けるとログが穴になる
+        kept: list[tuple[str, Any]] = []
+        dropped_live = False
+        try:
+            while True:
+                cur = self._emit_q.get_nowait()
+                if not dropped_live and cur[0] in (EVT_FRAME, EVT_CONTROL):
+                    dropped_live = True
+                    continue
+                kept.append(cur)
+        except queue.Empty:
+            pass
+        for cur in kept:
             try:
-                _ = self._emit_q.get_nowait()
-            except queue.Empty:
-                pass
-            try:
-                self._emit_q.put_nowait((event, payload))
+                self._emit_q.put_nowait(cur)
             except queue.Full:
-                pass
+                break
+        try:
+            self._emit_q.put_nowait(item)
+        except queue.Full:
+            if event == EVT_EVENTS_APPEND:
+                LOG.warning("m5/events/append dropped (emit queue full)")
 
     def _notify_clients(self, n: int) -> None:
         try:

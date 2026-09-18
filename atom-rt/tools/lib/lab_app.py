@@ -100,7 +100,7 @@ from .lab_usb import (
 from .m5_hub_bridge import (
     EVT_CAL,
     EVT_CONTROL,
-    EVT_EVENTS,
+    EVT_EVENTS_APPEND,
     EVT_FRAME,
     EVT_NVS,
     EVT_PROFILE,
@@ -147,7 +147,8 @@ class LabApp(tk.Tk):
         self._scan_job: str | None = None
         self._syncing = False
         self._tree_sig: object = None
-        self._evt_sig: object = None
+        self._evt_n = 0
+        self._evt_seq = 0
         self._plot_port: str | None = None
         self._last_cmd_t = [0.0] * JOINTS
         self._last_out_reassert = 0.0
@@ -158,7 +159,6 @@ class LabApp(tk.Tk):
         self._ipad_clients = 0
         self._robot_ctrl: list[tuple[tk.Misc, str]] = []
         self._m5_last_seq: tuple | None = None
-        self._m5_evt_sig: object = None
         self._m5_scan_sig: object = None
         self._m5_prof_sig: object = None
         self._m5_cal_sig: object = None
@@ -453,7 +453,7 @@ class LabApp(tk.Tk):
             "frame": self._m5_frame_dict(),
             "scan": self._m5_scan_dict(),
             "profile": self._m5_profile_dict(),
-            "events": self._m5_events_list(),
+            "events": self._m5_events_snapshot(),
             "cal": self._m5_cal_dict(),
             "nvs": self._m5_nvs_dict(),
             "record": self._record_store.status(),
@@ -574,11 +574,12 @@ class LabApp(tk.Tk):
             "foot_options": self._foot_option_list(s) if s else ["なし"],
         }
 
-    def _m5_events_list(self) -> list[str]:
+    def _m5_events_snapshot(self) -> dict:
+        """接続直後用。古い→新しい。以降は append だけ送る。"""
         s = self._m5_sess()
         if not s:
-            return []
-        return list(s.events)
+            return {"seq": 0, "lines": []}
+        return {"seq": int(s.event_seq), "lines": list(s.events)}
 
     def _m5_cal_dict(self) -> dict:
         s = self._m5_sess()
@@ -702,10 +703,10 @@ class LabApp(tk.Tk):
             self._m5_st_sig = st_sig
             self._m5_bridge.publish(EVT_STATUS, self._m5_status_dict())
         if s:
-            ev_sig = s.events[0] if s.events else ""
-            if ev_sig != self._m5_evt_sig:
-                self._m5_evt_sig = ev_sig
-                self._m5_bridge.publish(EVT_EVENTS, self._m5_events_list())
+            # 全文ではなく増分だけ。未接続時は publish 側が捨て、次の hello で追いつく
+            pending = s.drain_event_pending()
+            if pending:
+                self._m5_bridge.publish(EVT_EVENTS_APPEND, {"lines": pending})
             scan_sig = tuple((n.hub, n.ch, n.addr, n.kind, n.mag, n.agc) for n in s.nodes)
             if scan_sig != self._m5_scan_sig:
                 self._m5_scan_sig = scan_sig
@@ -2551,12 +2552,41 @@ class LabApp(tk.Tk):
             if ui_sig != getattr(self, "_cal_ui_sig", None):
                 self._cal_ui_sig = ui_sig
                 self._refresh_cal_labels(s)
-        sig = s.events[0] if s.events else ""
-        if sig != self._evt_sig:
-            self._evt_sig = sig
-            lines = "\n".join(s.events)
+        self._sync_evt_text(s)
+
+    def _sync_evt_text(self, s: AtomSession) -> None:
+        """Tk イベント欄。新しい行だけ末尾に足し、リングから落ちた行は先頭から消す。"""
+        n = len(s.events)
+        seq = int(s.event_seq)
+        prev_seq = self._evt_seq
+        shown = self._evt_n
+        if n == 0:
+            if shown:
+                self.evt_text.delete("1.0", "end")
+            self._evt_n = 0
+            self._evt_seq = seq
+            return
+        added_n = seq - prev_seq
+        if added_n < 0 or n < shown or added_n > n:
             self.evt_text.delete("1.0", "end")
-            self.evt_text.insert("1.0", lines)
+            self.evt_text.insert("end", "\n".join(s.events))
+            self.evt_text.see("end")
+            self._evt_n = n
+            self._evt_seq = seq
+            return
+        if added_n == 0:
+            return
+        added = list(s.events)[-added_n:]
+        dropped = shown + added_n - n
+        for _ in range(max(0, dropped)):
+            self.evt_text.delete("1.0", "2.0")
+        if shown == 0:
+            self.evt_text.insert("end", "\n".join(added))
+        else:
+            self.evt_text.insert("end", "\n" + "\n".join(added))
+        self.evt_text.see("end")
+        self._evt_n = n
+        self._evt_seq = seq
 
     def _fill_tree(self, s: AtomSession) -> None:
         sig = (s.port, tuple((n.hub, n.ch, n.addr, n.kind, n.mag, n.agc) for n in s.nodes))

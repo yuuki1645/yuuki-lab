@@ -78,10 +78,11 @@ function outList(control: M5Control | null): string {
 }
 
 /**
- * 有効マスク付き PUT が確実に NVS に残る版。これ未満は経路だけ送り、無効化がボードに残らない。
+ * NVS blob "en" を PUT 後に readback してから ProfOk を返す版。
+ * これ未満は RAM だけ変わり、抜き差しで無効化が消える。
  * atom-rt の kUsbFwVer / FW_VER と揃える。
  */
-const USB_FW_EN_MASK = 12;
+const USB_FW_EN_MASK = 13;
 
 /** HELLO `rt-usb ver=11 lab ...` または status.fw_ver */
 function usbFwVer(status: M5Status | null): number | null {

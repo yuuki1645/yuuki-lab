@@ -41,6 +41,8 @@ METRIC_VALUE_CHARS = 11
 BAUD = 115200
 # 論理関節数（ファーム kSnapJoints / usb_proto と揃える）
 JOINTS = 8
+# Hub / Tk イベントログのリング。追記配信なので 5000 でも全文転送にはしない
+EVENTS_MAX = 5000
 # 同時に出す関節パネル数。各パネルで 0〜7 を選ぶ
 JOINT_PANELS = 2
 INA_CHS = proto.INA_CHS

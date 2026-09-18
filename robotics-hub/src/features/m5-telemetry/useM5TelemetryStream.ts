@@ -1,19 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { getM5TelemetrySocketUrl } from "@/shared/constants";
-import type {
-  M5Cal,
-  M5Cmd,
-  M5Control,
-  M5Frame,
-  M5Hello,
-  M5HistoryPoint,
-  M5Nvs,
-  M5Profile,
-  M5RecordStatus,
-  M5Scan,
-  M5Status,
-} from "./types";
+import { M5_EVENTS_MAX, type M5Cal, type M5Cmd, type M5Control, type M5EventAppend, type M5EventSnapshot, type M5Frame, type M5Hello, type M5HistoryPoint, type M5Nvs, type M5Profile, type M5RecordStatus, type M5Scan, type M5Status } from "./types";
 import { frameToHistory } from "./types";
 
 export type M5WsStatus = "disconnected" | "connecting" | "connected";
@@ -27,7 +15,7 @@ function applyHello(
   setFrame: (v: M5Frame | null) => void,
   setScan: (v: M5Scan | null) => void,
   setProfile: (v: M5Profile | null) => void,
-  setEvents: (v: string[]) => void,
+  applyEventSnapshot: (snap: M5EventSnapshot | string[]) => void,
   setCal: (v: M5Cal | null) => void,
   setNvs: (v: M5Nvs | null) => void,
   historyRef: { current: M5HistoryPoint[] },
@@ -45,7 +33,7 @@ function applyHello(
   }
   if (hello.scan) setScan(hello.scan);
   if (hello.profile) setProfile(hello.profile);
-  if (hello.events) setEvents(hello.events);
+  if (hello.events) applyEventSnapshot(hello.events);
   if (hello.cal) setCal(hello.cal);
   if (hello.nvs) setNvs(hello.nvs);
 }
@@ -66,6 +54,8 @@ export type M5TelemetryStream = {
   scan: M5Scan | null;
   profile: M5Profile | null;
   events: string[];
+  eventHeadSeq: number;
+  eventTailSeq: number;
   cal: M5Cal | null;
   nvs: M5Nvs | null;
   recordStatus: M5RecordStatus | null;
@@ -87,6 +77,10 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
   const [scan, setScan] = useState<M5Scan | null>(null);
   const [profile, setProfile] = useState<M5Profile | null>(null);
   const [events, setEvents] = useState<string[]>([]);
+  const [eventHeadSeq, setEventHeadSeq] = useState(0);
+  const [eventTailSeq, setEventTailSeq] = useState(0);
+  const eventTailRef = useRef(0);
+  const eventLenRef = useRef(0);
   const [cal, setCal] = useState<M5Cal | null>(null);
   const [nvs, setNvs] = useState<M5Nvs | null>(null);
   const [recordStatus, setRecordStatus] = useState<M5RecordStatus | null>(null);
@@ -139,6 +133,30 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
       setWsStatus("disconnected");
     });
 
+    const applyEventSnapshot = (raw: M5EventSnapshot | string[]) => {
+      // 接続直後は全文。以降は m5/events/append だけ来る
+      let lines: string[] = [];
+      let seq = 0;
+      if (Array.isArray(raw)) {
+        // 旧: 新しい行が先頭。時系列に直す
+        lines = raw.slice().reverse();
+        seq = lines.length;
+      } else if (raw && Array.isArray(raw.lines)) {
+        lines = raw.lines.slice();
+        seq = Number(raw.seq) || lines.length;
+      }
+      if (lines.length > M5_EVENTS_MAX) {
+        lines = lines.slice(lines.length - M5_EVENTS_MAX);
+      }
+      setEvents(lines);
+      const tail = seq;
+      const head = lines.length ? tail - lines.length + 1 : 0;
+      setEventHeadSeq(head);
+      setEventTailSeq(tail);
+      eventTailRef.current = tail;
+      eventLenRef.current = lines.length;
+    };
+
     socket.on("m5/hello", (payload: M5Hello) => {
       applyHello(
         payload ?? {},
@@ -147,7 +165,7 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
         setFrame,
         setScan,
         setProfile,
-        setEvents,
+        applyEventSnapshot,
         setCal,
         setNvs,
         historyRef,
@@ -181,8 +199,25 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
       setProfile(payload);
     });
 
-    socket.on("m5/events", (payload: string[]) => {
-      setEvents(Array.isArray(payload) ? payload : []);
+    socket.on("m5/events", (payload: M5EventSnapshot | string[]) => {
+      applyEventSnapshot(payload);
+    });
+
+    socket.on("m5/events/append", (payload: M5EventAppend) => {
+      const batch = Array.isArray(payload?.lines) ? payload.lines : [];
+      // 再送や hello 直後の重複は seq で捨てる
+      const fresh = batch.filter((row) => Number(row.seq) > eventTailRef.current);
+      if (!fresh.length) return;
+      const tail = Number(fresh[fresh.length - 1]!.seq);
+      const nextLen = Math.min(M5_EVENTS_MAX, eventLenRef.current + fresh.length);
+      eventLenRef.current = nextLen;
+      eventTailRef.current = tail;
+      setEventTailSeq(tail);
+      setEventHeadSeq(nextLen ? tail - nextLen + 1 : 0);
+      setEvents((prev) => {
+        const next = prev.concat(fresh.map((row) => String(row.text ?? "")));
+        return next.length > M5_EVENTS_MAX ? next.slice(next.length - M5_EVENTS_MAX) : next;
+      });
     });
 
     socket.on("m5/cal", (payload: M5Cal) => {
@@ -212,6 +247,8 @@ export function useM5TelemetryStream(active: boolean): M5TelemetryStream {
     scan,
     profile,
     events,
+    eventHeadSeq,
+    eventTailSeq,
     cal,
     nvs,
     recordStatus,

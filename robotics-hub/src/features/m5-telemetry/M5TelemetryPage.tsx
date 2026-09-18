@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkline } from "./Sparkline";
 import "./M5TelemetryPage.css";
 import {
@@ -22,6 +22,7 @@ import { useM5Recording } from "./useM5Recording";
 import { useM5TelemetryStream } from "./useM5TelemetryStream";
 import FieldManual, { useFieldManual } from "./field-manual/FieldManual";
 import { NvsVault } from "./NvsVault";
+import { EventsLog } from "./EventsLog";
 
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "nvs" | "events";
 
@@ -71,6 +72,7 @@ export default function M5TelemetryPage() {
     w: false,
   });
   const [calCh, setCalCh] = useState(0);
+  const pinEvents = useRef(true);
   const manual = useFieldManual();
 
   const routes = profile?.routes ?? [];
@@ -538,7 +540,13 @@ export default function M5TelemetryPage() {
             本記録（センサ＋指令）は上のバーから開始します。保存先は ATOM 接続 PC の{" "}
             <code>atom-rt/data/recordings</code>。ライブラリで再生すると、この画面の全タブが同時刻に連動します。
           </p>
-          <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
+          <EventsLog
+            className="m5__events"
+            lines={events}
+            headSeq={stream.eventHeadSeq}
+            tailSeq={stream.eventTailSeq}
+            pinBottom={pinEvents}
+          />
         </section>
       ) : null}
 

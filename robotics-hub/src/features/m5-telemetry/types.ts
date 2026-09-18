@@ -1,6 +1,8 @@
 /** lab_debug.py の Socket.IO 中継（:8794）と揃える型。 */
 
 export const M5_JOINTS = 8;
+/** Hub / PC 共通のイベントリング。追記配信 */
+export const M5_EVENTS_MAX = 5000;
 /** 電源監視枠。論理関節と同じ 8。未割当は欠測 */
 export const M5_INA_CHS = 8;
 /** 既定プロファイルで INA を付ける軸数（PaHub 0x71 CH0/CH1） */
@@ -205,13 +207,22 @@ export type M5Nvs = {
   bytes: number;
 };
 
+export type M5EventSnapshot = {
+  seq: number;
+  lines: string[];
+};
+
+export type M5EventAppend = {
+  lines: { seq: number; text: string }[];
+};
+
 export type M5Hello = {
   status?: M5Status;
   control?: M5Control;
   frame?: M5Frame | null;
   scan?: M5Scan;
   profile?: M5Profile;
-  events?: string[];
+  events?: M5EventSnapshot | string[];
   cal?: M5Cal;
   nvs?: M5Nvs;
   record?: M5RecordStatus;

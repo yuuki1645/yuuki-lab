@@ -38,6 +38,7 @@
 #include "joint_profile.hpp"
 #include "pahub.hpp"
 #include "snapshot.hpp"
+#include "soc/rtc_cntl_reg.h"
 #include "usb_proto.hpp"
 
 // ---------------------------------------------------------------------------
@@ -213,6 +214,8 @@ static uint32_t gMapRxLastMs = 0;
 static volatile uint8_t gProfDumpReq = 0;
 /** PUT 後に USB 送信を済ませてから NVS へ書く。受信中の flash で CDC が切れないようにする */
 static volatile uint8_t gProfSaveReq = 0;
+/** 1=既定プロファイル保存。ProfOk.is_default に載せる */
+static volatile uint8_t gProfSaveIsDefault = 0;
 static JointRoute gProfRx[kJointCount];
 static FootRoute gFootRx;
 static volatile uint8_t gNvsDumpReq = 0;
@@ -370,11 +373,28 @@ static float lookupMap(int ch, float as5600Unwrapped) {
     return y;
 }
 
+/** COM 再接続の USB リセットと、フラッシュ中の TX 待ちでタスクが死ぬのを防ぐ */
+static void usbHoldRebootOff() {
+#if defined(RTC_CNTL_USB_CONF_REG) && defined(RTC_CNTL_USB_RESET_DISABLE)
+    // S3 USB-Serial-JTAG。セットすると再列挙で CPU を落とさない
+    REG_SET_BIT(RTC_CNTL_USB_CONF_REG, RTC_CNTL_USB_RESET_DISABLE);
+#endif
+    Serial.setTxTimeoutMs(80);
+}
+
+/** 開きっぱなしの Preferences を閉じてから ns を開く。begin 失敗を無視すると NVS が黙って書けない */
+static bool prefsOpen(const char* ns, bool readOnly) {
+    gPrefs.end();
+    return gPrefs.begin(ns, readOnly);
+}
+
 static void loadCalibration(int ch) {
     if (ch < 0 || ch >= kJointCount) {
         return;
     }
-    gPrefs.begin("cal", true);
+    if (!prefsOpen("cal", true)) {
+        return;
+    }
     CalMap tmp;
     memset(&tmp, 0, sizeof(tmp));
     tmp.count = gPrefs.getInt(calKey("mn", ch).c_str(), 0);
@@ -404,7 +424,9 @@ static bool saveCalibration(int ch) {
     portENTER_CRITICAL(&gMapLock);
     tmp = gCal[ch];
     portEXIT_CRITICAL(&gMapLock);
-    gPrefs.begin("cal", false);
+    if (!prefsOpen("cal", false)) {
+        return false;
+    }
     gPrefs.putBool(calKey("ok", ch).c_str(), tmp.ok);
     gPrefs.putBool(calKey("mk", ch).c_str(), tmp.ok);
     gPrefs.putInt(calKey("mn", ch).c_str(), tmp.count);
@@ -551,7 +573,16 @@ static void loadProfile() {
     fillDefaultProfile(tmp);
     FootRoute foot{};
     fillDefaultFoot(foot);
-    gPrefs.begin("jprof", true);
+    if (!prefsOpen("jprof", true)) {
+        portENTER_CRITICAL(&gProfLock);
+        copyProfile(gProf, tmp);
+        gFoot = foot;
+        gJointEn = kProfJointEnDefault;
+        gFootEn = kProfFootEnDefault;
+        portEXIT_CRITICAL(&gProfLock);
+        resetEncAlive();
+        return;
+    }
     const int n = gPrefs.getInt("n", 0);
     bool ok = (n == kJointCount);
     if (ok) {
@@ -602,12 +633,16 @@ static bool saveProfile() {
         return false;
     }
     uint8_t en[2] = {jen, static_cast<uint8_t>(fen ? 1 : 0)};
-    gPrefs.begin("jprof", false);
+    // 新規キー "en" の commit が CDC 切断で殺されないよう、先に DTR リセットを止める
+    usbHoldRebootOff();
+    if (!prefsOpen("jprof", false)) {
+        return false;
+    }
     gPrefs.putInt("n", kJointCount);
     const size_t bytes = sizeof(tmp);
     const bool wroteJoints = gPrefs.putBytes("r", tmp, bytes) == bytes;
     const bool wroteFoot = gPrefs.putBytes("foot", &foot, sizeof(foot)) == sizeof(foot);
-    // blob が正本。U8 は NVS 画面用で、同じ値の書き戻し失敗があっても blob を優先する
+    // blob が正本。U8 は画面用。blob の readback だけを成功条件にする
     const bool wroteEn = gPrefs.putBytes("en", en, sizeof(en)) == sizeof(en);
     gPrefs.putUChar("jen", jen);
     gPrefs.putUChar("fen", en[1]);
@@ -615,7 +650,9 @@ static bool saveProfile() {
     if (!wroteJoints || !wroteFoot || !wroteEn) {
         return false;
     }
-    gPrefs.begin("jprof", true);
+    if (!prefsOpen("jprof", true)) {
+        return false;
+    }
     uint8_t check[2] = {0, 0};
     const bool ok = gPrefs.getBytes("en", check, sizeof(check)) == sizeof(check) &&
                     check[0] == en[0] && check[1] == en[1];
@@ -1972,9 +2009,10 @@ static void usbDumpNvs() {
 /** cal / jprof だけ消せる。jprof は消した直後に既定を書き戻す。 */
 static void nvsEraseNamespace(const char* ns) {
     if (strcmp(ns, "cal") == 0) {
-        gPrefs.begin("cal", false);
-        gPrefs.clear();
-        gPrefs.end();
+        if (prefsOpen("cal", false)) {
+            gPrefs.clear();
+            gPrefs.end();
+        }
         portENTER_CRITICAL(&gMapLock);
         for (int i = 0; i < kJointCount; ++i) {
             memset(&gCal[i], 0, sizeof(gCal[i]));
@@ -1983,9 +2021,10 @@ static void nvsEraseNamespace(const char* ns) {
         return;
     }
     if (strcmp(ns, "jprof") == 0) {
-        gPrefs.begin("jprof", false);
-        gPrefs.clear();
-        gPrefs.end();
+        if (prefsOpen("jprof", false)) {
+            gPrefs.clear();
+            gPrefs.end();
+        }
         applyDefaultProfile();
         saveProfile();
         gProfDumpReq = 1;
@@ -2266,10 +2305,8 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         for (int i = 0; i < kInaCount; ++i) {
             gInaPresent[i] = false;
         }
-        UsbProfOk ok{};
-        ok.n = static_cast<uint8_t>(kJointCount);
-        ok.is_default = 1;
-        usbSend(kUsbProfOk, &ok, sizeof(ok));
+        // ProfOk は NVS readback 後。RAM 反映はすぐ、フラッシュ成功は後で
+        gProfSaveIsDefault = 1;
         gProfDumpReq = 1;
         gProfSaveReq = 1;
         return;
@@ -2305,10 +2342,8 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         for (int i = 0; i < kInaCount; ++i) {
             gInaPresent[i] = false;
         }
-        UsbProfOk ok{};
-        ok.n = n;
-        ok.is_default = 0;
-        usbSend(kUsbProfOk, &ok, sizeof(ok));
+        // ProfOk はフラッシュと en の readback が終わってから
+        gProfSaveIsDefault = 0;
         gProfDumpReq = 1;
         gProfSaveReq = 1;
         return;
@@ -2523,9 +2558,22 @@ static void usbTask(void* /*arg*/) {
         }
         if (gProfSaveReq) {
             gProfSaveReq = 0;
-            // CDC にダンプを吐き出してから flash。受信ハンドラ内で NVS すると切断していた
-            vTaskDelay(pdMS_TO_TICKS(20));
-            if (!saveProfile()) {
+            const uint8_t isDefault = gProfSaveIsDefault;
+            gProfSaveIsDefault = 0;
+            usbHoldRebootOff();
+            // 直前のプロファイルダンプを CDC に出し切ってから flash
+            vTaskDelay(pdMS_TO_TICKS(50));
+            const bool ok = saveProfile();
+            // フラッシュ直後は CDC が一瞬死ぬことがある。DTR リセットは切ってあるので待つ
+            vTaskDelay(pdMS_TO_TICKS(80));
+            if (ok) {
+                UsbProfOk pkt{};
+                pkt.n = static_cast<uint8_t>(kJointCount);
+                pkt.is_default = isDefault;
+                usbSend(kUsbProfOk, &pkt, sizeof(pkt));
+                usbDumpProfile();
+                usbDumpNvs();
+            } else {
                 profSendErr(kUsbReasonNvs);
             }
         }
@@ -2696,6 +2744,7 @@ static void findIna226() {
 
 void setup() {
     Serial.begin(115200);
+    usbHoldRebootOff();
     delay(400);
 
     pinMode(kPinButton, INPUT_PULLUP);

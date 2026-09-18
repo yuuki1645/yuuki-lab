@@ -5,6 +5,7 @@
  * ログ領域が出る。上端ドラッグで高さを変える。今後タブを足せるよう id だけ先に置く。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EventsLog } from "@/features/m5-telemetry/EventsLog";
 
 /** 今後ここへタブを足す。content が無いものは空プレースホルダ */
 export type BenchDockTabId = "events" | "output" | "debug";
@@ -22,11 +23,13 @@ const H_LS_KEY = "atom-bench-dock-h";
 
 type Props = {
   events: string[];
+  eventHeadSeq: number;
+  eventTailSeq: number;
   /** 開いているとき本体の高さ（px）。本文の padding 計算用 */
   onLayout: (open: boolean, heightPx: number) => void;
 };
 
-export function BenchDock({ events, onLayout }: Props) {
+export function BenchDock({ events, eventHeadSeq, eventTailSeq, onLayout }: Props) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<BenchDockTabId>("events");
   const [height, setHeight] = useState(readStoredHeight);
@@ -78,6 +81,9 @@ export function BenchDock({ events, onLayout }: Props) {
     document.body.style.userSelect = "none";
   };
 
+  /** 下端付近にいるときだけ追従。上にスクロールしたら止め、また下まで来たら再開 */
+  const pinBottom = useRef(true);
+
   const selectTab = (id: BenchDockTabId) => {
     if (open && tab === id) {
       setOpen(false);
@@ -87,26 +93,6 @@ export function BenchDock({ events, onLayout }: Props) {
     setOpen(true);
     if (id === "events") pinBottom.current = true;
   };
-
-  const logRef = useRef<HTMLPreElement>(null);
-  /** 下端付近にいるときだけ追従。上にスクロールしたら止め、また下まで来たら再開 */
-  const pinBottom = useRef(true);
-
-  const onLogScroll = () => {
-    const el = logRef.current;
-    if (!el) return;
-    pinBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
-  };
-
-  // PC は新しい行を先頭に積む。ターミナルと同じく古い→新しい（下が最新）で描く
-  const logLines = events.slice().reverse();
-
-  useEffect(() => {
-    if (!open || tab !== "events") return;
-    const el = logRef.current;
-    if (!el || !pinBottom.current) return;
-    el.scrollTop = el.scrollHeight;
-  }, [events, open, tab, height]);
 
   return (
     <div className={"bench-dock" + (open ? " bench-dock--open" : "")} aria-label="下部パネル">
@@ -150,9 +136,13 @@ export function BenchDock({ events, onLayout }: Props) {
       {open ? (
         <div className="bench-dock__body" style={{ height }}>
           {tab === "events" ? (
-            <pre className="bench-dock__log" ref={logRef} onScroll={onLogScroll}>
-              {logLines.length ? logLines.join("\n") : "（イベントなし）"}
-            </pre>
+            <EventsLog
+              className="bench-dock__log"
+              lines={events}
+              headSeq={eventHeadSeq}
+              tailSeq={eventTailSeq}
+              pinBottom={pinBottom}
+            />
           ) : (
             <EmptyTab tab={tab} />
           )}

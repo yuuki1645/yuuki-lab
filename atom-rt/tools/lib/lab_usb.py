@@ -26,6 +26,7 @@ from .lab_const import (
     BOOT_WAV,
     GREEN_FRAME_NEED,
     GREEN_WAV,
+    EVENTS_MAX,
     JOINTS,
     MAG_LABEL,
     NODES_PATH,
@@ -136,6 +137,27 @@ def save_names(names: dict[str, str]) -> None:
         pass
 
 
+def open_atom_serial(port: str) -> serial.Serial:
+    """
+    ATOM の USB-Serial-JTAG を開く。
+
+    pyserial の既定は open 時に DTR を立て、再接続のたびにリセットする。
+    NVS 書き込み中のそのリセットが `en` を消していた。
+    """
+    ser = serial.Serial()
+    ser.port = port
+    ser.baudrate = BAUD
+    ser.timeout = 0.05
+    ser.dsrdtr = False
+    ser.rtscts = False
+    ser.dtr = False
+    ser.rts = False
+    ser.open()
+    ser.dtr = False
+    ser.rts = False
+    return ser
+
+
 class AtomWorker:
     """1 台の ATOMS3 を裏スレッドで読む（バイナリフレーム）。"""
 
@@ -165,7 +187,7 @@ class AtomWorker:
 
     def _run(self) -> None:
         try:
-            ser = serial.Serial(self.port, BAUD, timeout=0.05)
+            ser = open_atom_serial(self.port)
         except serial.SerialException as exc:
             self._put("error", str(exc))
             return
@@ -334,7 +356,9 @@ class AtomSession:
         self.nvs_bytes = 0
         self.nvs_ok = False
         self._nvs_acc: list[dict[str, object]] = []
-        self.events: deque[str] = deque(maxlen=200)
+        self.events: deque[str] = deque(maxlen=EVENTS_MAX)
+        self.event_seq = 0
+        self._event_pending: list[dict[str, object]] = []
         self.history: deque[Frame] = deque(maxlen=400)
         self.flash_until = 0.0
         self.last_frame: Frame | None = None
@@ -415,8 +439,20 @@ class AtomSession:
             self.log_fp = None
 
     def note(self, text: str) -> None:
+        """時刻付き1行をリング末尾へ積む。Hub へは seq 付き追記で届ける。"""
         stamp = time.strftime("%H:%M:%S")
-        self.events.appendleft(f"{stamp}  {text}")
+        line = f"{stamp}  {text}"
+        self.event_seq += 1
+        self.events.append(line)
+        self._event_pending.append({"seq": self.event_seq, "text": line})
+
+    def drain_event_pending(self) -> list[dict[str, object]]:
+        """未送信の追記バッチを取り出す。接続前の分は hello スナップショットで補う。"""
+        pending = self._event_pending
+        if not pending:
+            return []
+        self._event_pending = []
+        return pending
 
     def pump(self) -> None:
         try:

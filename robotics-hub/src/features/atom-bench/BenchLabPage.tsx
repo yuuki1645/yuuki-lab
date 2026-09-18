@@ -51,7 +51,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export default function BenchLabPage() {
   const stream = useM5TelemetryStream(true);
-  const { status, frame, control, profile, scan, cal, events, history, send } = stream;
+  const { status, frame, control, profile, scan, cal, events, eventHeadSeq, eventTailSeq, history, send } = stream;
 
   const [tab, setTab] = useState<TabId>("servo");
   /** 下部ドック（イベント等）の本体高さ。0 ならタブ帯だけ */
@@ -382,7 +382,12 @@ export default function BenchLabPage() {
         onClose={manual.close}
       />
 
-      <BenchDock events={events} onLayout={onDockLayout} />
+      <BenchDock
+        events={events}
+        eventHeadSeq={eventHeadSeq}
+        eventTailSeq={eventTailSeq}
+        onLayout={onDockLayout}
+      />
 
       <BenchStatusBar
         wsStatus={stream.wsStatus}

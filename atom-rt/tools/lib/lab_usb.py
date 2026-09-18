@@ -37,11 +37,15 @@ from .lab_model import (
     ScanNode,
     default_foot,
     default_routes,
+    describe_i2c_fails,
     foot_from_bin,
     frame_from_telem,
     route_from_bin,
     scan_node_from_bin,
 )
+
+# 同じ欠測が続くときは、この間隔で 1 行にまとめる（毎フレームの累計連打を止める）
+_I2C_NOTE_S = 2.0
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -312,6 +316,9 @@ class AtomSession:
         self.last_frame: Frame | None = None
         self._last_ok: list[bool | None] = [None] * JOINTS
         self._last_i2c = 0
+        self._i2c_fail_sig: tuple[str, ...] = ()
+        self._i2c_note_at = 0.0
+        self._i2c_err_at_note = 0
         self.log_fp = None
         # PC 側電流監視が一度発火したら、下がるまで再発火しない
         self.amp_tripped = False
@@ -359,6 +366,9 @@ class AtomSession:
         self._startup_overcurrent = False
         self._i2c_err_at_hello = None
         self.amp_tripped = False
+        self._i2c_fail_sig = ()
+        self._i2c_note_at = 0.0
+        self._i2c_err_at_note = 0
 
     def send(self, data: bytes) -> None:
         if self.worker is not None:
@@ -543,11 +553,40 @@ class AtomSession:
                 mag = f.mag[i] if i < len(f.mag) else 255
                 self.note(f"関節{i} AS5600 欠測  mag={MAG_LABEL.get(mag, '?')}")
             self._last_ok[i] = f.as_ok[i]
-        if f.i2c_err > self._last_i2c + 4:
-            self.note(f"I2C エラー累計 {f.i2c_err}")
+        self._note_i2c(f)
         self._last_i2c = f.i2c_err
         if f.overrun:
             self.note(f"overrun seq={f.seq} loop={f.loop_us}us")
+
+    def _note_i2c(self, f: Frame) -> None:
+        """
+        i2c_err の内訳をイベントに出す。
+
+        累計だけだと机上で誰が NACK しているか分からないので、
+        プロファイル上読むべきなのに落ちている相手を列挙する。
+        相手が変わったときと、同じ相手が 2 秒以上続くときだけ書く。
+        """
+        fails = describe_i2c_fails(f, self.routes, self.foot)
+        sig = tuple(fails)
+        now = time.time()
+        changed = sig != self._i2c_fail_sig
+        grew = f.i2c_err > self._last_i2c
+        if changed:
+            if fails:
+                detail = " / ".join(fails)
+                self.note(f"I2C 欠測  {detail}")
+            elif self._i2c_fail_sig:
+                self.note("I2C 欠測なし（回復または無効化）")
+            self._i2c_fail_sig = sig
+            self._i2c_note_at = now
+            self._i2c_err_at_note = f.i2c_err
+            return
+        if fails and grew and (now - self._i2c_note_at) >= _I2C_NOTE_S:
+            n = f.i2c_err - self._i2c_err_at_note
+            detail = " / ".join(fails)
+            self.note(f"I2C 継続  +{n}  累計{f.i2c_err}  {detail}")
+            self._i2c_note_at = now
+            self._i2c_err_at_note = f.i2c_err
 
     def _startup_health_ok(self) -> tuple[bool, str]:
         """

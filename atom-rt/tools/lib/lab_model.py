@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 from . import df9_force
 from . import rt_usb_proto as proto
-from .lab_const import INA_CHS, INA_DEFAULT_ASSIGNED, JOINTS
+from .lab_const import INA_CHS, INA_DEFAULT_ASSIGNED, JOINTS, MAG_LABEL
 
 FOOT_CORNER_KEYS = ("top_left", "top_right", "bottom_right", "bottom_left")
 
@@ -246,6 +246,35 @@ def ina_label(hub: int, ch: int, addr: int) -> str:
     if hub == 0:
         return f"root  0x{addr:02X}"
     return f"{hub:02X} CH{ch}  0x{addr:02X}"
+
+
+def describe_i2c_fails(f: Frame, routes: list[JointRoute], foot: FootRoute) -> list[str]:
+    """
+    いまのフレームで、プロファイルが「読む」と言っているのに落ちている相手。
+
+    ファームの i2c_err は AS5600 / INA / 足の失敗で増える。
+    mag=255 はもう読まない軸（CommError 後の打ち切り）なので、増分の主犯からは外す。
+    """
+    fails: list[str] = []
+    n = min(JOINTS, len(routes))
+    for i in range(n):
+        r = routes[i]
+        if not r.enabled:
+            continue
+        if r.enc_addr:
+            mag = f.mag[i] if i < len(f.mag) else 255
+            as_ok = i < len(f.as_ok) and bool(f.as_ok[i])
+            # 255 はスキップ中。4 は I2C、1〜3 は磁石だがファームは欠測として i2c_err を足す
+            if not as_ok and mag != 255:
+                mag_s = MAG_LABEL.get(mag, str(mag))
+                fails.append(f"AS5600関節{i} {ina_label(r.enc_hub, r.enc_ch, r.enc_addr)} {mag_s}")
+        if r.ina_addr:
+            ina_ok = i < len(f.ina_ok) and bool(f.ina_ok[i])
+            if not ina_ok:
+                fails.append(f"INA関節{i} {ina_label(r.ina_hub, r.ina_ch, r.ina_addr)}")
+    if foot.enabled and foot.addr and not f.foot_ok:
+        fails.append(f"足 {ina_label(foot.hub, foot.ch, foot.addr)}")
+    return fails
 
 
 def parse_ina_label(text: str) -> tuple[int, int, int] | None:

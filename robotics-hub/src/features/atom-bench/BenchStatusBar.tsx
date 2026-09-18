@@ -5,7 +5,7 @@
  * 「いまボードと何が繋がっていて、何が動いていて、どこが壊れているか」だけを載せる。
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { UiHelp } from "@/shared/components/UiHelp";
+import { setHelpMarksVisible, UiHelp, useHelpMarksVisible } from "@/shared/components/UiHelp";
 import { at } from "@/features/m5-telemetry/m5Widgets";
 import { MAG_LABEL, type M5Control, type M5Frame, type M5Status } from "@/features/m5-telemetry/types";
 import type { M5WsStatus } from "@/features/m5-telemetry/useM5TelemetryStream";
@@ -112,6 +112,7 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
 
   return (
     <footer className="bench-sb" aria-label="机上ラボ ステータス">
+      <div className="bench-sb__cells">
       <Cell
         label="ブリッジ"
         help="Hub と lab_debug.py の Socket.IO（既定 :8794）です。ブラウザは ATOM の COM を直接開きません。ここが切れていると、ボードが動いていても画面の値は止まります。"
@@ -214,7 +215,29 @@ export function BenchStatusBar({ wsStatus, status, frame, control, ch }: Props) 
         <b>{frame?.servo_ok ? "OK" : "なし"}</b>
         <span className="bench-sb__sub">{frame?.overrun ? "overrun" : `seq ${frame?.seq ?? "—"}`}</span>
       </Cell>
+      </div>
+      <HelpMarksToggle />
     </footer>
+  );
+}
+
+/** 右端に固定。セルを横スクロールしても隠れない */
+function HelpMarksToggle() {
+  const on = useHelpMarksVisible();
+  return (
+    <button
+      type="button"
+      className={"bench-sb__help-tog" + (on ? " is-on" : "")}
+      aria-pressed={on}
+      aria-label={on ? "ヘルプマークを隠す" : "ヘルプマークを表示"}
+      title={on ? "解説の「?」を隠す" : "解説の「?」を出す"}
+      onClick={() => setHelpMarksVisible(!on)}
+    >
+      <span className="bench-sb__help-tog-lab">ヘルプ</span>
+      <span className="bench-sb__help-tog-mark" aria-hidden="true">
+        ?
+      </span>
+    </button>
   );
 }
 

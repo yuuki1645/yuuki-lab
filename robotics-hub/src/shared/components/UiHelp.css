@@ -83,3 +83,9 @@
 .ui-help__body p:last-child {
   margin-bottom: 0;
 }
+
+/* 切替オフ。ポータルのポップアップもまとめて消す */
+html[data-ui-help="off"] .ui-help,
+html[data-ui-help="off"] .ui-help__pop {
+  display: none !important;
+}

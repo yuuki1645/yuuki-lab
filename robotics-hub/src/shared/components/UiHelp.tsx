@@ -18,6 +18,55 @@ import "./UiHelp.css";
 
 export type UiHelpPlacement = "top" | "bottom";
 
+/** 画面の「?」をまとめて隠す。ステータスバー右の切替が書く */
+const HELP_MARKS_KEY = "ui-help-marks";
+const HELP_MARKS_EVT = "ui-help-marks";
+
+function readHelpMarksVisible(): boolean {
+  try {
+    return localStorage.getItem(HELP_MARKS_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function syncHelpMarksAttr(on: boolean) {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.uiHelp = on ? "on" : "off";
+}
+
+/** いま「?」を出すか。localStorage が無ければ出す */
+export function helpMarksVisible(): boolean {
+  return readHelpMarksVisible();
+}
+
+/** 全画面の解説マークを出す / 隠す。再読み込み後も残す */
+export function setHelpMarksVisible(on: boolean) {
+  try {
+    localStorage.setItem(HELP_MARKS_KEY, on ? "1" : "0");
+  } catch {
+    /* プライベートモードでは都度忘れる */
+  }
+  syncHelpMarksAttr(on);
+  window.dispatchEvent(new Event(HELP_MARKS_EVT));
+}
+
+/** 切替に追従する。マーク本体もこれを見てマウントを外す（開いたポップアップを残さない） */
+export function useHelpMarksVisible(): boolean {
+  const [on, setOn] = useState(readHelpMarksVisible);
+  useEffect(() => {
+    syncHelpMarksAttr(readHelpMarksVisible());
+    const apply = () => setOn(readHelpMarksVisible());
+    window.addEventListener(HELP_MARKS_EVT, apply);
+    return () => window.removeEventListener(HELP_MARKS_EVT, apply);
+  }, []);
+  return on;
+}
+
+if (typeof document !== "undefined") {
+  syncHelpMarksAttr(readHelpMarksVisible());
+}
+
 type Props = {
   /** ポップアップ先頭の短い見出し */
   title: string;
@@ -35,13 +84,14 @@ const GAP = 8;
 const VIEW_PAD = 8;
 
 export function UiHelp({ title, children, placement = "bottom", wide = false, size = "md" }: Props) {
+  const visible = useHelpMarksVisible();
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const tipId = useId();
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const open = hover || pinned;
+  const open = visible && (hover || pinned);
 
   const updatePos = useCallback(() => {
     const btn = btnRef.current;
@@ -72,6 +122,12 @@ export function UiHelp({ title, children, placement = "bottom", wide = false, si
   }, [open, updatePos, children, title]);
 
   useEffect(() => {
+    if (visible) return;
+    setHover(false);
+    setPinned(false);
+  }, [visible]);
+
+  useEffect(() => {
     if (!open) return;
     const onWin = () => updatePos();
     window.addEventListener("resize", onWin);
@@ -99,6 +155,10 @@ export function UiHelp({ title, children, placement = "bottom", wide = false, si
       document.removeEventListener("keydown", onKey);
     };
   }, [pinned]);
+
+  if (!visible) {
+    return null;
+  }
 
   return (
     <span className={"ui-help" + (open ? " ui-help--open" : "")}>

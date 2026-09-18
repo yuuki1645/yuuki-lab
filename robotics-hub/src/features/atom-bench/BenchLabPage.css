@@ -344,13 +344,22 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  overflow-x: auto;
+  overflow: hidden;
   min-height: 3.6rem;
-  padding: 0 0.2rem;
+  padding: 0;
   background: linear-gradient(180deg, rgba(16, 24, 32, 0.92), rgba(9, 13, 18, 0.98));
   border-top: 1px solid rgba(84, 160, 255, 0.28);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
+}
+
+/* セルだけ横スクロール。右のヘルプ切替は常に見える */
+.bench-sb__cells {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
   scrollbar-width: thin;
 }
 
@@ -364,8 +373,55 @@
   white-space: nowrap;
 }
 
-.bench-sb__cell:last-child {
-  border-right: 0;
+.bench-sb__help-tog {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  min-width: 2.7rem;
+  padding: 0.25rem 0.55rem;
+  border: 0;
+  border-left: 1px solid rgba(84, 160, 255, 0.32);
+  background: #0c1116;
+  color: #6d7c8d;
+  cursor: pointer;
+}
+
+.bench-sb__help-tog-lab {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.bench-sb__help-tog-mark {
+  box-sizing: border-box;
+  width: 1.15rem;
+  height: 1.15rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 155, 176, 0.45);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bench-sb__help-tog:hover,
+.bench-sb__help-tog:focus-visible {
+  color: #c5d0dc;
+  outline: none;
+}
+
+.bench-sb__help-tog.is-on {
+  color: #7eb6ff;
+}
+
+.bench-sb__help-tog.is-on .bench-sb__help-tog-mark {
+  border-color: #54a0ff;
+  color: #d6e8ff;
+  background: rgba(84, 160, 255, 0.2);
 }
 
 .bench-sb__lab {

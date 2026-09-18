@@ -21,7 +21,7 @@ export function UsbFrameStrip() {
           </div>
         ))}
       </div>
-      <figcaption>1 フレーム。マジックは CRC に入れない。テレメトリ payload は 316 バイト。</figcaption>
+      <figcaption>1 フレーム。マジックは CRC に入れない。テレメトリ payload は 316 バイト。文字ではない。</figcaption>
     </figure>
   );
 }
@@ -47,7 +47,7 @@ export function FlashMap() {
         ))}
       </div>
       <figcaption>
-        書き込みは app。校正と関節経路は NVS。幅は模式で、バイト数の正本ではない。
+        書き込みは app。校正・経路・有効マスクは NVS。幅は模式で、バイト数の正本ではない。
       </figcaption>
     </figure>
   );
@@ -58,7 +58,7 @@ export function StackStrip() {
   const layers = [
     { id: "hub", title: "Hub", sub: "ブラウザ :5173" },
     { id: "pc", title: "lab_debug.py", sub: "Socket.IO :8794" },
-    { id: "usb", title: "USB CDC", sub: "ver=10 バイナリ" },
+    { id: "usb", title: "USB CDC", sub: "ver=14 バイナリ" },
     { id: "atom", title: "ATOM", sub: "Core1 20 Hz / Core0 USB" },
     { id: "i2c", title: "Grove I2C", sub: "PaHub · 8Servos · 足" },
   ] as const;
@@ -78,6 +78,55 @@ export function StackStrip() {
   );
 }
 
+/** COM の上に何が乗っているか。地図より一段 USB に寄る。 */
+export function LayersStrip() {
+  const layers = [
+    { id: "metal", title: "金属 USB", sub: "FS 12 Mbps · パケット 64 B" },
+    { id: "com", title: "仮想 COM", sub: "バイト列。115200 は飾り" },
+    { id: "frame", title: "フレーム", sub: "AA 55 · type · CRC" },
+    { id: "daemon", title: "lab_debug.py", sub: "COM を専有して JSON へ" },
+    { id: "hub", title: "Hub", sub: "Socket.IO :8794" },
+  ] as const;
+  return (
+    <figure className="m5-manual__figure">
+      <ol className="m5-manual__stack">
+        {layers.map((l, i) => (
+          <li key={l.id} className={"m5-manual__stack-item m5-manual__stack-item--" + l.id}>
+            <span className="m5-manual__stack-idx">{String(i).padStart(2, "0")}</span>
+            <span className="m5-manual__stack-title">{l.title}</span>
+            <span className="m5-manual__stack-sub">{l.sub}</span>
+          </li>
+        ))}
+      </ol>
+      <figcaption>ブラウザは COM を開かない。文字コードはどの層にも無い。</figcaption>
+    </figure>
+  );
+}
+
+/** 同じ CDC 出口を 20 Hz と NVS ダンプが奪い合う。 */
+export function PipeStrip() {
+  const parts = [
+    { label: "20 Hz", hint: "316 B · フラッシュを触らない", flex: 1.4, tone: "len" },
+    { label: "CDC 1 本", hint: "出口は共有", flex: 1.1, tone: "type" },
+    { label: "NVS 全文", hint: "値つき · キャッシュ停止", flex: 1.6, tone: "crc" },
+  ] as const;
+  return (
+    <figure className="m5-manual__figure">
+      <div className="m5-manual__strip" aria-hidden="true">
+        {parts.map((p) => (
+          <div key={p.label} className={"m5-manual__strip-cell m5-manual__strip-cell--" + p.tone} style={{ flex: p.flex }}>
+            <span className="m5-manual__strip-label">{p.label}</span>
+            <span className="m5-manual__strip-hint">{p.hint}</span>
+          </div>
+        ))}
+      </div>
+      <figcaption>
+        校正マップは送出中にテレメトリを止めるので通る。NVS 一覧はまだ同居している。
+      </figcaption>
+    </figure>
+  );
+}
+
 /** 双コアの役割。 */
 export function DualCore() {
   return (
@@ -86,12 +135,12 @@ export function DualCore() {
         <div className="m5-manual__core">
           <div className="m5-manual__core-id">Core 1</div>
           <div className="m5-manual__core-job">制御 20 Hz</div>
-          <p>I2C · PWM · Snapshot を書く</p>
+          <p>I2C · PWM · Snapshot を書く。無効軸は叩かない</p>
         </div>
         <div className="m5-manual__core m5-manual__core--usb">
           <div className="m5-manual__core-id">Core 0</div>
           <div className="m5-manual__core-job">USB</div>
-          <p>コピーして送る。I2C は触らない</p>
+          <p>コピーして送る。NVS のときフラッシュキャッシュが止まる</p>
         </div>
       </div>
       <figcaption>SCAN は Core 1 が I2C を使うので、その周期だけ伸びる。</figcaption>
@@ -99,11 +148,13 @@ export function DualCore() {
   );
 }
 
-export type ManualDiagramId = "stack" | "flash" | "cores" | "usb";
+export type ManualDiagramId = "stack" | "flash" | "cores" | "usb" | "layers" | "pipe";
 
 export function ManualDiagram({ id }: { id: ManualDiagramId }) {
   if (id === "stack") return <StackStrip />;
   if (id === "flash") return <FlashMap />;
   if (id === "cores") return <DualCore />;
+  if (id === "layers") return <LayersStrip />;
+  if (id === "pipe") return <PipeStrip />;
   return <UsbFrameStrip />;
 }

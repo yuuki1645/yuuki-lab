@@ -104,7 +104,7 @@ export const hubTools: HubTool[] = [
     label: "実機テレメトリ（M5）",
     group: "device",
     description:
-      "Windows PC の atom-rt/tools/lab_debug.py 経由で ATOM の関節・電源・校正を iPad から操作します（Socket.IO :8794）。ATOM 手帳でファームと USB プロトコルを読めます。",
+      "Windows PC の atom-rt/tools/lab_debug.py 経由で ATOM の関節・電源・校正を iPad から操作します（Socket.IO :8794）。ATOM 手帳でファーム・USB・NVS を読めます。",
     LazyPage: M5TelemetryPage,
   },
   {

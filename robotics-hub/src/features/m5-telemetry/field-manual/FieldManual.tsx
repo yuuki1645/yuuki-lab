@@ -19,6 +19,8 @@ function MarkdownBody({ src }: { src: string }) {
       {blocks.map((b, i) => {
         if (b.kind === "h") {
           if (b.level === 1) {
+            // 章タイトルはヘッダ側にある。本文先頭の # 見出しは重ねない
+            if (i === 0) return null;
             return (
               <h2 key={i} className="m5-manual__h1">
                 {renderInline(b.text)}
@@ -138,7 +140,7 @@ export default function FieldManual({ open, chapterId, onChapter, onClose }: Fie
             <span className="m5-manual__mark">ATOM</span>
             <div>
               <h2 id="m5-manual-title">Field Manual</h2>
-              <p>ファームが運ぶ現場手帳 · USB ver=10</p>
+              <p>ファームが運ぶ現場手帳 · USB ver=14</p>
             </div>
           </div>
           <button type="button" className="m5-manual__close" onClick={onClose}>

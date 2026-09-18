@@ -7,6 +7,9 @@ import boardsMd from "../../../../../atom-rt/docs/field-manual/01-boards.md?raw"
 import firmwareMd from "../../../../../atom-rt/docs/field-manual/02-firmware.md?raw";
 import usbMd from "../../../../../atom-rt/docs/field-manual/03-usb.md?raw";
 import toolsMd from "../../../../../atom-rt/docs/field-manual/04-tools.md?raw";
+import nvsMd from "../../../../../atom-rt/docs/field-manual/05-nvs.md?raw";
+import layersMd from "../../../../../atom-rt/docs/field-manual/06-layers.md?raw";
+import notesMd from "../../../../../atom-rt/docs/field-manual/07-notes.md?raw";
 import type { ManualDiagramId } from "./Diagrams";
 
 export interface ManualChapter {
@@ -39,7 +42,7 @@ export const FIELD_MANUAL_CHAPTERS: ManualChapter[] = [
     id: "firmware",
     index: "02",
     title: "ファーム",
-    kicker: "20 Hz と NVS",
+    kicker: "20 Hz とマスク",
     markdown: firmwareMd,
     diagram: "cores",
   },
@@ -47,7 +50,7 @@ export const FIELD_MANUAL_CHAPTERS: ManualChapter[] = [
     id: "usb",
     index: "03",
     title: "USB",
-    kicker: "ver=10 バイナリ",
+    kicker: "ver=14 バイナリ",
     markdown: usbMd,
     diagram: "usb",
   },
@@ -55,9 +58,33 @@ export const FIELD_MANUAL_CHAPTERS: ManualChapter[] = [
     id: "tools",
     index: "04",
     title: "道具",
-    kicker: "PC 側のプログラム",
+    kicker: "PC と Hub",
     markdown: toolsMd,
     diagram: "stack",
+  },
+  {
+    id: "nvs",
+    index: "05",
+    title: "有効と NVS",
+    kicker: "経路は残す",
+    markdown: nvsMd,
+    diagram: "flash",
+  },
+  {
+    id: "layers",
+    index: "06",
+    title: "層",
+    kicker: "CDC とキャッシュ",
+    markdown: layersMd,
+    diagram: "layers",
+  },
+  {
+    id: "notes",
+    index: "07",
+    title: "現場メモ",
+    kicker: "ログの読み方",
+    markdown: notesMd,
+    diagram: "pipe",
   },
 ];
 

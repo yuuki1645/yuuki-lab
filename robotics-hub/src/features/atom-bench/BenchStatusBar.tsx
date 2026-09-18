@@ -84,7 +84,7 @@ function outList(control: M5Control | null): string {
  */
 const USB_FW_EN_MASK = 13;
 
-/** HELLO `rt-usb ver=11 lab ...` または status.fw_ver */
+/** HELLO の fw_ver（status.fw_ver）。有効マスクは 13 以上、いまの正本は 14 */
 function usbFwVer(status: M5Status | null): number | null {
   const n = status?.fw_ver;
   if (typeof n === "number" && n > 0) return n;

@@ -75,7 +75,7 @@ ATOMS3 Lite / ATOM S3R Grove I2C
 - INA226: 既定は 10 A ユニット（シャント 5 mΩ）
 - 当面 8 軸（`kSnapJoints`）。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `tools/lib/rt_usb_proto.py` を揃える
 - INA 監視枠も 8（`kSnapIna`）。未割当は `ina_addr=0` で読まない
-- 右足圧スレーブは `FootRoute`（既定 `0x71` CH2 / `0x28`）。`addr=0` で読まない。USB テレメトリは **ver=10**
+- 右足圧スレーブは `FootRoute`（既定 `0x71` CH2 / `0x28`）。`addr=0` で読まない。USB プロトコルは **ver=14**
 
 机上では配線が毎回違って構いません。SCAN が実際に応答したデバイスを返します。
 
@@ -93,7 +93,7 @@ USB CDC です。**lab_debug / rt_monitor / rt_usb_log を開いたままでは�
 pio run -t upload
 ```
 
-既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=10** です。焼き直してください。
+既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=14** です。焼き直してください。
 
 通信の確認はシリアルモニタではなく:
 
@@ -101,7 +101,7 @@ pio run -t upload
 python tools/rt_usb_log.py
 ```
 
-`pio device monitor` はバイナリをテキストとして出すので使えません。HELLO の `ver=10` が出れば新しいファームです。
+`pio device monitor` はバイナリをテキストとして出すので使えません。HELLO の `ver=14` が出れば新しいファームです。
 
 ---
 
@@ -380,7 +380,7 @@ tools/lib/                         部品（直接起動しない）
   cop_ankle_ctrl.py                かかとピッチ COP
   df9_force.py                     足裏 DF9-40 の力換算
 tools/requirements.txt
-docs/field-manual/             現場手帳（Hub「ATOM 手帳」が読む）
+docs/field-manual/             現場手帳 00–07（Hub「ATOM 手帳」が読む）
 data/cal_map_*.json            校正マップ（機体・机上）
 data/recordings/               本記録（gitignore。明示開始のみ）
 audio/right_leg_boot.wav       起動アナウンス
@@ -398,7 +398,7 @@ audio/system_all_green.wav     異常なしアナウンス
 | 症状 | 確認 |
 |---|---|
 | 書けない | ツールを閉じる。緑のダウンロードモード。USB は 1 台 |
-| GUI が空 / 壊れた表示 | このディレクトリのファーム（HELLO `ver=10`）か。古い ASCII CSV や ver=9 以前とは話せない |
+| GUI が空 / 壊れた表示 | このディレクトリのファーム（HELLO `ver=14`）か。古い ASCII CSV や ver=9 以前とは話せない |
 | `pio device monitor` が文字化け | 仕様。バイナリなので `rt_usb_log.py` を使う |
 | 校正が fit/map で失敗 | 磁石・ギア・干渉。AS5600 がサーボに追従しているか |
 | スキャンに出ない | Grove、PaHub DIP、5V。未知アドレスは Hub 先だと既知リスト外のことがある |
@@ -406,6 +406,6 @@ audio/system_all_green.wav     異常なしアナウンス
 | `rt_monitor` で突然動く | 仕様。接続時に Robot になる |
 | COM が PermissionError | 前の Python を残していないか。切断してから数秒待つ |
 | 周期 overrun | 自動スキャンを止める。軸・INA が増えると `t_sense` が伸びる |
-| 過電流で止まる | メカ干渉・配線。再許可する前に原因を切る。INA 未接続なのに 8 A ならファームを ver=10 に |
+| 過電流で止まる | メカ干渉・配線。再許可する前に原因を切る。INA 未接続なのに 8 A ならファームを ver=14 に |
 
 複数 ATOM をモニタするときは USB ハブで足ります。**書き込みのときだけ 1 台**にしてください。

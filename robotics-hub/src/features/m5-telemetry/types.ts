@@ -156,6 +156,8 @@ export type M5FootRoute = {
   hub: number;
   ch: number;
   addr: number;
+  /** false でも経路は残す。I2C から外すだけ */
+  enabled?: boolean;
 };
 
 export type M5Route = {
@@ -169,6 +171,8 @@ export type M5Route = {
   ina_hub: number;
   ina_ch: number;
   ina_addr: number;
+  /** false でも経路は残す。I2C / PWM から外すだけ */
+  enabled?: boolean;
 };
 
 export type M5Profile = {

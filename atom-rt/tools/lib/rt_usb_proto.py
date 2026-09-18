@@ -292,12 +292,16 @@ def cmd_prof_default() -> bytes:
 def cmd_prof_put(
     routes: list[tuple[int, int, int, int, int, int, int, int, int, int]],
     foot: tuple[int, int, int] = (0x71, 2, 0x28),
+    joint_en: int = 0xFF,
+    foot_en: int = 1,
 ) -> bytes:
     """
     routes の各要素は
     (enc_hub, enc_ch, enc_addr, act_hub, act_ch, act_addr, servo_ch, ina_hub, ina_ch, ina_addr)。
     ina_addr=0 は未割当。
-    foot は (hub, ch, addr)。addr=0 は右足スレーブ無効。
+    foot は (hub, ch, addr)。addr=0 は右足スレーブ経路なし。
+    joint_en は bit i = 関節 i 有効。foot_en は右足スレーブを 20 Hz で読むか。
+    経路と有効は別。机上で機体プロファイルを消さずにポーリングだけ止められる。
     """
     n = len(routes)
     payload = bytes((n,)) + b"".join(
@@ -306,6 +310,7 @@ def cmd_prof_put(
     )
     fh, fc, fa = foot
     payload += _FOOT.pack(fh, fc, fa)
+    payload += bytes((joint_en & 0xFF, 1 if foot_en else 0))
     return encode_frame(CMD_PROFPUT, payload)
 
 
@@ -408,6 +413,7 @@ class FootRouteBin:
     hub: int
     ch: int
     addr: int
+    enabled: bool = True
 
 
 @dataclass
@@ -422,6 +428,7 @@ class RouteBin:
     ina_hub: int
     ina_ch: int
     ina_addr: int
+    enabled: bool = True
 
 
 @dataclass
@@ -571,7 +578,15 @@ def decode_prof(payload: bytes) -> tuple[list[RouteBin], FootRouteBin] | None:
         out.append(RouteBin(eh, ec, ea, ah, ac, aa, sc, ih, ic, ia))
         off += _ROUTE.size
     fh, fc, fa = _FOOT.unpack_from(payload, off)
-    return out, FootRouteBin(fh, fc, fa)
+    off += _FOOT.size
+    jen = 0xFF
+    fen = 1
+    if len(payload) >= off + 2:
+        jen = payload[off]
+        fen = payload[off + 1]
+    for i, r in enumerate(out):
+        r.enabled = bool(jen & (1 << i))
+    return out, FootRouteBin(fh, fc, fa, enabled=bool(fen))
 
 
 def decode_map_chunk(payload: bytes) -> MapChunk | None:

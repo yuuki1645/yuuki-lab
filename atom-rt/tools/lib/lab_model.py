@@ -76,15 +76,17 @@ class JointRoute:
     ina_hub: int = 0x71
     ina_ch: int = 0
     ina_addr: int = 0x41  # 0 なら未割当
+    enabled: bool = True  # False でも経路は残す。I2C/PWM から外すだけ
 
 
 @dataclass
 class FootRoute:
-    """右足スレーブ経路（ボードの FootRoute と同じ並び）。addr=0 は無効。"""
+    """右足スレーブ経路（ボードの FootRoute と同じ並び）。addr=0 は経路なし。"""
 
     hub: int = 0x71
     ch: int = 2
     addr: int = 0x28
+    enabled: bool = True
 
 
 def default_foot() -> FootRoute:
@@ -173,6 +175,7 @@ def route_from_bin(r: proto.RouteBin) -> JointRoute:
         ina_hub=r.ina_hub,
         ina_ch=r.ina_ch,
         ina_addr=r.ina_addr,
+        enabled=bool(getattr(r, "enabled", True)),
     )
 
 
@@ -185,18 +188,27 @@ def route_tuple(r: JointRoute) -> tuple[int, int, int, int, int, int, int, int, 
 
 
 def foot_from_bin(r: proto.FootRouteBin) -> FootRoute:
-    return FootRoute(hub=r.hub, ch=r.ch, addr=r.addr)
+    return FootRoute(hub=r.hub, ch=r.ch, addr=r.addr, enabled=bool(getattr(r, "enabled", True)))
 
 
 def foot_tuple(r: FootRoute) -> tuple[int, int, int]:
     return (r.hub, r.ch, r.addr)
 
 
+def joint_en_mask(routes: list[JointRoute]) -> int:
+    """USB に載せる関節有効ビット。経路とは独立。"""
+    m = 0
+    for i, r in enumerate(routes[:JOINTS]):
+        if r.enabled:
+            m |= 1 << i
+    return m
+
+
 def route_sig(routes: list[JointRoute], foot: FootRoute | None = None) -> tuple:
-    base = tuple(route_tuple(r) for r in routes[:JOINTS])
+    base = tuple(route_tuple(r) + (int(bool(r.enabled)),) for r in routes[:JOINTS])
     if foot is None:
         return base
-    return base + (foot_tuple(foot),)
+    return base + (foot_tuple(foot) + (int(bool(foot.enabled)),))
 
 
 def foot_sample_dict(f: Frame) -> dict:

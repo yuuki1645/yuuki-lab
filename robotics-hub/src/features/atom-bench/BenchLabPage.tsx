@@ -189,6 +189,9 @@ export default function BenchLabPage() {
             ? `0x${routes[ch]!.enc_addr.toString(16).toUpperCase()} CH${routes[ch]!.enc_ch}`
             : "なし"}
         </span>
+        <span className={"bench__chip" + (routes[ch]?.enabled === false ? " bench__chip--bad" : " bench__chip--ok")}>
+          {routes[ch]?.enabled === false ? "関節 無効" : "関節 有効"}
+        </span>
         <span className={"bench__chip" + (encOk ? " bench__chip--ok" : "")}>
           磁石 {MAG_LABEL[magCode] ?? String(magCode)}
         </span>

@@ -19,12 +19,13 @@ export function emptyRoute(i: number): M5Route {
     ina_hub: i < M5_INA_DEFAULT_ASSIGNED ? 0x71 : 0,
     ina_ch: i < M5_INA_DEFAULT_ASSIGNED ? i : -1,
     ina_addr: i < M5_INA_DEFAULT_ASSIGNED ? 0x41 : 0,
+    enabled: true,
   };
 }
 
 /** 右足スレーブ（ATOM S3 Lite / DF9-40）の既定経路 */
 export function emptyFoot(): M5FootRoute {
-  return { hub: 0x71, ch: 2, addr: 0x28 };
+  return { hub: 0x71, ch: 2, addr: 0x28, enabled: true };
 }
 
 export function fmtFootRoute(r: M5FootRoute): string {
@@ -36,23 +37,23 @@ export function fmtFootRoute(r: M5FootRoute): string {
 
 export function parseFootOption(text: string): M5FootRoute | null {
   const s = text.trim();
-  if (s === "なし" || s === "" || s === "—") return { hub: 0, ch: -1, addr: 0 };
+  if (s === "なし" || s === "" || s === "—") return { hub: 0, ch: -1, addr: 0, enabled: true };
   if (s.startsWith("root")) {
     const parts = s.split(/\s+/);
     const addr = Number.parseInt(parts[parts.length - 1] ?? "", 16);
     if (!Number.isFinite(addr)) return null;
-    return { hub: 0, ch: -1, addr };
+    return { hub: 0, ch: -1, addr, enabled: true };
   }
   const bits = s.replace(/CH/i, " ").replace(/\s+/g, " ").trim().split(" ");
   const hub = Number.parseInt(bits[0] ?? "", 16);
   const ch = Number.parseInt(bits[1] ?? "", 10);
   const addr = Number.parseInt(bits[bits.length - 1] ?? "", 16);
   if (![hub, ch, addr].every(Number.isFinite)) return null;
-  return { hub, ch, addr };
+  return { hub, ch, addr, enabled: true };
 }
 
 /** 経路テーブルの 1 セル。ch は 10 進、hub / addr は 16 進で見せる */
-export function fmtRouteField(key: keyof M5Route, n: number): string {
+export function fmtRouteField(key: Exclude<keyof M5Route, "enabled">, n: number): string {
   if (key.endsWith("ch") || key === "servo_ch") return String(n);
   if (key.endsWith("hub") && n === 0) return "0";
   return `0x${n.toString(16).toUpperCase().padStart(2, "0")}`;

@@ -416,6 +416,41 @@
   width: 4.2rem;
 }
 
+.m5__table input[type="checkbox"] {
+  width: 1.15rem;
+  min-height: 1.15rem;
+  accent-color: #3ee07f;
+  cursor: pointer;
+}
+
+.m5-en {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #c8d4e0;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.m5-en input[type="checkbox"] {
+  width: 1.15rem;
+  min-height: 1.15rem;
+  accent-color: #3ee07f;
+  cursor: pointer;
+}
+
+.m5__table-row--off td {
+  opacity: 0.42;
+}
+
+.m5__table-row--off td:first-child {
+  opacity: 1;
+}
+
+.m5-foot-prof--off {
+  opacity: 0.7;
+}
+
 .m5-foot-prof {
   display: flex;
   flex-wrap: wrap;

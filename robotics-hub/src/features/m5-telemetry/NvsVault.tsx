@@ -26,6 +26,8 @@ function expectedKeys(): ExpectKey[] {
     { ns: "jprof", key: "n", hint: "関節数" },
     { ns: "jprof", key: "r", hint: "JointRoute × 8" },
     { ns: "jprof", key: "foot", hint: "FootRoute" },
+    { ns: "jprof", key: "jen", hint: "関節有効マスク" },
+    { ns: "jprof", key: "fen", hint: "足スレーブ有効" },
   ];
   for (let i = 0; i < M5_JOINTS; i += 1) {
     out.push({ ns: "cal", key: `mk${i}`, hint: `軸${i} マップ有効` });

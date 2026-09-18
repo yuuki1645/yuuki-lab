@@ -14,7 +14,10 @@
  *   関節 6〜7 のエンコーダは未割当（enc_addr=0）。別 Hub をプロファイルで足す
  *   INA226 は関節ごとに経路を持つ。既定は 0〜1 のみ PaHub 0x71 CHi。
    *   2 軸目以降はプロファイル／SCAN 仮割当で足す（addr=0 なら未割当・非読取）
- *   右足圧は FootRoute（既定 PaHub 0x71 CH2 / 0x28。addr=0 で無効）
+ *   右足圧は FootRoute（既定 PaHub 0x71 CH2 / 0x28。addr=0 は経路なし）
+ *
+ * 有効フラグは経路とは別（NVS jen / fen、USB プロファイル末尾 2 バイト）。
+ * 無効でも hub/addr は残す。机上で機体プロファイルを消さずにポーリングだけ止められる。
  */
 #pragma pack(push, 1)
 struct JointRoute {
@@ -47,10 +50,14 @@ static constexpr int kProfInaDefaultCount = 2;
 struct FootRoute {
     uint8_t hub;    // 0=root, 既定 0x71
     int8_t ch;      // hub 時 0..5、root なら -1
-    uint8_t addr;   // 既定 0x28。0 なら無効
+    uint8_t addr;   // 既定 0x28。0 なら経路なし（有効でも読まない）
 };
 #pragma pack(pop)
 
 static constexpr uint8_t kProfFootHubDefault = 0x71;
 static constexpr int8_t kProfFootChDefault = 2;
 static constexpr uint8_t kProfFootAddrDefault = 0x28;
+/** 8 軸すべて有効。bit i が関節 i */
+static constexpr uint8_t kProfJointEnDefault = 0xFF;
+/** 1=右足スレーブを 20 Hz で読む */
+static constexpr uint8_t kProfFootEnDefault = 1;

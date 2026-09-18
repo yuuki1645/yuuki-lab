@@ -76,6 +76,7 @@ from .lab_model import (
     foot_sample_dict,
     foot_tuple,
     ina_label,
+    joint_en_mask,
     parse_ina_label,
     route_sig,
     route_tuple,
@@ -557,6 +558,7 @@ class LabApp(tk.Tk):
                     "ina_hub": r.ina_hub,
                     "ina_ch": r.ina_ch,
                     "ina_addr": r.ina_addr,
+                    "enabled": bool(r.enabled),
                 }
             )
         return {
@@ -566,6 +568,7 @@ class LabApp(tk.Tk):
                 "hub": s.foot.hub if s else default_foot().hub,
                 "ch": s.foot.ch if s else default_foot().ch,
                 "addr": s.foot.addr if s else default_foot().addr,
+                "enabled": bool(s.foot.enabled) if s else True,
             },
             "foot_options": self._foot_option_list(s) if s else ["なし"],
         }
@@ -706,7 +709,7 @@ class LabApp(tk.Tk):
             if scan_sig != self._m5_scan_sig:
                 self._m5_scan_sig = scan_sig
                 self._m5_bridge.publish(EVT_SCAN, self._m5_scan_dict())
-            prof_sig = route_sig(s.routes)
+            prof_sig = route_sig(s.routes, s.foot)
             if prof_sig != self._m5_prof_sig:
                 self._m5_prof_sig = prof_sig
                 self._m5_bridge.publish(EVT_PROFILE, self._m5_profile_dict())
@@ -890,6 +893,7 @@ class LabApp(tk.Tk):
                         ina_hub=int(d.get("ina_hub", 0)),
                         ina_ch=int(d.get("ina_ch", -1)),
                         ina_addr=int(d.get("ina_addr", 0)),
+                        enabled=bool(d["enabled"]) if "enabled" in d else True,
                     )
                 self._send_routes(s, routes, "プロファイル送信（iPad）", foot=self._foot_from_msg(msg, s.foot))
         elif op == "cal_start":
@@ -1159,15 +1163,21 @@ class LabApp(tk.Tk):
         grid = tk.Frame(self.tab_prof, bg=BG)
         grid.pack(fill="x", padx=8, pady=8)
         headers = (
-            "関節", "enc_hub", "enc_ch", "enc_addr",
+            "有効", "関節", "enc_hub", "enc_ch", "enc_addr",
             "act_hub", "act_ch", "act_addr", "servo_ch",
             "ina_hub", "ina_ch", "ina_addr",
         )
         for c, h in enumerate(headers):
             tk.Label(grid, text=h, bg=BG, fg=MUTED).grid(row=0, column=c, padx=4, pady=2)
+        self.prof_en_vars: list[tk.BooleanVar] = []
         for i in range(JOINTS):
             vars_row: dict[str, tk.StringVar] = {}
-            tk.Label(grid, text=str(i), bg=BG, fg=TEXT).grid(row=i + 1, column=0, padx=4)
+            en = tk.BooleanVar(value=True)
+            self.prof_en_vars.append(en)
+            tk.Checkbutton(
+                grid, variable=en, bg=BG, activebackground=BG, selectcolor=CARD, fg=TEXT
+            ).grid(row=i + 1, column=0, padx=4)
+            tk.Label(grid, text=str(i), bg=BG, fg=TEXT).grid(row=i + 1, column=1, padx=4)
             defaults = default_routes()[i]
             for c, (key, val) in enumerate(
                 (
@@ -1182,7 +1192,7 @@ class LabApp(tk.Tk):
                     ("ina_ch", str(defaults.ina_ch)),
                     ("ina_addr", f"0x{defaults.ina_addr:02X}"),
                 ),
-                start=1,
+                start=2,
             ):
                 var = tk.StringVar(value=val)
                 vars_row[key] = var
@@ -1194,6 +1204,10 @@ class LabApp(tk.Tk):
             self.prof_vars.append(vars_row)
         foot_row = tk.Frame(self.tab_prof, bg=BG)
         foot_row.pack(fill="x", padx=8, pady=(0, 8))
+        self.foot_en_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(
+            foot_row, variable=self.foot_en_var, bg=BG, activebackground=BG, selectcolor=CARD, fg=TEXT
+        ).pack(side="left", padx=(0, 4))
         tk.Label(foot_row, text="右足スレーブ", bg=BG, fg=MUTED).pack(side="left", padx=(0, 8))
         self.foot_vars: dict[str, tk.StringVar] = {}
         foot0 = default_foot()
@@ -1548,6 +1562,9 @@ class LabApp(tk.Tk):
             return
         if ch < 0 or ch >= JOINTS:
             self.cal_status_lab.configure(text=f"状態: 関節番号が不正 ch{ch}")
+            return
+        if ch < len(s.routes) and not s.routes[ch].enabled:
+            self.cal_status_lab.configure(text=f"状態: ch{ch} はプロファイルで無効です")
             return
         if self._pc_cal is not None:
             self.cal_status_lab.configure(text="状態: 校正中です")
@@ -1977,6 +1994,7 @@ class LabApp(tk.Tk):
                         ina_hub=self._parse_int_field(row["ina_hub"].get()),
                         ina_ch=self._parse_int_field(row["ina_ch"].get()),
                         ina_addr=self._parse_int_field(row["ina_addr"].get()),
+                        enabled=bool(self.prof_en_vars[len(routes)].get()) if len(self.prof_en_vars) > len(routes) else True,
                     )
                 )
         except ValueError as exc:
@@ -1991,6 +2009,7 @@ class LabApp(tk.Tk):
                 hub=self._parse_int_field(self.foot_vars["hub"].get()),
                 ch=self._parse_int_field(self.foot_vars["ch"].get()),
                 addr=self._parse_int_field(self.foot_vars["addr"].get()),
+                enabled=bool(self.foot_en_var.get()) if getattr(self, "foot_en_var", None) else True,
             )
         except (KeyError, ValueError) as exc:
             messagebox.showerror("プロファイル", f"足経路の数値が不正です: {exc}")
@@ -2006,6 +2025,7 @@ class LabApp(tk.Tk):
                 hub=int(raw.get("hub", fallback.hub)),
                 ch=int(raw.get("ch", fallback.ch)),
                 addr=int(raw.get("addr", fallback.addr)),
+                enabled=bool(raw["enabled"]) if "enabled" in raw else bool(fallback.enabled),
             )
         except (TypeError, ValueError):
             return fallback
@@ -2059,6 +2079,7 @@ class LabApp(tk.Tk):
                 ina_hub=routes[i].ina_hub,
                 ina_ch=routes[i].ina_ch,
                 ina_addr=routes[i].ina_addr,
+                enabled=s.routes[i].enabled if i < len(s.routes) else True,
             )
         ina_nodes = [n for n in s.nodes if n.kind == "ina226"]
         ina_nodes.sort(key=lambda n: (n.hub, n.ch))
@@ -2072,7 +2093,7 @@ class LabApp(tk.Tk):
         foot = s.foot
         if foot_nodes:
             fh, fc, fa = scan_node_path(foot_nodes[0])
-            foot = FootRoute(hub=fh, ch=fc, addr=fa)
+            foot = FootRoute(hub=fh, ch=fc, addr=fa, enabled=s.foot.enabled)
         s.foot = foot
         self._fill_prof_form(routes, foot)
         s.note(
@@ -2096,11 +2117,15 @@ class LabApp(tk.Tk):
                 row["ina_hub"].set(f"0x{r.ina_hub:02X}" if r.ina_hub else "0")
                 row["ina_ch"].set(str(r.ina_ch))
                 row["ina_addr"].set(f"0x{r.ina_addr:02X}" if r.ina_addr else "0")
+                if i < len(self.prof_en_vars):
+                    self.prof_en_vars[i].set(bool(r.enabled))
             fr = foot if foot is not None else default_foot()
             if getattr(self, "foot_vars", None):
                 self.foot_vars["hub"].set(f"0x{fr.hub:02X}" if fr.hub else "0")
                 self.foot_vars["ch"].set(str(fr.ch))
                 self.foot_vars["addr"].set(f"0x{fr.addr:02X}" if fr.addr else "0")
+            if getattr(self, "foot_en_var", None) is not None:
+                self.foot_en_var.set(bool(fr.enabled))
         finally:
             self._syncing = False
         self._prof_sig = route_sig(routes, foot)
@@ -2162,6 +2187,8 @@ class LabApp(tk.Tk):
             if i >= len(self.rand_vars) or not self.rand_vars[i].get():
                 continue
             if not self.out_vars[i].get():
+                continue
+            if i < len(s.routes) and not s.routes[i].enabled:
                 continue
             # 校正掃引中の軸はランダムしない
             if self._pc_cal is not None and i == self._pc_cal.ch:
@@ -2254,7 +2281,14 @@ class LabApp(tk.Tk):
         s.routes = routes
         if foot is not None:
             s.foot = foot
-        s.send(proto.cmd_prof_put([route_tuple(r) for r in routes], foot_tuple(s.foot)))
+        s.send(
+            proto.cmd_prof_put(
+                [route_tuple(r) for r in routes],
+                foot_tuple(s.foot),
+                joint_en=joint_en_mask(routes),
+                foot_en=int(bool(s.foot.enabled)),
+            )
+        )
         self._fill_prof_form(s.routes, s.foot)
         self._ina_ui_sig = None
         self._refresh_ina_combos(s)

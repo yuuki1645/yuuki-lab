@@ -177,6 +177,10 @@ static portMUX_TYPE gProfLock = portMUX_INITIALIZER_UNLOCKED;
 static JointRoute gProf[kJointCount];
 /** 右足スレーブ経路。同じ NVS 名前空間の "foot" */
 static FootRoute gFoot;
+/** bit i = 関節 i を 20 Hz で読む / PWM する。経路とは別に持つ */
+static uint8_t gJointEn = kProfJointEnDefault;
+/** 0 なら右足スレーブを読まない（経路 foot は残す） */
+static uint8_t gFootEn = kProfFootEnDefault;
 
 /** USB 受信の組み立て（マジック待ち → type/len → payload → CRC） */
 enum UsbRxState : uint8_t {
@@ -560,10 +564,15 @@ static void loadProfile() {
         validateFootRoute(loaded)) {
         foot = loaded;
     }
+    // 旧ボードに jen/fen が無いときは全有効（機体の既定）
+    const uint8_t jen = gPrefs.getUChar("jen", kProfJointEnDefault);
+    const uint8_t fen = gPrefs.getUChar("fen", kProfFootEnDefault);
     gPrefs.end();
     portENTER_CRITICAL(&gProfLock);
     copyProfile(gProf, tmp);
     gFoot = foot;
+    gJointEn = jen;
+    gFootEn = fen ? 1 : 0;
     portEXIT_CRITICAL(&gProfLock);
     resetEncAlive();
 }
@@ -571,9 +580,13 @@ static void loadProfile() {
 static bool saveProfile() {
     JointRoute tmp[kJointCount];
     FootRoute foot{};
+    uint8_t jen = kProfJointEnDefault;
+    uint8_t fen = kProfFootEnDefault;
     portENTER_CRITICAL(&gProfLock);
     copyProfile(tmp, gProf);
     foot = gFoot;
+    jen = gJointEn;
+    fen = gFootEn;
     portEXIT_CRITICAL(&gProfLock);
     if (!validateProfile(tmp) || !validateFootRoute(foot)) {
         return false;
@@ -583,8 +596,9 @@ static bool saveProfile() {
     const size_t bytes = sizeof(tmp);
     const bool wroteJoints = gPrefs.putBytes("r", tmp, bytes) == bytes;
     const bool wroteFoot = gPrefs.putBytes("foot", &foot, sizeof(foot)) == sizeof(foot);
+    const bool wroteEn = gPrefs.putUChar("jen", jen) && gPrefs.putUChar("fen", fen ? 1 : 0);
     gPrefs.end();
-    return wroteJoints && wroteFoot;
+    return wroteJoints && wroteFoot && wroteEn;
 }
 
 static void applyDefaultProfile() {
@@ -595,6 +609,8 @@ static void applyDefaultProfile() {
     portENTER_CRITICAL(&gProfLock);
     copyProfile(gProf, tmp);
     gFoot = foot;
+    gJointEn = kProfJointEnDefault;
+    gFootEn = kProfFootEnDefault;
     portEXIT_CRITICAL(&gProfLock);
     resetEncAlive();
 }
@@ -671,10 +687,32 @@ static JointRoute jointRoute(int joint) {
     return r;
 }
 
+/** 関節の有効マスク。経路の読みとは別ロックにしない（入れ子禁止） */
+static uint8_t jointEnableMask() {
+    portENTER_CRITICAL(&gProfLock);
+    const uint8_t m = gJointEn;
+    portEXIT_CRITICAL(&gProfLock);
+    return m;
+}
+
+static bool footEnabled() {
+    portENTER_CRITICAL(&gProfLock);
+    const bool on = gFootEn != 0;
+    portEXIT_CRITICAL(&gProfLock);
+    return on;
+}
+
 /** 未接続エンコーダを毎周期タイムアウトしないよう、読む対象を付け直す。 */
 static void resetEncAlive() {
+    JointRoute tmp[kJointCount];
+    uint8_t jen = 0;
+    portENTER_CRITICAL(&gProfLock);
+    copyProfile(tmp, gProf);
+    jen = gJointEn;
+    portEXIT_CRITICAL(&gProfLock);
     for (int i = 0; i < kJointCount; ++i) {
-        gEncAlive[i] = (jointRoute(i).enc_addr != 0);
+        // 無効軸は最初から読まない。有効でも enc_addr==0 は経路なし
+        gEncAlive[i] = ((jen & (1u << i)) != 0) && (tmp[i].enc_addr != 0);
     }
 }
 
@@ -766,7 +804,8 @@ static uint8_t classifyScanAddr(uint8_t a) {
 }
 
 static uint8_t allOutMask() {
-    return static_cast<uint8_t>((1u << kJointCount) - 1u);
+    // Robot / 全PWM は有効軸だけ。無効軸に 135° を出さない
+    return jointEnableMask();
 }
 
 static void addScanNode(uint8_t hub, int8_t ch, uint8_t addr, uint8_t kind,
@@ -1025,12 +1064,14 @@ static void runProbeHub(uint8_t hub, int ch) {
 // ---------------------------------------------------------------------------
 static void readSensors(SensorFrame& out) {
     memset(&out, 0, sizeof(out));
+    const uint8_t jen = jointEnableMask();
+    const bool fen = footEnabled();
 
     for (int i = 0; i < kJointCount; ++i) {
         out.mag_code[i] = 255;
         out.agc[i] = 255;
         const JointRoute route = jointRoute(i);
-        if (route.enc_addr == 0 || !gEncAlive[i]) {
+        if ((jen & (1u << i)) == 0 || route.enc_addr == 0 || !gEncAlive[i]) {
             out.as5600_ok[i] = false;
             out.raw_deg[i] = NAN;
             out.unwrapped[i] = NAN;
@@ -1062,7 +1103,7 @@ static void readSensors(SensorFrame& out) {
 
     for (int i = 0; i < kInaCount; ++i) {
         const JointRoute route = jointRoute(i);
-        if (route.ina_addr == 0) {
+        if ((jen & (1u << i)) == 0 || route.ina_addr == 0) {
             out.ina_ok[i] = false;
             out.ina_volt[i] = NAN;
             out.ina_amp[i] = NAN;
@@ -1100,7 +1141,7 @@ static void readSensors(SensorFrame& out) {
         out.foot_mask = 0;
         out.foot_seq = 0;
         memset(out.foot_mv, 0, sizeof(out.foot_mv));
-        if (fr.addr != 0) {
+        if (fen && fr.addr != 0) {
             openMux(fr.hub, fr.ch);
             delayMicroseconds(300);
             uint8_t hdr[8] = {};
@@ -1165,8 +1206,9 @@ static void applyJoints(const Action& action) {
     if (mask == 0) {
         return;
     }
+    const uint8_t jen = jointEnableMask();
     for (int i = 0; i < kJointCount; ++i) {
-        if ((mask & (1u << i)) == 0) {
+        if ((mask & (1u << i)) == 0 || (jen & (1u << i)) == 0) {
             continue;
         }
         if (isnan(action.cmd_deg[i])) {
@@ -1181,8 +1223,11 @@ static void applyJoints(const Action& action) {
     }
 }
 
-/** 右足スレーブの RGB。Identify 用。addr=0 なら何もしない。 */
+/** 右足スレーブの RGB。Identify 用。addr=0 または無効なら何もしない。 */
 static void writeFootLedRgb(uint8_t r, uint8_t g, uint8_t b) {
+    if (!footEnabled()) {
+        return;
+    }
     const FootRoute fr = footRoute();
     if (fr.addr == 0) {
         return;
@@ -1499,6 +1544,10 @@ static void runCalibration(int joint) {
         calPushErr(static_cast<int8_t>(joint), kUsbReasonServo);
         return;
     }
+    if ((jointEnableMask() & (1u << joint)) == 0) {
+        calPushErr(static_cast<int8_t>(joint), kUsbReasonBadArg);
+        return;
+    }
 
     gCalibrating = 1;
     gCalAbort = 0;
@@ -1671,14 +1720,20 @@ static void usbPrintHello() {
 static void usbDumpProfile() {
     JointRoute tmp[kJointCount];
     FootRoute foot{};
+    uint8_t jen = kProfJointEnDefault;
+    uint8_t fen = kProfFootEnDefault;
     portENTER_CRITICAL(&gProfLock);
     copyProfile(tmp, gProf);
     foot = gFoot;
+    jen = gJointEn;
+    fen = gFootEn ? 1 : 0;
     portEXIT_CRITICAL(&gProfLock);
-    uint8_t raw[1 + sizeof(JointRoute) * kJointCount + sizeof(FootRoute)];
+    uint8_t raw[1 + sizeof(JointRoute) * kJointCount + sizeof(FootRoute) + 2];
     raw[0] = static_cast<uint8_t>(kJointCount);
     memcpy(raw + 1, tmp, sizeof(tmp));
     memcpy(raw + 1 + sizeof(tmp), &foot, sizeof(foot));
+    raw[1 + sizeof(tmp) + sizeof(foot)] = jen;
+    raw[1 + sizeof(tmp) + sizeof(foot) + 1] = fen;
     usbSend(kUsbProf, raw, static_cast<uint16_t>(sizeof(raw)));
 }
 
@@ -2109,6 +2164,10 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
             calPushErr(static_cast<int8_t>(c.ch), kUsbReasonBadCh);
             return;
         }
+        if ((jointEnableMask() & (1u << c.ch)) == 0) {
+            calPushErr(static_cast<int8_t>(c.ch), kUsbReasonBadArg);
+            return;
+        }
         if (gCalibrating || gCalReq >= 0) {
             calPushErr(static_cast<int8_t>(c.ch), kUsbReasonBusy);
             return;
@@ -2142,7 +2201,9 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
             gOutMask = (c.on != 0) ? allOutMask() : 0;
         } else if (c.ch < kJointCount) {
             if (c.on != 0) {
-                gOutMask = static_cast<uint8_t>(gOutMask | (1u << c.ch));
+                if ((jointEnableMask() & (1u << c.ch)) != 0) {
+                    gOutMask = static_cast<uint8_t>(gOutMask | (1u << c.ch));
+                }
             } else {
                 gOutMask = static_cast<uint8_t>(gOutMask & ~(1u << c.ch));
             }
@@ -2201,7 +2262,7 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         }
         const uint8_t n = p[0];
         const uint16_t need = static_cast<uint16_t>(1 + n * sizeof(JointRoute) + sizeof(FootRoute));
-        if (n != kJointCount || len != need) {
+        if (n != kJointCount || len < need || (len != need && len != need + 2)) {
             profSendErr(kUsbReasonCount);
             return;
         }
@@ -2211,11 +2272,24 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
             profSendErr(kUsbReasonBad);
             return;
         }
+        uint8_t jen;
+        uint8_t fen;
+        portENTER_CRITICAL(&gProfLock);
+        jen = gJointEn;
+        fen = gFootEn;
+        portEXIT_CRITICAL(&gProfLock);
+        if (len >= need + 2) {
+            jen = p[need];
+            fen = p[need + 1] ? 1 : 0;
+        }
         portENTER_CRITICAL(&gProfLock);
         copyProfile(gProf, gProfRx);
         gFoot = gFootRx;
+        gJointEn = jen;
+        gFootEn = fen;
         portEXIT_CRITICAL(&gProfLock);
         resetEncAlive();
+        gOutMask = static_cast<uint8_t>(gOutMask & jen);
         for (int i = 0; i < kInaCount; ++i) {
             gInaPresent[i] = false;
         }

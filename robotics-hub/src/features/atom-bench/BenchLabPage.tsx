@@ -6,6 +6,7 @@
  * ファームの焼き分けは不要。違いは「机上向けに Lab を保ち、1 軸だけ触る」点。
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import "@/features/m5-telemetry/M5TelemetryPage.css";
 import "./BenchLabPage.css";
 import { NvsVault } from "@/features/m5-telemetry/NvsVault";
@@ -49,11 +50,34 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "nvs", label: "NVS" },
 ];
 
+const TAB_QUERY = "tab";
+const TAB_DEFAULT: TabId = "servo";
+
+function isTabId(v: string | null): v is TabId {
+  return TABS.some((t) => t.id === v);
+}
+
+/** 再読み込みでも同じタブを開く。URL は ?tab=profile など */
+function tabFromSearch(params: URLSearchParams): TabId {
+  const raw = params.get(TAB_QUERY);
+  return isTabId(raw) ? raw : TAB_DEFAULT;
+}
+
 export default function BenchLabPage() {
   const stream = useM5TelemetryStream(true);
   const { status, frame, control, profile, scan, cal, events, eventHeadSeq, eventTailSeq, history, send } = stream;
 
-  const [tab, setTab] = useState<TabId>("servo");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = tabFromSearch(searchParams);
+  const setTab = (id: TabId) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === TAB_DEFAULT) {
+      next.delete(TAB_QUERY);
+    } else {
+      next.set(TAB_QUERY, id);
+    }
+    setSearchParams(next, { replace: true });
+  };
   /** 下部ドック（イベント等）の本体高さ。0 ならタブ帯だけ */
   const [dockBodyH, setDockBodyH] = useState(0);
   const onDockLayout = useCallback((_open: boolean, heightPx: number) => {

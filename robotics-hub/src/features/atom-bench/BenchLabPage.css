@@ -1,5 +1,42 @@
 /* ATOM 机上ラボ。土台は M5TelemetryPage.css（m5__* / m5-bar 系）を借りる。 */
 
+/* 固定ステータスバーの高さ。本文の下に隠れないよう余白を取る */
+.bench {
+  --bench-sb-h: 3.6rem;
+  padding-bottom: calc(var(--bench-sb-h) + 0.8rem);
+}
+
+/* 左にトポロジを常設、右がタブの中身 */
+.bench__layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.bench__side {
+  position: sticky;
+  top: 0.4rem;
+  min-width: 0;
+}
+
+.bench__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .bench__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bench__side {
+    position: static;
+  }
+}
+
 .bench__warn {
   padding: 0.55rem 0.8rem;
   border-radius: 10px;
@@ -136,4 +173,184 @@
   .bench-barrow__scale {
     display: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   固定ステータスバー
+   --------------------------------------------------------------------------- */
+
+.bench-sb {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  min-height: 3.6rem;
+  padding: 0 0.2rem;
+  background: linear-gradient(180deg, rgba(16, 24, 32, 0.92), rgba(9, 13, 18, 0.98));
+  border-top: 1px solid rgba(84, 160, 255, 0.28);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  scrollbar-width: thin;
+}
+
+.bench-sb__cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.35rem 0.7rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.bench-sb__cell:last-child {
+  border-right: 0;
+}
+
+.bench-sb__lab {
+  color: #6d7c8d;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.bench-sb__body {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: #e8eef4;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+/* 数字は等幅・桁固定。20 Hz でちらつかせない */
+.bench-sb__val {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.bench-sb__sub {
+  color: #8b9bb0;
+  font-size: 0.68rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.bench-sb__hot {
+  color: #ff9f43;
+}
+
+.bench-sb__cool {
+  color: #54a0ff;
+}
+
+.bench-sb__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.bench-sb__dot--ok {
+  background: #3ee07f;
+  box-shadow: 0 0 6px rgba(62, 224, 127, 0.7);
+}
+
+.bench-sb__dot--warn {
+  background: #feca57;
+  box-shadow: 0 0 6px rgba(254, 202, 87, 0.7);
+}
+
+.bench-sb__dot--bad {
+  background: #ee5253;
+  box-shadow: 0 0 6px rgba(238, 82, 83, 0.7);
+}
+
+.bench-sb__dot--idle {
+  background: #46545f;
+}
+
+.bench-sb__dot--pulse {
+  animation: bench-sb-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bench-sb-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bench-sb__dot--pulse {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .bench-sb__cell {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .bench-sb__body {
+    font-size: 0.78rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   常設トポロジ（コンパクト）
+   --------------------------------------------------------------------------- */
+
+.m5-topo-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.6rem 0.6rem;
+  border-radius: 12px;
+  background: #101820;
+  border: 1px solid rgba(84, 160, 255, 0.24);
+}
+
+.m5-topo-mini__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.m5-topo-mini__head h2 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.m5-topo-mini__count {
+  color: #8b9bb0;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.m5-topo-mini__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.m5-topo-mini__legend {
+  gap: 0.3rem 0.5rem;
+  font-size: 0.68rem;
+}
+
+/* 木が伸びても右カラムを押し下げない */
+.m5-topo-mini__tree {
+  max-height: min(58vh, 34rem);
+  overflow: auto;
 }

@@ -13,15 +13,68 @@ export function TopologyPanel({
   scan,
   canCmd,
   send,
+  compact = false,
 }: {
   scan: M5Scan | null;
   canCmd: boolean;
   send: (cmd: M5Cmd) => void;
+  /** どのタブでも横に置く常設パネル。木だけを残して操作を絞る */
+  compact?: boolean;
 }) {
   const [sel, setSel] = useState<number | null>(null);
   const [inaJoint, setInaJoint] = useState(0);
   const tree = buildTopoTree(scan?.nodes ?? []);
   const selected = sel != null ? scan?.nodes[sel] : undefined;
+
+  if (compact) {
+    return (
+      <section className="m5__section m5-topo-mini">
+        <header className="m5-topo-mini__head">
+          <h2>トポロジ</h2>
+          <span className="m5-topo-mini__count">{scan?.nodes?.length ?? 0} ノード</span>
+        </header>
+        <div className="m5-topo-mini__acts">
+          <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "scan" })}>
+            スキャン
+          </button>
+          <button
+            type="button"
+            className="m5__btn"
+            disabled={!canCmd || !selected}
+            onClick={() => {
+              if (!selected) return;
+              send({ op: "probe", hub: selected.hub, ch: selected.ch, addr: selected.addr });
+            }}
+          >
+            1回読む
+          </button>
+        </div>
+        <div className="m5__legend m5-topo-mini__legend">
+          {Object.entries(KIND_META).map(([k, meta]) => (
+            <span key={k} className="m5__legend-item">
+              <i style={{ background: meta.color }} />
+              {meta.label}
+            </span>
+          ))}
+        </div>
+        <div className="m5__tree m5-topo-mini__tree">
+          <div className="m5__tree-root">Grove I2C</div>
+          {tree.map((item) => (
+            <TopoNode
+              key={`${item.kind}-${item.title}-${item.srcIndex}`}
+              item={item}
+              depth={0}
+              selected={sel}
+              onSelect={setSel}
+            />
+          ))}
+          {!scan?.nodes?.length ? (
+            <p className="m5__meta">スキャンすると、実際に応答した相手だけが出ます。</p>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="m5__section">

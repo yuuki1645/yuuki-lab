@@ -25,6 +25,7 @@ import {
   type M5Route,
 } from "@/features/m5-telemetry/types";
 import { BenchServoBars } from "./BenchServoBars";
+import { BenchStatusBar } from "./BenchStatusBar";
 import {
   BENCH_BAR,
   BENCH_MAX_DEG,
@@ -37,12 +38,12 @@ import {
   type BenchPlotVisibility,
 } from "./benchConst";
 
-type TabId = "servo" | "cal" | "topo" | "profile" | "nvs" | "events";
+/** トポロジは常設パネルに移したのでタブからは外している */
+type TabId = "servo" | "cal" | "profile" | "nvs" | "events";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "servo", label: "サーボ" },
   { id: "cal", label: "校正" },
-  { id: "topo", label: "トポロジ" },
   { id: "profile", label: "プロファイル" },
   { id: "nvs", label: "NVS" },
   { id: "events", label: "イベント" },
@@ -126,21 +127,9 @@ export default function BenchLabPage() {
         </p>
       </header>
 
+      {/* 接続・モード・周期などの動く値は下の固定ステータスバーに集約した */}
       <div className="m5__status">
-        <span className={"m5__badge m5__badge--" + stream.wsStatus}>
-          {stream.wsStatus === "connected"
-            ? "ブリッジ接続"
-            : stream.wsStatus === "connecting"
-              ? "接続中"
-              : "未接続"}
-        </span>
         <span className="m5__url">{stream.url}</span>
-        <span className={"m5__badge " + (atomOk ? "m5__badge--connected" : "m5__badge--disconnected")}>
-          {atomOk ? `ATOM ${status?.name || status?.port || ""}` : "ATOM 未接続"}
-        </span>
-        <span className={"m5__badge " + (isRobot ? "m5__badge--rec" : "m5__badge--connected")}>
-          モード {status?.mode || "—"}
-        </span>
         {status?.hello ? <span className="m5__meta">{status.hello}</span> : null}
       </div>
 
@@ -207,9 +196,6 @@ export default function BenchLabPage() {
         <span className={"bench__chip" + (mapOk ? " bench__chip--ok" : "")}>
           マップ {mapOk ? "あり" : "なし"}
         </span>
-        <span className={"bench__chip" + (frame?.servo_ok ? " bench__chip--ok" : " bench__chip--bad")}>
-          8Servos {frame?.servo_ok ? "OK" : "なし"}
-        </span>
       </div>
 
       <div className="m5__tabs" role="tablist">
@@ -227,158 +213,173 @@ export default function BenchLabPage() {
         ))}
       </div>
 
-      {tab === "servo" ? (
-        <section className="m5__section bench__servo">
-          <div className="m5__toolbar">
-            <button
-              type="button"
-              className={"m5__btn" + (pwmOn ? " m5__btn--on" : "")}
-              disabled={!canCmd}
-              onClick={() => setPwm(!pwmOn)}
-            >
-              {pwmOn ? "PWM ON（切る）" : "PWM を入れる"}
-            </button>
-            {BENCH_PRESETS.map((deg) => (
-              <button
-                key={deg}
-                type="button"
-                className="m5__btn"
-                disabled={!canCmd || !pwmOn}
-                onClick={() => sendCmd(deg)}
-              >
-                {deg}°
-              </button>
-            ))}
-            <button
-              type="button"
-              className={"m5__btn" + (at(control?.rand, ch) ? " m5__btn--warn" : "")}
-              disabled={!canCmd}
-              onClick={() => send({ op: "random", ch, on: !at(control?.rand, ch) })}
-            >
-              {at(control?.rand, ch) ? "ランダム停止" : "ランダム動作"}
-            </button>
-          </div>
-          <p className="m5__meta">
-            指令バーはつまみを掴んでドラッグ。PWM を入れないと角度は出ません。ランダム動作は PC 側の
-            共通設定（既定 100〜170°）で動きます。
-          </p>
+      {/* トポロジはどのタブでも見えるよう左に常設し、右カラムだけタブで切り替える */}
+      <div className="bench__layout">
+        <aside className="bench__side">
+          <TopologyPanel scan={scan} canCmd={canCmd} send={send} compact />
+        </aside>
 
-          <div className="bench__bar-togs" role="group" aria-label="バー表示項目">
-            <span className="m5-leg__plot-togs-lab">バー</span>
-            <button
-              type="button"
-              className={"m5-plot-tog" + (showRaw ? " m5-plot-tog--on" : "")}
-              style={{ color: BENCH_BAR.raw, borderColor: showRaw ? BENCH_BAR.raw : "rgba(255,255,255,0.18)" }}
-              aria-pressed={showRaw}
-              onClick={() => setShowRaw((v) => !v)}
-            >
-              生角
-            </button>
-            <button
-              type="button"
-              className={"m5-plot-tog" + (showUnwrap ? " m5-plot-tog--on" : "")}
-              style={{
-                color: BENCH_BAR.unwrap,
-                borderColor: showUnwrap ? BENCH_BAR.unwrap : "rgba(255,255,255,0.18)",
-              }}
-              aria-pressed={showUnwrap}
-              onClick={() => setShowUnwrap((v) => !v)}
-            >
-              unwrap
-            </button>
-          </div>
-
-          <BenchServoBars
-            ch={ch}
-            cmd={at(control?.cmd, ch) ?? at(frame?.cmd, ch) ?? BENCH_NEUTRAL_DEG}
-            raw={at(frame?.raw, ch)}
-            unwrap={at(frame?.unwrap, ch)}
-            corr={at(frame?.corr, ch)}
-            pwmOn={pwmOn}
-            encOk={encOk}
-            showRaw={showRaw}
-            showUnwrap={showUnwrap}
-            disabled={!canCmd || !pwmOn}
-            onCommand={sendCmd}
-          />
-
-          <div className="bench__plot-togs" role="group" aria-label="グラフ表示項目">
-            <span className="m5-leg__plot-togs-lab">グラフ</span>
-            {BENCH_PLOT_ITEMS.map((item) => {
-              const on = plotOn[item.key];
-              return (
+        <div className="bench__main">
+          {tab === "servo" ? (
+            <section className="m5__section bench__servo">
+              <div className="m5__toolbar">
                 <button
-                  key={item.key}
                   type="button"
-                  className={"m5-plot-tog" + (on ? " m5-plot-tog--on" : "")}
-                  style={{ color: item.color, borderColor: on ? item.color : "rgba(255,255,255,0.18)" }}
-                  aria-pressed={on}
-                  onClick={() => togglePlot(item.key)}
+                  className={"m5__btn" + (pwmOn ? " m5__btn--on" : "")}
+                  disabled={!canCmd}
+                  onClick={() => setPwm(!pwmOn)}
                 >
-                  {item.label}
+                  {pwmOn ? "PWM ON（切る）" : "PWM を入れる"}
                 </button>
-              );
-            })}
-          </div>
-          {angleSeries.length ? <Sparkline series={angleSeries} showAxes yMin={0} yMax={360} /> : null}
-          {powerSeries.length ? <Sparkline series={powerSeries} showAxes autoScale height={110} /> : null}
+                {BENCH_PRESETS.map((deg) => (
+                  <button
+                    key={deg}
+                    type="button"
+                    className="m5__btn"
+                    disabled={!canCmd || !pwmOn}
+                    onClick={() => sendCmd(deg)}
+                  >
+                    {deg}°
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={"m5__btn" + (at(control?.rand, ch) ? " m5__btn--warn" : "")}
+                  disabled={!canCmd}
+                  onClick={() => send({ op: "random", ch, on: !at(control?.rand, ch) })}
+                >
+                  {at(control?.rand, ch) ? "ランダム停止" : "ランダム動作"}
+                </button>
+              </div>
+              <p className="m5__meta">
+                指令バーはつまみを掴んでドラッグ。PWM を入れないと角度は出ません。ランダム動作は PC 側の
+                共通設定（既定 100〜170°）で動きます。
+              </p>
 
-          <InaPanel ch={ch} frame={frame} canCmd={canCmd} routes={routes} profile={profile} send={send} />
-        </section>
-      ) : null}
+              <div className="bench__bar-togs" role="group" aria-label="バー表示項目">
+                <span className="m5-leg__plot-togs-lab">バー</span>
+                <button
+                  type="button"
+                  className={"m5-plot-tog" + (showRaw ? " m5-plot-tog--on" : "")}
+                  style={{ color: BENCH_BAR.raw, borderColor: showRaw ? BENCH_BAR.raw : "rgba(255,255,255,0.18)" }}
+                  aria-pressed={showRaw}
+                  onClick={() => setShowRaw((v) => !v)}
+                >
+                  生角
+                </button>
+                <button
+                  type="button"
+                  className={"m5-plot-tog" + (showUnwrap ? " m5-plot-tog--on" : "")}
+                  style={{
+                    color: BENCH_BAR.unwrap,
+                    borderColor: showUnwrap ? BENCH_BAR.unwrap : "rgba(255,255,255,0.18)",
+                  }}
+                  aria-pressed={showUnwrap}
+                  onClick={() => setShowUnwrap((v) => !v)}
+                >
+                  unwrap
+                </button>
+              </div>
 
-      {tab === "cal" ? (
-        <section className="m5__section">
-          <p className="m5__meta">
-            PC が PWM を {BENCH_MIN_DEG}→{BENCH_MAX_DEG}→{BENCH_MIN_DEG}°（1° 刻み・静止待ち）で掃引し、
-            AS5600 と組んだマップを NVS の <code>cal</code> に書きます。周囲を空けてから実行してください。
-          </p>
-          <div className="m5__toolbar">
-            <span className="m5__meta">対象 ch{ch}</span>
-            <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd} onClick={startCal}>
-              校正開始
-            </button>
-            <button type="button" className="m5__btn m5__btn--danger" onClick={() => send({ op: "cal_abort" })}>
-              中止
-            </button>
-            <button
-              type="button"
-              className="m5__btn"
-              disabled={!canCmd}
-              onClick={() => send({ op: "map_get", ch })}
-            >
-              マップ取得
-            </button>
-          </div>
-          <p>状態: {cal?.status || "—"}</p>
-          <p className="m5__meta">
-            マップ ch{cal?.map_ch ?? 0} / 点数 {cal?.map_count ?? 0} / この軸のマップ{" "}
-            {mapOk ? "あり" : "なし"}
-          </p>
-          <p className="m5__meta">
-            AS5600 が {encOk ? "読めています" : "読めていません"}。読めないまま掃引しても点が溜まりません。
-            JSON の保存・読込は PC 側（<code>lab_debug.py</code> の校正タブ）です。
-          </p>
-        </section>
-      ) : null}
+              <BenchServoBars
+                ch={ch}
+                cmd={at(control?.cmd, ch) ?? at(frame?.cmd, ch) ?? BENCH_NEUTRAL_DEG}
+                raw={at(frame?.raw, ch)}
+                unwrap={at(frame?.unwrap, ch)}
+                corr={at(frame?.corr, ch)}
+                pwmOn={pwmOn}
+                encOk={encOk}
+                showRaw={showRaw}
+                showUnwrap={showUnwrap}
+                disabled={!canCmd || !pwmOn}
+                onCommand={sendCmd}
+              />
 
-      {tab === "topo" ? <TopologyPanel scan={scan} canCmd={canCmd} send={send} /> : null}
+              <div className="bench__plot-togs" role="group" aria-label="グラフ表示項目">
+                <span className="m5-leg__plot-togs-lab">グラフ</span>
+                {BENCH_PLOT_ITEMS.map((item) => {
+                  const on = plotOn[item.key];
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={"m5-plot-tog" + (on ? " m5-plot-tog--on" : "")}
+                      style={{ color: item.color, borderColor: on ? item.color : "rgba(255,255,255,0.18)" }}
+                      aria-pressed={on}
+                      onClick={() => togglePlot(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {angleSeries.length ? <Sparkline series={angleSeries} showAxes yMin={0} yMax={360} /> : null}
+              {powerSeries.length ? <Sparkline series={powerSeries} showAxes autoScale height={110} /> : null}
 
-      {tab === "profile" ? <ProfilePanel profile={profile} canCmd={canCmd} send={send} /> : null}
+              <InaPanel ch={ch} frame={frame} canCmd={canCmd} routes={routes} profile={profile} send={send} />
+            </section>
+          ) : null}
 
-      {tab === "nvs" ? <NvsVault nvs={stream.nvs} canCmd={canCmd} send={send} /> : null}
+          {tab === "cal" ? (
+            <section className="m5__section">
+              <p className="m5__meta">
+                PC が PWM を {BENCH_MIN_DEG}→{BENCH_MAX_DEG}→{BENCH_MIN_DEG}°（1° 刻み・静止待ち）で掃引し、
+                AS5600 と組んだマップを NVS の <code>cal</code> に書きます。周囲を空けてから実行してください。
+              </p>
+              <div className="m5__toolbar">
+                <span className="m5__meta">対象 ch{ch}</span>
+                <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd} onClick={startCal}>
+                  校正開始
+                </button>
+                <button type="button" className="m5__btn m5__btn--danger" onClick={() => send({ op: "cal_abort" })}>
+                  中止
+                </button>
+                <button
+                  type="button"
+                  className="m5__btn"
+                  disabled={!canCmd}
+                  onClick={() => send({ op: "map_get", ch })}
+                >
+                  マップ取得
+                </button>
+              </div>
+              <p>状態: {cal?.status || "—"}</p>
+              <p className="m5__meta">
+                マップ ch{cal?.map_ch ?? 0} / 点数 {cal?.map_count ?? 0} / この軸のマップ{" "}
+                {mapOk ? "あり" : "なし"}
+              </p>
+              <p className="m5__meta">
+                AS5600 が {encOk ? "読めています" : "読めていません"}。読めないまま掃引しても点が溜まりません。
+                JSON の保存・読込は PC 側（<code>lab_debug.py</code> の校正タブ）です。
+              </p>
+            </section>
+          ) : null}
 
-      {tab === "events" ? (
-        <section className="m5__section">
-          <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
-        </section>
-      ) : null}
+          {tab === "profile" ? <ProfilePanel profile={profile} canCmd={canCmd} send={send} /> : null}
+
+          {tab === "nvs" ? <NvsVault nvs={stream.nvs} canCmd={canCmd} send={send} /> : null}
+
+          {tab === "events" ? (
+            <section className="m5__section">
+              <pre className="m5__events">{events.join("\n") || "（イベントなし）"}</pre>
+            </section>
+          ) : null}
+        </div>
+      </div>
 
       <FieldManual
         open={manual.open}
         chapterId={manual.chapterId}
         onChapter={manual.selectChapter}
         onClose={manual.close}
+      />
+
+      <BenchStatusBar
+        wsStatus={stream.wsStatus}
+        status={status}
+        frame={frame}
+        control={control}
+        ch={ch}
       />
     </div>
   );

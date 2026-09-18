@@ -16,7 +16,7 @@
    *   2 軸目以降はプロファイル／SCAN 仮割当で足す（addr=0 なら未割当・非読取）
  *   右足圧は FootRoute（既定 PaHub 0x71 CH2 / 0x28。addr=0 は経路なし）
  *
- * 有効フラグは経路とは別（NVS jen / fen、USB プロファイル末尾 2 バイト）。
+ * 有効フラグは経路とは別（NVS blob "en" / jen / fen、USB プロファイル末尾 2 バイト）。
  * 無効でも hub/addr は残す。机上で機体プロファイルを消さずにポーリングだけ止められる。
  */
 #pragma pack(push, 1)

@@ -78,10 +78,10 @@ function outList(control: M5Control | null): string {
 }
 
 /**
- * 有効マスク付き PUT が入った版。これ未満は経路だけ送り、無効化がボードに残らない。
+ * 有効マスク付き PUT が確実に NVS に残る版。これ未満は経路だけ送り、無効化がボードに残らない。
  * atom-rt の kUsbFwVer / FW_VER と揃える。
  */
-const USB_FW_EN_MASK = 11;
+const USB_FW_EN_MASK = 12;
 
 /** HELLO `rt-usb ver=11 lab ...` または status.fw_ver */
 function usbFwVer(status: M5Status | null): number | null {

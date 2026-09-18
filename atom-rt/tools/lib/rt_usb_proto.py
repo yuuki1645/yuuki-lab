@@ -6,7 +6,7 @@ USB バイナリフレームの組み立て／分解（ライブラリ。直接�
 
 フレーム: AA 55 | type | len_lo | len_hi | payload | crc16_le
 CRC は type+len16+payload（CRC-16-CCITT、初期値 0xFFFF）。
-len は LE uint16（ver=11。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
+len は LE uint16（ver=12。8 関節×8 INA + 足 4 隅が 255 を超えるため）。
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 MAGIC = b"\xAA\x55"
 MAX_PAYLOAD = 512
-FW_VER = 11
+FW_VER = 12
 MAP_CHUNK = 16
 JOINTS = 8
 INA_CHS = 8

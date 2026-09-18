@@ -2284,6 +2284,8 @@ class LabApp(tk.Tk):
             s.foot = foot
         jen = joint_en_mask(routes)
         fen = int(bool(s.foot.enabled))
+        s._pending_jen = jen
+        s._pending_fen = fen
         s.send(
             proto.cmd_prof_put(
                 [route_tuple(r) for r in routes],

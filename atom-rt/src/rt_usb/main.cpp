@@ -211,6 +211,8 @@ static volatile int gMapDumpCh = -1;
 static uint32_t gMapRxLastMs = 0;
 
 static volatile uint8_t gProfDumpReq = 0;
+/** PUT 後に USB 送信を済ませてから NVS へ書く。受信中の flash で CDC が切れないようにする */
+static volatile uint8_t gProfSaveReq = 0;
 static JointRoute gProfRx[kJointCount];
 static FootRoute gFootRx;
 static volatile uint8_t gNvsDumpReq = 0;
@@ -564,9 +566,17 @@ static void loadProfile() {
         validateFootRoute(loaded)) {
         foot = loaded;
     }
-    // 旧ボードに jen/fen が無いときは全有効（機体の既定）
-    const uint8_t jen = gPrefs.getUChar("jen", kProfJointEnDefault);
-    const uint8_t fen = gPrefs.getUChar("fen", kProfFootEnDefault);
+    // 有効マスク。blob "en" が正本。旧キー jen/fen だけあるボードはそこから読む
+    uint8_t jen = kProfJointEnDefault;
+    uint8_t fen = kProfFootEnDefault;
+    uint8_t en[2] = {kProfJointEnDefault, kProfFootEnDefault};
+    if (gPrefs.getBytes("en", en, sizeof(en)) == sizeof(en)) {
+        jen = en[0];
+        fen = en[1];
+    } else {
+        jen = gPrefs.getUChar("jen", kProfJointEnDefault);
+        fen = gPrefs.getUChar("fen", kProfFootEnDefault);
+    }
     gPrefs.end();
     portENTER_CRITICAL(&gProfLock);
     copyProfile(gProf, tmp);
@@ -591,14 +601,26 @@ static bool saveProfile() {
     if (!validateProfile(tmp) || !validateFootRoute(foot)) {
         return false;
     }
+    uint8_t en[2] = {jen, static_cast<uint8_t>(fen ? 1 : 0)};
     gPrefs.begin("jprof", false);
     gPrefs.putInt("n", kJointCount);
     const size_t bytes = sizeof(tmp);
     const bool wroteJoints = gPrefs.putBytes("r", tmp, bytes) == bytes;
     const bool wroteFoot = gPrefs.putBytes("foot", &foot, sizeof(foot)) == sizeof(foot);
-    const bool wroteEn = gPrefs.putUChar("jen", jen) && gPrefs.putUChar("fen", fen ? 1 : 0);
+    // blob が正本。U8 は NVS 画面用で、同じ値の書き戻し失敗があっても blob を優先する
+    const bool wroteEn = gPrefs.putBytes("en", en, sizeof(en)) == sizeof(en);
+    gPrefs.putUChar("jen", jen);
+    gPrefs.putUChar("fen", en[1]);
     gPrefs.end();
-    return wroteJoints && wroteFoot && wroteEn;
+    if (!wroteJoints || !wroteFoot || !wroteEn) {
+        return false;
+    }
+    gPrefs.begin("jprof", true);
+    uint8_t check[2] = {0, 0};
+    const bool ok = gPrefs.getBytes("en", check, sizeof(check)) == sizeof(check) &&
+                    check[0] == en[0] && check[1] == en[1];
+    gPrefs.end();
+    return ok;
 }
 
 static void applyDefaultProfile() {
@@ -2244,15 +2266,12 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         for (int i = 0; i < kInaCount; ++i) {
             gInaPresent[i] = false;
         }
-        if (!saveProfile()) {
-            profSendErr(kUsbReasonNvs);
-            return;
-        }
         UsbProfOk ok{};
         ok.n = static_cast<uint8_t>(kJointCount);
         ok.is_default = 1;
         usbSend(kUsbProfOk, &ok, sizeof(ok));
         gProfDumpReq = 1;
+        gProfSaveReq = 1;
         return;
     }
     if (type == kUsbCmdProfPut) {
@@ -2262,7 +2281,8 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         }
         const uint8_t n = p[0];
         const uint16_t need = static_cast<uint16_t>(1 + n * sizeof(JointRoute) + sizeof(FootRoute));
-        if (n != kJointCount || len < need || (len != need && len != need + 2)) {
+        // 経路だけ（need）は受けない。マスク無しだと全オンのまま NVS に書き戻していた
+        if (n != kJointCount || len != need + 2) {
             profSendErr(kUsbReasonCount);
             return;
         }
@@ -2272,16 +2292,8 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
             profSendErr(kUsbReasonBad);
             return;
         }
-        uint8_t jen;
-        uint8_t fen;
-        portENTER_CRITICAL(&gProfLock);
-        jen = gJointEn;
-        fen = gFootEn;
-        portEXIT_CRITICAL(&gProfLock);
-        if (len >= need + 2) {
-            jen = p[need];
-            fen = p[need + 1] ? 1 : 0;
-        }
+        const uint8_t jen = p[need];
+        const uint8_t fen = p[need + 1] ? 1 : 0;
         portENTER_CRITICAL(&gProfLock);
         copyProfile(gProf, gProfRx);
         gFoot = gFootRx;
@@ -2293,15 +2305,12 @@ static void handleUsbFrame(uint8_t type, const uint8_t* p, uint16_t len) {
         for (int i = 0; i < kInaCount; ++i) {
             gInaPresent[i] = false;
         }
-        if (!saveProfile()) {
-            profSendErr(kUsbReasonNvs);
-            return;
-        }
         UsbProfOk ok{};
         ok.n = n;
         ok.is_default = 0;
         usbSend(kUsbProfOk, &ok, sizeof(ok));
         gProfDumpReq = 1;
+        gProfSaveReq = 1;
         return;
     }
     if (type == kUsbCmdMapGet && len >= sizeof(UsbCmdMapGet)) {
@@ -2511,6 +2520,14 @@ static void usbTask(void* /*arg*/) {
         if (gProfDumpReq) {
             gProfDumpReq = 0;
             usbDumpProfile();
+        }
+        if (gProfSaveReq) {
+            gProfSaveReq = 0;
+            // CDC にダンプを吐き出してから flash。受信ハンドラ内で NVS すると切断していた
+            vTaskDelay(pdMS_TO_TICKS(20));
+            if (!saveProfile()) {
+                profSendErr(kUsbReasonNvs);
+            }
         }
         if (gNvsEraseReq) {
             gNvsEraseReq = 0;

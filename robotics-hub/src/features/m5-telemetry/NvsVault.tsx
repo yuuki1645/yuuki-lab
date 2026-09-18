@@ -28,6 +28,7 @@ function expectedKeys(): ExpectKey[] {
     { ns: "jprof", key: "foot", hint: "FootRoute" },
     { ns: "jprof", key: "jen", hint: "関節有効マスク" },
     { ns: "jprof", key: "fen", hint: "足スレーブ有効" },
+    { ns: "jprof", key: "en", hint: "有効マスク 2byte" },
   ];
   for (let i = 0; i < M5_JOINTS; i += 1) {
     out.push({ ns: "cal", key: `mk${i}`, hint: `軸${i} マップ有効` });
@@ -151,6 +152,12 @@ function formatValue(e: M5NvsEntry): { summary: string; full: string } {
   if (e.type === 0x21) {
     const s = cString(b);
     return { summary: s || "(空)", full: `${s}\n\n${hexAll}` };
+  }
+  if (e.ns === "jprof" && e.key === "en" && b.length >= 2) {
+    const jen = b[0]!;
+    const fen = b[1]!;
+    const s = `jen=0x${jen.toString(16).padStart(2, "0")} fen=${fen}`;
+    return { summary: s, full: `${s}\n${hexAll}` };
   }
   if (e.ns === "jprof" && e.key === "r") {
     const lines = Array.from({ length: M5_JOINTS }, (_, i) => fmtRouteBytes(b, i));

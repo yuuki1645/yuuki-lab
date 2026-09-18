@@ -317,6 +317,8 @@ class AtomSession:
         self.connected = False
         self.hello = ""
         self.fw_ver = 0
+        self._pending_jen: int | None = None
+        self._pending_fen: int | None = None
         self.mode = "lab"
         self.out_mask = 0
         self.nodes: list[ScanNode] = []
@@ -433,7 +435,8 @@ class AtomSession:
             self.note(str(payload))
             if self.connected:
                 self.send(proto.cmd_ping())
-                self.send(proto.cmd_scan())
+                if not self._got_scan:
+                    self.send(proto.cmd_scan())
                 self.send(proto.cmd_prof_get())
         elif kind == "error":
             self.connected = False
@@ -451,7 +454,7 @@ class AtomSession:
                     self.note(f"起動音  {BOOT_WAV.name}")
                 else:
                     self.note(f"起動音なし  {BOOT_WAV.name}")
-            self.send(proto.cmd_prof_get())
+            # ping の HELLO では取り直さない。接続時の prof_get と PUT ダンプを上書きしない
         elif kind == "scan_begin":
             self._scan_acc = []
             self._scan_expect = int(payload) if isinstance(payload, int) else 0
@@ -498,6 +501,12 @@ class AtomSession:
                 jen = joint_en_mask(self.routes)
                 fen = int(bool(self.foot.enabled))
                 extra = "" if has_en else " マスク無し"
+                pending = self._pending_jen
+                pending_fen = self._pending_fen
+                self._pending_jen = None
+                self._pending_fen = None
+                if pending is not None and has_en and (jen != pending or fen != int(pending_fen or 0)):
+                    extra += f" 不一致 送信jen=0x{pending:02X} fen={int(pending_fen or 0)}"
                 self.note(f"プロファイル受信  {len(routes)} 軸  jen=0x{jen:02X} fen={fen}{extra}")
             else:
                 self.note("プロファイル不完全")

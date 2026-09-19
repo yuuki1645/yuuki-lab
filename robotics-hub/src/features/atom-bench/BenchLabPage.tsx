@@ -133,6 +133,7 @@ export default function BenchLabPage() {
     () => buildAngleSeries(plotOn, history, ch),
     [plotOn, history, ch]
   );
+  const errSeries = useMemo(() => buildErrSeries(plotOn, history, ch), [plotOn, history, ch]);
   const powerSeries = useMemo(
     () => buildPowerSeries(plotOn, history, ch),
     [plotOn, history, ch]
@@ -378,7 +379,7 @@ export default function BenchLabPage() {
                 <span className="m5-leg__plot-togs-lab">
                   グラフ
                   <UiHelp title="グラフ">
-                    直近の履歴を折線にします。角度は 0〜360° 軸、電源は自動スケールです。色はバーと同じです。
+                    直近の履歴を折線にします。角度は 0〜360°、ズレは補正−指令を 0° 中心で拡大、電源は自動スケールです。色はバーと同じです。
                   </UiHelp>
                 </span>
                 {BENCH_PLOT_ITEMS.map((item) => {
@@ -397,8 +398,22 @@ export default function BenchLabPage() {
                   );
                 })}
               </div>
-              {angleSeries.length ? <Sparkline series={angleSeries} showAxes yMin={0} yMax={360} /> : null}
-              {powerSeries.length ? <Sparkline series={powerSeries} showAxes autoScale height={110} /> : null}
+              {angleSeries.length ? (
+                <Sparkline series={angleSeries} showAxes yMin={0} yMax={360} strokeWidth={1} />
+              ) : null}
+              {errSeries.length ? (
+                <Sparkline
+                  series={errSeries}
+                  showAxes
+                  yMin={errSeries[0]?.yMin ?? -1}
+                  yMax={errSeries[0]?.yMax ?? 1}
+                  height={110}
+                  strokeWidth={1}
+                />
+              ) : null}
+              {powerSeries.length ? (
+                <Sparkline series={powerSeries} showAxes autoScale height={110} strokeWidth={1} />
+              ) : null}
 
               <InaPanel ch={ch} frame={frame} canCmd={canCmd} routes={routes} profile={profile} send={send} />
             </section>
@@ -567,6 +582,41 @@ function buildAngleSeries(
   push("unwrap", BENCH_BAR.unwrap, (h) => at(h.unwrap, ch) ?? null);
   push("corr", BENCH_BAR.corr, (h) => at(h.corr, ch) ?? null);
   return out;
+}
+
+/** バーと同じ ズレ = 補正 − 指令。0° を中心に、ピークが見える範囲へ広げる */
+function trackingErr(h: M5HistoryPoint, ch: number): number | null {
+  const cmd = at(h.cmd, ch);
+  const corr = at(h.corr, ch);
+  if (typeof cmd !== "number" || typeof corr !== "number") return null;
+  if (!Number.isFinite(cmd) || !Number.isFinite(corr)) return null;
+  return corr - cmd;
+}
+
+function buildErrSeries(
+  plotOn: BenchPlotVisibility,
+  history: M5HistoryPoint[],
+  ch: number
+): SparkSeries[] {
+  if (!plotOn.err) return [];
+  const values = history.map((h) => trackingErr(h, ch));
+  let peak = 1;
+  for (const v of values) {
+    if (typeof v === "number" && Number.isFinite(v)) {
+      peak = Math.max(peak, Math.abs(v));
+    }
+  }
+  return [
+    {
+      key: "err",
+      color: BENCH_BAR.err,
+      values,
+      yMin: -peak,
+      yMax: peak,
+      axis: "left",
+      unit: "°",
+    },
+  ];
 }
 
 /** 電源系。自動スケールなので単位だけ渡す */

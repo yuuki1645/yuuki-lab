@@ -22,13 +22,14 @@ export const BENCH_BAR = {
   watt: "#ff6b81",
 };
 
-export type BenchPlotKey = "cmd" | "raw" | "unwrap" | "corr" | "volt" | "amp" | "watt";
+export type BenchPlotKey = "cmd" | "raw" | "unwrap" | "corr" | "err" | "volt" | "amp" | "watt";
 
 export const BENCH_PLOT_ITEMS: { key: BenchPlotKey; label: string; color: string }[] = [
   { key: "cmd", label: "指令", color: BENCH_BAR.cmd },
   { key: "raw", label: "生角", color: BENCH_BAR.raw },
   { key: "unwrap", label: "unwrap", color: BENCH_BAR.unwrap },
   { key: "corr", label: "補正", color: BENCH_BAR.corr },
+  { key: "err", label: "ズレ", color: BENCH_BAR.err },
   { key: "volt", label: "電圧", color: BENCH_BAR.volt },
   { key: "amp", label: "電流", color: BENCH_BAR.amp },
   { key: "watt", label: "電力", color: BENCH_BAR.watt },
@@ -36,12 +37,13 @@ export const BENCH_PLOT_ITEMS: { key: BenchPlotKey; label: string; color: string
 
 export type BenchPlotVisibility = Record<BenchPlotKey, boolean>;
 
-/** 既定は校正で見たい 4 本。電源は必要になったら足す */
+/** 既定は校正で見たい角度＋ズレ。電源は必要になったら足す */
 export const BENCH_PLOT_DEFAULT: BenchPlotVisibility = {
   cmd: true,
   raw: true,
   unwrap: false,
   corr: true,
+  err: true,
   volt: false,
   amp: true,
   watt: false,

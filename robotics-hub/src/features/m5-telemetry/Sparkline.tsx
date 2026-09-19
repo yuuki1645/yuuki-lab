@@ -30,6 +30,8 @@ type Props = {
   className?: string;
   /** 左右の数値目盛り（単位付き）。既存のコンパクト表示は false のまま */
   showAxes?: boolean;
+  /** 折れ線の太さ（CSS px）。preserveAspectRatio=none でも vector-effect で伸びない */
+  strokeWidth?: number;
 };
 
 /** 上・中・下の 3 本。左右軸は同じ高さに揃える */
@@ -107,6 +109,7 @@ export function Sparkline({
   autoScale = false,
   className = "m5-spark",
   showAxes = false,
+  strokeWidth = 1,
 }: Props) {
   const w = 640;
   const h = height;
@@ -245,6 +248,18 @@ export function Sparkline({
           ) : null}
         </g>
       ))}
+      {/* 0 をまたぐ軸（ズレなど）は基準線を引く */}
+      {showAxes && lo < 0 && hi > 0 ? (
+        <line
+          x1={plotL}
+          x2={plotR}
+          y1={yAtGlobal(0)}
+          y2={yAtGlobal(0)}
+          stroke="rgba(255,255,255,0.45)"
+          strokeWidth="1"
+          vectorEffect="non-scaling-stroke"
+        />
+      ) : null}
       {series.map((s) => {
         const pts: string[] = [];
         s.values.forEach((v, i) => {
@@ -257,7 +272,10 @@ export function Sparkline({
             key={s.key}
             fill="none"
             stroke={s.color || M5_COLORS.cmd}
-            strokeWidth="2"
+            strokeWidth={strokeWidth}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
             points={pts.join(" ")}
           />
         );

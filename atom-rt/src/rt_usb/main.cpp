@@ -2587,8 +2587,8 @@ static void usbTask(void* /*arg*/) {
                 pkt.n = static_cast<uint8_t>(kJointCount);
                 pkt.is_default = isDefault;
                 usbSend(kUsbProfOk, &pkt, sizeof(pkt));
+                // 経路は小さいので返す。NVS 全文は CDC を殺すので、見たいときだけ nvs_list
                 usbDumpProfile();
-                usbDumpNvs();
             } else {
                 profSendErr(kUsbReasonNvs);
             }
@@ -2596,7 +2596,7 @@ static void usbTask(void* /*arg*/) {
         if (gNvsEraseReq) {
             gNvsEraseReq = 0;
             nvsEraseNamespace(gNvsEraseNs);
-            gNvsDumpReq = 1;
+            // 消したあとの全文ダンプもしない。保管庫は「ボードから読む」
         }
         if (gNvsDumpReq) {
             gNvsDumpReq = 0;

@@ -5,7 +5,7 @@
  * 実機テレメトリ（M5）と同じ lab_debug.py（Socket.IO :8794）につなぐので、
  * ファームの焼き分けは不要。違いは「机上向けに Lab を保ち、1 軸だけ触る」点。
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "@/features/m5-telemetry/M5TelemetryPage.css";
 import "./BenchLabPage.css";
@@ -101,9 +101,15 @@ export default function BenchLabPage() {
   const magCode = at(frame?.mag, ch) ?? 255;
   const routes = profile?.routes ?? [];
 
-  // NVS タブを開いたときだけ実キーを取り直す
+  // このタブを開いているあいだは 1 回だけ。再接続のたびに撃つと CDC 切断と輪になる
+  const nvsListed = useRef(false);
   useEffect(() => {
-    if (tab !== "nvs" || !canCmd) return;
+    if (tab !== "nvs") {
+      nvsListed.current = false;
+      return;
+    }
+    if (!canCmd || nvsListed.current) return;
+    nvsListed.current = true;
     send({ op: "nvs_list" });
   }, [tab, canCmd, send]);
 

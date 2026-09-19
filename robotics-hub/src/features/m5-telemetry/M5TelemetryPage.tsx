@@ -80,8 +80,15 @@ export default function M5TelemetryPage() {
   // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
   const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
 
+  // タブを開いているあいだは 1 回だけ。切断復帰のたびに nvs_list しない
+  const nvsListed = useRef(false);
   useEffect(() => {
-    if (tab !== "nvs" || !canCmd) return;
+    if (tab !== "nvs") {
+      nvsListed.current = false;
+      return;
+    }
+    if (!canCmd || nvsListed.current) return;
+    nvsListed.current = true;
     send({ op: "nvs_list" });
   }, [tab, canCmd, send]);
 

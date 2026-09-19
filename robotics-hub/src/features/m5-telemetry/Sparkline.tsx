@@ -150,34 +150,44 @@ export function Sparkline({
   const leftSeries = series.filter((s) => (s.axis ?? "left") === "left");
   const rightSeries = series.filter((s) => s.axis === "right");
 
-  const leftAxis: AxisInfo | null = (() => {
-    if (!showAxes || !leftSeries.length) return null;
-    const a = leftSeries[0];
-    const min = a.yMin ?? lo;
-    const max = a.yMax ?? hi;
+  /** 系列の yMin/yMax を優先。無いときだけグラフ全体の範囲 */
+  const axisOf = (s: SparkSeries | undefined, color: string): AxisInfo | null => {
+    if (!s) return null;
+    const min = s.yMin ?? lo;
+    const max = s.yMax ?? hi;
     return {
       min,
       max,
-      unit: a.unit ?? "",
-      color: "#8b9bb0",
+      unit: s.unit ?? "",
+      color,
       ticks: evenTicks(min, max, AXIS_TICK_COUNT),
     };
-  })();
+  };
 
+  let leftAxis: AxisInfo | null = showAxes ? axisOf(leftSeries[0], "#8b9bb0") : null;
   const rightAxes: AxisInfo[] = [];
   if (showAxes) {
-    for (const s of rightSeries) {
-      const min = s.yMin ?? lo;
-      const max = s.yMax ?? hi;
-      rightAxes.push({
-        min,
-        max,
-        unit: s.unit ?? "",
-        color: s.color,
-        ticks: evenTicks(min, max, AXIS_TICK_COUNT),
-      });
+    if (rightSeries.length) {
+      // 右軸は系列ごとに別スケール（ズレ ±n°、電流 A など）
+      for (const s of rightSeries) {
+        const ax = axisOf(s, s.color || "#8b9bb0");
+        if (ax) rightAxes.push(ax);
+      }
+    } else if (leftAxis) {
+      // 右系列が無いときも、左と同じ目盛りを右に出す
+      rightAxes.push({ ...leftAxis });
+    }
+    if (!leftAxis && rightAxes[0]) {
+      leftAxis = { ...rightAxes[0], color: "#8b9bb0" };
     }
   }
+
+  /** 0 をまたぐ系列（ズレ）の 0 線。全体 y が 0〜360 のときは左軸では出ない */
+  const zeroSeries = [...leftSeries, ...rightSeries].find((s) => {
+    const a = s.yMin ?? lo;
+    const b = s.yMax ?? hi;
+    return a < 0 && b > 0;
+  });
 
   /**
    * 3 本の水平位置。左右軸はいずれも min〜max を等分するので、
@@ -235,7 +245,7 @@ export function Sparkline({
               vectorEffect="non-scaling-stroke"
             />
           ) : null}
-          {showAxes && rightAxes.length ? (
+          {showAxes && (rightAxes.length || leftAxis) ? (
             <line
               x1={plotR}
               x2={plotR + tickLen}
@@ -248,14 +258,14 @@ export function Sparkline({
           ) : null}
         </g>
       ))}
-      {/* 0 をまたぐ軸（ズレなど）は基準線を引く */}
-      {showAxes && lo < 0 && hi > 0 ? (
+      {/* ズレ軸の 0°。左軸が 0〜360 でも、右軸の 0 に合わせて引く */}
+      {showAxes && zeroSeries ? (
         <line
           x1={plotL}
           x2={plotR}
-          y1={yAtGlobal(0)}
-          y2={yAtGlobal(0)}
-          stroke="rgba(255,255,255,0.45)"
+          y1={yAtSeries(zeroSeries, 0)}
+          y2={yAtSeries(zeroSeries, 0)}
+          stroke="rgba(255, 71, 87, 0.45)"
           strokeWidth="1"
           vectorEffect="non-scaling-stroke"
         />

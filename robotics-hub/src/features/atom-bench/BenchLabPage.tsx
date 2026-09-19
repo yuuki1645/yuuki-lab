@@ -379,7 +379,7 @@ export default function BenchLabPage() {
                 <span className="m5-leg__plot-togs-lab">
                   グラフ
                   <UiHelp title="グラフ">
-                    直近の履歴を折線にします。角度は 0〜360°、ズレは補正−指令を 0° 中心で拡大、電源は自動スケールです。色はバーと同じです。
+                    直近の履歴を折線にします。左軸は角度 0〜360°、右軸はズレ（補正−指令）の拡大スケールです。目盛りは左右に出ます。電源は下の別グラフです。
                   </UiHelp>
                 </span>
                 {BENCH_PLOT_ITEMS.map((item) => {
@@ -398,16 +398,12 @@ export default function BenchLabPage() {
                   );
                 })}
               </div>
-              {angleSeries.length ? (
-                <Sparkline series={angleSeries} showAxes yMin={0} yMax={360} strokeWidth={1} />
-              ) : null}
-              {errSeries.length ? (
+              {angleSeries.length || errSeries.length ? (
                 <Sparkline
-                  series={errSeries}
+                  series={[...angleSeries, ...errSeries]}
                   showAxes
-                  yMin={errSeries[0]?.yMin ?? -1}
-                  yMax={errSeries[0]?.yMax ?? 1}
-                  height={110}
+                  yMin={0}
+                  yMax={360}
                   strokeWidth={1}
                 />
               ) : null}
@@ -613,7 +609,7 @@ function buildErrSeries(
       values,
       yMin: -peak,
       yMax: peak,
-      axis: "left",
+      axis: "right",
       unit: "°",
     },
   ];

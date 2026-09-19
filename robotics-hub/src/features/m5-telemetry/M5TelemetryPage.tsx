@@ -23,6 +23,7 @@ import { useM5TelemetryStream } from "./useM5TelemetryStream";
 import FieldManual, { useFieldManual } from "./field-manual/FieldManual";
 import { NvsVault } from "./NvsVault";
 import { EventsLog } from "./EventsLog";
+import { CalMapFiles } from "./CalMapFiles";
 
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "nvs" | "events";
 
@@ -504,7 +505,8 @@ export default function M5TelemetryPage() {
       {tab === "cal" ? (
         <section className="m5__section">
           <p className="m5__meta">
-            周囲を空けてから実行。40→230→40° でマップを作り NVS に保存します。JSON ファイルの読み書きは PC 側です。
+            周囲を空けてから実行。40→230→40° でマップを作り NVS に保存します。JSON は
+            校正完了またはマップ取得のあと、この画面から保存・読込できます。
           </p>
           <div className="m5__toolbar">
             <label>
@@ -531,6 +533,7 @@ export default function M5TelemetryPage() {
             >
               マップ取得
             </button>
+            <CalMapFiles cal={cal} ch={calCh} canCmd={canCmd} send={send} />
           </div>
           <p>状態: {cal?.status || "—"}</p>
           <p className="m5__meta">

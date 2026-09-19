@@ -186,10 +186,18 @@ export type M5Profile = {
   foot_options?: string[];
 };
 
+/** 校正マップ 1 点。as5600-servo-map-v1 の points[] と同じ */
+export type M5CalPoint = {
+  as5600: number;
+  servo: number;
+};
+
 export type M5Cal = {
   status: string;
   map_ch: number;
   map_count: number;
+  /** 最後に受信または送信した点列。未取得なら空 */
+  map_points?: M5CalPoint[];
 };
 
 export type M5NvsEntry = {

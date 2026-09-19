@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "@/features/m5-telemetry/M5TelemetryPage.css";
 import "./BenchLabPage.css";
+import { CalMapFiles } from "@/features/m5-telemetry/CalMapFiles";
 import { NvsVault } from "@/features/m5-telemetry/NvsVault";
 import { ProfilePanel } from "@/features/m5-telemetry/ProfilePanel";
 import { Sparkline, type SparkSeries } from "@/features/m5-telemetry/Sparkline";
@@ -411,7 +412,7 @@ export default function BenchLabPage() {
               </p>
               <div className="m5__toolbar">
                 <UiHelp title="校正" wide>
-                  PC が PWM を握って 40→230→40° を 1° 刻みで掃引し、できたマップを NVS の cal に書きます。AS5600 が読めていないと点は溜まりません。JSON の保存は lab_debug.py 側です。マップ取得はボードからチャンクで吸い上げます（この間テレメトリは止まります）。
+                  PC が PWM を握って 40→230→40° を 1° 刻みで掃引し、できたマップを NVS の cal に書きます。AS5600 が読めていないと点は溜まりません。マップ取得はボードからチャンクで吸い上げます（この間テレメトリは止まります）。JSON は as5600-servo-map-v1 でブラウザに保存でき、別ボードへ送り直せます。
                 </UiHelp>
                 <span className="m5__meta">対象 ch{ch}</span>
                 <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd} onClick={startCal}>
@@ -428,6 +429,7 @@ export default function BenchLabPage() {
                 >
                   マップ取得
                 </button>
+                <CalMapFiles cal={cal} ch={ch} canCmd={canCmd} send={send} />
               </div>
               <p>状態: {cal?.status || "—"}</p>
               <p className="m5__meta">
@@ -436,7 +438,8 @@ export default function BenchLabPage() {
               </p>
               <p className="m5__meta">
                 AS5600 が {encOk ? "読めています" : "読めていません"}。読めないまま掃引しても点が溜まりません。
-                JSON の保存・読込は PC 側（<code>lab_debug.py</code> の校正タブ）です。
+                JSON は校正完了またはマップ取得のあと「JSON に保存」できます。形式は{" "}
+                <code>as5600-servo-map-v1</code>（<code>lab_debug.py</code> と同じ）です。
               </p>
             </section>
           ) : null}

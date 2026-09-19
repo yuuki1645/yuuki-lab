@@ -582,14 +582,36 @@ class LabApp(tk.Tk):
         return {"seq": int(s.event_seq), "lines": list(s.events)}
 
     def _m5_cal_dict(self) -> dict:
+        """Hub の校正タブ用。点列は JSON 保存（as5600-servo-map-v1）にそのまま載せる。"""
         s = self._m5_sess()
         if not s:
-            return {"status": "", "map_ch": 0, "map_count": 0}
+            return {"status": "", "map_ch": 0, "map_count": 0, "map_points": []}
         return {
             "status": s.cal_status,
             "map_ch": s.map_ch,
             "map_count": len(s.map_points),
+            "map_points": [
+                {"as5600": float(x), "servo": float(y)} for x, y in s.map_points
+            ],
         }
+
+    def _map_points_from_msg(self, msg: dict) -> list[tuple[float, float]] | None:
+        """Hub の map_put。as5600/servo の dict か [x, y]。2〜191 点。"""
+        raw = msg.get("points")
+        if not isinstance(raw, list) or not (2 <= len(raw) <= 191):
+            return None
+        pts: list[tuple[float, float]] = []
+        try:
+            for p in raw:
+                if isinstance(p, dict):
+                    pts.append((float(p["as5600"]), float(p["servo"])))
+                elif isinstance(p, (list, tuple)) and len(p) >= 2:
+                    pts.append((float(p[0]), float(p[1])))
+                else:
+                    return None
+        except (KeyError, TypeError, ValueError):
+            return None
+        return pts
 
     def _m5_nvs_dict(self) -> dict:
         """フラッシュ NVS のキー一覧。未取得なら ok=false。"""
@@ -715,7 +737,8 @@ class LabApp(tk.Tk):
             if prof_sig != self._m5_prof_sig:
                 self._m5_prof_sig = prof_sig
                 self._m5_bridge.publish(EVT_PROFILE, self._m5_profile_dict())
-            cal_sig = (s.cal_status, s.map_ch, len(s.map_points))
+            # 同じ点数の再取得でも点列は差し替わる。id で Hub に載せ直す
+            cal_sig = (s.cal_status, s.map_ch, len(s.map_points), id(s.map_points))
             if cal_sig != self._m5_cal_sig:
                 self._m5_cal_sig = cal_sig
                 self._m5_bridge.publish(EVT_CAL, self._m5_cal_dict())
@@ -906,6 +929,31 @@ class LabApp(tk.Tk):
         elif op == "map_get":
             ch = int(msg.get("ch", 0))
             s.send(proto.cmd_map_get(ch))
+        elif op == "map_put":
+            # Hub の「JSON を開いて送信」。形式は cal_map_io と同じ点列
+            ch = int(msg.get("ch", 0))
+            pts = self._map_points_from_msg(msg)
+            if pts is None or not (0 <= ch < JOINTS):
+                s.note("マップ送信  形式不正")
+            else:
+                if self._auto_scan.get():
+                    self._auto_scan.set(False)
+                    if self._scan_job is not None:
+                        self.after_cancel(self._scan_job)
+                        self._scan_job = None
+                    s.note("マップ送信のため自動スキャンを停止")
+                s.map_ch = ch
+                s.map_points = pts
+                s.send_map(ch, pts)
+                note = f"マップ送信  ch{ch}  {len(pts)}点"
+                if "file_ch" in msg:
+                    try:
+                        file_ch = int(msg.get("file_ch"))
+                    except (TypeError, ValueError):
+                        file_ch = -1
+                    if file_ch >= 0 and file_ch != ch:
+                        note += f"  (file ch={file_ch})"
+                s.note(note)
         elif op == "nvs_list":
             s.send(proto.cmd_nvs_list())
         elif op == "nvs_erase":

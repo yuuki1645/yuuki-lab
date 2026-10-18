@@ -39,18 +39,46 @@ export type RightLegJointId =
   | "anklePitch"
   | "ankleRoll";
 
+export type LegSide = "left" | "right";
+
 export type RightLegJoint = {
-  id: RightLegJointId;
-  /** ATOM / lab_debug の論理関節番号 */
+  /** 左右で重ならない id。選択ハイライト用 */
+  id: string;
+  /** 右脚は実機ファームの論理関節 0〜4。左脚は 5〜9（Isaac の橋だけが使う） */
   ch: number;
   label: string;
   short: string;
+  side: LegSide;
 };
 
-export const RIGHT_LEG_JOINTS: RightLegJoint[] = [
-  { id: "hipRoll", ch: 0, label: "股関節ロール", short: "HIP ROLL" },
-  { id: "hipPitch", ch: 1, label: "股関節ピッチ", short: "HIP PITCH" },
-  { id: "kneePitch", ch: 2, label: "ひざピッチ", short: "KNEE" },
-  { id: "anklePitch", ch: 3, label: "かかとピッチ", short: "ANKLE" },
-  { id: "ankleRoll", ch: 4, label: "かかとロール", short: "FOOT ROLL" },
+/** 上から股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。左右で同じ順。 */
+export const LEG_ROWS: { id: RightLegJointId; label: string; short: string }[] = [
+  { id: "hipRoll", label: "股関節ロール", short: "HIP ROLL" },
+  { id: "hipPitch", label: "股関節ピッチ", short: "HIP PITCH" },
+  { id: "kneePitch", label: "ひざピッチ", short: "KNEE" },
+  { id: "anklePitch", label: "かかとピッチ", short: "ANKLE" },
+  { id: "ankleRoll", label: "かかとロール", short: "FOOT ROLL" },
 ];
+
+/** 右脚 ch 0〜4、左脚 ch 5〜9。 */
+export function legChannel(side: LegSide, row: number): number {
+  return side === "right" ? row : 5 + row;
+}
+
+export function legJoint(side: LegSide, row: number): RightLegJoint {
+  const def = LEG_ROWS[row];
+  if (!def) {
+    throw new Error(`脚の行番号が範囲外です: ${row}`);
+  }
+  const sideLabel = side === "left" ? "左" : "右";
+  return {
+    id: `${side}-${def.id}`,
+    ch: legChannel(side, row),
+    label: `${sideLabel} ${def.label}`,
+    short: def.short,
+    side,
+  };
+}
+
+/** 実機 PWM ボタン用。右脚だけ、従来の ch 0〜4。 */
+export const RIGHT_LEG_JOINTS: RightLegJoint[] = LEG_ROWS.map((_, row) => legJoint("right", row));

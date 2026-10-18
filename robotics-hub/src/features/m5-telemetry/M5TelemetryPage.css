@@ -597,6 +597,31 @@
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
+  /* 2列が狭い画面で縦積みになると、左右の同じ関節の高さがずれる。横スクロールで行を保つ */
+  overflow-x: auto;
+}
+
+.m5-leg__pair {
+  display: grid;
+  grid-template-columns: minmax(460px, 1fr) minmax(460px, 1fr);
+  gap: 0.55rem;
+}
+
+.m5-leg__feet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+  gap: 0;
+}
+
+.m5-jrow--idle {
+  opacity: 0.42;
+  filter: grayscale(0.9);
+}
+
+.m5-jrow__live-item--idle .m5-jrow__live-lab,
+.m5-jrow__live-item--idle .m5-jrow__live-val {
+  color: #6d7c8f;
 }
 
 .m5-jrow {

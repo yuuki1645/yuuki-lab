@@ -81,6 +81,32 @@ python robot_description/generate_urdf.py
 
 カゴの重さを量ったら `basket.mass_kg` を差し替え、もう一度生成してください。総質量が実機の秤の値に近づいているかの確認に使えます。
 
+## Hub から関節を動かす
+
+実機の日とシミュの日は分けます。両方は同時に起動しません。
+
+実機の日は、今までどおり Hub だけです。Isaac は起動しません。
+
+```powershell
+cd Z:\Projects\yuuki-lab\robotics-hub
+npm run dev:m5
+```
+
+ブラウザは **実機テレメトリ（M5）** の「脚」タブです。左列は実機に脚が無いので暗いまま、右列が今までどおり動きます。
+
+シミュの日は、`isaac-sim.bat` と `npm run dev:m5` は使いません。プロセスは3つです。
+
+```powershell
+cd Z:\Projects\yuuki-lab\robotics-hub
+npm run dev
+
+python Z:\Projects\yuuki-lab\robot_description\isaac_hub_bridge.py
+
+C:\isaacsim\python.bat Z:\Projects\yuuki-lab\robot_description\isaac_hub_play.py
+```
+
+橋は Hub 用の Python（`flask-socketio` が入っているもの）で起動します。`C:\isaacsim` にはパッケージを入れません。再生スクリプトが Isaac Sim の窓を開きます。画面は同じ「脚」タブで、`:8794` が無いので `:8795` の橋へつながります。135° が直立です。電圧・電流は暗いまま残ります。PWM ON のあと、バーのつまみを掴むと関節が追います。
+
 ## Isaac Lab や sim-to-real で使うとき
 
 この URDF はまだ Isaac Lab のタスクには接続していません。Isaac Lab で学習するときは、USD に変換したあとでアセット設定から参照します。トルク上限と速度上限は URDF の `limit` に入っています。位置制御の PD ゲインは URDF に無く、シミュレータ側のアクチュエータ設定です。

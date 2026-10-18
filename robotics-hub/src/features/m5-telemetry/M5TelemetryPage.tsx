@@ -28,7 +28,7 @@ import { CalMapFiles } from "./CalMapFiles";
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "nvs" | "events";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "right-leg", label: "右脚" },
+  { id: "right-leg", label: "脚" },
   { id: "joint", label: "関節 / 試験" },
   { id: "power", label: "電源" },
   { id: "time", label: "周期" },
@@ -174,7 +174,13 @@ export default function M5TelemetryPage() {
         </span>
         <span className="m5__url">{stream.url}</span>
         <span className={"m5__badge " + (atomOk ? "m5__badge--connected" : "m5__badge--disconnected")}>
-          {atomOk ? `ATOM ${status?.name || status?.port || ""}` : "ATOM 未接続"}
+          {stream.source === "isaac"
+            ? atomOk
+              ? "Isaac Sim"
+              : "Isaac 未接続"
+            : atomOk
+              ? `ATOM ${status?.name || status?.port || ""}`
+              : "ATOM 未接続"}
         </span>
         {status?.hello ? <span className="m5__meta">{status.hello}</span> : null}
         <span className="m5__meta">モード {replaying ? (frame?.mode || rec.meta?.mode || "—") : status?.mode || "—"}</span>
@@ -248,6 +254,7 @@ export default function M5TelemetryPage() {
       {tab === "right-leg" ? (
         <RightLegTab
           canCmd={canCmd}
+          source={stream.source}
           control={control}
           frame={frame}
           history={history}

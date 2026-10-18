@@ -6,14 +6,18 @@ import { RightFootSole } from "./RightFootSole";
 import {
   LEG_PLOT_DEFAULT,
   LEG_PLOT_ITEMS,
-  RIGHT_LEG_JOINTS,
+  LEG_ROWS,
+  legJoint,
   type LegPlotKey,
-  type RightLegJointId,
+  type LegSide,
 } from "./rightLeg";
+import type { M5LinkSource } from "./useM5TelemetryStream";
 import type { M5Cmd, M5Control, M5Frame, M5HistoryPoint } from "./types";
 
 type Props = {
   canCmd: boolean;
+  /** atom は右脚だけ実在。isaac は 10 関節。未接続は null */
+  source: M5LinkSource | null;
   control: M5Control | null;
   frame: M5Frame | null;
   history: M5HistoryPoint[];
@@ -30,11 +34,11 @@ function at<T>(xs: T[] | undefined, i: number): T | undefined {
 }
 
 /**
- * 右脚 5 軸の操作画面。
- * 指令バーは操作ロック解除かつ PWM ON の軸だけ動く。バー操作では PWM を入れない。
+ * 左右 5 行の操作画面。左列が左脚、右列が右脚。
+ * 指令バーは操作ロック解除かつ PWM ON かつ、その関節が接続されているときだけ動く。
  */
-export function RightLegTab({ canCmd, control, frame, history, send, cameraPane }: Props) {
-  const [selected, setSelected] = useState<RightLegJointId>("kneePitch");
+export function RightLegTab({ canCmd, source, control, frame, history, send, cameraPane }: Props) {
+  const [selected, setSelected] = useState<string>("right-kneePitch");
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
   const [cmdLocked, setCmdLocked] = useState(true);
   const idleTimer = useRef<number | null>(null);
@@ -83,11 +87,21 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
     bumpIdle();
   };
 
-  const pwmAll = (on: boolean) => {
+  // 実機は右脚 ch 0〜4 だけ。左脚 ch 5〜9 は Isaac の橋が値を載せたときだけ生きる。
+  const jointLive = (side: LegSide, row: number): boolean => {
+    const ch = legJoint(side, row).ch;
+    if (source === "atom") return side === "right";
+    if (source !== "isaac") return false;
+    // 再生スクリプトが関節角を載せ始めてから点灯する。指令だけの仮の 135° では点灯しない。
+    return typeof at(frame?.corr, ch) === "number";
+  };
+
+  const pwmSide = (side: LegSide, on: boolean) => {
     if (!canCmd) return;
-    for (const j of RIGHT_LEG_JOINTS) {
-      send({ op: "out", ch: j.ch, on });
-    }
+    LEG_ROWS.forEach((_, row) => {
+      if (!jointLive(side, row)) return;
+      send({ op: "out", ch: legJoint(side, row).ch, on });
+    });
   };
 
   return (
@@ -97,8 +111,8 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
     >
       <div className="m5-leg__toolbar">
         <p className="m5__meta">
-          右脚のみ。指令バーはつまみを掴んでドラッグ。PWM は下のボタンで入れます。ライブ指令は
-          100〜170°。ズレは指令と補正の区間だけ赤く塗ります。
+          左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。指令バーはつまみを掴んでドラッグ。
+          ライブ指令は 100〜170°。接続の無い脚と、電圧・電流が無い欄は枠を残して暗くします。
         </p>
         <div className="m5-leg__lock" role="group" aria-label="指令バー操作ロック">
           <span
@@ -123,10 +137,36 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
             </button>
           )}
         </div>
-        <button type="button" className="m5__btn m5__btn--on" disabled={!canCmd} onClick={() => pwmAll(true)}>
+        <button
+          type="button"
+          className="m5__btn m5__btn--on"
+          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("left", row))}
+          onClick={() => pwmSide("left", true)}
+        >
+          左脚 PWM ON
+        </button>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("left", row))}
+          onClick={() => pwmSide("left", false)}
+        >
+          左脚 PWM OFF
+        </button>
+        <button
+          type="button"
+          className="m5__btn m5__btn--on"
+          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("right", row))}
+          onClick={() => pwmSide("right", true)}
+        >
           右脚 PWM ON
         </button>
-        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => pwmAll(false)}>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("right", row))}
+          onClick={() => pwmSide("right", false)}
+        >
           右脚 PWM OFF
         </button>
         <div className="m5-leg__plot-togs" role="group" aria-label="グラフ表示項目">
@@ -156,34 +196,42 @@ export function RightLegTab({ canCmd, control, frame, history, send, cameraPane 
         {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}
         <div className="m5-leg__sense">
           <div className="m5-leg__cam">{cameraPane}</div>
-          <div className="m5-leg__foot">
-            <RightFootSole sample={frame?.foot} large />
+          <div className="m5-leg__foot m5-leg__feet">
+            <RightFootSole title="左足裏" sample={null} large />
+            <RightFootSole title="右足裏" sample={frame?.foot} large />
           </div>
         </div>
         <div className="m5-leg__rows">
-          {RIGHT_LEG_JOINTS.map((j) => {
-            const pwmOn = Boolean(at(control?.out, j.ch));
-            return (
-              <JointTripleBar
-                key={j.id}
-                joint={j}
-                cmd={at(control?.cmd, j.ch)}
-                corr={at(frame?.corr, j.ch)}
-                pwmOn={pwmOn}
-                historyCmd={history.map((h) => at(h.cmd, j.ch))}
-                historyCorr={history.map((h) => at(h.corr, j.ch))}
-                historyVolt={history.map((h) => at(h.volt, j.ch))}
-                historyAmp={history.map((h) => at(h.amp, j.ch))}
-                volt={at(frame?.volt, j.ch)}
-                amp={at(frame?.amp, j.ch)}
-                plotOn={plotOn}
-                selected={selected === j.id}
-                disabled={!canCmd || cmdLocked || !pwmOn}
-                onSelect={() => setSelected(j.id)}
-                onCommand={(deg) => setCmd(j.ch, deg)}
-              />
-            );
-          })}
+          {LEG_ROWS.map((def, row) => (
+            <div className="m5-leg__pair" key={def.id}>
+              {(["left", "right"] as const).map((side) => {
+                const j = legJoint(side, row);
+                const live = jointLive(side, row);
+                const pwmOn = Boolean(at(control?.out, j.ch));
+                return (
+                  <JointTripleBar
+                    key={j.id}
+                    joint={j}
+                    cmd={at(control?.cmd, j.ch)}
+                    corr={at(frame?.corr, j.ch)}
+                    pwmOn={pwmOn}
+                    historyCmd={history.map((h) => at(h.cmd, j.ch))}
+                    historyCorr={history.map((h) => at(h.corr, j.ch))}
+                    historyVolt={history.map((h) => at(h.volt, j.ch))}
+                    historyAmp={history.map((h) => at(h.amp, j.ch))}
+                    volt={at(frame?.volt, j.ch)}
+                    amp={at(frame?.amp, j.ch)}
+                    plotOn={plotOn}
+                    selected={selected === j.id}
+                    inactive={!live}
+                    disabled={!live || !canCmd || cmdLocked || !pwmOn}
+                    onSelect={() => setSelected(j.id)}
+                    onCommand={(deg) => setCmd(j.ch, deg)}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
 

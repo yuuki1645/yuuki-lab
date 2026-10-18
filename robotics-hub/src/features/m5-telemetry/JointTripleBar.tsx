@@ -25,6 +25,8 @@ type Props = {
   plotOn: LegPlotVisibility;
   selected: boolean;
   disabled: boolean;
+  /** この関節のセンサが無い。枠は残し、操作と色だけ落とす */
+  inactive?: boolean;
   onSelect: () => void;
   onCommand: (deg: number) => void;
 };
@@ -66,7 +68,7 @@ function fmtLive(
     return `${"—".padStart(bodyWidth, " ")} ${unit}`;
   }
   const sign = v < 0 ? "-" : " ";
-  const [ip, fp = ""] = Math.abs(v).toFixed(frac).split(".");
+  const [ip = "0", fp = ""] = Math.abs(v).toFixed(frac).split(".");
   const intPart = ip.length > intWidth ? ip.slice(-intWidth) : ip.padStart(intWidth, " ");
   const fracPart = (fp + "0".repeat(frac)).slice(0, frac);
   return `${sign}${intPart}.${fracPart} ${unit}`;
@@ -90,6 +92,7 @@ export function JointTripleBar({
   plotOn,
   selected,
   disabled,
+  inactive = false,
   onSelect,
   onCommand,
 }: Props) {
@@ -143,8 +146,12 @@ export function JointTripleBar({
 
   return (
     <article
-      className={"m5-jrow" + (selected ? " m5-jrow--on" : "")}
-      onClick={onSelect}
+      className={
+        "m5-jrow" +
+        (selected && !inactive ? " m5-jrow--on" : "") +
+        (inactive ? " m5-jrow--idle" : "")
+      }
+      onClick={inactive ? undefined : onSelect}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="m5-jrow__body">
@@ -152,8 +159,8 @@ export function JointTripleBar({
           <header className="m5-jrow__head">
             <h2>{joint.label}</h2>
             <span>ch{joint.ch}</span>
-            <span className={"m5-jrow__pwm" + (pwmOn ? " m5-jrow__pwm--on" : "")}>
-              {pwmOn ? "PWM ON" : "PWM OFF"}
+            <span className={"m5-jrow__pwm" + (pwmOn && !inactive ? " m5-jrow__pwm--on" : "")}>
+              {inactive ? "未接続" : pwmOn ? "PWM ON" : "PWM OFF"}
             </span>
           </header>
           <div className="m5-jrow__bars">
@@ -218,8 +225,8 @@ export function JointTripleBar({
         <div className="m5-jrow__plot">
           <PlotLiveReadout
             plotOn={plotOn}
-            cmd={shownCmd}
-            corr={corrVal}
+            cmd={inactive ? null : shownCmd}
+            corr={inactive ? null : corrVal}
             volt={volt}
             amp={amp}
           />
@@ -307,7 +314,7 @@ function PlotLiveReadout({
   amp,
 }: {
   plotOn: LegPlotVisibility;
-  cmd: number;
+  cmd: number | null;
   corr: number | null;
   volt: number | null | undefined;
   amp: number | null | undefined;
@@ -319,13 +326,19 @@ function PlotLiveReadout({
     <div className="m5-jrow__live">
       {items.map((item) => {
         const spec = LIVE_FMT[item.key];
+        const value = values[item.key];
+        // 数値が無い系列（シミュの電圧・電流など）は枠を残して色だけ落とす。
+        const idle = typeof value !== "number" || !Number.isFinite(value);
         return (
-          <span key={item.key} className="m5-jrow__live-item">
-            <span className="m5-jrow__live-lab" style={{ color: item.color }}>
+          <span
+            key={item.key}
+            className={"m5-jrow__live-item" + (idle ? " m5-jrow__live-item--idle" : "")}
+          >
+            <span className="m5-jrow__live-lab" style={idle ? undefined : { color: item.color }}>
               {item.label}
             </span>
-            <span className="m5-jrow__live-val" style={{ color: item.color }}>
-              {fmtLive(values[item.key], spec.intWidth, spec.frac, spec.unit)}
+            <span className="m5-jrow__live-val" style={idle ? undefined : { color: item.color }}>
+              {fmtLive(value, spec.intWidth, spec.frac, spec.unit)}
             </span>
           </span>
         );

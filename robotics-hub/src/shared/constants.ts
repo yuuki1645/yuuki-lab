@@ -190,6 +190,23 @@ export function getM5TelemetrySocketUrl(): string {
 }
 
 /**
+ * Isaac 再生の橋（``robot_description/isaac_hub_bridge.py``、既定 :8795）。
+ * 実機の :8794 が無いとき、実機テレメトリ画面がこちらへ接続する。
+ * ``VITE_ISAAC_HUB_SOCKET_URL`` があれば優先。
+ */
+export function getIsaacHubSocketUrl(): string {
+  const fromEnv = import.meta.env.VITE_ISAAC_HUB_SOCKET_URL;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return (
+    "http://" +
+    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
+    ":8795"
+  );
+}
+
+/**
  * 実機カメラ／Recorder MJPEG（``robot-recorder``、既定 :8766）のベース URL。
  * ``VITE_CAPTURE_REALTIME_URL`` があれば優先（ビルド時に埋め込み）。
  */

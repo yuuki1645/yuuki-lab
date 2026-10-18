@@ -322,7 +322,11 @@ def _read_sole(bundle: dict | None, seq: int) -> dict:
     try:
         points = _plate_contact_points(bundle["sensor"], bundle["sole"])
     except Exception as exc:
-        print(f"[isaac_hub_play] 足裏の接触を読めませんでした: {exc}")
+        # 同じ失敗を毎フレーム出すと、原因の行が流れる。文言が変わったときだけ出す。
+        text = str(exc)
+        if text != getattr(_read_sole, "_last_error", None):
+            _read_sole._last_error = text
+            print(f"[isaac_hub_play] 足裏の接触を読めませんでした: {text}")
         return sample_from_points([], seq, ok=False)
     return sample_from_points(points, seq, ok=True)
 
@@ -344,7 +348,8 @@ def _plate_contact_points(sensor, sole_path: str) -> list[tuple[float, float, fl
     sole = stage.GetPrimAtPath(sole_path)
     world = UsdGeom.XformCache().GetLocalToWorldTransform(sole)
     inverse = world.GetInverse()
-    up = Gf.Vec3d(0.0, 0.0, 1.0) * world
+    # Isaac Sim 6 の pxr は Vec3d * Matrix4d を受け付けない。方向は TransformDir。
+    up = world.TransformDir(Gf.Vec3d(0.0, 0.0, 1.0))
     length = (up[0] * up[0] + up[1] * up[1] + up[2] * up[2]) ** 0.5
     if length < 1e-8:
         return []
@@ -368,7 +373,10 @@ def _plate_contact_points(sensor, sole_path: str) -> list[tuple[float, float, fl
         if normal_n <= 0.0:
             continue
         position = contact["position"]
-        local = Gf.Vec3d(float(position["x"]), float(position["y"]), float(position["z"])) * inverse
+        # ワールドの接触点を、足裏下面中心の座標へ移す。平行移動も含むので Transform。
+        local = inverse.Transform(
+            Gf.Vec3d(float(position["x"]), float(position["y"]), float(position["z"]))
+        )
         if abs(float(local[2])) > margin:
             continue
         if abs(float(local[0])) > PLATE_HALF_X_M + margin:

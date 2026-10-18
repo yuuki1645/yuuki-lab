@@ -1,0 +1,559 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "yuuki_biped"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmp3mc9aj50\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\usdex_yuuki_biped\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\temp_yuuki_biped\\yuuki_biped.usd
+
+
+Generated from Composed Stage of root layer Z:\\Projects\\yuuki-lab\\robot_description\\yuuki_biped\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./physics.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "yuuki_biped"
+{
+    over "Physics"
+    {
+        def MjcActuator "left_hip_roll_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/left_hip_roll>
+        }
+
+        def MjcActuator "left_hip_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/left_hip_pitch>
+        }
+
+        def MjcActuator "left_knee_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/left_knee_pitch>
+        }
+
+        def MjcActuator "left_ankle_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/left_ankle_pitch>
+        }
+
+        def MjcActuator "left_ankle_roll_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/left_ankle_roll>
+        }
+
+        def MjcActuator "right_hip_roll_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/right_hip_roll>
+        }
+
+        def MjcActuator "right_hip_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/right_hip_pitch>
+        }
+
+        def MjcActuator "right_knee_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/right_knee_pitch>
+        }
+
+        def MjcActuator "right_ankle_pitch_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/right_ankle_pitch>
+        }
+
+        def MjcActuator "right_ankle_roll_actuator"
+        {
+            uniform double mjc:forceRange:max = 14.699999809265137
+            uniform double mjc:forceRange:min = -14.699999809265137
+            custom rel mjc:target
+            prepend rel mjc:target = </yuuki_biped/Physics/right_ankle_roll>
+        }
+
+        over "root_joint"
+        {
+        }
+
+        over "imu_fixed"
+        {
+        }
+
+        over "left_hip_roll" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "left_hip_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "left_knee_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "left_ankle_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "left_ankle_roll" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "left_sole_fixed"
+        {
+        }
+
+        over "right_hip_roll" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_hip_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_knee_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_ankle_pitch" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_ankle_roll" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_sole_fixed"
+        {
+        }
+    }
+
+    over "Geometry"
+    {
+        over "basket"
+        {
+            over "imu_link"
+            {
+                over "imu_link_imu_0"
+                {
+                }
+            }
+
+            over "left_hip"
+            {
+                over "left_thigh"
+                {
+                    over "left_shin"
+                    {
+                        over "left_ankle"
+                        {
+                            over "left_foot"
+                            {
+                                over "left_sole"
+                                {
+                                    over "left_sole_sole_marker_0"
+                                    {
+                                    }
+                                }
+
+                                over "left_foot_servo_0"
+                                {
+                                }
+
+                                over "left_foot_foot_plate_1"
+                                {
+                                }
+
+                                over "left_foot_servo_0_1"
+                                {
+                                }
+
+                                over "left_foot_foot_plate_1_1"
+                                {
+                                }
+                            }
+
+                            over "left_ankle_servo_0"
+                            {
+                            }
+
+                            over "left_ankle_servo_0_1"
+                            {
+                            }
+                        }
+
+                        over "left_shin_servo_0"
+                        {
+                        }
+
+                        over "left_shin_plate_1"
+                        {
+                        }
+
+                        over "left_shin_plate_2"
+                        {
+                        }
+
+                        over "left_shin_battery_3"
+                        {
+                        }
+
+                        over "left_shin_servo_0_1"
+                        {
+                        }
+
+                        over "left_shin_plate_1_1"
+                        {
+                        }
+
+                        over "left_shin_plate_2_1"
+                        {
+                        }
+
+                        over "left_shin_battery_3_1"
+                        {
+                        }
+                    }
+
+                    over "left_thigh_servo_0"
+                    {
+                    }
+
+                    over "left_thigh_plate_1"
+                    {
+                    }
+
+                    over "left_thigh_plate_2"
+                    {
+                    }
+
+                    over "left_thigh_battery_3"
+                    {
+                    }
+
+                    over "left_thigh_servo_0_1"
+                    {
+                    }
+
+                    over "left_thigh_plate_1_1"
+                    {
+                    }
+
+                    over "left_thigh_plate_2_1"
+                    {
+                    }
+
+                    over "left_thigh_battery_3_1"
+                    {
+                    }
+                }
+
+                over "left_hip_servo_0"
+                {
+                }
+
+                over "left_hip_servo_0_1"
+                {
+                }
+            }
+
+            over "right_hip"
+            {
+                over "right_thigh"
+                {
+                    over "right_shin"
+                    {
+                        over "right_ankle"
+                        {
+                            over "right_foot"
+                            {
+                                over "right_sole"
+                                {
+                                    over "right_sole_sole_marker_0"
+                                    {
+                                    }
+                                }
+
+                                over "right_foot_servo_0"
+                                {
+                                }
+
+                                over "right_foot_foot_plate_1"
+                                {
+                                }
+
+                                over "right_foot_servo_0_1"
+                                {
+                                }
+
+                                over "right_foot_foot_plate_1_1"
+                                {
+                                }
+                            }
+
+                            over "right_ankle_servo_0"
+                            {
+                            }
+
+                            over "right_ankle_servo_0_1"
+                            {
+                            }
+                        }
+
+                        over "right_shin_servo_0"
+                        {
+                        }
+
+                        over "right_shin_plate_1"
+                        {
+                        }
+
+                        over "right_shin_plate_2"
+                        {
+                        }
+
+                        over "right_shin_battery_3"
+                        {
+                        }
+
+                        over "right_shin_servo_0_1"
+                        {
+                        }
+
+                        over "right_shin_plate_1_1"
+                        {
+                        }
+
+                        over "right_shin_plate_2_1"
+                        {
+                        }
+
+                        over "right_shin_battery_3_1"
+                        {
+                        }
+                    }
+
+                    over "right_thigh_servo_0"
+                    {
+                    }
+
+                    over "right_thigh_plate_1"
+                    {
+                    }
+
+                    over "right_thigh_plate_2"
+                    {
+                    }
+
+                    over "right_thigh_battery_3"
+                    {
+                    }
+
+                    over "right_thigh_servo_0_1"
+                    {
+                    }
+
+                    over "right_thigh_plate_1_1"
+                    {
+                    }
+
+                    over "right_thigh_plate_2_1"
+                    {
+                    }
+
+                    over "right_thigh_battery_3_1"
+                    {
+                    }
+                }
+
+                over "right_hip_servo_0"
+                {
+                }
+
+                over "right_hip_servo_0_1"
+                {
+                }
+            }
+
+            over "basket_basket_0"
+            {
+            }
+
+            over "basket_basket_0_1"
+            {
+            }
+        }
+    }
+
+    over "Materials"
+    {
+        over "material_1"
+        {
+        }
+
+        over "material_2"
+        {
+        }
+
+        over "material_3"
+        {
+        }
+
+        over "material_4"
+        {
+        }
+
+        over "material_5"
+        {
+        }
+
+        over "material_6"
+        {
+        }
+
+        over "material_7"
+        {
+        }
+
+        over "material_8"
+        {
+        }
+
+        over "material_9"
+        {
+        }
+
+        over "material_10"
+        {
+        }
+
+        over "material_11"
+        {
+        }
+
+        over "material_12"
+        {
+        }
+
+        over "material_13"
+        {
+        }
+
+        over "material_14"
+        {
+        }
+
+        over "material_15"
+        {
+        }
+
+        over "material_16"
+        {
+        }
+
+        over "material_17"
+        {
+        }
+
+        over "material_18"
+        {
+        }
+
+        over "material_19"
+        {
+        }
+
+        over "material_20"
+        {
+        }
+
+        over "material_21"
+        {
+        }
+
+        over "material_22"
+        {
+        }
+
+        over "material_23"
+        {
+        }
+
+        over "material_24"
+        {
+        }
+
+        over "material_25"
+        {
+        }
+
+        over "material_26"
+        {
+        }
+
+        over "material_27"
+        {
+        }
+
+        over "material_28"
+        {
+        }
+    }
+}
+

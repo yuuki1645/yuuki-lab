@@ -1,0 +1,1091 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "yuuki_biped"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmp3mc9aj50\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\usdex_yuuki_biped\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\temp_yuuki_biped\\yuuki_biped.usd
+
+
+Generated from Composed Stage of root layer Z:\\Projects\\yuuki-lab\\robot_description\\yuuki_biped\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./robot.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "yuuki_biped" (
+    prepend apiSchemas = ["GeomModelAPI"]
+    assetInfo = {
+        string name = "yuuki_biped"
+    }
+    kind = "component"
+)
+{
+    float3[] extentsHint = [(-0.10000001, -0.175, -0.634), (0.2, 0.175, 0.145), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (-0.10000001, -0.175, -0.634), (0.2, 0.175, 0.145)]
+
+    def Scope "Materials"
+    {
+        def Material "material_1" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_1>
+        )
+        {
+        }
+
+        def Material "material_2" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_2>
+        )
+        {
+        }
+
+        def Material "material_3" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_4" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_5" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_6" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_7" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_7>
+        )
+        {
+        }
+
+        def Material "material_8" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_9" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_10" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_11" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_7>
+        )
+        {
+        }
+
+        def Material "material_12" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_13" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_14" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_14>
+        )
+        {
+        }
+
+        def Material "material_15" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_15>
+        )
+        {
+        }
+
+        def Material "material_16" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_17" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_18" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_19" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_20" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_7>
+        )
+        {
+        }
+
+        def Material "material_21" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_22" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_23" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_5>
+        )
+        {
+        }
+
+        def Material "material_24" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_7>
+        )
+        {
+        }
+
+        def Material "material_25" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_26" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_3>
+        )
+        {
+        }
+
+        def Material "material_27" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_14>
+        )
+        {
+        }
+
+        def Material "material_28" (
+            instanceable = true
+            prepend references = @./materials.usda@</Materials/material_15>
+        )
+        {
+        }
+    }
+
+    def Scope "Geometry"
+    {
+        def Xform "basket"
+        {
+            def Cube "basket_basket_0" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                rel material:binding = </yuuki_biped/Materials/material_1>
+                double size = 1
+                custom string urdf:name = "basket_basket_0"
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (0.18, 0.28, 0.145)
+                double3 xformOp:translate = (0, 0, 0.0725)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "imu_link"
+            {
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, -0.02)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Sphere "imu_link_imu_0" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    float3[] extent = [(-0.012, -0.012, -0.012), (0.012, 0.012, 0.012)]
+                    rel material:binding = </yuuki_biped/Materials/material_2>
+                    double radius = 0.012
+                    custom string urdf:name = "imu_link_imu_0"
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "left_hip"
+            {
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0.09, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Cube "left_hip_servo_0" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    rel material:binding = </yuuki_biped/Materials/material_3>
+                    double size = 1
+                    custom string urdf:name = "left_hip_servo_0"
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                    double3 xformOp:translate = (0, 0, -0.0195)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "left_thigh"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, -0.065)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                    def Cube "left_thigh_servo_0" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_4>
+                        double size = 1
+                        custom string urdf:name = "left_thigh_servo_0"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.03, 0.048, 0.065)
+                        double3 xformOp:translate = (0, 0, -0.0195)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_plate_1" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_5>
+                        double size = 1
+                        custom string urdf:name = "left_thigh_plate_1"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, 0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_plate_2" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_6>
+                        double size = 1
+                        custom string urdf:name = "left_thigh_plate_2"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, -0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_battery_3" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_7>
+                        double size = 1
+                        custom string urdf:name = "left_thigh_battery_3"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.024, 0.04, 0.13)
+                        double3 xformOp:translate = (0, 0, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Xform "left_shin"
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, -0.226)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        def Cube "left_shin_servo_0" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_8>
+                            double size = 1
+                            custom string urdf:name = "left_shin_servo_0"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.03, 0.048, 0.065)
+                            double3 xformOp:translate = (0, 0, -0.0195)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_plate_1" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_9>
+                            double size = 1
+                            custom string urdf:name = "left_shin_plate_1"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, 0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_plate_2" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_10>
+                            double size = 1
+                            custom string urdf:name = "left_shin_plate_2"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, -0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_battery_3" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_11>
+                            double size = 1
+                            custom string urdf:name = "left_shin_battery_3"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.024, 0.04, 0.13)
+                            double3 xformOp:translate = (0, 0, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Xform "left_ankle"
+                        {
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, -0.226)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                            def Cube "left_ankle_servo_0" (
+                                prepend apiSchemas = ["MaterialBindingAPI"]
+                            )
+                            {
+                                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                rel material:binding = </yuuki_biped/Materials/material_12>
+                                double size = 1
+                                custom string urdf:name = "left_ankle_servo_0"
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                double3 xformOp:translate = (0, 0, -0.0195)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+
+                            def Xform "left_foot"
+                            {
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0, 0, -0.065)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                def Cube "left_foot_servo_0" (
+                                    prepend apiSchemas = ["MaterialBindingAPI"]
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    rel material:binding = </yuuki_biped/Materials/material_13>
+                                    double size = 1
+                                    custom string urdf:name = "left_foot_servo_0"
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                    double3 xformOp:translate = (0, 0, -0.0195)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Cube "left_foot_foot_plate_1" (
+                                    prepend apiSchemas = ["MaterialBindingAPI"]
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    rel material:binding = </yuuki_biped/Materials/material_14>
+                                    double size = 1
+                                    custom string urdf:name = "left_foot_foot_plate_1"
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.3, 0.17, 0.002)
+                                    double3 xformOp:translate = (0.05, 0, -0.039)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Xform "left_sole"
+                                {
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0.05, 0, -0.04)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                    def Sphere "left_sole_sole_marker_0" (
+                                        prepend apiSchemas = ["MaterialBindingAPI"]
+                                    )
+                                    {
+                                        float3[] extent = [(-0.008, -0.008, -0.008), (0.008, 0.008, 0.008)]
+                                        rel material:binding = </yuuki_biped/Materials/material_15>
+                                        double radius = 0.008
+                                        custom string urdf:name = "left_sole_sole_marker_0"
+                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+                                }
+
+                                def Cube "left_foot_servo_0_1" (
+                                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                    displayName = "left_foot_servo_0"
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    uniform token purpose = "guide"
+                                    double size = 1
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                    double3 xformOp:translate = (0, 0, -0.0195)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Cube "left_foot_foot_plate_1_1" (
+                                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                    displayName = "left_foot_foot_plate_1"
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    uniform token purpose = "guide"
+                                    double size = 1
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.3, 0.17, 0.002)
+                                    double3 xformOp:translate = (0.05, 0, -0.039)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+                            }
+
+                            def Cube "left_ankle_servo_0_1" (
+                                prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                displayName = "left_ankle_servo_0"
+                            )
+                            {
+                                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                uniform token purpose = "guide"
+                                double size = 1
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                double3 xformOp:translate = (0, 0, -0.0195)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+                        }
+
+                        def Cube "left_shin_servo_0_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "left_shin_servo_0"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.03, 0.048, 0.065)
+                            double3 xformOp:translate = (0, 0, -0.0195)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_plate_1_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "left_shin_plate_1"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, 0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_plate_2_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "left_shin_plate_2"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, -0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "left_shin_battery_3_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "left_shin_battery_3"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.024, 0.04, 0.13)
+                            double3 xformOp:translate = (0, 0, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+                    }
+
+                    def Cube "left_thigh_servo_0_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "left_thigh_servo_0"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.03, 0.048, 0.065)
+                        double3 xformOp:translate = (0, 0, -0.0195)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_plate_1_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "left_thigh_plate_1"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, 0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_plate_2_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "left_thigh_plate_2"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, -0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "left_thigh_battery_3_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "left_thigh_battery_3"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.024, 0.04, 0.13)
+                        double3 xformOp:translate = (0, 0, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+
+                def Cube "left_hip_servo_0_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                    displayName = "left_hip_servo_0"
+                )
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    uniform token purpose = "guide"
+                    double size = 1
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                    double3 xformOp:translate = (0, 0, -0.0195)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "right_hip"
+            {
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, -0.09, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Cube "right_hip_servo_0" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    rel material:binding = </yuuki_biped/Materials/material_16>
+                    double size = 1
+                    custom string urdf:name = "right_hip_servo_0"
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                    double3 xformOp:translate = (0, 0, -0.0195)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "right_thigh"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, -0.065)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                    def Cube "right_thigh_servo_0" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_17>
+                        double size = 1
+                        custom string urdf:name = "right_thigh_servo_0"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.03, 0.048, 0.065)
+                        double3 xformOp:translate = (0, 0, -0.0195)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_plate_1" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_18>
+                        double size = 1
+                        custom string urdf:name = "right_thigh_plate_1"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, 0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_plate_2" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_19>
+                        double size = 1
+                        custom string urdf:name = "right_thigh_plate_2"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, -0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_battery_3" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        rel material:binding = </yuuki_biped/Materials/material_20>
+                        double size = 1
+                        custom string urdf:name = "right_thigh_battery_3"
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.024, 0.04, 0.13)
+                        double3 xformOp:translate = (0, 0, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Xform "right_shin"
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, -0.226)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        def Cube "right_shin_servo_0" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_21>
+                            double size = 1
+                            custom string urdf:name = "right_shin_servo_0"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.03, 0.048, 0.065)
+                            double3 xformOp:translate = (0, 0, -0.0195)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_plate_1" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_22>
+                            double size = 1
+                            custom string urdf:name = "right_shin_plate_1"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, 0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_plate_2" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_23>
+                            double size = 1
+                            custom string urdf:name = "right_shin_plate_2"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, -0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_battery_3" (
+                            prepend apiSchemas = ["MaterialBindingAPI"]
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            rel material:binding = </yuuki_biped/Materials/material_24>
+                            double size = 1
+                            custom string urdf:name = "right_shin_battery_3"
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.024, 0.04, 0.13)
+                            double3 xformOp:translate = (0, 0, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Xform "right_ankle"
+                        {
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, -0.226)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                            def Cube "right_ankle_servo_0" (
+                                prepend apiSchemas = ["MaterialBindingAPI"]
+                            )
+                            {
+                                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                rel material:binding = </yuuki_biped/Materials/material_25>
+                                double size = 1
+                                custom string urdf:name = "right_ankle_servo_0"
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                double3 xformOp:translate = (0, 0, -0.0195)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+
+                            def Xform "right_foot"
+                            {
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0, 0, -0.065)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                def Cube "right_foot_servo_0" (
+                                    prepend apiSchemas = ["MaterialBindingAPI"]
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    rel material:binding = </yuuki_biped/Materials/material_26>
+                                    double size = 1
+                                    custom string urdf:name = "right_foot_servo_0"
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                    double3 xformOp:translate = (0, 0, -0.0195)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Cube "right_foot_foot_plate_1" (
+                                    prepend apiSchemas = ["MaterialBindingAPI"]
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    rel material:binding = </yuuki_biped/Materials/material_27>
+                                    double size = 1
+                                    custom string urdf:name = "right_foot_foot_plate_1"
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.3, 0.17, 0.002)
+                                    double3 xformOp:translate = (0.05, 0, -0.039)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Xform "right_sole"
+                                {
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0.05, 0, -0.04)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                    def Sphere "right_sole_sole_marker_0" (
+                                        prepend apiSchemas = ["MaterialBindingAPI"]
+                                    )
+                                    {
+                                        float3[] extent = [(-0.008, -0.008, -0.008), (0.008, 0.008, 0.008)]
+                                        rel material:binding = </yuuki_biped/Materials/material_28>
+                                        double radius = 0.008
+                                        custom string urdf:name = "right_sole_sole_marker_0"
+                                        quatf xformOp:orient = (1, 0, 0, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+                                }
+
+                                def Cube "right_foot_servo_0_1" (
+                                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                    displayName = "right_foot_servo_0"
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    uniform token purpose = "guide"
+                                    double size = 1
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                    double3 xformOp:translate = (0, 0, -0.0195)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Cube "right_foot_foot_plate_1_1" (
+                                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                    displayName = "right_foot_foot_plate_1"
+                                )
+                                {
+                                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                    uniform token purpose = "guide"
+                                    double size = 1
+                                    quatf xformOp:orient = (1, 0, 0, 0)
+                                    float3 xformOp:scale = (0.3, 0.17, 0.002)
+                                    double3 xformOp:translate = (0.05, 0, -0.039)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+                            }
+
+                            def Cube "right_ankle_servo_0_1" (
+                                prepend apiSchemas = ["PhysicsCollisionAPI"]
+                                displayName = "right_ankle_servo_0"
+                            )
+                            {
+                                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                                uniform token purpose = "guide"
+                                double size = 1
+                                quatf xformOp:orient = (1, 0, 0, 0)
+                                float3 xformOp:scale = (0.03, 0.048, 0.065)
+                                double3 xformOp:translate = (0, 0, -0.0195)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+                        }
+
+                        def Cube "right_shin_servo_0_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "right_shin_servo_0"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.03, 0.048, 0.065)
+                            double3 xformOp:translate = (0, 0, -0.0195)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_plate_1_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "right_shin_plate_1"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, 0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_plate_2_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "right_shin_plate_2"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.04, 0.003, 0.2)
+                            double3 xformOp:translate = (0, -0.0255, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Cube "right_shin_battery_3_1" (
+                            prepend apiSchemas = ["PhysicsCollisionAPI"]
+                            displayName = "right_shin_battery_3"
+                        )
+                        {
+                            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                            uniform token purpose = "guide"
+                            double size = 1
+                            quatf xformOp:orient = (1, 0, 0, 0)
+                            float3 xformOp:scale = (0.024, 0.04, 0.13)
+                            double3 xformOp:translate = (0, 0, -0.113)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+                    }
+
+                    def Cube "right_thigh_servo_0_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "right_thigh_servo_0"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.03, 0.048, 0.065)
+                        double3 xformOp:translate = (0, 0, -0.0195)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_plate_1_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "right_thigh_plate_1"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, 0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_plate_2_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "right_thigh_plate_2"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.04, 0.003, 0.2)
+                        double3 xformOp:translate = (0, -0.0255, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Cube "right_thigh_battery_3_1" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI"]
+                        displayName = "right_thigh_battery_3"
+                    )
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        uniform token purpose = "guide"
+                        double size = 1
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (0.024, 0.04, 0.13)
+                        double3 xformOp:translate = (0, 0, -0.113)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+
+                def Cube "right_hip_servo_0_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI"]
+                    displayName = "right_hip_servo_0"
+                )
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    uniform token purpose = "guide"
+                    double size = 1
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (0.03, 0.048, 0.065)
+                    double3 xformOp:translate = (0, 0, -0.0195)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Cube "basket_basket_0_1" (
+                prepend apiSchemas = ["PhysicsCollisionAPI"]
+                displayName = "basket_basket_0"
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                uniform token purpose = "guide"
+                double size = 1
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (0.18, 0.28, 0.145)
+                double3 xformOp:translate = (0, 0, 0.0725)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+    }
+
+    def Scope "Physics"
+    {
+    }
+}
+

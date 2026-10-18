@@ -1,0 +1,221 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "yuuki_biped"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmp3mc9aj50\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\usdex_yuuki_biped\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\temp_yuuki_biped\\yuuki_biped.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "yuuki_biped" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
+{
+    prepend rel isaac:physics:robotJoints = [
+        </yuuki_biped/Physics/root_joint>,
+        </yuuki_biped/Physics/imu_fixed>,
+        </yuuki_biped/Physics/left_hip_roll>,
+        </yuuki_biped/Physics/right_hip_roll>,
+        </yuuki_biped/Physics/left_hip_pitch>,
+        </yuuki_biped/Physics/left_knee_pitch>,
+        </yuuki_biped/Physics/left_ankle_pitch>,
+        </yuuki_biped/Physics/left_ankle_roll>,
+        </yuuki_biped/Physics/left_sole_fixed>,
+        </yuuki_biped/Physics/right_hip_pitch>,
+        </yuuki_biped/Physics/right_knee_pitch>,
+        </yuuki_biped/Physics/right_ankle_pitch>,
+        </yuuki_biped/Physics/right_ankle_roll>,
+        </yuuki_biped/Physics/right_sole_fixed>,
+    ]
+    prepend rel isaac:physics:robotLinks = [
+        </yuuki_biped/Geometry/basket>,
+        </yuuki_biped/Geometry/basket/imu_link>,
+        </yuuki_biped/Geometry/basket/left_hip>,
+        </yuuki_biped/Geometry/basket/left_hip/left_thigh>,
+        </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin>,
+        </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle>,
+        </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle/left_foot>,
+        </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle/left_foot/left_sole>,
+        </yuuki_biped/Geometry/basket/right_hip>,
+        </yuuki_biped/Geometry/basket/right_hip/right_thigh>,
+        </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin>,
+        </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle>,
+        </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle/right_foot>,
+        </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle/right_foot/right_sole>,
+    ]
+    token isaac:robotType = "Default"
+
+    over "Geometry"
+    {
+        over "basket" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            over "imu_link" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+            }
+
+            over "left_hip" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                over "left_thigh" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                    over "left_shin" (
+                        prepend apiSchemas = ["IsaacLinkAPI"]
+                    )
+                    {
+                        over "left_ankle" (
+                            prepend apiSchemas = ["IsaacLinkAPI"]
+                        )
+                        {
+                            over "left_foot" (
+                                prepend apiSchemas = ["IsaacLinkAPI"]
+                            )
+                            {
+                                over "left_sole" (
+                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                )
+                                {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            over "right_hip" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                over "right_thigh" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                    over "right_shin" (
+                        prepend apiSchemas = ["IsaacLinkAPI"]
+                    )
+                    {
+                        over "right_ankle" (
+                            prepend apiSchemas = ["IsaacLinkAPI"]
+                        )
+                        {
+                            over "right_foot" (
+                                prepend apiSchemas = ["IsaacLinkAPI"]
+                            )
+                            {
+                                over "right_sole" (
+                                    prepend apiSchemas = ["IsaacLinkAPI"]
+                                )
+                                {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    over "Physics"
+    {
+        over "root_joint" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "imu_fixed" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_hip_roll" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_hip_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_knee_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_ankle_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_ankle_roll" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "left_sole_fixed" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_hip_roll" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_hip_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_knee_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_ankle_pitch" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_ankle_roll" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "right_sole_fixed" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+    }
+}
+

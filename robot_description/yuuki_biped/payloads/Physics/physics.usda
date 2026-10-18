@@ -1,0 +1,590 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "yuuki_biped"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmp3mc9aj50\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\usdex_yuuki_biped\\yuuki_biped.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_yuuki_biped_0afbnqeu\\temp_yuuki_biped\\yuuki_biped.usd
+
+
+Generated from Composed Stage of root layer Z:\\Projects\\yuuki-lab\\robot_description\\yuuki_biped\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "yuuki_biped"
+{
+    over "Geometry"
+    {
+        over "basket" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsArticulationRootAPI", "NewtonArticulationRootAPI", "PhysicsMassAPI"]
+        )
+        {
+            bool newton:selfCollisionEnabled = 0
+            point3f physics:centerOfMass = (0, 0, 0.0725)
+            float3 physics:diagonalInertia = (0.002671, 0.004971, 0.00554)
+            float physics:mass = 0.6
+            quatf physics:principalAxes = (6.123234e-17, 0.70710677, 0.70710677, 0)
+
+            over "imu_link" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0, 0, 0)
+                float3 physics:diagonalInertia = (0, 0, 0)
+                float physics:mass = 0.0001
+                quatf physics:principalAxes = (1, 0, 0, 0)
+            }
+
+            over "left_hip" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0, 0, -0.0195)
+                float3 physics:diagonalInertia = (0.000048, 0.000077, 0.000098)
+                float physics:mass = 0.18
+                quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                over "left_thigh" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                )
+                {
+                    point3f physics:centerOfMass = (0, 0, -0.085319)
+                    float3 physics:diagonalInertia = (0.000202, 0.002061, 0.002173)
+                    float physics:mass = 0.608
+                    quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                    over "left_shin" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                    )
+                    {
+                        point3f physics:centerOfMass = (0, 0, -0.085319)
+                        float3 physics:diagonalInertia = (0.000202, 0.002061, 0.002173)
+                        float physics:mass = 0.608
+                        quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                        over "left_ankle" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (0, 0, -0.0195)
+                            float3 physics:diagonalInertia = (0.000048, 0.000077, 0.000098)
+                            float physics:mass = 0.18
+                            quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                            over "left_foot" (
+                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                            )
+                            {
+                                point3f physics:centerOfMass = (0.030044, 0, -0.031217)
+                                float3 physics:diagonalInertia = (0.000787027, 0.002421, 0.003008973)
+                                float physics:mass = 0.451
+                                quatf physics:principalAxes = (0.99972004, 0, -0.023661047, 0)
+
+                                over "left_sole" (
+                                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                )
+                                {
+                                    point3f physics:centerOfMass = (0, 0, 0)
+                                    float3 physics:diagonalInertia = (0, 0, 0)
+                                    float physics:mass = 0.0001
+                                    quatf physics:principalAxes = (1, 0, 0, 0)
+                                }
+
+                                over "left_foot_servo_0_1" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+
+                                over "left_foot_foot_plate_1_1" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+                            }
+
+                            over "left_ankle_servo_0_1" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+                        }
+
+                        over "left_shin_servo_0_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "left_shin_plate_1_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "left_shin_plate_2_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "left_shin_battery_3_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+                    }
+
+                    over "left_thigh_servo_0_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "left_thigh_plate_1_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "left_thigh_plate_2_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "left_thigh_battery_3_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+                }
+
+                over "left_hip_servo_0_1" (
+                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                )
+                {
+                }
+            }
+
+            over "right_hip" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0, 0, -0.0195)
+                float3 physics:diagonalInertia = (0.000048, 0.000077, 0.000098)
+                float physics:mass = 0.18
+                quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                over "right_thigh" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                )
+                {
+                    point3f physics:centerOfMass = (0, 0, -0.085319)
+                    float3 physics:diagonalInertia = (0.000202, 0.002061, 0.002173)
+                    float physics:mass = 0.608
+                    quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                    over "right_shin" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                    )
+                    {
+                        point3f physics:centerOfMass = (0, 0, -0.085319)
+                        float3 physics:diagonalInertia = (0.000202, 0.002061, 0.002173)
+                        float physics:mass = 0.608
+                        quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                        over "right_ankle" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (0, 0, -0.0195)
+                            float3 physics:diagonalInertia = (0.000048, 0.000077, 0.000098)
+                            float physics:mass = 0.18
+                            quatf physics:principalAxes = (0.70710677, 0, 0.70710677, 0)
+
+                            over "right_foot" (
+                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                            )
+                            {
+                                point3f physics:centerOfMass = (0.030044, 0, -0.031217)
+                                float3 physics:diagonalInertia = (0.000787027, 0.002421, 0.003008973)
+                                float physics:mass = 0.451
+                                quatf physics:principalAxes = (0.99972004, 0, -0.023661047, 0)
+
+                                over "right_sole" (
+                                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                )
+                                {
+                                    point3f physics:centerOfMass = (0, 0, 0)
+                                    float3 physics:diagonalInertia = (0, 0, 0)
+                                    float physics:mass = 0.0001
+                                    quatf physics:principalAxes = (1, 0, 0, 0)
+                                }
+
+                                over "right_foot_servo_0_1" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+
+                                over "right_foot_foot_plate_1_1" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+                            }
+
+                            over "right_ankle_servo_0_1" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+                        }
+
+                        over "right_shin_servo_0_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "right_shin_plate_1_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "right_shin_plate_2_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+
+                        over "right_shin_battery_3_1" (
+                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                        )
+                        {
+                        }
+                    }
+
+                    over "right_thigh_servo_0_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "right_thigh_plate_1_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "right_thigh_plate_2_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+
+                    over "right_thigh_battery_3_1" (
+                        prepend apiSchemas = ["NewtonCollisionAPI"]
+                    )
+                    {
+                    }
+                }
+
+                over "right_hip_servo_0_1" (
+                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                )
+                {
+                }
+            }
+
+            over "basket_basket_0_1" (
+                prepend apiSchemas = ["NewtonCollisionAPI"]
+            )
+            {
+            }
+        }
+    }
+
+    over "Physics"
+    {
+        def PhysicsRevoluteJoint "left_hip_roll" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip>
+            point3f physics:localPos0 = (0, 0.09, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 44.999992
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "left_hip_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/left_hip>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip/left_thigh>
+            point3f physics:localPos0 = (0, 0, -0.065)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 89.999985
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "left_knee_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/left_hip/left_thigh>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin>
+            point3f physics:localPos0 = (0, 0, -0.226)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 119.99999
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "left_ankle_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle>
+            point3f physics:localPos0 = (0, 0, -0.226)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 44.999992
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "left_ankle_roll" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle/left_foot>
+            point3f physics:localPos0 = (0, 0, -0.065)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -30.000013
+            float physics:upperLimit = 30.000013
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "right_hip_roll" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip>
+            point3f physics:localPos0 = (0, -0.09, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (0, 0, -1, 0)
+            quatf physics:localRot1 = (0, 0, -1, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 44.999992
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "right_hip_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/right_hip>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip/right_thigh>
+            point3f physics:localPos0 = (0, 0, -0.065)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 89.999985
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "right_knee_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/right_hip/right_thigh>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin>
+            point3f physics:localPos0 = (0, 0, -0.226)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 119.99999
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "right_ankle_pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle>
+            point3f physics:localPos0 = (0, 0, -0.226)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -44.999992
+            float physics:upperLimit = 44.999992
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsRevoluteJoint "right_ankle_roll" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:maxForce = 14.7
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle/right_foot>
+            point3f physics:localPos0 = (0, 0, -0.065)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (0, 0, -1, 0)
+            quatf physics:localRot1 = (0, 0, -1, 0)
+            float physics:lowerLimit = -30.000013
+            float physics:upperLimit = 30.000013
+            custom float urdf:dynamics:damping = 0
+            custom float urdf:dynamics:friction = 0
+            custom float urdf:limit:effort = 14.7
+            custom float urdf:limit:velocity = 8
+        }
+
+        def PhysicsFixedJoint "root_joint"
+        {
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        def PhysicsFixedJoint "imu_fixed"
+        {
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/imu_link>
+            point3f physics:localPos0 = (0, 0, -0.02)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        def PhysicsFixedJoint "left_sole_fixed"
+        {
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle/left_foot>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/left_hip/left_thigh/left_shin/left_ankle/left_foot/left_sole>
+            point3f physics:localPos0 = (0.05, 0, -0.04)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        def PhysicsFixedJoint "right_sole_fixed"
+        {
+            custom rel physics:body0
+            prepend rel physics:body0 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle/right_foot>
+            custom rel physics:body1
+            prepend rel physics:body1 = </yuuki_biped/Geometry/basket/right_hip/right_thigh/right_shin/right_ankle/right_foot/right_sole>
+            point3f physics:localPos0 = (0.05, 0, -0.04)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+}
+

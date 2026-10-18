@@ -43,6 +43,15 @@ from hub_link import (
 
 LOG = logging.getLogger("isaac_hub_bridge")
 
+
+def _as_foot(value: Any) -> dict | None:
+    """Isaac が付けた足裏1枚。四隅が無いものは欠測にする。"""
+    if not isinstance(value, dict):
+        return None
+    if not isinstance(value.get("corners"), dict):
+        return None
+    return value
+
 # Hub が既に購読しているイベント名。画面側は実機と同じコードで描く。
 EVT_HELLO = "m5/hello"
 EVT_FRAME = "m5/frame"
@@ -61,6 +70,9 @@ class Bridge:
         self.out = [False] * JOINT_COUNT
         # Isaac から届いた関節角（rad）。未接続のあいだは None。
         self.meas_rad: list[float | None] = [None] * JOINT_COUNT
+        # 右足は実機と同じ frame.foot。左足は実機に基板が無いので、Isaac のときだけ入る。
+        self.foot: dict | None = None
+        self.foot_left: dict | None = None
         self.sim_time = 0.0
         self.isaac_connected = False
         self.seq = 0
@@ -87,6 +99,8 @@ class Bridge:
         with self._lock:
             self.meas_rad = [float(v) for v in rads]
             self.sim_time = float(msg.get("sim_time") or 0.0)
+            self.foot = _as_foot(msg.get("foot"))
+            self.foot_left = _as_foot(msg.get("foot_left"))
             self.isaac_connected = True
             self.seq += 1
             frame = self._frame_locked()
@@ -135,6 +149,8 @@ class Bridge:
             self.isaac_connected = connected
             if not connected:
                 self.meas_rad = [None] * JOINT_COUNT
+                self.foot = None
+                self.foot_left = None
             status = self._status_locked()
         self._emit(EVT_STATUS, status)
         if connected and self._isaac_send is not None:
@@ -197,7 +213,8 @@ class Bridge:
             "servo_ok": self.isaac_connected,
             "mode": "isaac",
             "out_mask": mask,
-            "foot": None,
+            "foot": self.foot,
+            "foot_left": self.foot_left,
             "sim_time": self.sim_time,
         }
 

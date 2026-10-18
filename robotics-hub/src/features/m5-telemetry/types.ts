@@ -118,6 +118,11 @@ export type M5Frame = {
   map_ok?: boolean[];
   /** 右足 DF9-40（ATOM S3 Lite スレーブ）。未割当・欠測なら ok=false */
   foot?: M5FootSample | null;
+  /**
+   * 左足。実機の ATOMS3R は右脚だけなので、通常は欠ける。
+   * Isaac は右足と同じ四隅を入れる。無いときは左足裏を未検出のままにする。
+   */
+  foot_left?: M5FootSample | null;
 };
 
 export type M5ScanNode = {

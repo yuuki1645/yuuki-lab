@@ -28,9 +28,10 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from hub_link import ISAAC_TCP_HOST, ISAAC_TCP_PORT, JOINT_COUNT, joint_names
+from sole_pressure import PLATE_HALF_X_M, PLATE_HALF_Y_M, sample_from_points
 
-# 足裏が床の少し上に来る高さ。generate_urdf.py の初期値（原点から足裏 0.622 m）に余裕を足した。
-SPAWN_Z_M = 0.64
+# 直立時、原点から足裏まで 0.622 m。足裏下面を床（z=0）に合わせ、接触が出るようにする。
+SPAWN_Z_M = 0.622
 # 位置制御。実機の PD そのものではなく、バー操作が追従するための仮のゲイン。
 JOINT_STIFFNESS = 80.0
 JOINT_DAMPING = 2.0
@@ -60,6 +61,7 @@ def _run(simulation_app) -> None:
     ext.set_extension_enabled_immediate("omni.scene.optimizer.core", True)
     ext.set_extension_enabled_immediate("isaacsim.robot.schema", True)
     ext.set_extension_enabled_immediate("isaacsim.asset.importer.urdf", True)
+    ext.set_extension_enabled_immediate("isaacsim.sensors.experimental.physics", True)
 
     from isaacsim.asset.importer.urdf.impl import URDFImporter, URDFImporterConfig
     from isaacsim.core.experimental.prims import Articulation
@@ -68,6 +70,9 @@ def _run(simulation_app) -> None:
     _build_stage(usd_path, UsdGeom, UsdLux, UsdPhysics, Gf)
     for _ in range(10):
         simulation_app.update()
+    # 再生前に切る。目印の球と、板より下にはみ出す足首サーボが床に当たると、
+    # アルミ板の接触にならない。圧力は足板の接触だけを四隅へ分配する。
+    _disable_non_plate_collisions(UsdPhysics)
 
     timeline = omni.timeline.get_timeline_interface()
     timeline.play()
@@ -92,9 +97,12 @@ def _run(simulation_app) -> None:
         raise SystemExit("関節 DOF が初期化されませんでした")
     dof_index = _dof_index(names)
 
+    soles = _create_sole_sensors()
+
     link = _TcpClient()
     # PWM OFF のあいだは、その関節の現在角を目標にしてその場に留める。
     hold_rad = [0.0] * len(names)
+    sole_seq = 0
 
     while simulation_app.is_running():
         link.poll()
@@ -118,11 +126,15 @@ def _run(simulation_app) -> None:
             for ch in range(JOINT_COUNT):
                 dof_i = dof_index.get(ch)
                 rad.append(0.0 if dof_i is None else measured[dof_i])
+            sole_seq += 1
             link.send(
                 {
                     "op": "joints",
                     "rad": rad,
                     "sim_time": time.time(),
+                    # 実機の frame.foot は右足。左は foot_left。実機では左が欠ける。
+                    "foot": _read_sole(soles.get("right"), sole_seq),
+                    "foot_left": _read_sole(soles.get("left"), sole_seq),
                 }
             )
 
@@ -229,6 +241,142 @@ def _apply_targets(robot, hold_rad: list[float]) -> None:
     import numpy as np
 
     robot.set_dof_position_targets(np.asarray(hold_rad, dtype=np.float32)[None, :])
+
+
+# 足板の衝突ではない。球は下面中心の目印、サーボ箱は仮定の足首高さでは板より下へ出る。
+_NON_PLATE_COLLISIONS = (
+    "left_sole_sole_marker_0",
+    "right_sole_sole_marker_0",
+    "left_foot_servo_0",
+    "right_foot_servo_0",
+)
+
+
+def _prims_by_name() -> dict[str, str]:
+    """ステージ上の prim 名 → パス。同名が複数あるときは先に見つけた方を残す。"""
+    import omni.usd
+
+    found: dict[str, str] = {}
+    stage = omni.usd.get_context().get_stage()
+    for prim in stage.Traverse():
+        found.setdefault(prim.GetName(), str(prim.GetPath()))
+    return found
+
+
+def _disable_non_plate_collisions(UsdPhysics) -> None:
+    """足裏圧力に使う衝突をアルミ板だけにする。"""
+    import omni.usd
+
+    stage = omni.usd.get_context().get_stage()
+    by_name = _prims_by_name()
+    for name in _NON_PLATE_COLLISIONS:
+        path = by_name.get(name)
+        if path is None:
+            print(f"[isaac_hub_play] 衝突を切る対象がありません: {name}")
+            continue
+        prim = stage.GetPrimAtPath(path)
+        collision = UsdPhysics.CollisionAPI.Apply(prim)
+        collision.CreateCollisionEnabledAttr(False)
+        print(f"[isaac_hub_play] 足板以外の衝突を切りました: {path}")
+
+
+def _create_sole_sensors() -> dict[str, dict | None]:
+    """左右の足リンクに Contact Sensor を付ける。失敗した足は None。"""
+    from isaacsim.sensors.experimental.physics import Contact, ContactSensor
+
+    by_name = _prims_by_name()
+    sensors: dict[str, dict | None] = {}
+    for side, foot_name, sole_name in (
+        ("right", "right_foot", "right_sole"),
+        ("left", "left_foot", "left_sole"),
+    ):
+        foot_path = by_name.get(foot_name)
+        sole_path = by_name.get(sole_name)
+        if foot_path is None or sole_path is None:
+            print(f"[isaac_hub_play] 足の prim がありません: {foot_name} / {sole_name}")
+            sensors[side] = None
+            continue
+        try:
+            # 半径 -1 は足リンク全体。板の範囲への絞り込みは読むときに行う。
+            sensor = ContactSensor(
+                Contact.create(
+                    foot_path + "/sole_contact_sensor",
+                    min_threshold=0.0,
+                    max_threshold=100000.0,
+                    radius=-1.0,
+                )
+            )
+        except Exception as exc:
+            print(f"[isaac_hub_play] {side} 足の Contact Sensor を作れませんでした: {exc}")
+            sensors[side] = None
+            continue
+        sensors[side] = {"sensor": sensor, "sole": sole_path}
+        print(f"[isaac_hub_play] {side} 足裏センサ {foot_path}")
+    return sensors
+
+
+def _read_sole(bundle: dict | None, seq: int) -> dict:
+    """1枚の足板の接触を、Hub と同じ四隅の辞書にする。"""
+    if bundle is None:
+        return sample_from_points([], seq, ok=False)
+    try:
+        points = _plate_contact_points(bundle["sensor"], bundle["sole"])
+    except Exception as exc:
+        print(f"[isaac_hub_play] 足裏の接触を読めませんでした: {exc}")
+        return sample_from_points([], seq, ok=False)
+    return sample_from_points(points, seq, ok=True)
+
+
+def _plate_contact_points(sensor, sole_path: str) -> list[tuple[float, float, float]]:
+    """床と足板の接触を、足裏中心の (x, y, 圧縮[N]) にする。
+
+    力積はどちらの剛体向きか決まらないので、足裏の上向き成分の絶対値を圧縮とする。
+    横滑りは法線成分に入らない。サーボ箱など板の外の接触は捨てる。
+    """
+    import omni.usd
+    from pxr import Gf, PhysicsSchemaTools, UsdGeom
+
+    raw = sensor.get_raw_data()
+    if not raw:
+        return []
+
+    stage = omni.usd.get_context().get_stage()
+    sole = stage.GetPrimAtPath(sole_path)
+    world = UsdGeom.XformCache().GetLocalToWorldTransform(sole)
+    inverse = world.GetInverse()
+    up = Gf.Vec3d(0.0, 0.0, 1.0) * world
+    length = (up[0] * up[0] + up[1] * up[1] + up[2] * up[2]) ** 0.5
+    if length < 1e-8:
+        return []
+    zx, zy, zz = up[0] / length, up[1] / length, up[2] / length
+
+    # 接触点は面より少し外に出ることがある。板の外形に 2 cm の余裕を見る。
+    margin = 0.02
+    points: list[tuple[float, float, float]] = []
+    for contact in raw:
+        body0 = str(PhysicsSchemaTools.intToSdfPath(int(contact["body0"])))
+        body1 = str(PhysicsSchemaTools.intToSdfPath(int(contact["body1"])))
+        if "ground" not in body0.lower() and "ground" not in body1.lower():
+            continue
+        dt = float(contact.get("dt") or 0.0)
+        if dt <= 0.0:
+            continue
+        impulse = contact["impulse"]
+        normal_n = abs(
+            float(impulse["x"]) * zx + float(impulse["y"]) * zy + float(impulse["z"]) * zz
+        ) / dt
+        if normal_n <= 0.0:
+            continue
+        position = contact["position"]
+        local = Gf.Vec3d(float(position["x"]), float(position["y"]), float(position["z"])) * inverse
+        if abs(float(local[2])) > margin:
+            continue
+        if abs(float(local[0])) > PLATE_HALF_X_M + margin:
+            continue
+        if abs(float(local[1])) > PLATE_HALF_Y_M + margin:
+            continue
+        points.append((float(local[0]), float(local[1]), normal_n))
+    return points
 
 
 class _TcpClient:

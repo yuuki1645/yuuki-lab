@@ -197,7 +197,7 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
         <div className="m5-leg__sense">
           <div className="m5-leg__cam">{cameraPane}</div>
           <div className="m5-leg__foot m5-leg__feet">
-            <RightFootSole title="左足裏" sample={null} large />
+            <RightFootSole title="左足裏" sample={frame?.foot_left} large />
             <RightFootSole title="右足裏" sample={frame?.foot} large />
           </div>
         </div>

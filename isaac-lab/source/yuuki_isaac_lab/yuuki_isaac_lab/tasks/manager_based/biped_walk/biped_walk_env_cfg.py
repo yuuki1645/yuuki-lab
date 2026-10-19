@@ -159,9 +159,9 @@ class RewardsCfg:
     """
 
     upright = RewTerm(func=mdp.upright, weight=1.0)
-    # 関数は停止で 0、0.1 m/s で 1。重み 1.5 は、その速度を保ったときの毎秒の点。
+    # 関数は正味の速度/指令。0.1 m/s を保つと 1、戻すとマイナス。重み 1.5 は毎秒の上限。
     track_forward = RewTerm(
-        func=mdp.track_forward_speed,
+        func=mdp.track_forward_progress,
         weight=1.5,
         params={"command_name": "base_velocity"},
     )

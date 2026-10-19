@@ -9,7 +9,7 @@ from .rewards import (
     penalize_slide_and_yaw,
     stance_contact,
     swing_knee,
-    track_forward_speed,
+    track_forward_progress,
     upright,
 )
 
@@ -25,6 +25,6 @@ __all__ = [
     "root_height",
     "stance_contact",
     "swing_knee",
-    "track_forward_speed",
+    "track_forward_progress",
     "upright",
 ]

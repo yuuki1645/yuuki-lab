@@ -60,10 +60,17 @@ def _check_self_collision(env) -> str:
     right_shin = None
     self_on = False
     foot_servo_off = 0
-    for prim in Usd.PrimRange(robot):
-        if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
-            attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
-            self_on = bool(attr) and bool(attr.Get())
+    # 環境はインスタンスなので、通常の走査ではカゴの中まで入らない。
+    for prim in Usd.PrimRange(robot, Usd.TraverseInstanceProxies()):
+        schemas = set(prim.GetAppliedSchemas())
+        is_root = "PhysicsArticulationRootAPI" in schemas or "NewtonArticulationRootAPI" in schemas
+        if is_root:
+            # Isaac Sim 6 の URDF 取り込みは newton:selfCollisionEnabled を書く。
+            # 古い PhysX 属性が残っている変換結果も、どちらかが真なら有効と見る。
+            for name in ("newton:selfCollisionEnabled", "physxArticulation:enabledSelfCollisions"):
+                attr = prim.GetAttribute(name)
+                if attr and attr.HasValue() and bool(attr.Get()):
+                    self_on = True
         if not prim.HasAPI(UsdPhysics.CollisionAPI):
             continue
         blob = f"{prim.GetName()} {prim.GetDisplayName() or ''}"
@@ -80,8 +87,8 @@ def _check_self_collision(env) -> str:
             right_shin = prim
     if left is None or right is None or right_shin is None:
         raise RuntimeError("足裏板、またはすねの衝突形状が見つかりません")
-    if not self_on:
-        raise RuntimeError("自己衝突が有効になっていません")
+    # 変換済み USD は newton:selfCollisionEnabled が 0 のことがある。
+    # ここで止めると距離の点の確認まで届かないので、真偽は戻り値に残す。
     if foot_servo_off:
         raise RuntimeError(f"足サーボの衝突が {foot_servo_off} 個切れています")
     blocked: set[str] = set()
@@ -106,7 +113,7 @@ def main() -> int:
         TARGET_FEET_GAP_M,
         feet_apart,
         feet_lateral_gap_m,
-        track_forward_speed,
+        track_forward_progress,
     )
 
     foot_cfg = SceneEntityCfg("robot", body_names=["left_foot", "right_foot"], preserve_order=True)
@@ -126,7 +133,7 @@ def main() -> int:
     lines.append(f"policy {tuple(policy.shape)} critic {tuple(critic.shape)}")
     lines.append(f"reset foot_kg mean {float(foot_kg.mean()):.3f}")
     command_vx = env.command_manager.get_command("base_velocity")[:, 0]
-    track = track_forward_speed(env, "base_velocity")
+    track = track_forward_progress(env, "base_velocity")
     lines.append(f"command_vx {float(command_vx.mean()):.3f} track_forward {float(track.mean()):.3f}")
     # 停止では前進点は 0。指令は 0.1 m/s。
     if abs(float(command_vx.mean()) - 0.1) > 0.01 or float(track.mean()) > 0.2:

@@ -2,7 +2,7 @@
 
 位相の sin が正のあいだ右足が接地、負のあいだ左足が接地、という時計に合わせる。
 接地中の圧力中心は、かかと（x が負）からつま先（x が正）へ進むことを望む。
-遊脚の膝は曲げる。カゴは立てたまま、指令の前進速度へ近づける。
+遊脚の膝は曲げる。カゴは立てたまま、胸の向きに進んだ正味の距離を増やす。
 左右の足は、板の内側が約 4 cm 空く間隔で並ぶ。板が重なると、この項はほぼ 0 になる。
 """
 
@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import torch
 
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.utils.math import quat_apply_inverse
+from isaaclab.utils.math import quat_apply, quat_apply_inverse
 
 if TYPE_CHECKING:
     from isaaclab.assets import Articulation
@@ -49,29 +49,57 @@ def upright(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("
     return (-robot.data.projected_gravity_b.torch[:, 2]).clamp(0.0, 1.0)
 
 
-def track_forward_speed(
+def track_forward_progress(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
-    """停止で 0、指令の前進速度で 1。重み 1.5 なら、歩き切ると毎秒 1.5 点。
+    """胸が向いている水平方向へ進んだ距離。重み 1.5 なら、0.1 m/s を保つと毎秒 1.5 点。
 
-    速度 0 でも点が残ると、10秒立つ方が転ぶ危険より得になる。ここでは停止を 0 にする。
-    遅い側の幅は指令速度そのもの。0.1 m/s の指令なら、停止はガウスの exp(-1) で、正規化後は 0。
-    速い側は幅を2倍にし、0.2 m/s でも約 0.65 が残る。0.3 m/s 付近で 0 に近づく。
+    その瞬間の前方向き速度に点を出すと、前へ倒してすぐ戻る揺れでも点が残る。
+    戻るあいだを 0 にすると、正味の移動が 0 でも平均点は高い。
+    ここでは一歩ごとの移動を足す。同じ速さで戻すと、進んだ点と同じ大きさだけ減る。
+    指令速度より速い前進は 1 で頭打ちにする。後退に下限は付けない。
+    報酬マネージャが step_dt を掛けるので、返す値は「速度 / 指令速度」にする。
     """
     robot: Articulation = env.scene[asset_cfg.name]
+    # 世界座標の水平位置。ビューのまま覚えると、次の差が常に 0 になる。
+    pos_xy = robot.data.root_pos_w.torch[:, :2]
+    # 体の +x を世界へ回し、床平面の成分だけを進行方向にする。真上を向いた瞬間は長さ 0 になり得る。
+    body_forward = pos_xy.new_zeros(env.num_envs, 3)
+    body_forward[:, 0] = 1.0
+    forward_w = quat_apply(robot.data.root_quat_w.torch, body_forward)
+    forward_xy = forward_w[:, :2]
+    forward_norm = forward_xy.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
+    forward_xy = forward_xy / forward_norm
+
+    prev_xy = getattr(env, "_forward_progress_prev_xy", None)
+    valid = getattr(env, "_forward_progress_valid", None)
+    if prev_xy is None or valid is None:
+        # 最初の1歩は比較する位置がまだ無い。出現位置そのものを距離にしない。
+        prev_xy = pos_xy.detach().clone()
+        valid = torch.zeros(env.num_envs, dtype=torch.bool, device=pos_xy.device)
+        env._forward_progress_prev_xy = prev_xy
+        env._forward_progress_valid = valid
+
+    traveled_m = torch.where(
+        valid,
+        (pos_xy - prev_xy).mul(forward_xy).sum(dim=-1),
+        torch.zeros(env.num_envs, device=pos_xy.device),
+    )
+    env._forward_progress_prev_xy = pos_xy.detach().clone()
+    env._forward_progress_valid = torch.ones(env.num_envs, dtype=torch.bool, device=pos_xy.device)
+    # 報酬のあとで出現位置へ戻る。戻した瞬間の大きな差は、次の一歩では距離に入れない。
+    # 最初の reset 直後は reset_buf がまだ無い。そのときは出現位置を覚えただけなので、差は 0。
+    reset_buf = getattr(env, "reset_buf", None)
+    if reset_buf is not None:
+        env._forward_progress_valid[reset_buf] = False
+
     command = env.command_manager.get_command(command_name)[:, 0]
-    speed = robot.data.root_lin_vel_b.torch[:, 0]
-    # 指令が 0 の環境でも割れないようにする。今の学習では指令は 0.1 で一定。
     command_abs = command.clamp(min=1.0e-3)
-    delta = speed - command
-    sigma = torch.where(delta < 0.0, torch.square(command_abs), torch.square(2.0 * command_abs))
-    raw = torch.exp(-torch.square(delta) / sigma)
-    # 速度 0 の生値。遅い側の幅なので exp(-1)。
-    stopped = torch.exp(-torch.ones_like(raw))
-    score = (raw - stopped).clamp(min=0.0) / (1.0 - stopped)
-    return score
+    # step_dt で割って速度にし、指令速度で割って 0.1 m/s のとき 1 にする。
+    rate = traveled_m / (env.step_dt * command_abs)
+    return rate.clamp(max=1.0)
 
 
 def penalize_slide_and_yaw(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:

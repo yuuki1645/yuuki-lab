@@ -10,7 +10,8 @@ class BipedWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     """腰の計算機でも推論できる大きさから始める。"""
 
     num_steps_per_env = 24
-    max_iterations = 1500
+    # 移動距離の報酬を、1050回の揺れとは別の初期重みから約4時間見る。
+    max_iterations = 3000
     save_interval = 50
     experiment_name = "yuuki_biped_walk"
     # 学習の数値は W&B のこのプロジェクトへ送る。

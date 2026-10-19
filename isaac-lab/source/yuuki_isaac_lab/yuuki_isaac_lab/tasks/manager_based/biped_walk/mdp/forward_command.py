@@ -1,7 +1,7 @@
-"""一定速度の指令に、エピソードで前へ進んだ距離の記録を足す。
+"""一定速度の指令に、エピソードで世界の +x へ進んだ距離の記録を足す。
 
-距離は報酬に入れない。学習の式は変えない。W&B の
-Metrics/base_velocity/forward_distance_m で、立っているだけなら 0 m 付近、
+この距離は報酬の計算には使わない。報酬は胸の向きの移動を、報酬の中で別に足す。
+W&B の Metrics/base_velocity/forward_distance_m は、立っているだけなら 0 m 付近、
 0.1 m/s を 10 秒維持すれば約 1 m になる。
 """
 
@@ -32,7 +32,8 @@ class SlowWalkVelocityCommand(UniformVelocityCommand):
         x = self.robot.data.root_pos_w.torch[:, 0]
         delta = x - self._prev_x
         self._forward_sum += torch.where(self._have_prev, delta, torch.zeros_like(delta))
-        self._prev_x = x.detach()
+        # detach だけだと root_pos_w と同じ記憶を指し、次の差が 0 のままになる。
+        self._prev_x = x.detach().clone()
         self._have_prev[:] = True
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, float]:

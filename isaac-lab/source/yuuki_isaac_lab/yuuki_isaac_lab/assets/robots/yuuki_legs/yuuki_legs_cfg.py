@@ -41,14 +41,54 @@ def _spawn_yuuki_legs(prim_path: str, cfg: UrdfFileCfg, translation=None, orient
 
     標準の接触報告は最初の剛体（カゴ）で子の探索を止める。足はカゴの子なので、
     ここで足裏まで付けないと ContactSensor はカゴしか見ない。
-    自己衝突は変換時に有効のままにする。箱の重なりは URDF 生成側で止めてある。
+    自己衝突は、変換済み USD が 0 でもここで 1 にする。左右の板は隣り合うリンクではない。
+    箱の重なりは URDF 生成側で止めてある。
     spawn_from_urdf は USD を読むので、シミュレータ起動前の設定読み込みでは呼ばない。
     """
     from isaaclab.sim.spawners.from_files.from_files import spawn_from_urdf
 
     prim = spawn_from_urdf(prim_path, cfg, translation=translation, orientation=orientation, **kwargs)
     _enable_nested_contact_report(prim_path)
+    _enable_self_collision(prim_path)
     return prim
+
+
+def _enable_self_collision(prim_path: str) -> None:
+    """関節の根に自己衝突を付ける。
+
+    URDF 取り込みは allow_self_collision を渡しても、保存された
+    newton:selfCollisionEnabled が 0 のままになることがある。
+    0 のままだと左右のアルミ板がすり抜ける。物理が始まる前に 1 にする。
+    """
+    from pxr import Sdf
+
+    from isaaclab.sim.utils.queries import find_matching_prims
+    from isaaclab.sim.utils.stage import get_current_stage
+
+    roots = [prim.GetPath().pathString for prim in find_matching_prims(prim_path)]
+    stage = get_current_stage()
+    for prim in stage.Traverse():
+        path = prim.GetPath().pathString
+        under_robot = False
+        for root in roots:
+            if path == root or path.startswith(root + "/"):
+                under_robot = True
+                break
+        if not under_robot:
+            continue
+        schemas = set(prim.GetAppliedSchemas())
+        if "PhysicsArticulationRootAPI" not in schemas and "NewtonArticulationRootAPI" not in schemas:
+            continue
+        if "NewtonArticulationRootAPI" not in schemas:
+            prim.ApplyAPI("NewtonArticulationRootAPI")
+        attr = prim.GetAttribute("newton:selfCollisionEnabled")
+        if not attr or not attr.IsValid():
+            attr = prim.CreateAttribute("newton:selfCollisionEnabled", Sdf.ValueTypeNames.Bool)
+        attr.Set(True)
+        # 古い PhysX 属性が残っている変換でも、同じ意味にする。
+        physx_attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
+        if physx_attr and physx_attr.IsValid():
+            physx_attr.Set(True)
 
 
 def _enable_nested_contact_report(prim_path: str) -> None:

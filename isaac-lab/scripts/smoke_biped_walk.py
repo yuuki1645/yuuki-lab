@@ -87,8 +87,8 @@ def _check_self_collision(env) -> str:
             right_shin = prim
     if left is None or right is None or right_shin is None:
         raise RuntimeError("足裏板、またはすねの衝突形状が見つかりません")
-    # 変換済み USD は newton:selfCollisionEnabled が 0 のことがある。
-    # ここで止めると距離の点の確認まで届かないので、真偽は戻り値に残す。
+    if not self_on:
+        raise RuntimeError("自己衝突が有効になっていません")
     if foot_servo_off:
         raise RuntimeError(f"足サーボの衝突が {foot_servo_off} 個切れています")
     blocked: set[str] = set()

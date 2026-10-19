@@ -3,11 +3,12 @@
 位相の sin が正のあいだ右足が接地、負のあいだ左足が接地、という時計に合わせる。
 接地中の圧力中心は、かかと（x が負）からつま先（x が正）へ進むことを望む。
 遊脚の膝は曲げる。カゴは立てたまま、指令の前進速度へ近づける。
-左右の足は、股関節の幅だけ開いて並ぶ。板を重ねたり交差したりすると、この項はほぼ 0 になる。
+左右の足は、板の内側が約 4 cm 空く間隔で並ぶ。板が重なると、この項はほぼ 0 になる。
 """
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import torch
@@ -23,8 +24,20 @@ from .feet import PLATE_HALF_X_M, stance_load_kg
 from .phase import phase_angle
 
 # カゴ座標の左右。左股関節は y=+0.09 m、右股関節は y=-0.09 m（yuuki_biped.urdf）。
-# 関節が 0 のとき、足リンクの左右差は 0.18 m。板の幅は 0.17 m なので、このとき板のすき間は約 1 cm。
+# 関節が 0 のとき、足リンクの左右差は 0.18 m。板の左右幅は 0.17 m なので、すき間は約 1 cm。
+# 実機は、板が触れないところまで開いて安定してから歩き始める。学習の初期姿勢もそこにする。
 HIP_SEPARATION_M = 0.18
+PLATE_WIDTH_Y_M = 0.17
+INNER_CLEARANCE_M = 0.04
+# 中心間隔。板幅 0.17 m に内側すき間 0.04 m を足す。
+TARGET_FEET_GAP_M = PLATE_WIDTH_Y_M + INNER_CLEARANCE_M
+# 股ロール軸から足首ロール軸まで。股ピッチ、膝、足首ピッチ、足首ロールの z 間隔の和。
+LEG_LENGTH_HIP_TO_ANKLE_M = 0.065 + 0.226 + 0.226 + 0.065
+# 片足を (0.21-0.18)/2 m だけ外へ出す角度。正の股ロールは左右とも開く（右の軸は -X）。
+# 足首ロールは逆符号にして、板を床と平行に戻す。
+OPEN_STANCE_ROLL_RAD = math.asin(
+    (TARGET_FEET_GAP_M - HIP_SEPARATION_M) / (2.0 * LEG_LENGTH_HIP_TO_ANKLE_M)
+)
 
 
 def upright(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -112,16 +125,28 @@ def feet_lateral_gap_m(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> tor
 def feet_apart(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg,
-    target_y_m: float = HIP_SEPARATION_M,
+    target_y_m: float = TARGET_FEET_GAP_M,
+    plate_width_m: float = PLATE_WIDTH_Y_M,
 ) -> torch.Tensor:
-    """左右の足が股関節の幅だけ開いているほど 1。重なりと交差と、開きすぎは 0 に近づく。
+    """板の内側が約 4 cm 空くほど 1。板が接する間隔ではほぼ 0。大きく開きすぎると下がる。
 
-    差が目標なら 1、目標から目標幅の半分だけずれると約 0.37。
-    完全に重なる（差 0）と exp(-4) で約 0.02。板を乗せた立ち方では、この項はほぼ入らない。
+    頂点は中心間隔 0.21 m。板幅 0.17 m（内側が接触）では exp(-4) で約 0.02。
+    狭い側はこの 4 cm で急に落ちる。広い側は、さらに 8 cm 開いても約 0.5 が残る。
+    股関節の真下（0.18 m、すき間約 1 cm）は約 0.1 なので、接した立ち方では点がほぼ入らない。
     """
     gap_m = feet_lateral_gap_m(env, asset_cfg)
-    error = (gap_m - target_y_m) / target_y_m
-    return torch.exp(-torch.square(error) / 0.25)
+    delta = gap_m - target_y_m
+    # 接する位置までの差の二乗を 4 で割り、そこで約 0.02 にする。
+    narrow_var = (target_y_m - plate_width_m) ** 2 / 4.0
+    # 広い側は、内側すき間が目標よりさらに 8 cm 広いところで約 0.5。
+    wide_span = 2.0 * (target_y_m - plate_width_m)
+    wide_var = wide_span**2 / math.log(2.0)
+    variance = torch.where(
+        delta < 0.0,
+        torch.full_like(delta, narrow_var),
+        torch.full_like(delta, wide_var),
+    )
+    return torch.exp(-torch.square(delta) / variance)
 
 
 def swing_knee(

@@ -103,18 +103,23 @@ def main() -> int:
     obs, _ = env.reset()
     from isaaclab.managers import SceneEntityCfg
 
-    from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import HIP_SEPARATION_M, feet_apart, feet_lateral_gap_m
+    from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import (
+        PLATE_WIDTH_Y_M,
+        TARGET_FEET_GAP_M,
+        feet_apart,
+        feet_lateral_gap_m,
+    )
 
     foot_cfg = SceneEntityCfg("robot", body_names=["left_foot", "right_foot"], preserve_order=True)
     foot_cfg.resolve(env.scene)
     gap_m = feet_lateral_gap_m(env, foot_cfg)
     apart = feet_apart(env, foot_cfg)
     lines.append(
-        f"feet_gap_m {float(gap_m.mean()):.3f} target {HIP_SEPARATION_M:.3f} feet_apart {float(apart.mean()):.3f}"
+        f"feet_gap_m {float(gap_m.mean()):.3f} target {TARGET_FEET_GAP_M:.3f} feet_apart {float(apart.mean()):.3f}"
     )
-    # 直立のリセットで、足は股関節の幅だけ開いている。符号や体の取り違えはここで落ちる。
-    if float(apart.mean()) < 0.8:
-        raise RuntimeError(f"直立で足の間隔報酬が低い: gap {float(gap_m.mean()):.3f} score {float(apart.mean()):.3f}")
+    # リセット直後は、板が重ならない開き。符号や足首の戻しが逆だと、ここで落ちる。
+    if float(gap_m.mean()) <= PLATE_WIDTH_Y_M or float(apart.mean()) < 0.8:
+        raise RuntimeError(f"初期姿勢の足間隔が目標から遠い: gap {float(gap_m.mean()):.3f} score {float(apart.mean()):.3f}")
     policy = obs["policy"]
     critic = obs["critic"]
     # 関節10、傾き3、角速度3、の次が左右8隅の kg。
@@ -133,6 +138,12 @@ def main() -> int:
             f"  foot_kg {float(foot_kg.mean()):.3f}"
             f"  done {int(terminated.sum())}/{int(truncated.sum())}"
         )
+    settled_gap = float(feet_lateral_gap_m(env, foot_cfg).mean())
+    settled_z = float(env.scene["robot"].data.root_pos_w.torch[:, 2].mean())
+    lines.append(f"settled feet_gap_m {settled_gap:.3f} root_z {settled_z:.3f}")
+    # 足首の戻しが逆だと板が傾いて倒れ、間隔も板幅以下に寄る。
+    if settled_gap <= PLATE_WIDTH_Y_M or settled_z < 0.55 or int(terminated.sum()) > 0:
+        raise RuntimeError(f"開いた初期姿勢を保てていない: gap {settled_gap:.3f} root_z {settled_z:.3f}")
     env.close()
     lines.append("ok")
     _report(lines)

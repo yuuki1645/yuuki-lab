@@ -150,7 +150,8 @@ class ObservationsCfg:
 class RewardsCfg:
     """重みは最初の仮説。歩けるかどうかは学習してから判断する。
 
-    feet_apart だけが、左右の足を股関節の幅に開く項。板を重ねて立つと、この項はほぼ 0 になる。
+    feet_apart は、板の内側が約 4 cm 空く間隔を頂点にする。板が重なるとほぼ 0。
+    初期姿勢の股ロールも、同じ間隔に開いてある。
     """
 
     upright = RewTerm(func=mdp.upright, weight=1.0)

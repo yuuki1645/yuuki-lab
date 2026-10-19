@@ -14,6 +14,8 @@ from isaaclab.assets import ArticulationCfg
 from isaaclab.sim.converters import UrdfConverterCfg
 from isaaclab.sim.spawners.from_files import UrdfFileCfg
 
+from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import OPEN_STANCE_ROLL_RAD
+
 # リポジトリ直下の robot_description。yuuki_legs → robots → assets →
 # パッケージ → 拡張 → source → isaac-lab → リポジトリ。
 _REPO_ROOT = Path(__file__).resolve().parents[7]
@@ -281,7 +283,16 @@ YUUKI_LEGS_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, SOLE_BELOW_ORIGIN_M + SPAWN_CLEARANCE_M),
-        joint_pos={".*": 0.0},
+        # ピッチは 0 のまま。ロールだけ、板の内側が約 4 cm 空く角度にする。
+        # 正の股ロールは左右とも開く。足首は逆にして、板を床と平行に戻す。
+        # 「.*」と併用すると同じ関節が二度一致して初期化に失敗する。
+        joint_pos={
+            ".*_pitch": 0.0,
+            "left_hip_roll": OPEN_STANCE_ROLL_RAD,
+            "right_hip_roll": OPEN_STANCE_ROLL_RAD,
+            "left_ankle_roll": -OPEN_STANCE_ROLL_RAD,
+            "right_ankle_roll": -OPEN_STANCE_ROLL_RAD,
+        },
     ),
     actuators={
         "legs": ImplicitActuatorCfg(

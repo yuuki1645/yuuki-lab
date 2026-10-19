@@ -2,7 +2,7 @@
 
 位相の sin が正のあいだ右足が接地、負のあいだ左足が接地、という時計に合わせる。
 接地中の圧力中心は、かかと（x が負）からつま先（x が正）へ進むことを望む。
-遊脚の膝は曲げる。カゴは立てたまま、胸の向きに進んだ正味の距離を増やす。
+遊脚の膝は曲げる。カゴは立てたまま、胸の向きの速度を指令に合わせる。
 左右の足は、板の内側が約 4 cm 空く間隔で並ぶ。重なった深さは減点になる。
 """
 
@@ -40,6 +40,10 @@ TARGET_FEET_GAP_M = PLATE_WIDTH_Y_M + INNER_CLEARANCE_M
 OPEN_STANCE_ROLL_RAD = math.asin(
     (TARGET_FEET_GAP_M - HIP_SEPARATION_M) / (2.0 * LEG_LENGTH_HIP_TO_ANKLE_M)
 )
+# これ未満は止まれ。踏みかえ・かかと・遊脚の点は出さない。
+STAND_COMMAND_MAX_MPS = 0.02
+# 指令との速度差。0.05 m/s ずれると約 0.37、0.1 m/s ずれると約 0.02。
+SPEED_MATCH_STD_MPS = 0.05
 
 
 def upright(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -49,19 +53,11 @@ def upright(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("
     return (-robot.data.projected_gravity_b.torch[:, 2]).clamp(0.0, 1.0)
 
 
-def track_forward_progress(
+def _forward_speed_mps(
     env: ManagerBasedRLEnv,
-    command_name: str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    asset_cfg: SceneEntityCfg,
 ) -> torch.Tensor:
-    """胸が向いている水平方向へ進んだ距離。重み 1.5 なら、0.1 m/s を保つと毎秒 1.5 点。
-
-    その瞬間の前方向き速度に点を出すと、前へ倒してすぐ戻る揺れでも点が残る。
-    戻るあいだを 0 にすると、正味の移動が 0 でも平均点は高い。
-    ここでは一歩ごとの移動を足す。同じ速さで戻すと、進んだ点と同じ大きさだけ減る。
-    指令速度より速い前進は 1 で頭打ちにする。後退に下限は付けない。
-    報酬マネージャが step_dt を掛けるので、返す値は「速度 / 指令速度」にする。
-    """
+    """この一歩で、胸の水平前方へ進んだ速度 [m/s]。リセット直後は 0。"""
     robot: Articulation = env.scene[asset_cfg.name]
     # 世界座標の水平位置。ビューのまま覚えると、次の差が常に 0 になる。
     pos_xy = robot.data.root_pos_w.torch[:, :2]
@@ -94,12 +90,35 @@ def track_forward_progress(
     reset_buf = getattr(env, "reset_buf", None)
     if reset_buf is not None:
         env._forward_progress_valid[reset_buf] = False
+    return traveled_m / env.step_dt
 
+
+def _speed_match_score(speed_mps: torch.Tensor, command_mps: torch.Tensor) -> torch.Tensor:
+    """指令速度に近いほど 1。止まれのときに前へ進むと下がる。速すぎても下がる。"""
+    error = (speed_mps - command_mps) / SPEED_MATCH_STD_MPS
+    return torch.exp(-torch.square(error))
+
+
+def _gait_enabled(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
+    """歩容の点を出すか。0.02 m/s 未満は立ちなので 0。"""
     command = env.command_manager.get_command(command_name)[:, 0]
-    command_abs = command.clamp(min=1.0e-3)
-    # step_dt で割って速度にし、指令速度で割って 0.1 m/s のとき 1 にする。
-    rate = traveled_m / (env.step_dt * command_abs)
-    return rate.clamp(max=1.0)
+    return (command >= STAND_COMMAND_MAX_MPS).to(dtype=command.dtype)
+
+
+def track_forward_progress(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """胸の前方速度が指令に近いほど 1。重み 1.5 なら、一致しているあいだ毎秒 1.5 点。
+
+    0 m/s の指令で止まっていれば 1、そこから前へ進むと下がる。
+    0.1 m/s の指令で 0.1 m/s なら 1、止まっていてもそれより速くても下がる。
+    位置の差から速度を出すので、前へ倒して同じ速さで戻すと、戻るあいだは点が低い。
+    """
+    speed_mps = _forward_speed_mps(env, asset_cfg)
+    command = env.command_manager.get_command(command_name)[:, 0]
+    return _speed_match_score(speed_mps, command)
 
 
 def penalize_slide_and_yaw(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -114,23 +133,26 @@ def stance_contact(
     env: ManagerBasedRLEnv,
     sensor_cfg: SceneEntityCfg,
     sole_cfg: SceneEntityCfg,
+    command_name: str,
 ) -> torch.Tensor:
-    """接地すべき足に荷重があり、遊脚が床を押していないほど正。"""
+    """接地すべき足に荷重があり、遊脚が床を押していないほど正。止まれのあいだは 0。"""
     left_kg, right_kg, _, _ = stance_load_kg(env, sensor_cfg, sole_cfg)
     # tanh(2 kg) はほぼ 1。満量で頭打ちしたセンサでも、接地の有無は残る。
     left = torch.tanh(left_kg)
     right = torch.tanh(right_kg)
     right_stance = torch.sin(phase_angle(env)) >= 0.0
     stance = torch.where(right_stance, right - left, left - right)
-    return stance
+    # 止まれで足踏みすると点が入ると、立ちより足踏みが得になる。
+    return stance * _gait_enabled(env, command_name)
 
 
 def heel_to_toe(
     env: ManagerBasedRLEnv,
     sensor_cfg: SceneEntityCfg,
     sole_cfg: SceneEntityCfg,
+    command_name: str,
 ) -> torch.Tensor:
-    """接地中の圧力中心が、かかとからつま先へ半周期で進むほど 1。"""
+    """接地中の圧力中心が、かかとからつま先へ半周期で進むほど 1。止まれのあいだは 0。"""
     left_kg, right_kg, left_x, right_x = stance_load_kg(env, sensor_cfg, sole_cfg)
     angle = phase_angle(env)
     # 右接地は 0〜π、左接地は π〜2π。半周期の進みを 0〜1 にする。
@@ -142,7 +164,8 @@ def heel_to_toe(
     loaded = torch.where(right_stance, right_kg, left_kg) > 0.3
     error = torch.square((cop_x - target_x) / PLATE_HALF_X_M)
     score = torch.exp(-error / 0.25)
-    return torch.where(loaded, score, torch.zeros_like(score))
+    score = torch.where(loaded, score, torch.zeros_like(score))
+    return score * _gait_enabled(env, command_name)
 
 
 def feet_lateral_gap_m(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
@@ -194,12 +217,13 @@ def feet_apart(
 def swing_knee(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg,
+    command_name: str,
 ) -> torch.Tensor:
-    """遊脚の膝を曲げる。目標は位相の山で 0.8 rad、接地中は 0。"""
+    """遊脚の膝を曲げる。目標は位相の山で 0.8 rad、接地中は 0。止まれのあいだは 0。"""
     robot: Articulation = env.scene[asset_cfg.name]
     knee = robot.data.joint_pos.torch[:, asset_cfg.joint_ids]
     sine = torch.sin(phase_angle(env))
     # joint_ids は左膝、右膝の順。sin が正のとき右が接地なので、左膝を曲げる。
     target = torch.stack((0.8 * torch.relu(sine), 0.8 * torch.relu(-sine)), dim=-1)
     error = torch.square(knee - target).mean(dim=-1)
-    return torch.exp(-error / 0.4)
+    return torch.exp(-error / 0.4) * _gait_enabled(env, command_name)

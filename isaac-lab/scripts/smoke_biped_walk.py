@@ -110,6 +110,7 @@ def main() -> int:
 
     from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import (
         PLATE_WIDTH_Y_M,
+        SPEED_MATCH_STD_MPS,
         TARGET_FEET_GAP_M,
         feet_apart,
         feet_lateral_gap_m,
@@ -132,13 +133,24 @@ def main() -> int:
     foot_kg = policy[:, 16:24]
     lines.append(f"policy {tuple(policy.shape)} critic {tuple(critic.shape)}")
     lines.append(f"reset foot_kg mean {float(foot_kg.mean()):.3f}")
-    command_vx = env.command_manager.get_command("base_velocity")[:, 0]
+    command = env.command_manager.get_command("base_velocity")
+    command_vx = command[:, 0]
+    command_yaw = command[:, 2]
+    # 1回目は比較する位置が無く 0。2回目はまだ動いていないので、速度 0 と指令の近さ。
+    track_forward_progress(env, "base_velocity")
     track = track_forward_progress(env, "base_velocity")
-    lines.append(f"command_vx {float(command_vx.mean()):.3f} track_forward {float(track.mean()):.3f}")
-    # 停止では前進点は 0。指令は 0.1 m/s。
-    if abs(float(command_vx.mean()) - 0.1) > 0.01 or float(track.mean()) > 0.2:
+    expected = torch.exp(-torch.square(command_vx / SPEED_MATCH_STD_MPS))
+    lines.append(
+        f"command_vx {float(command_vx.mean()):.3f} yaw {float(command_yaw.abs().max()):.3f}"
+        f" track_forward {float(track.mean()):.3f}"
+    )
+    vx_ok = bool((command_vx.min() >= -1.0e-6) and (command_vx.max() <= 0.1 + 1.0e-6))
+    yaw_ok = bool(command_yaw.abs().max() < 1.0e-5)
+    match_ok = bool(torch.allclose(track, expected, atol=1.0e-4))
+    if not vx_ok or not yaw_ok or not match_ok:
         raise RuntimeError(
-            f"前進の指令か停止時の点が違う: vx {float(command_vx.mean()):.3f} score {float(track.mean()):.3f}"
+            f"速度指令か停止時の点が違う: vx {command_vx.detach().cpu().tolist()}"
+            f" score {track.detach().cpu().tolist()}"
         )
     action = torch.zeros(env.action_space.shape, device=env.device)
     for step in range(args_cli.steps):

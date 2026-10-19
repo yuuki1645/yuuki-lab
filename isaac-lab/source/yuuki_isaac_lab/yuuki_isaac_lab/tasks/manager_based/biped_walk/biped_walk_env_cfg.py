@@ -67,20 +67,22 @@ class BipedWalkSceneCfg(InteractiveSceneCfg):
 
 @configclass
 class CommandsCfg:
-    """前進は 0.1 m/s で一定、ヨーは 0。横移動は指令に入れない。
+    """前後は 0〜0.1 m/s。約2割はちょうど 0。ヨーと横移動は 0。
 
-    距離の記録だけ SlowWalkVelocityCommand に替える。報酬の計算は変えない。
+    4〜6 秒ごとに引き直す。10 秒のエピソードの途中で、歩く指令と止まる指令が入れ替わる。
+    スティックの -1〜1 は学習には入れない。実機では 0.1 m/s × スティックを、この速度として渡す。
+    距離の記録だけ SlowWalkVelocityCommand に替える。
     """
 
     base_velocity = isaac_mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.0,
+        resampling_time_range=(4.0, 6.0),
+        rel_standing_envs=0.2,
         heading_command=False,
         debug_vis=False,
         class_type="yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.forward_command:SlowWalkVelocityCommand",
         ranges=isaac_mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(mdp.FORWARD_SPEED_MPS, mdp.FORWARD_SPEED_MPS),
+            lin_vel_x=(0.0, mdp.FORWARD_SPEED_MPS),
             lin_vel_y=(0.0, 0.0),
             ang_vel_z=(0.0, 0.0),
         ),
@@ -159,7 +161,7 @@ class RewardsCfg:
     """
 
     upright = RewTerm(func=mdp.upright, weight=1.0)
-    # 関数は正味の速度/指令。0.1 m/s を保つと 1、戻すとマイナス。重み 1.5 は毎秒の上限。
+    # 胸の前方速度が指令に近いほど 1。一致していれば重み 1.5 で毎秒 1.5 点。
     track_forward = RewTerm(
         func=mdp.track_forward_progress,
         weight=1.5,
@@ -180,6 +182,7 @@ class RewardsCfg:
                 body_names=["left_sole", "right_sole"],
                 preserve_order=True,
             ),
+            "command_name": "base_velocity",
         },
     )
     heel_to_toe = RewTerm(
@@ -196,6 +199,7 @@ class RewardsCfg:
                 body_names=["left_sole", "right_sole"],
                 preserve_order=True,
             ),
+            "command_name": "base_velocity",
         },
     )
     feet_apart = RewTerm(
@@ -218,7 +222,8 @@ class RewardsCfg:
                 "robot",
                 joint_names=["left_knee_pitch", "right_knee_pitch"],
                 preserve_order=True,
-            )
+            ),
+            "command_name": "base_velocity",
         },
     )
     action_rate = RewTerm(func=isaac_mdp.action_rate_l2, weight=-0.01)

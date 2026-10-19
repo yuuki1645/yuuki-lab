@@ -331,15 +331,22 @@ def _validate(params: dict) -> None:
         raise ValueError(f"電池のダンボールが空きに入りません: {housing[0]}")
 
 
-def servo_box(params: dict, shorten_bottom: float = 0.0) -> BoxPart:
+def servo_box(params: dict, shorten_bottom: float = 0.0, yaw_quarter_turn: bool = False) -> BoxPart:
     """サーボ箱。上端は軸の axis_inset 上。下端だけ短くして、次の部品と隙間を空ける。
 
     質量はカタログのサーボのまま。削るのはホーンと金具の分で、金属が消えたわけではない。
+    ピッチ軸（左右が軸）の箱は、前後 30 mm、左右 48 mm。
+    ロール軸（前後が軸）の箱は yaw_quarter_turn で脚まわりに 90 度回し、前後 48 mm、左右 30 mm。
+    実機は隣り合うサーボのケースが互い違いで、ホーンの向きが軸と揃っている。
+    中心は軸上なので、回しても関節の位置は動かない。
     """
     length = params["servo_size"][2] - shorten_bottom
     # 上端を固定し、中心を下へずらさないようにする（下を削ると中心は上へ寄る）。
     center_z = params["axis_inset"] - length / 2.0
-    size = (params["servo_size"][0], params["servo_size"][1], length)
+    width_x, width_y = params["servo_size"][0], params["servo_size"][1]
+    if yaw_quarter_turn:
+        width_x, width_y = width_y, width_x
+    size = (width_x, width_y, length)
     return BoxPart(
         "servo",
         size,
@@ -416,7 +423,8 @@ def foot_boxes(params: dict) -> list[BoxPart]:
     sole_z = -params["ankle_to_sole"]
     center_z = sole_z + thickness / 2.0
     return [
-        servo_box(params),
+        # 足首ロール。上の足首ピッチとはケースを 90 度ずらす。
+        servo_box(params, yaw_quarter_turn=True),
         BoxPart(
             "foot_plate",
             params["foot_size"],
@@ -534,8 +542,11 @@ def build_leg(
     pitch_axis = (0.0, 1.0, 0.0)
 
     links = [
-        # 下の股ピッチサーボと面が接しないよう、下端だけ隙間分短くする。軸は stacked のまま。
-        make_link(hip_name, [servo_box(params, shorten_bottom=params["clearance"])]),
+        # 股ロール。下の股ピッチとはケースを 90 度ずらす。下端だけ隙間分短くする。軸は stacked のまま。
+        make_link(
+            hip_name,
+            [servo_box(params, shorten_bottom=params["clearance"], yaw_quarter_turn=True)],
+        ),
         make_link(thigh_name, segment_boxes(params, include_battery=True)),
         make_link(
             shin_name,
@@ -715,6 +726,7 @@ def render_urdf(params: dict, links: list[Link], joints: list[Joint]) -> str:
 
   関節の原点は寸法式のまま。衝突箱は clearance だけ離し、サーボが板や電池や隣のサーボに入らない。
   股と足首のサーボは下端だけ短くして、次のサーボとのあいだに金具の隙間を空ける。
+  ロール軸のサーボ（股ロール、足首ロール）はケースを 90 度回し、隣のピッチサーボと互い違いにする。
   電池はセル寸法ではなく、側板のあいだのダンボール。質量はセルのまま。
 -->
 <robot name="{params["robot_name"]}">

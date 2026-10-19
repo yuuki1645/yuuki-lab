@@ -14,6 +14,7 @@
 
   関節の原点は寸法式のまま。衝突箱は clearance だけ離し、サーボが板や電池や隣のサーボに入らない。
   股と足首のサーボは下端だけ短くして、次のサーボとのあいだに金具の隙間を空ける。
+  ロール軸のサーボ（股ロール、足首ロール）はケースを 90 度回し、隣のピッチサーボと互い違いにする。
   電池はセル寸法ではなく、側板のあいだのダンボール。質量はセルのまま。
 -->
 <robot name="yuuki_biped">
@@ -59,12 +60,12 @@
     <inertial>
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.000069" ixy="0" ixz="0" iyy="0.00009" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="left_hip_servo_0">
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.061"/>
+        <box size="0.048 0.03 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
@@ -73,7 +74,7 @@
     <collision name="left_hip_servo_0">
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.061"/>
+        <box size="0.048 0.03 0.061"/>
       </geometry>
     </collision>
   </link>
@@ -237,12 +238,12 @@
     <inertial>
       <origin xyz="0.030044 0 -0.042033" rpy="0 0 0"/>
       <mass value="0.451"/>
-      <inertia ixx="0.000903" ixy="0" ixz="0.000203" iyy="0.002532" iyz="0" izz="0.003004"/>
+      <inertia ixx="0.000882" ixy="0" ixz="0.000203" iyy="0.002553" iyz="0" izz="0.003004"/>
     </inertial>
     <visual name="left_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.048 0.03 0.065"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
@@ -251,7 +252,7 @@
     <collision name="left_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.048 0.03 0.065"/>
       </geometry>
     </collision>
     <visual name="left_foot_foot_plate_1">
@@ -290,12 +291,12 @@
     <inertial>
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.000069" ixy="0" ixz="0" iyy="0.00009" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="right_hip_servo_0">
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.061"/>
+        <box size="0.048 0.03 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
@@ -304,7 +305,7 @@
     <collision name="right_hip_servo_0">
       <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.061"/>
+        <box size="0.048 0.03 0.061"/>
       </geometry>
     </collision>
   </link>
@@ -468,12 +469,12 @@
     <inertial>
       <origin xyz="0.030044 0 -0.042033" rpy="0 0 0"/>
       <mass value="0.451"/>
-      <inertia ixx="0.000903" ixy="0" ixz="0.000203" iyy="0.002532" iyz="0" izz="0.003004"/>
+      <inertia ixx="0.000882" ixy="0" ixz="0.000203" iyy="0.002553" iyz="0" izz="0.003004"/>
     </inertial>
     <visual name="right_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.048 0.03 0.065"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
@@ -482,7 +483,7 @@
     <collision name="right_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.048 0.03 0.065"/>
       </geometry>
     </collision>
     <visual name="right_foot_foot_plate_1">

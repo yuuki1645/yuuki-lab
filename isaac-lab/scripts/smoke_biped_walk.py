@@ -1,72 +1,81 @@
-# Copyright (c) 2022-2026, The Isaac Lab Project Developers.
-# SPDX-License-Identifier: BSD-3-Clause
+"""BipedWalk がリセットできて、観測を返して、1歩進むかだけ見る。学習はしない。
 
-"""両脚歩行環境の短時間スモークテスト（spawn・報酬・接地を確認）。"""
+conda は切ってから、Isaac Lab 3 で起動する。
+
+    cd /d Z:\\Projects\\IsaacLab-3
+    isaaclab.bat -p Z:\\Projects\\yuuki-lab\\isaac-lab\\scripts\\smoke_biped_walk.py
+"""
+
+from __future__ import annotations
 
 import argparse
-import sys
+import os
+import traceback
 from pathlib import Path
 
 from isaaclab.app import AppLauncher
 
-# scripts/rsl_rl/env_cfg_cli は SimulationApp 前に import 可能（yuuki_isaac_lab 経由にしない）
-_RSL_RL_DIR = Path(__file__).resolve().parent / "rsl_rl"
-if str(_RSL_RL_DIR) not in sys.path:
-    sys.path.insert(0, str(_RSL_RL_DIR))
-import env_cfg_cli  # isort: skip
-
-parser = argparse.ArgumentParser(description="Smoke test for biped walking environment.")
-parser.add_argument(
-    "--disable_fabric",
-    action="store_true",
-    default=False,
-    help="Set sim.use_fabric=False. For mesh visibility use --visualize-robots instead.",
-)
-env_cfg_cli.add_robot_visualization_cli_args(parser)
-parser.add_argument("--num_envs", type=int, default=4, help="Number of parallel environments.")
-parser.add_argument("--steps", type=int, default=200, help="Number of control steps to run.")
-parser.add_argument("--task", type=str, default="YuukiLab-BipedPpoWalk-Direct-v0", help="Gym task id.")
+parser = argparse.ArgumentParser(description="YuukiLab-BipedWalk-v0 を2体で数ステップ進める。")
+parser.add_argument("--num_envs", type=int, default=2)
+parser.add_argument("--steps", type=int, default=20)
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
-
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
-import gymnasium as gym
 import torch
 
-import isaaclab_tasks  # noqa: F401
-from isaaclab_tasks.utils import parse_env_cfg
+import yuuki_isaac_lab  # noqa: F401  Gym 登録
+from isaaclab.envs import ManagerBasedRLEnv
 
-import yuuki_isaac_lab.tasks  # noqa: F401
+from yuuki_isaac_lab.tasks.manager_based.biped_walk.biped_walk_env_cfg import BipedWalkEnvCfg
 
 
-def main() -> None:
-    """環境を起動し、ランダム行動で指定ステップ実行して主要指標を表示する。"""
-    env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs)
-    env_cfg_cli.apply_robot_visualization_if_requested(env_cfg, args_cli)
-    env = gym.make(args_cli.task, cfg=env_cfg)
-    print(f"[INFO] obs space: {env.observation_space}, action space: {env.action_space}")
+def _report(lines: list[str]) -> None:
+    """コンソールが途中で切れても、結果がファイルに残るようにする。"""
+    text = "\n".join(lines) + "\n"
+    path = Path(os.environ.get("TEMP", ".")) / "smoke_biped_walk.txt"
+    path.write_text(text, encoding="utf-8")
+    print(text, flush=True)
 
-    env.reset()
-    total_reward = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
-    done_count = 0
 
-    for step_idx in range(args_cli.steps):
-        actions = 2.0 * torch.rand(env.action_space.shape, device=env.unwrapped.device) - 1.0
-        _, rewards, terminated, truncated, _ = env.step(actions)
-        total_reward += rewards
-        done_count += int((terminated | truncated).sum().item())
-        if (step_idx + 1) % 50 == 0:
-            print(
-                f"[step {step_idx + 1}] mean_reward={rewards.mean().item():.3f} "
-                f"total_mean={total_reward.mean().item():.1f} dones={done_count}"
-            )
-
-    print(f"[PASS] Completed {args_cli.steps} steps. mean episodic reward={total_reward.mean().item():.1f}")
+def main() -> int:
+    lines: list[str] = []
+    cfg = BipedWalkEnvCfg()
+    cfg.scene.num_envs = args_cli.num_envs
+    env = ManagerBasedRLEnv(cfg=cfg)
+    obs, _ = env.reset()
+    policy = obs["policy"]
+    critic = obs["critic"]
+    # 関節10、傾き3、角速度3、の次が左右8隅の kg。
+    foot_kg = policy[:, 16:24]
+    lines.append(f"policy {tuple(policy.shape)} critic {tuple(critic.shape)}")
+    lines.append(f"reset foot_kg mean {float(foot_kg.mean()):.3f}")
+    action = torch.zeros(env.action_space.shape, device=env.device)
+    for step in range(args_cli.steps):
+        obs, reward, terminated, truncated, _ = env.step(action)
+        root_z = env.scene["robot"].data.root_pos_w.torch[:, 2]
+        foot_kg = obs["policy"][:, 16:24]
+        lines.append(
+            f"step {step + 1}"
+            f"  reward {float(reward.mean()):.3f}"
+            f"  root_z {float(root_z.mean()):.3f}"
+            f"  foot_kg {float(foot_kg.mean()):.3f}"
+            f"  done {int(terminated.sum())}/{int(truncated.sum())}"
+        )
     env.close()
+    lines.append("ok")
+    _report(lines)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
-    simulation_app.close()
+    try:
+        raise SystemExit(main())
+    except Exception:
+        Path(os.environ.get("TEMP", "."), "smoke_biped_walk.txt").write_text(
+            traceback.format_exc(), encoding="utf-8"
+        )
+        raise
+    finally:
+        simulation_app.close()

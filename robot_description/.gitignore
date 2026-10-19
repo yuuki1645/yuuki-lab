@@ -1,2 +1,4 @@
-# Isaac 再生スクリプトが URDF から書き出す USD。手で編集しない。
+# Isaac が URDF から書き出す USD。手で編集しない。
+# .usd_cache はカゴを地面に固定した Hub 再生用。.usd_float はカゴが自由な直立確認用。
 .usd_cache/
+.usd_float/

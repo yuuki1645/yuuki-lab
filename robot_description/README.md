@@ -111,6 +111,19 @@ C:\isaacsim\python.bat Z:\Projects\yuuki-lab\robot_description\isaac_hub_play.py
 
 ## Isaac Lab や sim-to-real で使うとき
 
-この URDF はまだ Isaac Lab のタスクには接続していません。Isaac Lab で学習するときは、USD に変換したあとでアセット設定から参照します。トルク上限と速度上限は URDF の `limit` に入っています。位置制御の PD ゲインは URDF に無く、シミュレータ側のアクチュエータ設定です。
+歩行の学習タスクは `YuukiLab-BipedWalk-v0` です。アセットは `isaac-lab` 拡張の `assets/robots/yuuki_legs` から、この URDF をカゴ固定なしで読みます。変換結果は `.usd_float` です。Hub 再生の `.usd_cache` はカゴ固定なので、学習には使いません。
+
+conda の `env_isaaclab` は使いません。Isaac Lab 3 から起動します。
+
+```powershell
+cd Z:\Projects\IsaacLab-3
+isaaclab.bat -p Z:\Projects\yuuki-lab\robot_description\stand_one.py --viz kit
+```
+
+窓が開き、脚を伸ばした姿勢（全関節 0）を数秒保ちます。閉じるまでシミュレーションは続きます。コンソールに、カゴ底の高さ・カゴの上方向・左右の足裏の高さが 1 秒ごとに出ます。足裏が床に乗った直立なら、カゴ底は約 0.622 m、足裏は 0 m 付近です。
+
+窓なしで数値だけ出すときは `--viz kit` を外します。
+
+トルク上限と速度上限は URDF の `limit` に入っています。位置制御の PD ゲインは URDF に無く、この確認では再生スクリプトと同じ仮の値（剛性 80、減衰 2）を使っています。
 
 実機と揃えるときに効くのは、左右の股の間隔、足板の前後位置、足首から足裏までの距離、直立が本当に 0 か、ロールの符号、です。

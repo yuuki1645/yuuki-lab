@@ -1,0 +1,110 @@
+"""カゴと両脚だけの歩行用アーティキュレーション。
+
+形状の正本は `robot_description/yuuki_biped.urdf`。ここにある古い
+`yuuki_biped`（バランス棒つき 12 関節）は使わない。USD は直立確認と同じ
+`.usd_float` にキャッシュし、カゴは地面へ固定しない。
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.assets import ArticulationCfg
+from isaaclab.sim.converters import UrdfConverterCfg
+from isaaclab.sim.spawners.from_files import UrdfFileCfg
+from isaaclab.sim.spawners.from_files.from_files import spawn_from_urdf
+
+# リポジトリ直下の robot_description。yuuki_legs → robots → assets →
+# パッケージ → 拡張 → source → isaac-lab → リポジトリ。
+_REPO_ROOT = Path(__file__).resolve().parents[7]
+_URDF_PATH = _REPO_ROOT / "robot_description" / "yuuki_biped.urdf"
+# Hub 再生の .usd_cache（カゴ固定）とは別。
+_USD_DIR = _REPO_ROOT / "robot_description" / ".usd_float"
+
+# 直立時、カゴ底から足裏まで 0.622 m。1 cm 上から落として板を床に乗せる。
+SOLE_BELOW_ORIGIN_M = 0.622
+SPAWN_CLEARANCE_M = 0.01
+# 直立確認で板が床に乗った仮の位置ゲイン。実機の PD ではない。
+JOINT_STIFFNESS = 80.0
+JOINT_DAMPING = 2.0
+# サーボのトルク上限。無限トルクで姿勢を保たせない。
+EFFORT_LIMIT_NM = 14.7
+
+
+def _spawn_yuuki_legs(prim_path: str, cfg: UrdfFileCfg, translation=None, orientation=None, **kwargs):
+    """URDF を置いたあと、カゴの内側にある剛体にも接触報告を付ける。
+
+    標準の有効化は最初の剛体（カゴ）で子の探索を止める。足はカゴの子なので、
+    ここで足裏まで付けないと ContactSensor はカゴしか見ない。
+    """
+    prim = spawn_from_urdf(prim_path, cfg, translation=translation, orientation=orientation, **kwargs)
+    _enable_nested_contact_report(prim_path)
+    return prim
+
+
+def _enable_nested_contact_report(prim_path: str) -> None:
+    """prim_path に合うロボット以下の、すべての剛体へ接触報告 API を付ける。"""
+    from pxr import UsdPhysics
+
+    from isaaclab.sim.utils.prims import safe_set_attribute_on_usd_prim
+    from isaaclab.sim.utils.queries import find_matching_prims
+    from isaaclab.sim.utils.stage import get_current_stage
+
+    roots = [prim.GetPath().pathString for prim in find_matching_prims(prim_path)]
+    stage = get_current_stage()
+    for prim in stage.Traverse():
+        path = prim.GetPath().pathString
+        under_robot = False
+        for root in roots:
+            if path == root or path.startswith(root + "/"):
+                under_robot = True
+                break
+        if not under_robot or not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            continue
+        applied = prim.GetAppliedSchemas()
+        if "PhysxRigidBodyAPI" not in applied:
+            prim.AddAppliedSchema("PhysxRigidBodyAPI")
+        # 眠ると接触が欠けるので、しきい値は 0。
+        safe_set_attribute_on_usd_prim(prim, "physxRigidBody:sleepThreshold", 0.0, camel_case=False)
+        if "PhysxContactReportAPI" not in applied:
+            prim.AddAppliedSchema("PhysxContactReportAPI")
+        safe_set_attribute_on_usd_prim(prim, "physxContactReport:threshold", 0.0, camel_case=False)
+
+
+YUUKI_LEGS_CFG = ArticulationCfg(
+    prim_path="{ENV_REGEX_NS}/Robot",
+    spawn=UrdfFileCfg(
+        func=_spawn_yuuki_legs,
+        asset_path=str(_URDF_PATH),
+        usd_dir=str(_USD_DIR),
+        fix_base=False,
+        # 足裏リンクを残し、足首サーボの衝突プリムを名前で切れるようにする。
+        merge_fixed_joints=False,
+        # URDF に衝突形状がある。見た目から作ると目印の球まで床に当たる。
+        collision_from_visuals=False,
+        # 足裏の接触を ContactSensor が読めるようにする。
+        activate_contact_sensors=True,
+        self_collision=False,
+        joint_drive=UrdfConverterCfg.JointDriveCfg(
+            drive_type="force",
+            target_type="position",
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(
+                stiffness=JOINT_STIFFNESS,
+                damping=JOINT_DAMPING,
+            ),
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, SOLE_BELOW_ORIGIN_M + SPAWN_CLEARANCE_M),
+        joint_pos={".*": 0.0},
+    ),
+    actuators={
+        "legs": ImplicitActuatorCfg(
+            joint_names_expr=[".*"],
+            stiffness=JOINT_STIFFNESS,
+            damping=JOINT_DAMPING,
+            effort_limit_sim=EFFORT_LIMIT_NM,
+        ),
+    },
+)

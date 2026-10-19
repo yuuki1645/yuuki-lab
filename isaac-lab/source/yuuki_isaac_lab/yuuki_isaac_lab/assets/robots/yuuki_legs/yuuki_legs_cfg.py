@@ -107,14 +107,19 @@ def _install_sole_collision_after_clone() -> None:
     cloner.usd_replicate = _replicate_then_filter
 
 
-def _enable_sole_plate_collision() -> None:
-    """左右のアルミ板だけが互いに当たり、ほかの部品どうしはすり抜けるようにする。
+# 足裏板が当たってよい、反対側の脚。サーボ箱どうしはここに入れない。
+_OPPOSITE_LEG_LINKS = {
+    "left": ("right_thigh", "right_shin"),
+    "right": ("left_thigh", "left_shin"),
+}
 
-    アーティキュレーションの自己衝突を切ったままだと、板の形状があっても
-    同じロボットの中では一切当たらない。入れっぱなしにすると、板以外の
-    離れた部品（反対の脚やカゴ）まで当たる。関節で隣り合うサーボ箱は
-    PhysX がもともと無視する。ここでは自己衝突を入れたうえで、
-    左の足裏板と右の足裏板の組だけを除外リストから外す。
+
+def _enable_sole_plate_collision() -> None:
+    """足裏板を、反対の板と、反対のすね・ももに当てる。
+
+    板どうしだけだと、板は厚さ 2 mm しかなく、反対のすねをすり抜けて
+    足を重ねられる。サーボ箱どうしは形が重なるので、当たる組に入れない。
+    自分のすねとももにも当てない。関節で隣り合う部品は PhysX がもともと無視する。
     """
     global _SOLE_COLLISION_DONE
     if _SOLE_COLLISION_DONE:
@@ -131,22 +136,33 @@ def _enable_sole_plate_collision() -> None:
         return
 
     plate_count = 0
+    leg_count = 0
+    # 当たる組は先に決める。書き込みの途中で経路の比較が崩れると、すねまで除外される。
+    planned: list[tuple] = []
+    for robot in robots:
+        colliders = [prim for prim in Usd.PrimRange(robot) if prim.HasAPI(UsdPhysics.CollisionAPI)]
+        left = [prim for prim in colliders if _is_foot_plate(prim, "left")]
+        right = [prim for prim in colliders if _is_foot_plate(prim, "right")]
+        if not left or not right:
+            names = ", ".join(prim.GetName() for prim in colliders)
+            raise RuntimeError(
+                f"{robot.GetPath()} に左右の足裏板の衝突形状がありません。見つかった衝突: {names}"
+            )
+        _allow_articulation_self_collision(robot)
+        plate_count += len(left) + len(right)
+        robot_plan, robot_legs = _plan_plate_filters(colliders, left, right)
+        planned.extend(robot_plan)
+        leg_count += robot_legs
     with Sdf.ChangeBlock():
-        for robot in robots:
-            colliders = [prim for prim in Usd.PrimRange(robot) if prim.HasAPI(UsdPhysics.CollisionAPI)]
-            left = [prim for prim in colliders if _is_foot_plate(prim, "left")]
-            right = [prim for prim in colliders if _is_foot_plate(prim, "right")]
-            if not left or not right:
-                names = ", ".join(prim.GetName() for prim in colliders)
-                raise RuntimeError(
-                    f"{robot.GetPath()} に左右の足裏板の衝突形状がありません。見つかった衝突: {names}"
-                )
-            _allow_articulation_self_collision(robot)
-            _filter_all_but_opposite_plates(colliders, left, right)
-            plate_count += len(left) + len(right)
+        for prim, block in planned:
+            pairs = UsdPhysics.FilteredPairsAPI.Apply(prim)
+            pairs.CreateFilteredPairsRel().SetTargets(block)
 
     _SOLE_COLLISION_DONE = True
-    print(f"[biped_walk] 左右の足裏板だけが当たるようにしました。ロボット {len(robots)} 体、板 {plate_count} 個")
+    print(
+        "[biped_walk] 足裏板は、反対の板と反対のすね・ももに当たるようにしました。"
+        f"ロボット {len(robots)} 体、板 {plate_count} 個、脚の部品 {leg_count} 個"
+    )
 
 
 def _robot_prims(stage) -> list:
@@ -192,24 +208,50 @@ def _allow_articulation_self_collision(robot) -> None:
         raise RuntimeError(f"{robot.GetPath()} にアーティキュレーションの根がありません")
 
 
-def _filter_all_but_opposite_plates(colliders, left: list, right: list) -> None:
-    """同じロボットの中で、左の板と右の板以外の衝突を切る。"""
-    from pxr import UsdPhysics
+def _body_link_name(prim) -> str | None:
+    """衝突形状が属すリンク名。変換後は子プリムになるので、親を辿る。"""
+    current = prim
+    while current.IsValid():
+        name = current.GetName()
+        if name in ("left_thigh", "left_shin", "right_thigh", "right_shin", "left_foot", "right_foot"):
+            return name
+        current = current.GetParent()
+    return None
 
-    left_paths = {prim.GetPath() for prim in left}
-    right_paths = {prim.GetPath() for prim in right}
+
+def _plan_plate_filters(colliders, left: list, right: list) -> tuple[list[tuple], int]:
+    """各衝突形状について、同じロボット内で当たらない相手の経路を決める。
+
+    除外は両側に書く。片方だけが相手を残しても、相手側の除外が残ると当たらない。
+    経路は文字列で比べる。Sdf.Path のまま集合に入れると、同一視に失敗することがある。
+    """
+    left_paths = {str(prim.GetPath()) for prim in left}
+    right_paths = {str(prim.GetPath()) for prim in right}
+    link_of = {str(prim.GetPath()): _body_link_name(prim) for prim in colliders}
+    # 右脚のすね・もも。左の板が当たる相手。
+    right_leg = {path for path, link in link_of.items() if link in _OPPOSITE_LEG_LINKS["left"]}
+    left_leg = {path for path, link in link_of.items() if link in _OPPOSITE_LEG_LINKS["right"]}
+    if not right_leg or not left_leg:
+        raise RuntimeError("反対側のすね・ももの衝突形状が見つかりません")
+
+    planned: list[tuple] = []
     for prim in colliders:
-        path = prim.GetPath()
+        path = str(prim.GetPath())
+        link = link_of[path]
         if path in left_paths:
-            # 右の板には当たる。左の板どうしや、脚・カゴには当たらない。
-            keep = right_paths
+            keep = right_paths | right_leg
         elif path in right_paths:
+            keep = left_paths | left_leg
+        elif link in _OPPOSITE_LEG_LINKS["left"]:
+            # 右のすね・ももは、左の板に当たる。
             keep = left_paths
+        elif link in _OPPOSITE_LEG_LINKS["right"]:
+            keep = right_paths
         else:
             keep = set()
-        block = [other.GetPath() for other in colliders if other.GetPath() != path and other.GetPath() not in keep]
-        pairs = UsdPhysics.FilteredPairsAPI.Apply(prim)
-        pairs.CreateFilteredPairsRel().SetTargets(block)
+        block = [other.GetPath() for other in colliders if str(other.GetPath()) != path and str(other.GetPath()) not in keep]
+        planned.append((prim, block))
+    return planned, len(left_leg) + len(right_leg)
 
 
 YUUKI_LEGS_CFG = ArticulationCfg(
@@ -225,8 +267,8 @@ YUUKI_LEGS_CFG = ArticulationCfg(
         collision_from_visuals=False,
         # 足裏の接触を ContactSensor が読めるようにする。
         activate_contact_sensors=True,
-        # 変換時は切ったままにする。入れると板以外も当たる USD がキャッシュされる。
-        # 左右の板だけは、複製の直後に _enable_sole_plate_collision が有効にする。
+        # 変換時は切ったままにする。入れるとサーボ箱どうしも当たる USD がキャッシュされる。
+        # 板と、反対の板・すね・ももだけは、複製の直後に有効にする。
         self_collision=False,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             drive_type="force",

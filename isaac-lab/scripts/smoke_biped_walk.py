@@ -39,13 +39,26 @@ def _report(lines: list[str]) -> None:
     print(text, flush=True)
 
 
+def _nearest_link(prim) -> str | None:
+    """いちばん近い胴体リンク。すねの子である足首は、すねに数えない。"""
+    names = {"left_thigh", "left_shin", "right_thigh", "right_shin", "left_foot", "right_foot"}
+    current = prim
+    while current.IsValid():
+        if current.GetName() in names:
+            return current.GetName()
+        current = current.GetParent()
+    return None
+
+
 def _check_sole_filter(env) -> str:
-    """左の板の除外リストに、右の板が入っていないことを見る。"""
+    """左の板が、右の板と右のすねには当たり、自分のすねには当たらないことを見る。"""
     from pxr import Usd, UsdPhysics
 
     robot = env.sim.stage.GetPrimAtPath("/World/envs/env_0/Robot")
     left = None
     right = None
+    right_shin = None
+    left_shin = None
     self_on = False
     for prim in Usd.PrimRange(robot):
         if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
@@ -58,15 +71,26 @@ def _check_sole_filter(env) -> str:
             left = prim
         elif "right" in blob and "foot_plate" in blob:
             right = prim
-    if left is None or right is None:
-        raise RuntimeError("足裏板の衝突形状が見つかりません")
+        elif right_shin is None and _nearest_link(prim) == "right_shin":
+            right_shin = prim
+        elif left_shin is None and _nearest_link(prim) == "left_shin":
+            left_shin = prim
+    if left is None or right is None or right_shin is None or left_shin is None:
+        raise RuntimeError("足裏板、またはすねの衝突形状が見つかりません")
     blocked = set(UsdPhysics.FilteredPairsAPI(left).GetFilteredPairsRel().GetTargets())
-    if right.GetPath() in blocked:
+    blocked_text = {str(path) for path in blocked}
+    if str(right.GetPath()) in blocked_text:
         raise RuntimeError("右の足裏板が、左の板から除外されています")
+    if str(right_shin.GetPath()) in blocked_text:
+        shin_hits = [path for path in sorted(blocked_text) if "shin" in path or "thigh" in path]
+        raise RuntimeError(
+            "右のすねが、左の板から除外されています: "
+            f"{right_shin.GetPath()} / 除外にある脚 {shin_hits[:8]}"
+        )
+    if left_shin.GetPath() not in blocked:
+        raise RuntimeError("自分のすねまで、左の板に当たるようになっています")
     if not self_on:
         raise RuntimeError("自己衝突が有効になっていません")
-    if len(blocked) < 1:
-        raise RuntimeError("左の足裏板が、ほかの部品を除外していません")
     return f"sole_filter blocked {len(blocked)} self_collision {self_on}"
 
 

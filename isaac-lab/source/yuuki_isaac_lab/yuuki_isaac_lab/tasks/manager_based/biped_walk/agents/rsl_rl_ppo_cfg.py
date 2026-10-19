@@ -10,7 +10,7 @@ class BipedWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     """腰の計算機でも推論できる大きさから始める。"""
 
     num_steps_per_env = 24
-    # 前後 0〜0.1 m/s の指令に合わせる。model_150 は報酬が違うので続けない。
+    # 前後 0〜0.2 m/s。止まれでは関節の揺れを減点する。model_400 は報酬が違うので続けない。
     max_iterations = 3000
     save_interval = 50
     experiment_name = "yuuki_biped_walk"

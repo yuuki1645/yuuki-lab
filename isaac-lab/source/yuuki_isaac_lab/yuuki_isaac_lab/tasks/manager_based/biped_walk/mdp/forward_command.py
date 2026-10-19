@@ -2,7 +2,7 @@
 
 この距離は報酬の計算には使わない。報酬は胸の向きの移動を、報酬の中で別に足す。
 W&B の Metrics/base_velocity/forward_distance_m は、立っているだけなら 0 m 付近、
-0.1 m/s を 10 秒維持すれば約 1 m になる。
+0.2 m/s を 10 秒維持すれば約 2 m になる。
 """
 
 from __future__ import annotations

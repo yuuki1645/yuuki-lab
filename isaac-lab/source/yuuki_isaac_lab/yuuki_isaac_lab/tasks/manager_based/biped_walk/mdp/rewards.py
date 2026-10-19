@@ -113,7 +113,7 @@ def track_forward_progress(
     """胸の前方速度が指令に近いほど 1。重み 1.5 なら、一致しているあいだ毎秒 1.5 点。
 
     0 m/s の指令で止まっていれば 1、そこから前へ進むと下がる。
-    0.1 m/s の指令で 0.1 m/s なら 1、止まっていてもそれより速くても下がる。
+    0.2 m/s の指令で 0.2 m/s なら 1、止まっていてもそれより速くても下がる。
     位置の差から速度を出すので、前へ倒して同じ速さで戻すと、戻るあいだは点が低い。
     """
     speed_mps = _forward_speed_mps(env, asset_cfg)
@@ -227,3 +227,29 @@ def swing_knee(
     target = torch.stack((0.8 * torch.relu(sine), 0.8 * torch.relu(-sine)), dim=-1)
     error = torch.square(knee - target).mean(dim=-1)
     return torch.exp(-error / 0.4) * _gait_enabled(env, command_name)
+
+
+def stand_still(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """止まれのとき、開いた立ち姿勢から関節が動くほど大きい正の値。歩きのあいだは 0。
+
+    位相の sin / cos は指令が 0 でも進む。速度が 0 に近いだけでは、その時計に合わせた
+    左右の揺れが減点にならない。ここでは既定角との差と、関節速度を足す。
+    0.2 rad のずれ、または 1 rad/s の揺れが、重み -20 で毎秒約 0.8 点になる。
+    """
+    robot: Articulation = env.scene[asset_cfg.name]
+    joint_ids = asset_cfg.joint_ids
+    pos = robot.data.joint_pos.torch[:, joint_ids]
+    default = robot.data.default_joint_pos.torch[:, joint_ids]
+    vel = robot.data.joint_vel.torch[:, joint_ids]
+    # 既定角は、ピッチ 0、股ロールは開き、足首ロールはその逆。
+    pos_cost = torch.square(pos - default).mean(dim=-1)
+    # 1 rad/s を、0.2 rad のずれと同じ大きさ（0.04）に揃える。
+    vel_cost = torch.square(vel).mean(dim=-1)
+    cost = pos_cost + 0.04 * vel_cost
+    command = env.command_manager.get_command(command_name)[:, 0]
+    standing = (command < STAND_COMMAND_MAX_MPS).to(dtype=cost.dtype)
+    return cost * standing

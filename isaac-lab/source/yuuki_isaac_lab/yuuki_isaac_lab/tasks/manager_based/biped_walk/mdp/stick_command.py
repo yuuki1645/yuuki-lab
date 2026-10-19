@@ -1,7 +1,7 @@
 """再生中だけ、左スティックを前後の速度指令にする。
 
 学習の SlowWalkVelocityCommand は変えない。このクラスは再生用の設定からのみ使う。
-奥へ倒すと正の前進、倒し切りで 0.1 m/s。中央と手前は 0。
+奥へ倒すと正の前進、倒し切りで 0.2 m/s。中央と手前は 0。
 手前をマイナスにしないのは、この方策が後ろ歩きを学習していないため。
 左右とヨーは読まない。
 """
@@ -19,7 +19,7 @@ _STICK_DEAD_ZONE = 0.15
 
 
 class StickWalkCommand(SlowWalkVelocityCommand):
-    """左スティックの奥を、0〜0.1 m/s の前進指令にする。"""
+    """左スティックの奥を、0〜0.2 m/s の前進指令にする。"""
 
     def __init__(self, cfg, env):
         super().__init__(cfg, env)
@@ -28,7 +28,7 @@ class StickWalkCommand(SlowWalkVelocityCommand):
         # ウィンドウのゲームパッド 0 を読む。無いときは 0 m/s のまま再生する。
         try:
             pad_cfg = Se2GamepadCfg(
-                # 倒し切りが、この歩行の最大速度 0.1 m/s になる。
+                # 倒し切りが、この歩行の最大速度 0.2 m/s になる。
                 v_x_sensitivity=FORWARD_SPEED_MPS,
                 v_y_sensitivity=0.0,
                 omega_z_sensitivity=0.0,

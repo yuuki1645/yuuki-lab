@@ -67,10 +67,10 @@ class BipedWalkSceneCfg(InteractiveSceneCfg):
 
 @configclass
 class CommandsCfg:
-    """前後は 0〜0.1 m/s。約2割はちょうど 0。ヨーと横移動は 0。
+    """前後は 0〜0.2 m/s。約2割はちょうど 0。ヨーと横移動は 0。
 
     4〜6 秒ごとに引き直す。10 秒のエピソードの途中で、歩く指令と止まる指令が入れ替わる。
-    スティックの -1〜1 は学習には入れない。実機では 0.1 m/s × スティックを、この速度として渡す。
+    スティックの -1〜1 は学習には入れない。実機では 0.2 m/s × スティックを、この速度として渡す。
     距離の記録だけ SlowWalkVelocityCommand に替える。
     """
 
@@ -213,6 +213,12 @@ class RewardsCfg:
                 preserve_order=True,
             )
         },
+    )
+    # 止まれのあいだだけ。開き姿勢から動いた量。重みは負なので、揺れは減点。
+    stand_still = RewTerm(
+        func=mdp.stand_still,
+        weight=-20.0,
+        params={"command_name": "base_velocity", "asset_cfg": SceneEntityCfg("robot")},
     )
     swing_knee = RewTerm(
         func=mdp.swing_knee,

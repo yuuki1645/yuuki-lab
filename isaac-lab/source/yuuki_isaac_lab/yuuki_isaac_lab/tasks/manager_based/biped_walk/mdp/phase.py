@@ -1,8 +1,8 @@
 """歩幅の時計。1周期が左右1歩ずつの1ストライド。
 
 位相は角度 [rad]。観測には sin と cos を出し、360度で値が飛ばないようにする。
-部屋が狭いので、最初の速度は 0.1 m/s。周期 2 秒なら、片足が前に出る時間は 1 秒、
-1周期の進みは約 0.1 m。
+倒し切りの速度は 0.2 m/s。周期 2 秒なら、片足が前に出る時間は 1 秒、
+1周期の進みは約 0.2 m。10 秒だと約 2 m。
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 # 普通の歩きで、一歩に約 1 秒。左右で 1 周期なので 2 秒。
 PERIOD_S = 2.0
-# 10 秒で約 1 m。畳の上で見られる遅さ。ヨーは 0。
-FORWARD_SPEED_MPS = 0.1
+# スティックを倒し切った速さ。0.1 m/s では進みが遅すぎたので 2 倍。ヨーは 0。
+FORWARD_SPEED_MPS = 0.2
 
 
 def phase_angle(env: ManagerBasedRLEnv) -> torch.Tensor:

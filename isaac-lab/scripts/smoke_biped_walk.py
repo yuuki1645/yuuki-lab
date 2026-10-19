@@ -144,7 +144,7 @@ def main() -> int:
         f"command_vx {float(command_vx.mean()):.3f} yaw {float(command_yaw.abs().max()):.3f}"
         f" track_forward {float(track.mean()):.3f}"
     )
-    vx_ok = bool((command_vx.min() >= -1.0e-6) and (command_vx.max() <= 0.1 + 1.0e-6))
+    vx_ok = bool((command_vx.min() >= -1.0e-6) and (command_vx.max() <= 0.2 + 1.0e-6))
     yaw_ok = bool(command_yaw.abs().max() < 1.0e-5)
     match_ok = bool(torch.allclose(track, expected, atol=1.0e-4))
     if not vx_ok or not yaw_ok or not match_ok:

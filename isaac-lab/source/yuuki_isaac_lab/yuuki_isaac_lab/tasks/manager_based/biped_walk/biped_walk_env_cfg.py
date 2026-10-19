@@ -148,7 +148,10 @@ class ObservationsCfg:
 
 @configclass
 class RewardsCfg:
-    """重みは最初の仮説。歩けるかどうかは学習してから判断する。"""
+    """重みは最初の仮説。歩けるかどうかは学習してから判断する。
+
+    feet_apart だけが、左右の足を股関節の幅に開く項。板を重ねて立つと、この項はほぼ 0 になる。
+    """
 
     upright = RewTerm(func=mdp.upright, weight=1.0)
     track_forward = RewTerm(
@@ -187,6 +190,18 @@ class RewardsCfg:
                 body_names=["left_sole", "right_sole"],
                 preserve_order=True,
             ),
+        },
+    )
+    feet_apart = RewTerm(
+        func=mdp.feet_apart,
+        weight=1.0,
+        params={
+            # 左、右の順。報酬は左の左右位置から右を引く。
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                body_names=["left_foot", "right_foot"],
+                preserve_order=True,
+            )
         },
     )
     swing_knee = RewTerm(

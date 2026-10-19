@@ -3,6 +3,7 @@
 位相の sin が正のあいだ右足が接地、負のあいだ左足が接地、という時計に合わせる。
 接地中の圧力中心は、かかと（x が負）からつま先（x が正）へ進むことを望む。
 遊脚の膝は曲げる。カゴは立てたまま、指令の前進速度へ近づける。
+左右の足は、股関節の幅だけ開いて並ぶ。板を重ねたり交差したりすると、この項はほぼ 0 になる。
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING
 import torch
 
 from isaaclab.managers import SceneEntityCfg
+from isaaclab.utils.math import quat_apply_inverse
 
 if TYPE_CHECKING:
     from isaaclab.assets import Articulation
@@ -19,6 +21,10 @@ if TYPE_CHECKING:
 
 from .feet import PLATE_HALF_X_M, stance_load_kg
 from .phase import phase_angle
+
+# カゴ座標の左右。左股関節は y=+0.09 m、右股関節は y=-0.09 m（yuuki_biped.urdf）。
+# 関節が 0 のとき、足リンクの左右差は 0.18 m。板の幅は 0.17 m なので、このとき板のすき間は約 1 cm。
+HIP_SEPARATION_M = 0.18
 
 
 def upright(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -81,6 +87,41 @@ def heel_to_toe(
     error = torch.square((cop_x - target_x) / PLATE_HALF_X_M)
     score = torch.exp(-error / 0.25)
     return torch.where(loaded, score, torch.zeros_like(score))
+
+
+def feet_lateral_gap_m(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """カゴから見た、左足の左右位置から右足の左右位置を引いた差（m）。
+
+    asset_cfg.body_ids は左足、右足の順。開いて並んでいれば正、重なれば 0 付近、交差すれば負。
+    世界座標の左右ではなくカゴの左右なので、体がヨーしても「自分の左に左足」のまま測れる。
+    """
+    robot: Articulation = env.scene[asset_cfg.name]
+    # 足リンク原点。板の中心は足から前と下にずれているが、左右のずれは 0 なので、間隔は原点で足りる。
+    foot_pos_w = robot.data.body_pos_w.torch[:, asset_cfg.body_ids, :]
+    root_pos_w = robot.data.root_pos_w.torch
+    root_quat_w = robot.data.root_quat_w.torch
+    delta_w = foot_pos_w - root_pos_w[:, None, :]
+    # root_quat_w は (x, y, z, w)。逆回転で、世界の差をカゴ座標へ移す。
+    quat = root_quat_w[:, None, :].expand(-1, delta_w.shape[1], -1)
+    foot_pos_b = quat_apply_inverse(quat, delta_w)
+    left_y = foot_pos_b[:, 0, 1]
+    right_y = foot_pos_b[:, 1, 1]
+    return left_y - right_y
+
+
+def feet_apart(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg,
+    target_y_m: float = HIP_SEPARATION_M,
+) -> torch.Tensor:
+    """左右の足が股関節の幅だけ開いているほど 1。重なりと交差と、開きすぎは 0 に近づく。
+
+    差が目標なら 1、目標から目標幅の半分だけずれると約 0.37。
+    完全に重なる（差 0）と exp(-4) で約 0.02。板を乗せた立ち方では、この項はほぼ入らない。
+    """
+    gap_m = feet_lateral_gap_m(env, asset_cfg)
+    error = (gap_m - target_y_m) / target_y_m
+    return torch.exp(-torch.square(error) / 0.25)
 
 
 def swing_knee(

@@ -101,6 +101,20 @@ def main() -> int:
     env = ManagerBasedRLEnv(cfg=cfg)
     lines.append(_check_sole_filter(env))
     obs, _ = env.reset()
+    from isaaclab.managers import SceneEntityCfg
+
+    from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import HIP_SEPARATION_M, feet_apart, feet_lateral_gap_m
+
+    foot_cfg = SceneEntityCfg("robot", body_names=["left_foot", "right_foot"], preserve_order=True)
+    foot_cfg.resolve(env.scene)
+    gap_m = feet_lateral_gap_m(env, foot_cfg)
+    apart = feet_apart(env, foot_cfg)
+    lines.append(
+        f"feet_gap_m {float(gap_m.mean()):.3f} target {HIP_SEPARATION_M:.3f} feet_apart {float(apart.mean()):.3f}"
+    )
+    # 直立のリセットで、足は股関節の幅だけ開いている。符号や体の取り違えはここで落ちる。
+    if float(apart.mean()) < 0.8:
+        raise RuntimeError(f"直立で足の間隔報酬が低い: gap {float(gap_m.mean()):.3f} score {float(apart.mean()):.3f}")
     policy = obs["policy"]
     critic = obs["critic"]
     # 関節10、傾き3、角速度3、の次が左右8隅の kg。

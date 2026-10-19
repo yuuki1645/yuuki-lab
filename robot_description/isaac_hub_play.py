@@ -30,8 +30,11 @@ if str(_HERE) not in sys.path:
 from hub_link import ISAAC_TCP_HOST, ISAAC_TCP_PORT, JOINT_COUNT, joint_names
 from sole_pressure import PLATE_HALF_X_M, PLATE_HALF_Y_M, sample_from_points
 
-# 直立時、原点から足裏まで 0.622 m。足裏下面を床（z=0）に合わせ、接触が出るようにする。
-SPAWN_Z_M = 0.622
+from model_size import SOLE_BELOW_ORIGIN_M
+
+# 直立時、原点から足裏まで。足裏下面を床（z=0）に合わせ、接触が出るようにする。
+# 高さは yaml から読む。URDF を作り直したあとは、この定数を手で合わせない。
+SPAWN_Z_M = SOLE_BELOW_ORIGIN_M
 # 位置制御。実機の PD そのものではなく、バー操作が追従するための仮のゲイン。
 JOINT_STIFFNESS = 80.0
 JOINT_DAMPING = 2.0
@@ -162,6 +165,8 @@ def _import_urdf(importer_cls, config_cls) -> str:
     config.override_joint_stiffness = JOINT_STIFFNESS
     config.override_joint_damping = JOINT_DAMPING
     config.collision_from_visuals = True
+    # 関節の隣以外は当たる。箱の食い込みは URDF 側で空けてある。
+    config.allow_self_collision = True
     print(f"[isaac_hub_play] URDF を変換します: {URDF_PATH}")
     output = importer_cls(config).import_urdf()
     if not output:
@@ -243,12 +248,11 @@ def _apply_targets(robot, hold_rad: list[float]) -> None:
     robot.set_dof_position_targets(np.asarray(hold_rad, dtype=np.float32)[None, :])
 
 
-# 足板の衝突ではない。球は下面中心の目印、サーボ箱は仮定の足首高さでは板より下へ出る。
+# 足裏中心の球。見た目から衝突を作る変換だと、この球が床に当たる。
+# 足サーボは板の上にあるので切らない。反対の脚に当たる必要がある。
 _NON_PLATE_COLLISIONS = (
     "left_sole_sole_marker_0",
     "right_sole_sole_marker_0",
-    "left_foot_servo_0",
-    "right_foot_servo_0",
 )
 
 

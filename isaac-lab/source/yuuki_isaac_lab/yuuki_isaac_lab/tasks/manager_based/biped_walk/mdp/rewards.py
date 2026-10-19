@@ -20,19 +20,21 @@ if TYPE_CHECKING:
     from isaaclab.assets import Articulation
     from isaaclab.envs import ManagerBasedRLEnv
 
+from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import (
+    HIP_SEPARATION_M,
+    LEG_LENGTH_HIP_TO_ANKLE_M,
+    PLATE_WIDTH_Y_M,
+)
+
 from .feet import PLATE_HALF_X_M, stance_load_kg
 from .phase import phase_angle
 
-# カゴ座標の左右。左股関節は y=+0.09 m、右股関節は y=-0.09 m（yuuki_biped.urdf）。
-# 関節が 0 のとき、足リンクの左右差は 0.18 m。板の左右幅は 0.17 m なので、すき間は約 1 cm。
+# 左右の股軸間隔、足裏の幅、股から足首までの長さは yaml から読む。
+# 足裏までの高さを変えても、開脚角の脚長は股ロール軸から足首ロール軸までなので変わらない。
 # 実機は、板が触れないところまで開いて安定してから歩き始める。学習の初期姿勢もそこにする。
-HIP_SEPARATION_M = 0.18
-PLATE_WIDTH_Y_M = 0.17
 INNER_CLEARANCE_M = 0.04
-# 中心間隔。板幅 0.17 m に内側すき間 0.04 m を足す。
+# 中心間隔。板幅に、実機で残している内側すき間を足す。
 TARGET_FEET_GAP_M = PLATE_WIDTH_Y_M + INNER_CLEARANCE_M
-# 股ロール軸から足首ロール軸まで。股ピッチ、膝、足首ピッチ、足首ロールの z 間隔の和。
-LEG_LENGTH_HIP_TO_ANKLE_M = 0.065 + 0.226 + 0.226 + 0.065
 # 片足を (0.21-0.18)/2 m だけ外へ出す角度。正の股ロールは左右とも開く（右の軸は -X）。
 # 足首ロールは逆符号にして、板を床と平行に戻す。
 OPEN_STANCE_ROLL_RAD = math.asin(

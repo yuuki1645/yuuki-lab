@@ -3,26 +3,28 @@
   yuuki_biped
   generate_urdf.py が yuuki_biped.yaml から生成した。このファイルは手で編集しない。
 
-  原点: カゴ底面の中央。x 前、y 左、z 上。ベースは地面に固定していない。
+  原点: 股ロール軸の高さ、左右中央。カゴの箱はその 0.017 m 上から始まる。
+  x 前、y 左、z 上。ベースは地面に固定していない。
   股ロール軸: x=0 m, y=±0.09 m
   サーボ軸間（板なし）: 0.065 m
   腿・脛の軸間: 0.226 m
-  直立時、原点から足裏まで: 0.622 m
-  直立時、足裏からカゴ天面まで: 0.767 m
+  直立時、原点から足裏まで: 0.64 m
+  直立時、足裏からカゴ天面まで: 0.802 m
   総質量（参照フレームの微小質量を含む）: 4.6543 kg
 
-  サーボ箱は各関節の軸から下へ伸ばしている。軸間が胴体長と同じだと箱は重なる。
-  kinematics（関節原点）を寸法式に合わせることを優先している。
+  関節の原点は寸法式のまま。衝突箱は clearance だけ離し、サーボが板や電池や隣のサーボに入らない。
+  股と足首のサーボは下端だけ短くして、次のサーボとのあいだに金具の隙間を空ける。
+  電池はセル寸法ではなく、側板のあいだのダンボール。質量はセルのまま。
 -->
 <robot name="yuuki_biped">
   <link name="basket">
     <inertial>
-      <origin xyz="0 0 0.0725" rpy="0 0 0"/>
+      <origin xyz="0 0 0.0895" rpy="0 0 0"/>
       <mass value="0.6"/>
       <inertia ixx="0.004971" ixy="0" ixz="0" iyy="0.002671" iyz="0" izz="0.00554"/>
     </inertial>
     <visual name="basket_basket_0">
-      <origin xyz="0 0 0.0725" rpy="0 0 0"/>
+      <origin xyz="0 0 0.0895" rpy="0 0 0"/>
       <geometry>
         <box size="0.18 0.28 0.145"/>
       </geometry>
@@ -31,7 +33,7 @@
       </material>
     </visual>
     <collision name="basket_basket_0">
-      <origin xyz="0 0 0.0725" rpy="0 0 0"/>
+      <origin xyz="0 0 0.0895" rpy="0 0 0"/>
       <geometry>
         <box size="0.18 0.28 0.145"/>
       </geometry>
@@ -55,31 +57,31 @@
   </link>
   <link name="left_hip">
     <inertial>
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.000098" ixy="0" ixz="0" iyy="0.000077" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="left_hip_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
       </material>
     </visual>
     <collision name="left_hip_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
     </collision>
   </link>
   <link name="left_thigh">
     <inertial>
-      <origin xyz="0 0 -0.085319" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.09459" rpy="0 0 0"/>
       <mass value="0.608"/>
-      <inertia ixx="0.002173" ixy="0" ixz="0" iyy="0.002061" iyz="0" izz="0.000202"/>
+      <inertia ixx="0.002741" ixy="0" ixz="0" iyy="0.002595" iyz="0" izz="0.000258"/>
     </inertial>
     <visual name="left_thigh_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -97,56 +99,56 @@
       </geometry>
     </collision>
     <visual name="left_thigh_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="left_thigh_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="left_thigh_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="left_thigh_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="left_thigh_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
       <material>
-        <color rgba="0.85 0.45 0.12 1"/>
+        <color rgba="0.72 0.58 0.4 1"/>
       </material>
     </visual>
     <collision name="left_thigh_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
     </collision>
   </link>
   <link name="left_shin">
     <inertial>
-      <origin xyz="0 0 -0.085319" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.09459" rpy="0 0 0"/>
       <mass value="0.608"/>
-      <inertia ixx="0.002173" ixy="0" ixz="0" iyy="0.002061" iyz="0" izz="0.000202"/>
+      <inertia ixx="0.002741" ixy="0" ixz="0" iyy="0.002595" iyz="0" izz="0.000258"/>
     </inertial>
     <visual name="left_shin_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -164,78 +166,78 @@
       </geometry>
     </collision>
     <visual name="left_shin_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="left_shin_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="left_shin_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="left_shin_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="left_shin_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
       <material>
-        <color rgba="0.85 0.45 0.12 1"/>
+        <color rgba="0.72 0.58 0.4 1"/>
       </material>
     </visual>
     <collision name="left_shin_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
     </collision>
   </link>
   <link name="left_ankle">
     <inertial>
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.000098" ixy="0" ixz="0" iyy="0.000077" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="left_ankle_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
       </material>
     </visual>
     <collision name="left_ankle_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
     </collision>
   </link>
   <link name="left_foot">
     <inertial>
-      <origin xyz="0.030044 0 -0.031217" rpy="0 0 0"/>
+      <origin xyz="0.030044 0 -0.042033" rpy="0 0 0"/>
       <mass value="0.451"/>
-      <inertia ixx="0.000792" ixy="0" ixz="0.000105" iyy="0.002421" iyz="0" izz="0.003004"/>
+      <inertia ixx="0.000903" ixy="0" ixz="0.000203" iyy="0.002532" iyz="0" izz="0.003004"/>
     </inertial>
     <visual name="left_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -253,7 +255,7 @@
       </geometry>
     </collision>
     <visual name="left_foot_foot_plate_1">
-      <origin xyz="0.05 0 -0.039" rpy="0 0 0"/>
+      <origin xyz="0.05 0 -0.057" rpy="0 0 0"/>
       <geometry>
         <box size="0.3 0.17 0.002"/>
       </geometry>
@@ -262,7 +264,7 @@
       </material>
     </visual>
     <collision name="left_foot_foot_plate_1">
-      <origin xyz="0.05 0 -0.039" rpy="0 0 0"/>
+      <origin xyz="0.05 0 -0.057" rpy="0 0 0"/>
       <geometry>
         <box size="0.3 0.17 0.002"/>
       </geometry>
@@ -286,31 +288,31 @@
   </link>
   <link name="right_hip">
     <inertial>
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.000098" ixy="0" ixz="0" iyy="0.000077" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="right_hip_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
       </material>
     </visual>
     <collision name="right_hip_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
     </collision>
   </link>
   <link name="right_thigh">
     <inertial>
-      <origin xyz="0 0 -0.085319" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.09459" rpy="0 0 0"/>
       <mass value="0.608"/>
-      <inertia ixx="0.002173" ixy="0" ixz="0" iyy="0.002061" iyz="0" izz="0.000202"/>
+      <inertia ixx="0.002741" ixy="0" ixz="0" iyy="0.002595" iyz="0" izz="0.000258"/>
     </inertial>
     <visual name="right_thigh_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -328,56 +330,56 @@
       </geometry>
     </collision>
     <visual name="right_thigh_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="right_thigh_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="right_thigh_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="right_thigh_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="right_thigh_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
       <material>
-        <color rgba="0.85 0.45 0.12 1"/>
+        <color rgba="0.72 0.58 0.4 1"/>
       </material>
     </visual>
     <collision name="right_thigh_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
     </collision>
   </link>
   <link name="right_shin">
     <inertial>
-      <origin xyz="0 0 -0.085319" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.09459" rpy="0 0 0"/>
       <mass value="0.608"/>
-      <inertia ixx="0.002173" ixy="0" ixz="0" iyy="0.002061" iyz="0" izz="0.000202"/>
+      <inertia ixx="0.002741" ixy="0" ixz="0" iyy="0.002595" iyz="0" izz="0.000258"/>
     </inertial>
     <visual name="right_shin_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -395,78 +397,78 @@
       </geometry>
     </collision>
     <visual name="right_shin_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="right_shin_plate_1">
-      <origin xyz="0 0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="right_shin_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
       <material>
         <color rgba="0.78 0.8 0.82 1"/>
       </material>
     </visual>
     <collision name="right_shin_plate_2">
-      <origin xyz="0 -0.0255 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 -0.0295 -0.111" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04 0.003 0.2"/>
+        <box size="0.04 0.003 0.196"/>
       </geometry>
     </collision>
     <visual name="right_shin_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
       <material>
-        <color rgba="0.85 0.45 0.12 1"/>
+        <color rgba="0.72 0.58 0.4 1"/>
       </material>
     </visual>
     <collision name="right_shin_battery_3">
-      <origin xyz="0 0 -0.113" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.1325" rpy="0 0 0"/>
       <geometry>
-        <box size="0.024 0.04 0.13"/>
+        <box size="0.032 0.048 0.153"/>
       </geometry>
     </collision>
   </link>
   <link name="right_ankle">
     <inertial>
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <mass value="0.18"/>
-      <inertia ixx="0.000098" ixy="0" ixz="0" iyy="0.000077" iyz="0" izz="0.000048"/>
+      <inertia ixx="0.00009" ixy="0" ixz="0" iyy="0.000069" iyz="0" izz="0.000048"/>
     </inertial>
     <visual name="right_ankle_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
       <material>
         <color rgba="0.45 0.12 0.16 1"/>
       </material>
     </visual>
     <collision name="right_ankle_servo_0">
-      <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
       <geometry>
-        <box size="0.03 0.048 0.065"/>
+        <box size="0.03 0.048 0.061"/>
       </geometry>
     </collision>
   </link>
   <link name="right_foot">
     <inertial>
-      <origin xyz="0.030044 0 -0.031217" rpy="0 0 0"/>
+      <origin xyz="0.030044 0 -0.042033" rpy="0 0 0"/>
       <mass value="0.451"/>
-      <inertia ixx="0.000792" ixy="0" ixz="0.000105" iyy="0.002421" iyz="0" izz="0.003004"/>
+      <inertia ixx="0.000903" ixy="0" ixz="0.000203" iyy="0.002532" iyz="0" izz="0.003004"/>
     </inertial>
     <visual name="right_foot_servo_0">
       <origin xyz="0 0 -0.0195" rpy="0 0 0"/>
@@ -484,7 +486,7 @@
       </geometry>
     </collision>
     <visual name="right_foot_foot_plate_1">
-      <origin xyz="0.05 0 -0.039" rpy="0 0 0"/>
+      <origin xyz="0.05 0 -0.057" rpy="0 0 0"/>
       <geometry>
         <box size="0.3 0.17 0.002"/>
       </geometry>
@@ -493,7 +495,7 @@
       </material>
     </visual>
     <collision name="right_foot_foot_plate_1">
-      <origin xyz="0.05 0 -0.039" rpy="0 0 0"/>
+      <origin xyz="0.05 0 -0.057" rpy="0 0 0"/>
       <geometry>
         <box size="0.3 0.17 0.002"/>
       </geometry>
@@ -570,7 +572,7 @@
   <joint name="left_sole_fixed" type="fixed">
     <parent link="left_foot"/>
     <child link="left_sole"/>
-    <origin xyz="0.05 0 -0.04" rpy="0 0 0"/>
+    <origin xyz="0.05 0 -0.058" rpy="0 0 0"/>
   </joint>
   <!-- 右股ロール。カゴ底面から股ロール軸まで。 -->
   <joint name="right_hip_roll" type="revolute">
@@ -621,6 +623,6 @@
   <joint name="right_sole_fixed" type="fixed">
     <parent link="right_foot"/>
     <child link="right_sole"/>
-    <origin xyz="0.05 0 -0.04" rpy="0 0 0"/>
+    <origin xyz="0.05 0 -0.058" rpy="0 0 0"/>
   </joint>
 </robot>

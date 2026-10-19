@@ -29,7 +29,8 @@ DEFAULT_OUTPUT = SCRIPT_DIR / "yuuki_biped.urdf"
 COLOR_BASKET = (0.93, 0.93, 0.90, 1.0)
 COLOR_SERVO = (0.45, 0.12, 0.16, 1.0)
 COLOR_PLATE = (0.78, 0.80, 0.82, 1.0)
-COLOR_BATTERY = (0.85, 0.45, 0.12, 1.0)
+# ダンボールの色。中のセルは別の箱にしない。
+COLOR_BATTERY = (0.72, 0.58, 0.40, 1.0)
 COLOR_FOOT = (0.82, 0.83, 0.84, 1.0)
 COLOR_IMU = (0.95, 0.85, 0.15, 1.0)
 COLOR_SOLE = (0.85, 0.25, 0.20, 1.0)
@@ -44,6 +45,7 @@ ASSUMED_KEYS = (
     "placement.hip_y_m",
     "placement.stacked_servo_distance_m（null のときサーボ長）",
     "placement.segment_axis_distance_m（null のとき 13mm+板長+13mm）",
+    "placement.clearance_m（未計測の隙間。箱が食い込まない側）",
     "imu.xyz_m",
     "actuator.velocity_limit_rad_s",
     "joints_deg の全部",
@@ -202,7 +204,8 @@ def resolve_params(raw: dict) -> dict:
     basket_size = require_vec3(basket, "size_m", "basket")
     servo_size = require_vec3(servo, "size_m", "servo")
     plate_size = require_vec3(plate, "size_m", "plate")
-    battery_size = require_vec3(battery, "size_m", "battery")
+    # セル寸法は記録。衝突箱は側板の空きから後で作る。
+    battery_cell = require_vec3(battery, "cell_size_m", "battery")
     foot_size = require_vec3(foot, "size_m", "foot")
     imu_xyz = require_vec3(imu, "xyz_m", "imu")
 
@@ -210,6 +213,7 @@ def resolve_params(raw: dict) -> dict:
     stacked = placement["stacked_servo_distance_m"]
     segment = placement["segment_axis_distance_m"]
     # null は「サーボをそのまま1段積んだ距離」。
+    clearance = float(placement["clearance_m"])
     stacked_distance = float(servo_size[2] if stacked is None else stacked)
     # null は「両端の軸が板から 13 mm ずつ外側」。
     segment_distance = float(
@@ -241,8 +245,9 @@ def resolve_params(raw: dict) -> dict:
         "plate_size": plate_size,
         "plate_mass": float(plate["mass_kg"]),
         "plate_center_y": float(plate["center_y_m"]),
-        "battery_size": battery_size,
+        "battery_cell": battery_cell,
         "battery_mass": float(battery["mass_kg"]),
+        "clearance": clearance,
         "battery_on_shin": bool(battery["on_shin"]),
         "foot_size": foot_size,
         "foot_mass": float(foot["mass_kg"]),
@@ -277,6 +282,7 @@ def _validate(params: dict) -> None:
         "stacked_distance",
         "segment_distance",
         "ankle_to_sole",
+        "clearance",
         "effort",
         "velocity",
         "axis_inset",
@@ -289,7 +295,7 @@ def _validate(params: dict) -> None:
         ("basket", params["basket_size"]),
         ("servo", params["servo_size"]),
         ("plate", params["plate_size"]),
-        ("battery", params["battery_size"]),
+        ("battery_cell", params["battery_cell"]),
         ("foot", params["foot_size"]),
     ):
         if any(v <= 0.0 for v in size):
@@ -302,50 +308,101 @@ def _validate(params: dict) -> None:
             "segment_axis_distance は板の長さより長くしてください"
             "（軸が板の両端の外側にある、という仮定）"
         )
+    if params["clearance"] >= params["servo_size"][2] / 2.0:
+        raise ValueError("clearance_m がサーボの半分以上です。箱が消えません")
+    # サーボ下端、板の厚さ、隙間。これより足裏が近いと、足サーボが板を貫く。
+    servo_below = params["servo_size"][2] - params["axis_inset"]
+    min_sole = servo_below + params["foot_size"][2] + params["clearance"]
+    if params["ankle_to_sole"] + 1.0e-9 < min_sole:
+        raise ValueError(
+            "foot.ankle_to_sole_m が短く、足サーボが足裏板に入ります。"
+            f" 必要 {min_sole:.4f} m、今 {params['ankle_to_sole']:.4f} m。"
+        )
+    servo_half_y = params["servo_size"][1] / 2.0
+    plate_half_y = params["plate_size"][1] / 2.0
+    min_plate_y = servo_half_y + params["clearance"] + plate_half_y
+    if params["plate_center_y"] + 1.0e-9 < min_plate_y:
+        raise ValueError(
+            "plate.center_y_m が小さく、側板がサーボに入ります。"
+            f" 必要 {min_plate_y:.4f} m、今 {params['plate_center_y']:.4f} m。"
+        )
+    housing = _battery_housing(params)
+    if min(housing[0]) <= 0.0:
+        raise ValueError(f"電池のダンボールが空きに入りません: {housing[0]}")
 
 
-def servo_box(params: dict) -> BoxPart:
-    """サーボ箱。軸（リンク原点）は上端から axis_inset だけ下。胴体はそこから下へ伸びる。"""
-    length = params["servo_size"][2]
+def servo_box(params: dict, shorten_bottom: float = 0.0) -> BoxPart:
+    """サーボ箱。上端は軸の axis_inset 上。下端だけ短くして、次の部品と隙間を空ける。
+
+    質量はカタログのサーボのまま。削るのはホーンと金具の分で、金属が消えたわけではない。
+    """
+    length = params["servo_size"][2] - shorten_bottom
+    # 上端を固定し、中心を下へずらさないようにする（下を削ると中心は上へ寄る）。
     center_z = params["axis_inset"] - length / 2.0
+    size = (params["servo_size"][0], params["servo_size"][1], length)
     return BoxPart(
         "servo",
-        params["servo_size"],
+        size,
         (0.0, 0.0, center_z),
         params["servo_mass"],
         COLOR_SERVO,
     )
 
 
-def segment_boxes(params: dict, include_battery: bool) -> list[BoxPart]:
-    """ピッチ関節の子リンクに載せる、サーボ1個と板2枚と（あれば）電池。
+def _battery_housing(params: dict) -> tuple[tuple[float, float, float], float]:
+    """ダンボールの寸法と、リンク原点からの中心 z。
 
-    板の上端は軸の axis_inset 下。長さは plate の z。
-    軸間距離の式（inset + 板長 + inset）と揃えている。
-    サーボ箱は軸から下へ伸びるので、板の上部と箱は重なる。
-    重なりを消すより、関節原点を式どおりに置くことを優先している。
+    上は自分のサーボの下端、下は次のリンクのサーボ上端。左右は側板の内側。
+    それぞれ clearance だけ空ける。セルの 130 mm より長くても、空きの中ならこの箱にする。
+    """
+    clearance = params["clearance"]
+    # このリンクのサーボはフル長。下端は軸から (胴体長 - inset) だけ下。
+    servo_bottom = params["axis_inset"] - params["servo_size"][2]
+    # 子リンクのサーボ上端。子の関節は segment だけ下にあり、上端は軸の inset 上。
+    next_servo_top = -params["segment_distance"] + params["axis_inset"]
+    top = servo_bottom - clearance
+    bottom = next_servo_top + clearance
+    length = top - bottom
+    center_z = (top + bottom) / 2.0
+    inner_y = 2.0 * (params["plate_center_y"] - params["plate_size"][1] / 2.0)
+    size = (
+        params["plate_size"][0] - 2.0 * clearance,
+        inner_y - 2.0 * clearance,
+        length,
+    )
+    return size, center_z
+
+
+def segment_boxes(params: dict, include_battery: bool) -> list[BoxPart]:
+    """ピッチ関節の子リンク。サーボ1個、側板2枚、あればダンボールの電池。
+
+    板の上端は軸の axis_inset 下。長さは plate の z。軸間の式は変えない。
+    サーボの側面と板のあいだ、サーボと電池のあいだには clearance を空ける。
     """
     parts = [servo_box(params)]
-    plate_length = params["plate_size"][2]
+    # 上端は軸から inset の位置のまま。下端だけ短くし、次のサーボの上面と面で接しないようにする。
+    # 仕様の板長 200 mm は軸間の式に残す。削るのは未計測の金具の隙間の分。
+    plate_length = params["plate_size"][2] - params["clearance"]
     center_z = -(params["axis_inset"] + plate_length / 2.0)
+    plate_size = (params["plate_size"][0], params["plate_size"][1], plate_length)
     lateral = params["plate_center_y"]
     for side in (1.0, -1.0):
         parts.append(
             BoxPart(
                 "plate",
-                params["plate_size"],
+                plate_size,
                 (0.0, side * lateral, center_z),
                 params["plate_mass"],
                 COLOR_PLATE,
             )
         )
     if include_battery:
-        # 電池は板より短い。板の上下中央、左右中央に置く。
+        size, battery_z = _battery_housing(params)
         parts.append(
             BoxPart(
                 "battery",
-                params["battery_size"],
-                (0.0, 0.0, center_z),
+                size,
+                (0.0, 0.0, battery_z),
                 params["battery_mass"],
                 COLOR_BATTERY,
             )
@@ -412,7 +469,9 @@ def build_model(params: dict) -> tuple[list[Link], list[Joint]]:
     joints: list[Joint] = []
 
     basket_height = params["basket_size"][2]
-    # リンク原点はカゴの底面中央。箱の中心はその半分だけ上。
+    # 原点は股ロール軸の高さのまま。カゴの箱は、股サーボの上端より clearance だけ上から始める。
+    # サーボ上端は軸の axis_inset 上なので、箱を底面に置くと股サーボがカゴへ 13 mm 入る。
+    basket_bottom = params["axis_inset"] + params["clearance"]
     links.append(
         make_link(
             "basket",
@@ -420,7 +479,7 @@ def build_model(params: dict) -> tuple[list[Link], list[Joint]]:
                 BoxPart(
                     "basket",
                     params["basket_size"],
-                    (0.0, 0.0, basket_height / 2.0),
+                    (0.0, 0.0, basket_bottom + basket_height / 2.0),
                     params["basket_mass"],
                     COLOR_BASKET,
                 )
@@ -475,13 +534,15 @@ def build_leg(
     pitch_axis = (0.0, 1.0, 0.0)
 
     links = [
-        make_link(hip_name, [servo_box(params)]),
+        # 下の股ピッチサーボと面が接しないよう、下端だけ隙間分短くする。軸は stacked のまま。
+        make_link(hip_name, [servo_box(params, shorten_bottom=params["clearance"])]),
         make_link(thigh_name, segment_boxes(params, include_battery=True)),
         make_link(
             shin_name,
             segment_boxes(params, include_battery=params["battery_on_shin"]),
         ),
-        make_link(ankle_name, [servo_box(params)]),
+        # 下の足サーボと面が接しないよう、下端だけ隙間分短くする。
+        make_link(ankle_name, [servo_box(params, shorten_bottom=params["clearance"])]),
         make_link(foot_name, foot_boxes(params)),
         make_link(
             sole_name,
@@ -636,13 +697,15 @@ def joint_xml(joint: Joint) -> str:
 def render_urdf(params: dict, links: list[Link], joints: list[Joint]) -> str:
     total_mass = sum(link.inertial.mass for link in links if link.inertial)
     sole_drop = standing_sole_drop(params)
-    basket_top = params["basket_size"][2]
+    # カゴは原点より上に浮かせてある。天面は「下端 + 仕様の高さ」。
+    basket_top = params["axis_inset"] + params["clearance"] + params["basket_size"][2]
     header = f"""<?xml version="1.0"?>
 <!--
   {params["robot_name"]}
   generate_urdf.py が yuuki_biped.yaml から生成した。このファイルは手で編集しない。
 
-  原点: カゴ底面の中央。x 前、y 左、z 上。ベースは地面に固定していない。
+  原点: 股ロール軸の高さ、左右中央。カゴの箱はその {fmt(params["axis_inset"] + params["clearance"])} m 上から始まる。
+  x 前、y 左、z 上。ベースは地面に固定していない。
   股ロール軸: x={fmt(params["hip_x"])} m, y=±{fmt(params["hip_y"])} m
   サーボ軸間（板なし）: {fmt(params["stacked_distance"])} m
   腿・脛の軸間: {fmt(params["segment_distance"])} m
@@ -650,8 +713,9 @@ def render_urdf(params: dict, links: list[Link], joints: list[Joint]) -> str:
   直立時、足裏からカゴ天面まで: {fmt(sole_drop + basket_top)} m
   総質量（参照フレームの微小質量を含む）: {fmt(total_mass)} kg
 
-  サーボ箱は各関節の軸から下へ伸ばしている。軸間が胴体長と同じだと箱は重なる。
-  kinematics（関節原点）を寸法式に合わせることを優先している。
+  関節の原点は寸法式のまま。衝突箱は clearance だけ離し、サーボが板や電池や隣のサーボに入らない。
+  股と足首のサーボは下端だけ短くして、次のサーボとのあいだに金具の隙間を空ける。
+  電池はセル寸法ではなく、側板のあいだのダンボール。質量はセルのまま。
 -->
 <robot name="{params["robot_name"]}">
 """
@@ -662,7 +726,7 @@ def render_urdf(params: dict, links: list[Link], joints: list[Joint]) -> str:
 
 
 def standing_sole_drop(params: dict) -> float:
-    """全関節 0 のとき、カゴ底面（原点）から足裏までの距離。下向きが正。"""
+    """全関節 0 のとき、原点（股ロール軸の高さ）から足裏までの距離。下向きが正。"""
     return (
         2.0 * params["stacked_distance"]
         + 2.0 * params["segment_distance"]
@@ -671,20 +735,86 @@ def standing_sole_drop(params: dict) -> float:
 
 
 def collect_warnings(params: dict) -> list[str]:
+    """実測に差し替えるまで残す注意。重なりそのものは assert_boxes_clear が止める。"""
     warnings = []
-    servo_bottom = params["servo_size"][2] - params["axis_inset"]
-    if params["ankle_to_sole"] < servo_bottom:
+    if abs(params["clearance"] - 0.004) < 1.0e-9:
         warnings.append(
-            "foot.ankle_to_sole_m がサーボ胴体の下端より短いです。"
-            f" 軸からサーボ下端まで {servo_bottom:.3f} m、足裏まで {params['ankle_to_sole']:.3f} m。"
-            " 足首サーボの箱と足板が重なります。実測したら ankle_to_sole_m を伸ばしてください。"
-        )
-    if params["stacked_distance"] <= params["servo_size"][2]:
-        warnings.append(
-            "股と足首のサーボは、軸間が胴体長以下なので箱が重なって見えます。"
-            " 関節の位置は stacked_servo_distance_m どおりです。"
+            "clearance_m は未計測の 4 mm です。金具やダンボールの隙間を測ったら差し替えてください。"
         )
     return warnings
+
+
+def assert_boxes_clear(links: list[Link], joints: list[Joint], tol: float = 1.0e-4) -> None:
+    """全関節 0 で、衝突箱どうしが tol より深く食い込んでいないことを確かめる。
+
+    同じリンクでも、関節の両側でも見る。PhysX が無視する組でも、形が重なると
+    見た目と、あとから隣接衝突を入れたときの爆発が残る。球の目印は衝突を持たない。
+    """
+    origin: dict[str, tuple[float, float, float]] = {links[0].name: (0.0, 0.0, 0.0)}
+    pending = list(joints)
+    # 関節は親のあとに子が来るとは限らないので、親の位置が決まるまで繰り返す。
+    guard = 0
+    while pending:
+        guard += 1
+        if guard > len(joints) + 2:
+            names = ", ".join(joint.child for joint in pending)
+            raise RuntimeError(f"リンクの位置を決められません: {names}")
+        still: list[Joint] = []
+        for joint in pending:
+            if joint.parent not in origin:
+                still.append(joint)
+                continue
+            parent = origin[joint.parent]
+            origin[joint.child] = (
+                parent[0] + joint.origin[0],
+                parent[1] + joint.origin[1],
+                parent[2] + joint.origin[2],
+            )
+        pending = still
+
+    boxes: list[tuple[str, str, tuple[float, float, float], tuple[float, float, float]]] = []
+    for link in links:
+        base = origin[link.name]
+        for part in link.parts:
+            if not isinstance(part, BoxPart) or not part.collision:
+                continue
+            center = (
+                base[0] + part.origin[0],
+                base[1] + part.origin[1],
+                base[2] + part.origin[2],
+            )
+            half = (part.size[0] / 2.0, part.size[1] / 2.0, part.size[2] / 2.0)
+            low = (center[0] - half[0], center[1] - half[1], center[2] - half[2])
+            high = (center[0] + half[0], center[1] + half[1], center[2] + half[2])
+            boxes.append((link.name, part.name, low, high))
+
+    hits: list[str] = []
+    closest = 1.0
+    for i in range(len(boxes)):
+        for j in range(i + 1, len(boxes)):
+            a_name, a_part, a_low, a_high = boxes[i]
+            b_name, b_part, b_low, b_high = boxes[j]
+            overlap = [
+                min(a_high[axis], b_high[axis]) - max(a_low[axis], b_low[axis])
+                for axis in range(3)
+            ]
+            # 離れている軸があれば、その軸の隙間がこの組の距離。
+            # 1軸でも離れていれば食い込んでいない。その軸の隙間の最小を記録する。
+            if min(overlap) <= tol:
+                gaps = [-value for value in overlap if value <= 0.0]
+                if gaps:
+                    closest = min(closest, min(gaps))
+                else:
+                    closest = min(closest, 0.0)
+                continue
+            hits.append(
+                f"  {a_name}/{a_part} と {b_name}/{b_part} が"
+                f" x {overlap[0] * 1000:.1f} mm, y {overlap[1] * 1000:.1f} mm,"
+                f" z {overlap[2] * 1000:.1f} mm 重なる"
+            )
+    if hits:
+        raise RuntimeError("衝突箱が重なっています。\n" + "\n".join(hits))
+    print(f"  collision_pairs {len(boxes) * (len(boxes) - 1) // 2}  closest_gap_m {closest:.4f}")
 
 
 def check_written_urdf(path: Path, params: dict, link_count: int, joint_count: int) -> None:
@@ -728,12 +858,32 @@ def generate(config_path: Path, output_path: Path) -> None:
         raw = yaml.safe_load(handle)
     params = resolve_params(raw)
     links, joints = build_model(params)
+    # 学習側の model_size が、この生成と違う足裏高さを読まないようにする。
+    import model_size
+
+    sole_drop = standing_sole_drop(params)
+    if abs(sole_drop - model_size.SOLE_BELOW_ORIGIN_M) > 1.0e-9:
+        raise RuntimeError(
+            f"足裏高さが model_size と違います: 生成 {sole_drop:.6f},"
+            f" model_size {model_size.SOLE_BELOW_ORIGIN_M:.6f}"
+        )
+    if abs((2.0 * params["hip_y"]) - model_size.HIP_SEPARATION_M) > 1.0e-9:
+        raise RuntimeError("股の間隔が model_size と違います")
+    leg_length = 2.0 * params["stacked_distance"] + 2.0 * params["segment_distance"]
+    if abs(leg_length - model_size.LEG_LENGTH_HIP_TO_ANKLE_M) > 1.0e-9:
+        raise RuntimeError("股から足首までの長さが model_size と違います")
+    if abs(params["foot_size"][1] - model_size.PLATE_WIDTH_Y_M) > 1.0e-9:
+        raise RuntimeError("足裏の左右幅が model_size と違います")
+    # 書き出す前に、直立で箱が食い込んでいないことを止める。
+    assert_boxes_clear(links, joints)
     output_path.write_text(render_urdf(params, links, joints), encoding="utf-8")
     check_written_urdf(output_path, params, len(links), len(joints))
 
     total_mass = sum(link.inertial.mass for link in links if link.inertial)
     sole_drop = standing_sole_drop(params)
-    height = sole_drop + params["basket_size"][2]
+    # カゴの天面は、浮かした下端に仕様の高さを足す。
+    basket_top = params["axis_inset"] + params["clearance"] + params["basket_size"][2]
+    height = sole_drop + basket_top
     print(f"wrote {output_path}")
     print(f"  stacked_servo_distance_m = {params['stacked_distance']:.4f}")
     print(f"  segment_axis_distance_m  = {params['segment_distance']:.4f}")

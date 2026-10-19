@@ -24,7 +24,7 @@ from .sole_corners import corner_newtons
 GRAVITY_MPS2 = 9.81
 DF9_MAX_KG = 2.0
 DEADZONE_KG = 0.02
-# 足板 0.300 m × 0.170 m の半寸。
+# 足板 0.300 m × 0.170 m の半寸。今回の URDF 変更では板の寸法は変えていない。
 PLATE_HALF_X_M = 0.150
 PLATE_HALF_Y_M = 0.085
 

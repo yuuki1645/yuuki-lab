@@ -241,10 +241,9 @@ class TerminationsCfg:
 
 @configclass
 class EventsCfg:
-    """リセットと、起動時の足首サーボ衝突の無効化。"""
+    """リセットで既定姿勢へ戻す。足サーボは板の上にあるので、衝突は切らない。"""
 
     reset_scene_to_default = EventTerm(func=isaac_mdp.reset_scene_to_default, mode="reset")
-    disable_foot_servo_collisions = EventTerm(func=mdp.disable_foot_servo_collisions, mode="startup")
 
 
 @configclass

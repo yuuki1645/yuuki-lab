@@ -50,16 +50,16 @@ def _nearest_link(prim) -> str | None:
     return None
 
 
-def _check_sole_filter(env) -> str:
-    """左の板が、右の板と右のすねには当たり、自分のすねには当たらないことを見る。"""
+def _check_self_collision(env) -> str:
+    """関節の隣以外は当たる。足裏板から反対の板やすねを除外していないこと。"""
     from pxr import Usd, UsdPhysics
 
     robot = env.sim.stage.GetPrimAtPath("/World/envs/env_0/Robot")
     left = None
     right = None
     right_shin = None
-    left_shin = None
     self_on = False
+    foot_servo_off = 0
     for prim in Usd.PrimRange(robot):
         if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
             attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
@@ -67,31 +67,29 @@ def _check_sole_filter(env) -> str:
         if not prim.HasAPI(UsdPhysics.CollisionAPI):
             continue
         blob = f"{prim.GetName()} {prim.GetDisplayName() or ''}"
+        if "foot_servo" in blob:
+            # 属性が無いときは有効。明示的に False のときだけ、切れていると数える。
+            enabled = UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr()
+            if enabled and enabled.Get() is False:
+                foot_servo_off += 1
         if "left" in blob and "foot_plate" in blob:
             left = prim
         elif "right" in blob and "foot_plate" in blob:
             right = prim
         elif right_shin is None and _nearest_link(prim) == "right_shin":
             right_shin = prim
-        elif left_shin is None and _nearest_link(prim) == "left_shin":
-            left_shin = prim
-    if left is None or right is None or right_shin is None or left_shin is None:
+    if left is None or right is None or right_shin is None:
         raise RuntimeError("足裏板、またはすねの衝突形状が見つかりません")
-    blocked = set(UsdPhysics.FilteredPairsAPI(left).GetFilteredPairsRel().GetTargets())
-    blocked_text = {str(path) for path in blocked}
-    if str(right.GetPath()) in blocked_text:
-        raise RuntimeError("右の足裏板が、左の板から除外されています")
-    if str(right_shin.GetPath()) in blocked_text:
-        shin_hits = [path for path in sorted(blocked_text) if "shin" in path or "thigh" in path]
-        raise RuntimeError(
-            "右のすねが、左の板から除外されています: "
-            f"{right_shin.GetPath()} / 除外にある脚 {shin_hits[:8]}"
-        )
-    if left_shin.GetPath() not in blocked:
-        raise RuntimeError("自分のすねまで、左の板に当たるようになっています")
     if not self_on:
         raise RuntimeError("自己衝突が有効になっていません")
-    return f"sole_filter blocked {len(blocked)} self_collision {self_on}"
+    if foot_servo_off:
+        raise RuntimeError(f"足サーボの衝突が {foot_servo_off} 個切れています")
+    blocked: set[str] = set()
+    if left.HasAPI(UsdPhysics.FilteredPairsAPI):
+        blocked = {str(path) for path in UsdPhysics.FilteredPairsAPI(left).GetFilteredPairsRel().GetTargets()}
+    if str(right.GetPath()) in blocked or str(right_shin.GetPath()) in blocked:
+        raise RuntimeError(f"反対の板やすねが、左の板から除外されています: {sorted(blocked)[:8]}")
+    return f"self_collision {self_on} filtered {len(blocked)}"
 
 
 def main() -> int:
@@ -99,7 +97,7 @@ def main() -> int:
     cfg = BipedWalkEnvCfg()
     cfg.scene.num_envs = args_cli.num_envs
     env = ManagerBasedRLEnv(cfg=cfg)
-    lines.append(_check_sole_filter(env))
+    lines.append(_check_self_collision(env))
     obs, _ = env.reset()
     from isaaclab.managers import SceneEntityCfg
 
@@ -153,9 +151,18 @@ def main() -> int:
     lines.append(f"settled feet_gap_m {settled_gap:.3f} root_z {settled_z:.3f} forward_m {forward_m:.3f}")
     # 足首の戻しが逆だと板が傾いて倒れ、間隔も板幅以下に寄る。
     # 関節 0 のまま数歩では、前へはほとんど進まない。
-    if settled_gap <= PLATE_WIDTH_Y_M or settled_z < 0.55 or int(terminated.sum()) > 0 or abs(forward_m) > 0.05:
+    from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import SOLE_BELOW_ORIGIN_M
+
+    # 足サーボで立つと、カゴ底が足裏高さより板厚ぶん高くなる。板で立っていれば 0.640 m 付近。
+    if (
+        settled_gap <= PLATE_WIDTH_Y_M
+        or abs(settled_z - SOLE_BELOW_ORIGIN_M) > 0.03
+        or int(terminated.sum()) > 0
+        or abs(forward_m) > 0.05
+    ):
         raise RuntimeError(
-            f"開いた初期姿勢を保てていない: gap {settled_gap:.3f} root_z {settled_z:.3f} forward_m {forward_m:.3f}"
+            f"開いた初期姿勢を保てていない: gap {settled_gap:.3f}"
+            f" root_z {settled_z:.3f} sole {SOLE_BELOW_ORIGIN_M:.3f} forward_m {forward_m:.3f}"
         )
     env.close()
     lines.append("ok")

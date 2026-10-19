@@ -1,6 +1,5 @@
 """歩行タスクの MDP。"""
 
-from .events import disable_foot_servo_collisions
 from .feet import foot_corner_kg
 from .observations import command_forward_and_yaw, root_height
 from .phase import FORWARD_SPEED_MPS, PERIOD_S, phase_sincos
@@ -18,7 +17,6 @@ __all__ = [
     "FORWARD_SPEED_MPS",
     "PERIOD_S",
     "command_forward_and_yaw",
-    "disable_foot_servo_collisions",
     "feet_apart",
     "foot_corner_kg",
     "heel_to_toe",

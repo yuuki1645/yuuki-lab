@@ -24,16 +24,16 @@ from pathlib import Path
 
 from isaaclab.app import AppLauncher
 
+from model_size import SOLE_BELOW_ORIGIN_M
+
 # 直立時、カゴ底（URDF 原点）から足裏まで。1 cm 上から落として、板が床に乗るかを見る。
-SOLE_BELOW_ORIGIN_M = 0.622
+# 数値は yaml の ankle_to_sole_m から model_size が計算する。
 SPAWN_CLEARANCE_M = 0.01
 # 再生スクリプトと同じ仮の位置ゲイン。実機の PD ではない。
 JOINT_STIFFNESS = 80.0
 JOINT_DAMPING = 2.0
 # サーボのトルク上限。無限トルクで直立を偽らない。
 EFFORT_LIMIT_NM = 14.7
-# 足首サーボの箱は、仮定の足首高さではアルミ板より下へ出る。これを残すと板ではなく箱で立つ。
-FOOT_SERVO_COLLISIONS = ("left_foot_servo_0", "right_foot_servo_0")
 
 _HERE = Path(__file__).resolve().parent
 URDF_PATH = _HERE / "yuuki_biped.urdf"
@@ -58,7 +58,6 @@ from isaaclab.assets import Articulation, ArticulationCfg
 from isaaclab.sim import SimulationContext
 from isaaclab.sim.converters import UrdfConverterCfg
 from isaaclab.sim.spawners.from_files import UrdfFileCfg
-from pxr import UsdPhysics
 
 
 def _wants_window() -> bool:
@@ -85,7 +84,8 @@ def _robot_cfg() -> ArticulationCfg:
             merge_fixed_joints=False,
             # URDF に衝突形状がある。見た目から作ると、目印の球まで床に当たる。
             collision_from_visuals=False,
-            self_collision=False,
+            # 関節の隣以外は当たる。足サーボは板の上なので、床との当たりも切らない。
+            self_collision=True,
             joint_drive=UrdfConverterCfg.JointDriveCfg(
                 drive_type="force",
                 target_type="position",
@@ -120,46 +120,12 @@ def _spawn_ground() -> None:
     cfg.func("/World/ground", cfg, translation=(0.0, 0.0, -0.05))
 
 
-def _is_foot_servo_collider(prim) -> bool:
-    """変換後の衝突プリムは、見た目の箱とは別に `left_foot_servo_0_1` のような名前になる。"""
-    if not prim.HasAPI(UsdPhysics.CollisionAPI):
-        return False
-    name = prim.GetName()
-    display = str(prim.GetDisplayName() or "")
-    for target in FOOT_SERVO_COLLISIONS:
-        if name == target or name.startswith(target + "_") or display == target:
-            return True
-    return False
-
-
-def _disable_foot_servo_collisions() -> None:
-    """板より下にはみ出す足首サーボの衝突を切る。切らないと、板が床に届く前に箱が支える。"""
-    from isaaclab.sim.utils import get_current_stage
-
-    stage = get_current_stage()
-    found: set[str] = set()
-    for prim in stage.Traverse():
-        if not _is_foot_servo_collider(prim):
-            continue
-        collision = UsdPhysics.CollisionAPI(prim)
-        if not collision.GetCollisionEnabledAttr():
-            collision.CreateCollisionEnabledAttr(False)
-        else:
-            collision.GetCollisionEnabledAttr().Set(False)
-        found.add(prim.GetName())
-        print(f"[stand_one] 足板以外の衝突を切りました: {prim.GetPath()}")
-    if not found:
-        print(f"[stand_one] 衝突を切る対象がありません: {FOOT_SERVO_COLLISIONS}")
-
-
 def _design_scene() -> Articulation:
-    """床と1体。カメラはカゴの高さが見える斜め前。"""
+    """床と1体。カメラはカゴの高さが見える斜め前。足サーボは板の上なので切らない。"""
     _spawn_ground()
     light = sim_utils.DomeLightCfg(intensity=3000.0, color=(0.8, 0.8, 0.8))
     light.func("/World/light", light)
-    robot = Articulation(_robot_cfg())
-    _disable_foot_servo_collisions()
-    return robot
+    return Articulation(_robot_cfg())
 
 
 def _write_upright(robot: Articulation) -> None:
@@ -214,13 +180,16 @@ def _measure(robot: Articulation) -> dict[str, float | None]:
 def _standing(sample: dict[str, float | None]) -> tuple[bool, list[str]]:
     """数秒後に、倒れておらず、足裏が床の高さにあるか。
 
-    カゴ底は足裏から 0.622 m。着地後もその近くにあり、上方向が残っていれば立っている。
+    カゴ底は足裏から SOLE_BELOW_ORIGIN_M。着地後もその近くにあり、上方向が残っていれば立っている。
     足裏が 2 cm より高いときは、板ではなくはみ出した形状で支えている。
     """
     reasons: list[str] = []
     root_z = float(sample["root_z"])
-    if not 0.58 <= root_z <= 0.68:
-        reasons.append(f"カゴ底の高さが {root_z:.3f} m（足が床に乗った直立なら約 0.622 m）")
+    # 3 cm 以上ずれると、板ではなく別の箱で立っているか、弾かれている。
+    if abs(root_z - SOLE_BELOW_ORIGIN_M) > 0.03:
+        reasons.append(
+            f"カゴ底の高さが {root_z:.3f} m（足が床に乗った直立なら約 {SOLE_BELOW_ORIGIN_M:.3f} m）"
+        )
     if float(sample["up_z"]) < 0.9:
         reasons.append(f"カゴの上方向が {float(sample['up_z']):.2f}（1 が直立、0 付近は横倒し）")
     if float(sample["joint_abs_max"]) > 0.25:

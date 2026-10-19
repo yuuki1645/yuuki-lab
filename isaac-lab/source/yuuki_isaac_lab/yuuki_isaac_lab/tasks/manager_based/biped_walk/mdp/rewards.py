@@ -52,11 +52,24 @@ def track_forward_speed(
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
-    """体座標の前進速度が、指令の前進速度に近いほど 1。"""
+    """停止で 0、指令の前進速度で 1。重み 1.5 なら、歩き切ると毎秒 1.5 点。
+
+    速度 0 でも点が残ると、10秒立つ方が転ぶ危険より得になる。ここでは停止を 0 にする。
+    遅い側の幅は指令速度そのもの。0.1 m/s の指令なら、停止はガウスの exp(-1) で、正規化後は 0。
+    速い側は幅を2倍にし、0.2 m/s でも約 0.65 が残る。0.3 m/s 付近で 0 に近づく。
+    """
     robot: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)[:, 0]
     speed = robot.data.root_lin_vel_b.torch[:, 0]
-    return torch.exp(-torch.square(speed - command) / 0.25)
+    # 指令が 0 の環境でも割れないようにする。今の学習では指令は 0.1 で一定。
+    command_abs = command.clamp(min=1.0e-3)
+    delta = speed - command
+    sigma = torch.where(delta < 0.0, torch.square(command_abs), torch.square(2.0 * command_abs))
+    raw = torch.exp(-torch.square(delta) / sigma)
+    # 速度 0 の生値。遅い側の幅なので exp(-1)。
+    stopped = torch.exp(-torch.ones_like(raw))
+    score = (raw - stopped).clamp(min=0.0) / (1.0 - stopped)
+    return score
 
 
 def penalize_slide_and_yaw(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:

@@ -1,7 +1,8 @@
 """歩幅の時計。1周期が左右1歩ずつの1ストライド。
 
 位相は角度 [rad]。観測には sin と cos を出し、360度で値が飛ばないようにする。
-最初の周期は 1 秒。前進指令 0.3 m/s なら、1周期の歩幅は約 0.3 m。
+部屋が狭いので、最初の速度は 0.1 m/s。周期 2 秒なら、片足が前に出る時間は 1 秒、
+1周期の進みは約 0.1 m。
 """
 
 from __future__ import annotations
@@ -14,10 +15,10 @@ import torch
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
-# 成人のストライドは 1.0〜1.2 秒。この脚は短いので、最初は 1 秒。
-PERIOD_S = 1.0
-# 最初の学習は一定速度。ヨーは 0。速度を変えるときは周期も一緒に見直す。
-FORWARD_SPEED_MPS = 0.3
+# 普通の歩きで、一歩に約 1 秒。左右で 1 周期なので 2 秒。
+PERIOD_S = 2.0
+# 10 秒で約 1 m。畳の上で見られる遅さ。ヨーは 0。
+FORWARD_SPEED_MPS = 0.1
 
 
 def phase_angle(env: ManagerBasedRLEnv) -> torch.Tensor:

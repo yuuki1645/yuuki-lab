@@ -67,7 +67,10 @@ class BipedWalkSceneCfg(InteractiveSceneCfg):
 
 @configclass
 class CommandsCfg:
-    """前進は一定、ヨーは 0。横移動は指令に入れない。"""
+    """前進は 0.1 m/s で一定、ヨーは 0。横移動は指令に入れない。
+
+    距離の記録だけ SlowWalkVelocityCommand に替える。報酬の計算は変えない。
+    """
 
     base_velocity = isaac_mdp.UniformVelocityCommandCfg(
         asset_name="robot",
@@ -75,6 +78,7 @@ class CommandsCfg:
         rel_standing_envs=0.0,
         heading_command=False,
         debug_vis=False,
+        class_type="yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.forward_command:SlowWalkVelocityCommand",
         ranges=isaac_mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(mdp.FORWARD_SPEED_MPS, mdp.FORWARD_SPEED_MPS),
             lin_vel_y=(0.0, 0.0),
@@ -155,6 +159,7 @@ class RewardsCfg:
     """
 
     upright = RewTerm(func=mdp.upright, weight=1.0)
+    # 関数は停止で 0、0.1 m/s で 1。重み 1.5 は、その速度を保ったときの毎秒の点。
     track_forward = RewTerm(
         func=mdp.track_forward_speed,
         weight=1.5,

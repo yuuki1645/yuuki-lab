@@ -108,6 +108,7 @@ def main() -> int:
         TARGET_FEET_GAP_M,
         feet_apart,
         feet_lateral_gap_m,
+        track_forward_speed,
     )
 
     foot_cfg = SceneEntityCfg("robot", body_names=["left_foot", "right_foot"], preserve_order=True)
@@ -126,6 +127,14 @@ def main() -> int:
     foot_kg = policy[:, 16:24]
     lines.append(f"policy {tuple(policy.shape)} critic {tuple(critic.shape)}")
     lines.append(f"reset foot_kg mean {float(foot_kg.mean()):.3f}")
+    command_vx = env.command_manager.get_command("base_velocity")[:, 0]
+    track = track_forward_speed(env, "base_velocity")
+    lines.append(f"command_vx {float(command_vx.mean()):.3f} track_forward {float(track.mean()):.3f}")
+    # 停止では前進点は 0。指令は 0.1 m/s。
+    if abs(float(command_vx.mean()) - 0.1) > 0.01 or float(track.mean()) > 0.2:
+        raise RuntimeError(
+            f"前進の指令か停止時の点が違う: vx {float(command_vx.mean()):.3f} score {float(track.mean()):.3f}"
+        )
     action = torch.zeros(env.action_space.shape, device=env.device)
     for step in range(args_cli.steps):
         obs, reward, terminated, truncated, _ = env.step(action)
@@ -140,10 +149,14 @@ def main() -> int:
         )
     settled_gap = float(feet_lateral_gap_m(env, foot_cfg).mean())
     settled_z = float(env.scene["robot"].data.root_pos_w.torch[:, 2].mean())
-    lines.append(f"settled feet_gap_m {settled_gap:.3f} root_z {settled_z:.3f}")
+    forward_m = float(env.command_manager.get_term("base_velocity")._forward_sum.mean())
+    lines.append(f"settled feet_gap_m {settled_gap:.3f} root_z {settled_z:.3f} forward_m {forward_m:.3f}")
     # 足首の戻しが逆だと板が傾いて倒れ、間隔も板幅以下に寄る。
-    if settled_gap <= PLATE_WIDTH_Y_M or settled_z < 0.55 or int(terminated.sum()) > 0:
-        raise RuntimeError(f"開いた初期姿勢を保てていない: gap {settled_gap:.3f} root_z {settled_z:.3f}")
+    # 関節 0 のまま数歩では、前へはほとんど進まない。
+    if settled_gap <= PLATE_WIDTH_Y_M or settled_z < 0.55 or int(terminated.sum()) > 0 or abs(forward_m) > 0.05:
+        raise RuntimeError(
+            f"開いた初期姿勢を保てていない: gap {settled_gap:.3f} root_z {settled_z:.3f} forward_m {forward_m:.3f}"
+        )
     env.close()
     lines.append("ok")
     _report(lines)

@@ -3,7 +3,7 @@
 位相の sin が正のあいだ右足が接地、負のあいだ左足が接地、という時計に合わせる。
 接地中の圧力中心は、かかと（x が負）からつま先（x が正）へ進むことを望む。
 遊脚の膝は曲げる。カゴは立てたまま、胸の向きに進んだ正味の距離を増やす。
-左右の足は、板の内側が約 4 cm 空く間隔で並ぶ。板が重なると、この項はほぼ 0 になる。
+左右の足は、板の内側が約 4 cm 空く間隔で並ぶ。重なった深さは減点になる。
 """
 
 from __future__ import annotations
@@ -171,25 +171,24 @@ def feet_apart(
     target_y_m: float = TARGET_FEET_GAP_M,
     plate_width_m: float = PLATE_WIDTH_Y_M,
 ) -> torch.Tensor:
-    """板の内側が約 4 cm 空くほど 1。板が接する間隔ではほぼ 0。大きく開きすぎると下がる。
+    """板の内側が約 4 cm 空くと 1。接すると 0。重なった深さに比例してマイナス。
 
-    頂点は中心間隔 0.21 m。板幅 0.17 m（内側が接触）では exp(-4) で約 0.02。
-    狭い側はこの 4 cm で急に落ちる。広い側は、さらに 8 cm 開いても約 0.5 が残る。
-    股関節の真下（0.18 m、すき間約 1 cm）は約 0.1 なので、接した立ち方では点がほぼ入らない。
+    頂点は中心間隔 0.21 m。板幅 0.17 m で内側が接する。
+    狭い側は、目標の 4 cm を 1、接触を 0、さらに 4 cm 重なると -1 にする。
+    重みが 1 なら、板が深く重なったまま進むより、開いて立つ方が点になる。
+    広い側は加点のまま下げる。目標より内側すき間がさらに 8 cm 広いところで約 0.5。
     """
     gap_m = feet_lateral_gap_m(env, asset_cfg)
     delta = gap_m - target_y_m
-    # 接する位置までの差の二乗を 4 で割り、そこで約 0.02 にする。
-    narrow_var = (target_y_m - plate_width_m) ** 2 / 4.0
-    # 広い側は、内側すき間が目標よりさらに 8 cm 広いところで約 0.5。
-    wide_span = 2.0 * (target_y_m - plate_width_m)
+    # 内側 4 cm。この幅を 1 点の単位にする。
+    inner_target_m = target_y_m - plate_width_m
+    # 狭い側は重なりの深さそのもの。接触で 0、4 cm の重なりで -1。
+    narrow = 1.0 + delta / inner_target_m
+    # 広い側は、内側すき間が目標よりさらに 8 cm 広いところで約 0.5。マイナスにはしない。
+    wide_span = 2.0 * inner_target_m
     wide_var = wide_span**2 / math.log(2.0)
-    variance = torch.where(
-        delta < 0.0,
-        torch.full_like(delta, narrow_var),
-        torch.full_like(delta, wide_var),
-    )
-    return torch.exp(-torch.square(delta) / variance)
+    wide = torch.exp(-torch.square(delta) / wide_var)
+    return torch.where(delta < 0.0, narrow, wide)
 
 
 def swing_knee(

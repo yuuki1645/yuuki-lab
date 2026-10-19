@@ -6,10 +6,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
 
-from isaaclab.envs import ManagerBasedEnv
-from pxr import UsdPhysics
+if TYPE_CHECKING:
+    from isaaclab.envs import ManagerBasedEnv
 
 # 見た目の箱の名前。物理の箱は末尾に _1 が付くか、displayName がこの名前。
 _FOOT_SERVO_NAMES = ("left_foot_servo_0", "right_foot_servo_0")
@@ -17,6 +19,10 @@ _FOOT_SERVO_NAMES = ("left_foot_servo_0", "right_foot_servo_0")
 
 def disable_foot_servo_collisions(env: ManagerBasedEnv, env_ids: torch.Tensor | None) -> None:
     """全環境の足首サーボ衝突を無効にする。env_ids は起動時の全環境。"""
+    # 学習スクリプトはシミュレータ起動前にこのモジュールを読む。
+    # pxr をファイル先頭で読むと、Isaac Sim が自分の USD を載せられない。
+    from pxr import UsdPhysics
+
     del env_ids
     stage = env.sim.stage
     found = 0

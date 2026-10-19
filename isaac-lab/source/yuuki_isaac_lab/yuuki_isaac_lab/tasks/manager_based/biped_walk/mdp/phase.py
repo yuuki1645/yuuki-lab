@@ -7,10 +7,12 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import torch
 
-from isaaclab.envs import ManagerBasedRLEnv
+if TYPE_CHECKING:
+    from isaaclab.envs import ManagerBasedRLEnv
 
 # 成人のストライドは 1.0〜1.2 秒。この脚は短いので、最初は 1 秒。
 PERIOD_S = 1.0

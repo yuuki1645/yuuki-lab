@@ -13,7 +13,6 @@ from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.sim.converters import UrdfConverterCfg
 from isaaclab.sim.spawners.from_files import UrdfFileCfg
-from isaaclab.sim.spawners.from_files.from_files import spawn_from_urdf
 
 # リポジトリ直下の robot_description。yuuki_legs → robots → assets →
 # パッケージ → 拡張 → source → isaac-lab → リポジトリ。
@@ -37,7 +36,10 @@ def _spawn_yuuki_legs(prim_path: str, cfg: UrdfFileCfg, translation=None, orient
 
     標準の有効化は最初の剛体（カゴ）で子の探索を止める。足はカゴの子なので、
     ここで足裏まで付けないと ContactSensor はカゴしか見ない。
+    spawn_from_urdf は USD を読むので、シミュレータ起動前の設定読み込みでは呼ばない。
     """
+    from isaaclab.sim.spawners.from_files.from_files import spawn_from_urdf
+
     prim = spawn_from_urdf(prim_path, cfg, translation=translation, orientation=orientation, **kwargs)
     _enable_nested_contact_report(prim_path)
     return prim

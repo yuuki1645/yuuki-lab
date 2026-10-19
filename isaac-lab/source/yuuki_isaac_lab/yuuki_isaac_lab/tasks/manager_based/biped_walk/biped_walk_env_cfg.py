@@ -280,3 +280,7 @@ class BipedWalkEnvCfg_PLAY(BipedWalkEnvCfg):
         super().__post_init__()
         self.scene.num_envs = 1
         self.scene.env_spacing = 2.5
+        # 学習の自動抽選は残す。再生のクラスだけ、左スティックで上書きする。
+        self.commands.base_velocity.class_type = (
+            "yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.stick_command:StickWalkCommand"
+        )

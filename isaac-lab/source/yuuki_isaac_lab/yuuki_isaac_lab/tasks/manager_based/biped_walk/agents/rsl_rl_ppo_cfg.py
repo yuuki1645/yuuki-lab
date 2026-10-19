@@ -13,6 +13,9 @@ class BipedWalkPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     max_iterations = 1500
     save_interval = 50
     experiment_name = "yuuki_biped_walk"
+    # 学習の数値は W&B のこのプロジェクトへ送る。
+    logger = "wandb"
+    wandb_project = "yuuki_biped_walk"
     # policy が方策。critic グループは批評家だけが足す。
     obs_groups = {"actor": ["policy"], "critic": ["policy", "critic"]}
     actor = RslRlMLPModelCfg(

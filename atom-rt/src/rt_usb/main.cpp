@@ -85,7 +85,8 @@ static constexpr int kMaxCalSamples = 400;
 static constexpr int kRtCore = 1;
 static constexpr int kUsbCore = 0;
 static constexpr uint32_t kRtStack = 10240;
-static constexpr uint32_t kUsbStack = 6144;
+// saveCalibration が CalMap（約 1.5KB）をこのタスクのスタックに載せる。
+static constexpr uint32_t kUsbStack = 10240;
 
 static constexpr int kMaxScanNodes = 48;
 static constexpr uint32_t kIdentifyMs = 2500;
@@ -210,6 +211,14 @@ static float gMapRxX[kMapLen];
 static float gMapRxY[kMapLen];
 static volatile int gMapDumpCh = -1;
 static uint32_t gMapRxLastMs = 0;
+/**
+ * 点列は受信完了で RAM に入れ、NVS はこのフラグで後から書く。
+ * 受信ハンドラの中で flash すると、キャッシュ停止中の USB 割り込みで再起動し、
+ * MapOk の前に HELLO へ戻る。
+ */
+static volatile uint8_t gMapSaveReq = 0;
+static volatile int gMapSaveCh = -1;
+static volatile uint16_t gMapSaveCount = 0;
 
 static volatile uint8_t gProfDumpReq = 0;
 /** PUT 後に USB 送信を済ませてから NVS へ書く。受信中の flash で CDC が切れないようにする */
@@ -2159,26 +2168,21 @@ static void mapRxCommit() {
     }
     const int ch = gMapRxCh;
     const int npts = gMapRxCount;
-    CalMap tmp;
-    memset(&tmp, 0, sizeof(tmp));
-    tmp.count = npts;
-    tmp.ok = true;
-    for (int i = 0; i < npts; ++i) {
-        tmp.x[i] = gMapRxX[i];
-        tmp.y[i] = gMapRxY[i];
-    }
-    gMapRxActive = false;
+    // CalMap は約 1.5KB。受信の深いスタックに一時コピーを置かない。
     portENTER_CRITICAL(&gMapLock);
-    gCal[ch] = tmp;
-    portEXIT_CRITICAL(&gMapLock);
-    if (!saveCalibration(ch)) {
-        mapRxFail(kUsbReasonNvs);
-        return;
+    CalMap& dst = gCal[ch];
+    memset(&dst, 0, sizeof(dst));
+    dst.count = npts;
+    dst.ok = true;
+    for (int i = 0; i < npts; ++i) {
+        dst.x[i] = gMapRxX[i];
+        dst.y[i] = gMapRxY[i];
     }
-    UsbMapOk ok{};
-    ok.ch = static_cast<uint8_t>(ch);
-    ok.count = static_cast<uint16_t>(tmp.count);
-    usbSend(kUsbMapOk, &ok, sizeof(ok));
+    portEXIT_CRITICAL(&gMapLock);
+    gMapRxActive = false;
+    gMapSaveCh = ch;
+    gMapSaveCount = static_cast<uint16_t>(npts);
+    gMapSaveReq = 1;
 }
 
 static void ackModeOut() {
@@ -2559,6 +2563,29 @@ static void usbTask(void* /*arg*/) {
             // 受信中は大きな TX（テレメトリ・SCAN）を止める。CDC が溢れると 16/191 で止まる。
             vTaskDelay(pdMS_TO_TICKS(5));
             continue;
+        }
+        if (gMapSaveReq) {
+            gMapSaveReq = 0;
+            const int ch = gMapSaveCh;
+            const uint16_t npts = gMapSaveCount;
+            usbHoldRebootOff();
+            // 受信を抜けてから flash する。書き込み中はキャッシュが止まり、CDC が切れる。
+            vTaskDelay(pdMS_TO_TICKS(50));
+            const bool saved = (ch >= 0 && ch < kJointCount) && saveCalibration(ch);
+            vTaskDelay(pdMS_TO_TICKS(80));
+            if (saved) {
+                UsbMapOk pkt{};
+                pkt.ch = static_cast<uint8_t>(ch);
+                pkt.count = npts;
+                usbSend(kUsbMapOk, &pkt, sizeof(pkt));
+            } else {
+                UsbMapErr e{};
+                e.ch = static_cast<int8_t>(ch);
+                e.got = npts;
+                e.expect = npts;
+                e.reason = kUsbReasonNvs;
+                usbSend(kUsbMapErr, &e, sizeof(e));
+            }
         }
         if (gHelloReq) {
             gHelloReq = 0;

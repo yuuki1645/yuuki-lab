@@ -123,6 +123,20 @@ export type M5Frame = {
    * Isaac は右足と同じ四隅を入れる。無いときは左足裏を未検出のままにする。
    */
   foot_left?: M5FootSample | null;
+  /**
+   * 歩行再生の左スティック。実機と、バーで関節を動かす再生には無い。
+   * x は右が正、y は奥が正。vx は方策が受け取った前進 [m/s]。
+   */
+  stick?: M5Stick | null;
+};
+
+/** 歩行再生で、指の位置と方策への速度を分ける */
+export type M5Stick = {
+  x: number;
+  y: number;
+  vx: number;
+  max_vx: number;
+  dead_zone: number;
 };
 
 export type M5ScanNode = {

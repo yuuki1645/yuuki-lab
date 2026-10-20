@@ -25,6 +25,8 @@ type Props = {
   plotOn: LegPlotVisibility;
   selected: boolean;
   disabled: boolean;
+  /** 歩行再生。バーは方策の目標で、ドラッグでは動かない */
+  policyOwned?: boolean;
   /** この関節のセンサが無い。枠は残し、操作と色だけ落とす */
   inactive?: boolean;
   onSelect: () => void;
@@ -92,6 +94,7 @@ export function JointTripleBar({
   plotOn,
   selected,
   disabled,
+  policyOwned = false,
   inactive = false,
   onSelect,
   onCommand,
@@ -159,15 +162,15 @@ export function JointTripleBar({
           <header className="m5-jrow__head">
             <h2>{joint.label}</h2>
             <span>ch{joint.ch}</span>
-            <span className={"m5-jrow__pwm" + (pwmOn && !inactive ? " m5-jrow__pwm--on" : "")}>
-              {inactive ? "未接続" : pwmOn ? "PWM ON" : "PWM OFF"}
+            <span className={"m5-jrow__pwm" + ((pwmOn || policyOwned) && !inactive ? " m5-jrow__pwm--on" : "")}>
+              {inactive ? "未接続" : policyOwned ? "方策" : pwmOn ? "PWM ON" : "PWM OFF"}
             </span>
           </header>
           <div className="m5-jrow__bars">
             <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>
             <div
               ref={trackRef}
-              className={"m5-bar m5-bar--cmd" + (disabled ? " m5-bar--off" : "")}
+              className={"m5-bar m5-bar--cmd" + (disabled && !policyOwned ? " m5-bar--off" : "")}
               onContextMenu={(e) => e.preventDefault()}
               onPointerDown={(e) => {
                 if (disabled) return;

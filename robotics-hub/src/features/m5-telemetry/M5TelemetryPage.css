@@ -1443,4 +1443,110 @@
   .m5-cop__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .m5-stick__body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* 歩行再生の左スティック。点は指、棒は方策への前進 */
+.m5-stick {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.7rem 0.7rem;
+  border: 1px solid rgba(213, 222, 234, 0.16);
+  border-radius: 14px;
+  background: #121920;
+}
+
+.m5-stick__head h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.m5-stick__head p,
+.m5-stick__note {
+  margin: 0.15rem 0 0;
+  color: #9aabbb;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.m5-stick__body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.m5-stick__pad {
+  width: 148px;
+  height: 148px;
+  flex: 0 0 auto;
+}
+
+.m5-stick__well {
+  fill: #0c1218;
+  stroke: rgba(213, 222, 234, 0.35);
+  stroke-width: 2;
+}
+
+.m5-stick__dead {
+  fill: none;
+  stroke: rgba(255, 210, 122, 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.m5-stick__axis {
+  stroke: rgba(213, 222, 234, 0.18);
+  stroke-width: 1;
+}
+
+.m5-stick__cap {
+  fill: #9aabbb;
+  font-size: 11px;
+}
+
+.m5-stick__dot {
+  fill: #f7c948;
+  stroke: #1a1404;
+  stroke-width: 1.5;
+}
+
+.m5-stick__readout {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.m5-stick__vx-label {
+  color: #9aabbb;
+  font-size: 0.75rem;
+}
+
+.m5-stick__vx-value {
+  margin: 0.15rem 0 0.4rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  color: #e8eef4;
+}
+
+.m5-stick__vx-value span {
+  font-size: 0.8rem;
+  color: #9aabbb;
+}
+
+.m5-stick__track {
+  height: 10px;
+  border-radius: 999px;
+  background: #0c1218;
+  border: 1px solid rgba(213, 222, 234, 0.2);
+  overflow: hidden;
+}
+
+.m5-stick__fill {
+  height: 100%;
+  background: #7ec8ff;
 }

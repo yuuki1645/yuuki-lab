@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { CopAnklePanel } from "./CopAnklePanel";
 import { JointTripleBar } from "./JointTripleBar";
 import { RightFootSole } from "./RightFootSole";
+import { StickCommandPad } from "./StickCommandPad";
 import {
   LEG_PLOT_DEFAULT,
   LEG_PLOT_ITEMS,
@@ -104,6 +105,9 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
     });
   };
 
+  // 歩行再生は方策が関節を持つ。バーは目標角の表示で、ドラッグでは動かない。
+  const policyOwned = frame?.stick != null;
+
   return (
     <section
       className="m5__section m5-leg"
@@ -111,9 +115,12 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
     >
       <div className="m5-leg__toolbar">
         <p className="m5__meta">
-          左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。指令バーはつまみを掴んでドラッグ。
-          ライブ指令は 100〜170°。接続の無い脚と、電圧・電流が無い欄は枠を残して暗くします。
+          {policyOwned
+            ? "歩行再生です。指令は方策の目標角、補正は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
+            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。指令バーはつまみを掴んでドラッグ。ライブ指令は 100〜170°。接続の無い脚と、電圧・電流が無い欄は枠を残して暗くします。"}
         </p>
+        {policyOwned ? null : (
+        <>
         <div className="m5-leg__lock" role="group" aria-label="指令バー操作ロック">
           <span
             className={
@@ -169,6 +176,8 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
         >
           右脚 PWM OFF
         </button>
+        </>
+        )}
         <div className="m5-leg__plot-togs" role="group" aria-label="グラフ表示項目">
           <span className="m5-leg__plot-togs-lab">グラフ</span>
           {LEG_PLOT_ITEMS.map((item) => {
@@ -196,6 +205,7 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
         {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}
         <div className="m5-leg__sense">
           <div className="m5-leg__cam">{cameraPane}</div>
+          {policyOwned && frame?.stick ? <StickCommandPad stick={frame.stick} /> : null}
           <div className="m5-leg__foot m5-leg__feet">
             <RightFootSole title="左足裏" sample={frame?.foot_left} large />
             <RightFootSole title="右足裏" sample={frame?.foot} large />
@@ -212,7 +222,7 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
                   <JointTripleBar
                     key={j.id}
                     joint={j}
-                    cmd={at(control?.cmd, j.ch)}
+                    cmd={policyOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
                     corr={at(frame?.corr, j.ch)}
                     pwmOn={pwmOn}
                     historyCmd={history.map((h) => at(h.cmd, j.ch))}
@@ -224,7 +234,8 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
                     plotOn={plotOn}
                     selected={selected === j.id}
                     inactive={!live}
-                    disabled={!live || !canCmd || cmdLocked || !pwmOn}
+                    policyOwned={policyOwned && live}
+                    disabled={policyOwned || !live || !canCmd || cmdLocked || !pwmOn}
                     onSelect={() => setSelected(j.id)}
                     onCommand={(deg) => setCmd(j.ch, deg)}
                   />

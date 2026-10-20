@@ -280,7 +280,11 @@ class BipedWalkEnvCfg(ManagerBasedRLEnvCfg):
 
 @configclass
 class BipedWalkEnvCfg_PLAY(BipedWalkEnvCfg):
-    """1体だけ見て再生するための設定。学習の本体は BipedWalkEnvCfg。"""
+    """1体だけ見て再生するための設定。学習の本体は BipedWalkEnvCfg。
+
+    左スティックで前後を指示する。関節・足裏・スティックは、橋が動いていれば
+    robotics-hub の実機テレメトリ（M5）へ約 20 Hz で出る。
+    """
 
     def __post_init__(self):
         super().__post_init__()

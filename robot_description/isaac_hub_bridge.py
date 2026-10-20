@@ -7,6 +7,11 @@ Hub とは実機と同じ Socket.IO イベント（m5/frame, m5/cmd, m5/control�
 Isaac とは 127.0.0.1:8796 の TCP で JSON を 1 行ずつやり取りする。
 度とラジアンの変換はここだけで行う。Isaac 側に flask は入れない。
 
+歩行再生（YuukiLab-BipedWalk-Play）は、関節の実測に加えて方策の目標角
+（cmd_rad）と左スティック（stick）を送る。このとき画面の「指令」は
+方策の目標角になる。橋が返す目標は歩行側では関節に書かない。
+バーで関節を動かす isaac_hub_play は、今までどおり cmd_rad も stick も付けない。
+
 起動（Hub 用の Python。flask-socketio が入っているもの）:
     python robot_description/isaac_hub_bridge.py
 """
@@ -52,6 +57,39 @@ def _as_foot(value: Any) -> dict | None:
         return None
     return value
 
+
+def _as_cmd_rad(value: Any) -> list[float | None] | None:
+    """方策の目標角 [rad]。関節数が違う行は、スライダーの指令のままにする。"""
+    if not isinstance(value, list) or len(value) != JOINT_COUNT:
+        return None
+    parsed: list[float | None] = []
+    for item in value:
+        if item is None:
+            parsed.append(None)
+            continue
+        try:
+            parsed.append(float(item))
+        except (TypeError, ValueError):
+            return None
+    return parsed
+
+
+def _as_stick(value: Any) -> dict | None:
+    """左スティック。x は右が正、y は奥が正。vx は方策へ渡した前進 [m/s]。"""
+    if not isinstance(value, dict):
+        return None
+    try:
+        stick = {
+            "x": float(value["x"]),
+            "y": float(value["y"]),
+            "vx": float(value["vx"]),
+            "max_vx": float(value.get("max_vx") or 0.2),
+            "dead_zone": float(value.get("dead_zone") or 0.15),
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
+    return stick
+
 # Hub が既に購読しているイベント名。画面側は実機と同じコードで描く。
 EVT_HELLO = "m5/hello"
 EVT_FRAME = "m5/frame"
@@ -73,6 +111,10 @@ class Bridge:
         # 右足は実機と同じ frame.foot。左足は実機に基板が無いので、Isaac のときだけ入る。
         self.foot: dict | None = None
         self.foot_left: dict | None = None
+        # 歩行再生だけが載せる。バー操作の isaac_hub_play は None のまま。
+        # policy_cmd_rad があると、画面の「指令」はスライダーではなく方策の目標角になる。
+        self.policy_cmd_rad: list[float | None] | None = None
+        self.stick: dict | None = None
         self.sim_time = 0.0
         self.isaac_connected = False
         self.seq = 0
@@ -101,6 +143,9 @@ class Bridge:
             self.sim_time = float(msg.get("sim_time") or 0.0)
             self.foot = _as_foot(msg.get("foot"))
             self.foot_left = _as_foot(msg.get("foot_left"))
+            # 歩行再生は方策の目標角とスティックを付ける。無い行はバー操作の再生。
+            self.policy_cmd_rad = _as_cmd_rad(msg.get("cmd_rad"))
+            self.stick = _as_stick(msg.get("stick"))
             self.isaac_connected = True
             self.seq += 1
             frame = self._frame_locked()
@@ -151,6 +196,8 @@ class Bridge:
                 self.meas_rad = [None] * JOINT_COUNT
                 self.foot = None
                 self.foot_left = None
+                self.policy_cmd_rad = None
+                self.stick = None
             status = self._status_locked()
         self._emit(EVT_STATUS, status)
         if connected and self._isaac_send is not None:
@@ -183,14 +230,20 @@ class Bridge:
         corr: list[float | None] = []
         for rad in self.meas_rad:
             corr.append(None if rad is None else rad_to_deg(rad))
-        cmd: list[float | None] = list(self.cmd_deg)
+        # 歩行再生では「指令」を方策の目標角にする。バーの cmd_deg は関節へ返すが、
+        # 歩行側はそれを読まない。バー操作の再生は、今までどおりスライダーの度を出す。
+        if self.policy_cmd_rad is not None:
+            cmd = [None if rad is None else rad_to_deg(rad) for rad in self.policy_cmd_rad]
+            mask = (1 << JOINT_COUNT) - 1
+        else:
+            cmd = list(self.cmd_deg)
+            mask = 0
+            for i, on in enumerate(self.out):
+                if on:
+                    mask |= 1 << i
         # 電圧・電流はシミュに無い。null のまま画面側が非アクティブ表示にする。
         empty: list[float | None] = [None] * JOINT_COUNT
-        mask = 0
-        for i, on in enumerate(self.out):
-            if on:
-                mask |= 1 << i
-        return {
+        frame = {
             "t": time.time(),
             "seq": self.seq,
             "period_us": 50_000,
@@ -217,6 +270,10 @@ class Bridge:
             "foot_left": self.foot_left,
             "sim_time": self.sim_time,
         }
+        # 歩行再生だけ。実機とバー操作の再生ではキー自体を出さない。
+        if self.stick is not None:
+            frame["stick"] = self.stick
+        return frame
 
     def _status_locked(self) -> dict:
         return {
@@ -225,7 +282,11 @@ class Bridge:
             "connected": self.isaac_connected,
             "port": "isaac",
             "name": "Isaac Sim",
-            "hello": "電圧・電流は未計測。135° が直立です。",
+            "hello": (
+                "歩行再生。指令は方策の目標角、補正は今の関節角。電圧・電流は未計測。"
+                if self.stick is not None
+                else "電圧・電流は未計測。135° が直立です。"
+            ),
             "mode": "isaac",
             "bridge_port": HUB_PORT,
         }

@@ -6,12 +6,13 @@
 /**
  * AS5600 磁気角度センサ（I2C）ドライバ。
  *
- * I2C スレーブアドレスは固定 0x36。
+ * データシート上のアドレスは 0x36。CoreS3 の機体は 0x40 の個体があるので、
+ * setAddress で上書きできる。未設定のときは 0x36。
  * 角度は 12bit（0〜4095）で、360度に換算して返す。
  */
 class As5600 {
 public:
-    /// AS5600 の固定 I2C アドレス
+    /// データシートの I2C アドレス。setAddress 前の初期値。
     static constexpr uint8_t kI2cAddress = 0x36;
 
     /// 磁石の検出状態（STATUS レジスタ 0x0B）
@@ -30,6 +31,9 @@ public:
      * @param clockHz I2C クロック。Grove + ESP32 では 100kHz の方が安定する
      */
     void begin(int sda, int scl, uint32_t clockHz = 100000);
+
+    /** この個体の 7bit アドレス。CoreS3 は 0x40 を渡す。 */
+    void setAddress(uint8_t addr) { addr_ = addr; }
 
     /**
      * バス上に AS5600 が応答するか確認する。
@@ -76,6 +80,8 @@ public:
     static const char* statusToString(MagnetStatus status);
 
 private:
+    uint8_t addr_ = kI2cAddress;
+
     /// 指定レジスタから 1 バイト読む
     bool readRegister(uint8_t reg, uint8_t& value);
 

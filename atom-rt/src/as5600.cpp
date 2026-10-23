@@ -27,7 +27,7 @@ void As5600::begin(int sda, int scl, uint32_t clockHz) {
 }
 
 bool As5600::isConnected() {
-    Wire.beginTransmission(kI2cAddress);
+    Wire.beginTransmission(addr_);
     return Wire.endTransmission() == 0;
 }
 
@@ -35,14 +35,14 @@ bool As5600::readRegister(uint8_t reg, uint8_t& value) {
     for (uint8_t attempt = 0; attempt < kMaxRetries; ++attempt) {
         // STOP を挟む。endTransmission(false) は ESP32 で
         // i2cWriteReadNonStop Error -1 になりやすい
-        Wire.beginTransmission(kI2cAddress);
+        Wire.beginTransmission(addr_);
         Wire.write(reg);
         if (Wire.endTransmission() != 0) {
             delayMicroseconds(200);
             continue;
         }
 
-        const uint8_t n = Wire.requestFrom(kI2cAddress, static_cast<uint8_t>(1));
+        const uint8_t n = Wire.requestFrom(addr_, static_cast<uint8_t>(1));
         if (n != 1) {
             delayMicroseconds(200);
             continue;
@@ -56,14 +56,14 @@ bool As5600::readRegister(uint8_t reg, uint8_t& value) {
 
 bool As5600::readRegister16(uint8_t reg, uint16_t& value) {
     for (uint8_t attempt = 0; attempt < kMaxRetries; ++attempt) {
-        Wire.beginTransmission(kI2cAddress);
+        Wire.beginTransmission(addr_);
         Wire.write(reg);
         if (Wire.endTransmission() != 0) {
             delayMicroseconds(200);
             continue;
         }
 
-        const uint8_t n = Wire.requestFrom(kI2cAddress, static_cast<uint8_t>(2));
+        const uint8_t n = Wire.requestFrom(addr_, static_cast<uint8_t>(2));
         if (n != 2) {
             delayMicroseconds(200);
             continue;

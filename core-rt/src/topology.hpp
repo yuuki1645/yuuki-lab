@@ -29,6 +29,7 @@ static constexpr uint8_t kHubLeftThigh = 0x71;
 static constexpr uint8_t kHubRightShin = 0x72;
 static constexpr uint8_t kHubLeftShin = 0x73;
 
+// 純正 AS5600 のアドレス。0x40 は INA226 の別アドレスで、この素子ではない。
 static constexpr uint8_t kAs5600Addr = 0x36;
 static constexpr uint8_t kInaAddr = 0x41;
 static constexpr uint8_t kServoAddr = 0x25;

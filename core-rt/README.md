@@ -31,3 +31,17 @@ CoreS3 はリセット長押しでダウンロードモードに入ります。`
 ビルドログのボード名は DevKitC-1-N8 のままです。容量の行は 16 MB、アプリは `0x20000` から 3 MB、校正用 NVS は `0x10000` から 64 KB です。PSRAM は使いません。
 
 起動直後は Lab です。PWM は、出した軸だけ動きます。
+
+## I2C スキャン
+
+`src/i2c_scan/main.cpp` は、Grove の 5V を入れてから PaHub の各チャンネルを歩き、応答したアドレスをテキストで出します。USB の ver 15 は話しません。総合デバッグはこの間 HELLO を受け取れません。
+
+```text
+cd core-rt
+pio run -e i2c-scan -t upload
+pio device monitor -e i2c-scan
+
+pio run -e core-s3 -t upload
+```
+
+最後の 1 行で腰の本線に戻します。`pio run -t upload` は本線のままです。

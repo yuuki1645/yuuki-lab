@@ -45,3 +45,15 @@ pio run -e core-s3 -t upload
 ```
 
 最後の 1 行で腰の本線に戻します。`pio run -t upload` は本線のままです。
+
+## チャンネルを開いたまま測る
+
+`src/i2c_hold/main.cpp` は、左もも PaHub `0x71` の CH4 だけを開いたままにします。プローブは、そのポートの黄と黒です。モニタには `hub 71 ch4 open` と、`0x36` の返事の有無が出ます。
+
+```text
+cd core-rt
+pio run -e i2c-hold -t upload
+pio device monitor -e i2c-hold
+```
+
+測り終わったら `pio run -e core-s3 -t upload` で腰の本線に戻します。

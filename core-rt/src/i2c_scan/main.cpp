@@ -11,6 +11,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include <cstdarg>
+#include <cstdio>
+
 // Grove PORT.A。黄が SDA、白が SCL。
 static constexpr int kSdaPin = 2;
 static constexpr int kSclPin = 1;
@@ -30,6 +33,26 @@ static constexpr uint8_t kAwBoostEnBit = 0x80;     // P1.7 = BOOST_EN
 // チャンネルを開いてから下流が ACK するまで。本線のスキャンと同じ 2 ms。
 static constexpr uint32_t kMuxSettleMs = 2;
 static constexpr int kHubChannels = 6;
+
+// USB CDC の送信バッファは 256 バイトしかなく、モニタが開く前の文字は捨てられる。
+// 結果はここに貯めて、loop から繰り返す。
+static char gReport[4096];
+static size_t gReportLen = 0;
+
+/** スキャン結果を RAM に足す。USB がまだ開いていなくても失わない。 */
+static void reportf(const char* fmt, ...) {
+    if (gReportLen + 1 >= sizeof(gReport)) {
+        return;
+    }
+    va_list args;
+    va_start(args, fmt);
+    const int wrote = vsnprintf(gReport + gReportLen, sizeof(gReport) - gReportLen, fmt, args);
+    va_end(args);
+    if (wrote > 0) {
+        const size_t room = sizeof(gReport) - 1 - gReportLen;
+        gReportLen += (static_cast<size_t>(wrote) < room) ? static_cast<size_t>(wrote) : room;
+    }
+}
 
 static bool awReadReg(uint8_t reg, uint8_t& value) {
     Wire1.beginTransmission(kAw9523Addr);
@@ -122,7 +145,7 @@ static const char* addrName(uint8_t addr) {
  * PaHub 自身はチャンネルを開いても親に残るため、下流の一覧から除く。
  */
 static int scanBus(const char* title, const uint8_t* rootHit) {
-    Serial.print(title);
+    reportf("%s", title);
     int n = 0;
     for (uint8_t addr = 0x08; addr <= 0x77; ++addr) {
         if (rootHit[addr] != 0) {
@@ -131,32 +154,32 @@ static int scanBus(const char* title, const uint8_t* rootHit) {
         if (!i2cPing(addr)) {
             continue;
         }
-        Serial.printf(" %02X%s", addr, addrName(addr));
+        reportf(" %02X%s", addr, addrName(addr));
         ++n;
     }
     if (n == 0) {
-        Serial.print(" (なし)");
+        reportf(" (なし)");
     }
-    Serial.println();
+    reportf("\n");
     return n;
 }
 
 /** 親バスを走査し、応答したアドレスを rootHit に残す。 */
 static int scanRoot(uint8_t* rootHit) {
-    Serial.print("root");
+    reportf("root");
     int n = 0;
     for (uint8_t addr = 0x08; addr <= 0x77; ++addr) {
         if (!i2cPing(addr)) {
             continue;
         }
         rootHit[addr] = 1;
-        Serial.printf(" %02X%s", addr, addrName(addr));
+        reportf(" %02X%s", addr, addrName(addr));
         ++n;
     }
     if (n == 0) {
-        Serial.print(" (なし)");
+        reportf(" (なし)");
     }
-    Serial.println();
+    reportf("\n");
     return n;
 }
 
@@ -187,15 +210,25 @@ static bool selectChannel(const uint8_t* rootHit, uint8_t hub, int ch) {
     return true;
 }
 
+/** 貯めた結果を USB へ出す。256 バイトの既定バッファでは途中で消える。 */
+static void publishReport() {
+    if (gReportLen == 0) {
+        return;
+    }
+    Serial.write(reinterpret_cast<const uint8_t*>(gReport), gReportLen);
+}
+
 void setup() {
+    // begin より前でないと、既定の 256 バイトのまま固定される。
+    Serial.setTxBufferSize(8192);
     Serial.begin(115200);
-    delay(400);
-    Serial.println("i2c-scan");
+    Serial.setTxTimeoutMs(50);
+    reportf("i2c-scan\n");
 
     if (enableGrovePower()) {
-        Serial.println("Grove 5V ON");
+        reportf("Grove 5V ON\n");
     } else {
-        Serial.println("Grove 5V 失敗");
+        reportf("Grove 5V 失敗\n");
     }
 
     Wire.begin(kSdaPin, kSclPin, kI2cHz);
@@ -212,7 +245,7 @@ void setup() {
             char title[28];
             snprintf(title, sizeof(title), "hub %02X ch%d", hub, ch);
             if (!selectChannel(rootHit, hub, ch)) {
-                Serial.printf("%s 切替失敗\n", title);
+                reportf("%s 切替失敗\n", title);
                 continue;
             }
             // 親バスのハブ自身は毎チャンネルに出るので、rootHit は表示しない。
@@ -220,7 +253,12 @@ void setup() {
         }
         selectChannel(rootHit, hub, -1);
     }
-    Serial.println("done");
+    reportf("done\n");
+    publishReport();
 }
 
-void loop() {}
+void loop() {
+    // モニタはリセットより後に開かれる。同じ文章を繰り返して、開いた側に届ける。
+    publishReport();
+    delay(2000);
+}

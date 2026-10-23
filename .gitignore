@@ -43,6 +43,8 @@ programs/capture_realtime/recordings/
 robot-recorder/config.local.yaml
 
 *.csv
+# CoreS3 の NVS 64 KB を決めるパーティション表。ログ用の *.csv 除外からは戻す。
+!core-rt/partitions.csv
 
 YuukiLab*/
 

@@ -88,10 +88,14 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
     bumpIdle();
   };
 
-  // 実機は右脚 ch 0〜4 だけ。左脚 ch 5〜9 は Isaac の橋が値を載せたときだけ生きる。
+  // 実機の片脚は右だけ。CoreS3（cmd が 10 本）と Isaac は両脚。
+  const bothLegs = (frame?.cmd?.length ?? 0) >= 10;
   const jointLive = (side: LegSide, row: number): boolean => {
     const ch = legJoint(side, row).ch;
-    if (source === "atom") return side === "right";
+    if (source === "atom") {
+      if (bothLegs) return true;
+      return side === "right";
+    }
     if (source !== "isaac") return false;
     // 再生スクリプトが関節角を載せ始めてから点灯する。指令だけの仮の 135° では点灯しない。
     return typeof at(frame?.corr, ch) === "number";

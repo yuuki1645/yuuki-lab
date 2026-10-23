@@ -202,6 +202,8 @@ export type M5Profile = {
   routes: M5Route[];
   ina_options: string[];
   foot?: M5FootRoute;
+  /** CoreS3 の左足。片脚ファームは欠ける。 */
+  foot_left?: M5FootRoute | null;
   foot_options?: string[];
 };
 
@@ -327,11 +329,13 @@ export function frameToHistory(frame: M5Frame): M5HistoryPoint {
 /** 再生中のスライダ／PWM 表示を、そのフレームの指令に合わせる */
 export function controlFromFrame(frame: M5Frame, base?: M5Control | null): M5Control {
   const cmd = frame.cmd.map((v) => (typeof v === "number" && Number.isFinite(v) ? v : 135));
-  const out = Array.from({ length: M5_JOINTS }, (_, i) => ((frame.out_mask >> i) & 1) === 1);
+  // 再生でも 10 軸の PWM ビットを落とさない。out_mask は uint16。
+  const n = Math.max(M5_JOINTS, cmd.length);
+  const out = Array.from({ length: n }, (_, i) => ((frame.out_mask >> i) & 1) === 1);
   return {
     out,
     cmd,
-    rand: base?.rand ?? Array.from({ length: M5_JOINTS }, () => false),
+    rand: base?.rand ?? Array.from({ length: n }, () => false),
     amp_limit: base?.amp_limit ?? 8,
     auto_scan: false,
     rand_min: base?.rand_min ?? 40,

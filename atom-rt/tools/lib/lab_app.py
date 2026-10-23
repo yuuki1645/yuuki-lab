@@ -72,7 +72,9 @@ from .lab_model import (
     JointRoute,
     ScanNode,
     default_foot,
+    default_foot_left,
     default_routes,
+    foot2_sample_dict,
     foot_sample_dict,
     foot_tuple,
     ina_label,
@@ -479,10 +481,22 @@ class LabApp(tk.Tk):
         except (tk.TclError, ValueError):
             amp = 8.0
         lo, hi, h0, h1, jump = self._rand_settings()
+        s = self._m5_sess()
+        n = JOINTS
+        if s is not None:
+            n = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+        out = [bool(v.get()) for v in self.out_vars]
+        cmd = [float(v.get()) for v in self.cmd_vars]
+        rand = [bool(v.get()) for v in self.rand_vars]
+        for i in range(JOINTS, n):
+            mask = int(s.out_mask) if s is not None else 0
+            out.append(bool(mask & (1 << i)))
+            cmd.append(float(s.extra_cmd.get(i, 135.0)) if s is not None else 135.0)
+            rand.append(False)
         return {
-            "out": [bool(v.get()) for v in self.out_vars],
-            "cmd": [float(v.get()) for v in self.cmd_vars],
-            "rand": [bool(v.get()) for v in self.rand_vars],
+            "out": out,
+            "cmd": cmd,
+            "rand": rand,
             "amp_limit": amp,
             "auto_scan": bool(self._auto_scan.get()),
             "rand_min": lo,
@@ -523,6 +537,7 @@ class LabApp(tk.Tk):
             "out_mask": f.out_mask,
             "map_ok": list(f.map_ok),
             "foot": foot_sample_dict(f),
+            "foot_left": foot2_sample_dict(f),
         }
 
     def _m5_scan_dict(self) -> dict:
@@ -546,7 +561,7 @@ class LabApp(tk.Tk):
         s = self._m5_sess()
         routes = s.routes if s else default_routes()
         out = []
-        for r in routes[:JOINTS]:
+        for r in routes:
             out.append(
                 {
                     "enc_hub": r.enc_hub,
@@ -572,6 +587,14 @@ class LabApp(tk.Tk):
                 "enabled": bool(s.foot.enabled) if s else True,
             },
             "foot_options": self._foot_option_list(s) if s else ["なし"],
+            "foot_left": None
+            if s is None or s.foot_left is None
+            else {
+                "hub": s.foot_left.hub,
+                "ch": s.foot_left.ch,
+                "addr": s.foot_left.addr,
+                "enabled": bool(s.foot_left.enabled),
+            },
         }
 
     def _m5_events_snapshot(self) -> dict:
@@ -808,7 +831,17 @@ class LabApp(tk.Tk):
                 self._scan_job = None
         elif op == "out":
             j = int(msg.get("ch", 0))
-            if 0 <= j < JOINTS:
+            n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+            if JOINTS <= j < n_joint:
+                # Tk のチェックは 8 軸のまま。左脚はマスクだけ更新してボードへ送る。
+                on = bool(msg.get("on"))
+                s.send(proto.cmd_out(j, on))
+                if on:
+                    s.out_mask |= 1 << j
+                    s.send(proto.cmd_joint(j, float(s.extra_cmd.get(j, 135.0))))
+                else:
+                    s.out_mask &= ~(1 << j)
+            elif 0 <= j < JOINTS:
                 on = bool(msg.get("on"))
                 self.out_vars[j].set(on)
                 s.send(proto.cmd_out(j, on))
@@ -823,7 +856,17 @@ class LabApp(tk.Tk):
                         self._cop_stop("かかとピッチ PWM OFF")
         elif op == "joint":
             j = int(msg.get("ch", 0))
-            if 0 <= j < JOINTS:
+            n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+            if JOINTS <= j < n_joint:
+                deg = self._clamp_live_deg(float(msg.get("deg", 135.0)), bool(msg.get("wide")))
+                s.extra_cmd[j] = deg
+                while len(self._last_cmd_t) <= j:
+                    self._last_cmd_t.append(0.0)
+                now = time.time()
+                if (s.out_mask & (1 << j)) and now - self._last_cmd_t[j] >= 0.08:
+                    self._last_cmd_t[j] = now
+                    s.send(proto.cmd_joint(j, deg))
+            elif 0 <= j < JOINTS:
                 if j == copctrl.HEEL_CH and (self._cop.p_on or self._cop.sweep_on):
                     self._cop_stop("手動指令で P/スイープ停止")
                 # wide は机上ラボ（1 サーボ）用。ファーム可動域 40〜230° をそのまま使う
@@ -903,24 +946,25 @@ class LabApp(tk.Tk):
         elif op == "prof_put":
             raw = msg.get("routes")
             if isinstance(raw, list) and raw:
-                routes = default_routes()
-                for i, d in enumerate(raw[:JOINTS]):
-                    if not isinstance(d, dict):
-                        continue
-                    routes[i] = JointRoute(
-                        enc_hub=int(d.get("enc_hub", 0)),
-                        enc_ch=int(d.get("enc_ch", -1)),
-                        enc_addr=int(d.get("enc_addr", 0)),
-                        act_hub=int(d.get("act_hub", 0)),
-                        act_ch=int(d.get("act_ch", -1)),
-                        act_addr=int(d.get("act_addr", 0x25)),
-                        servo_ch=int(d.get("servo_ch", i)),
-                        ina_hub=int(d.get("ina_hub", 0)),
-                        ina_ch=int(d.get("ina_ch", -1)),
-                        ina_addr=int(d.get("ina_addr", 0)),
-                        enabled=bool(d["enabled"]) if "enabled" in d else True,
+                # 10 行はそのまま載せる。8 行に切ると左脚の経路が消える。
+                if len(raw) > JOINTS:
+                    routes = []
+                    for i, d in enumerate(raw):
+                        if not isinstance(d, dict):
+                            s.note("プロファイル送信  行が不正")
+                            routes = []
+                            break
+                        routes.append(self._route_from_hub_dict(d, i))
+                else:
+                    routes = default_routes()
+                    for i, d in enumerate(raw[:JOINTS]):
+                        if not isinstance(d, dict):
+                            continue
+                        routes[i] = self._route_from_hub_dict(d, i)
+                if routes:
+                    self._send_routes(
+                        s, routes, "プロファイル送信（iPad）", foot=self._foot_from_msg(msg, s.foot)
                     )
-                self._send_routes(s, routes, "プロファイル送信（iPad）", foot=self._foot_from_msg(msg, s.foot))
         elif op == "cal_start":
             ch = int(msg.get("ch", 0))
             self._cal_run(ch, s)
@@ -933,7 +977,8 @@ class LabApp(tk.Tk):
             # Hub の「JSON を開いて送信」。形式は cal_map_io と同じ点列
             ch = int(msg.get("ch", 0))
             pts = self._map_points_from_msg(msg)
-            if pts is None or not (0 <= ch < JOINTS):
+            n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+            if pts is None or not (0 <= ch < n_joint):
                 s.note("マップ送信  形式不正")
             else:
                 if self._auto_scan.get():
@@ -1610,7 +1655,8 @@ class LabApp(tk.Tk):
         if not s or not s.connected:
             self.cal_status_lab.configure(text="状態: ATOM が未接続です")
             return
-        if ch < 0 or ch >= JOINTS:
+        n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+        if ch < 0 or ch >= n_joint:
             self.cal_status_lab.configure(text=f"状態: 関節番号が不正 ch{ch}")
             return
         if ch < len(s.routes) and not s.routes[ch].enabled:
@@ -1630,7 +1676,11 @@ class LabApp(tk.Tk):
         self.mode_var.set("lab")
         s.send(proto.cmd_mode(False))
         cmds = cal_sweep_cmds()
-        prev_out = bool(ch < len(self.out_vars) and self.out_vars[ch].get())
+        # Tk のチェックは 8 軸まで。左脚はセッションの出力マスクを開始前の状態にする。
+        if ch < len(self.out_vars):
+            prev_out = bool(self.out_vars[ch].get())
+        else:
+            prev_out = bool(s.out_mask & (1 << ch))
         seq = s.last_frame.seq if s.last_frame is not None else None
         self._pc_cal = PcCalSweep(
             port=s.port,
@@ -1657,6 +1707,9 @@ class LabApp(tk.Tk):
                 self.out_vars[ch].set(True)
         finally:
             self._syncing = False
+        if ch >= JOINTS:
+            s.extra_cmd[ch] = deg
+            s.out_mask |= 1 << ch
         s.send(proto.cmd_out(ch, True))
         s.send(proto.cmd_joint(ch, deg))
 
@@ -1679,6 +1732,12 @@ class LabApp(tk.Tk):
             # 掃引後は 135° に戻し、開始前の PWM ON/OFF を復元する
             s.send(proto.cmd_joint(cal.ch, 135.0))
             s.send(proto.cmd_out(cal.ch, cal.prev_out))
+            if cal.ch >= JOINTS:
+                s.extra_cmd[cal.ch] = 135.0
+                if cal.prev_out:
+                    s.out_mask |= 1 << cal.ch
+                else:
+                    s.out_mask &= ~(1 << cal.ch)
             self._syncing = True
             try:
                 if cal.ch < len(self.cmd_vars):
@@ -2065,6 +2124,22 @@ class LabApp(tk.Tk):
             messagebox.showerror("プロファイル", f"足経路の数値が不正です: {exc}")
             return None
 
+    def _route_from_hub_dict(self, d: dict, i: int) -> JointRoute:
+        """Hub のプロファイル 1 行。軸番号はサーボ ch の既定にだけ使う。"""
+        return JointRoute(
+            enc_hub=int(d.get("enc_hub", 0)),
+            enc_ch=int(d.get("enc_ch", -1)),
+            enc_addr=int(d.get("enc_addr", 0)),
+            act_hub=int(d.get("act_hub", 0)),
+            act_ch=int(d.get("act_ch", -1)),
+            act_addr=int(d.get("act_addr", 0x25)),
+            servo_ch=int(d.get("servo_ch", i)),
+            ina_hub=int(d.get("ina_hub", 0)),
+            ina_ch=int(d.get("ina_ch", -1)),
+            ina_addr=int(d.get("ina_addr", 0)),
+            enabled=bool(d["enabled"]) if "enabled" in d else True,
+        )
+
     def _foot_from_msg(self, msg: dict, fallback: FootRoute) -> FootRoute:
         """iPad の prof_put に載る foot 辞書。無ければ現状を残す。"""
         raw = msg.get("foot")
@@ -2328,6 +2403,11 @@ class LabApp(tk.Tk):
         note: str,
         foot: FootRoute | None = None,
     ) -> None:
+        # CoreS3 は 10 軸ちょうど。8 軸のまま送るとボードが枚数不一致で拒む。
+        # 手元の 10 行は、送る前に捨てない。
+        if s.fw_ver >= proto.FW_VER_CORE and len(routes) != 10:
+            s.note(f"プロファイル送信を止めた  CoreS3 は 10 軸（今 {len(routes)}）")
+            return
         s.routes = routes
         if foot is not None:
             s.foot = foot
@@ -2335,14 +2415,26 @@ class LabApp(tk.Tk):
         fen = int(bool(s.foot.enabled))
         s._pending_jen = jen
         s._pending_fen = fen
-        s.send(
-            proto.cmd_prof_put(
-                [route_tuple(r) for r in routes],
-                foot_tuple(s.foot),
-                joint_en=jen,
-                foot_en=fen,
+        if s.fw_ver >= proto.FW_VER_CORE:
+            left = s.foot_left if s.foot_left is not None else default_foot_left()
+            foot_en = (1 if s.foot.enabled else 0) | (2 if left.enabled else 0)
+            s.send(
+                proto.cmd_prof_put_v15(
+                    [route_tuple(r) for r in routes],
+                    [foot_tuple(s.foot), foot_tuple(left)],
+                    joint_en=jen,
+                    foot_en=foot_en,
+                )
             )
-        )
+        else:
+            s.send(
+                proto.cmd_prof_put(
+                    [route_tuple(r) for r in routes],
+                    foot_tuple(s.foot),
+                    joint_en=jen,
+                    foot_en=fen,
+                )
+            )
         self._fill_prof_form(s.routes, s.foot)
         self._ina_ui_sig = None
         self._refresh_ina_combos(s)

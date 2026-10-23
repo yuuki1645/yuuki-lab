@@ -48,6 +48,10 @@ class Frame:
     foot_mask: int = 0
     foot_seq: int = 0
     foot_mv: list[int] = field(default_factory=lambda: [0, 0, 0, 0])
+    foot2_ok: bool = False
+    foot2_mask: int = 0
+    foot2_seq: int = 0
+    foot2_mv: list[int] = field(default_factory=lambda: [0, 0, 0, 0])
 
 
 @dataclass
@@ -92,6 +96,11 @@ class FootRoute:
 def default_foot() -> FootRoute:
     """既定: PaHub 0x71 CH2 の 0x28。"""
     return FootRoute()
+
+
+def default_foot_left() -> FootRoute:
+    """CoreS3 の左足。すね PaHub 0x73 のポート 5。"""
+    return FootRoute(hub=0x73, ch=5, addr=0x28, enabled=True)
 
 
 def default_routes(n: int = JOINTS) -> list[JointRoute]:
@@ -147,6 +156,10 @@ def frame_from_telem(t: proto.Telemetry) -> Frame:
         foot_mask=t.foot_mask,
         foot_seq=t.foot_seq,
         foot_mv=list(t.foot_mv),
+        foot2_ok=t.foot2_ok,
+        foot2_mask=t.foot2_mask,
+        foot2_seq=t.foot2_seq,
+        foot2_mv=list(t.foot2_mv),
     )
 
 
@@ -196,9 +209,9 @@ def foot_tuple(r: FootRoute) -> tuple[int, int, int]:
 
 
 def joint_en_mask(routes: list[JointRoute]) -> int:
-    """USB に載せる関節有効ビット。経路とは独立。"""
+    """USB に載せる関節有効ビット。経路とは独立。10 軸でも bit 8 以降を残す。"""
     m = 0
-    for i, r in enumerate(routes[:JOINTS]):
+    for i, r in enumerate(routes):
         if r.enabled:
             m |= 1 << i
     return m
@@ -211,17 +224,17 @@ def route_sig(routes: list[JointRoute], foot: FootRoute | None = None) -> tuple:
     return base + (foot_tuple(foot) + (int(bool(foot.enabled)),))
 
 
-def foot_sample_dict(f: Frame) -> dict:
+def foot_corners(ok: bool, mask: int, seq: int, mv: list[int]) -> dict:
     """USB の mV を Hub と同じ corners 形にする。"""
     corners: dict[str, dict | None] = {}
     total = 0.0
     for i, key in enumerate(FOOT_CORNER_KEYS):
-        installed = bool(f.foot_mask & (1 << i))
-        if not f.foot_ok or not installed:
+        installed = bool(mask & (1 << i))
+        if not ok or not installed:
             corners[key] = None
             continue
-        mv = f.foot_mv[i] if i < len(f.foot_mv) else 0
-        voltage = mv / 1000.0
+        raw = mv[i] if i < len(mv) else 0
+        voltage = raw / 1000.0
         rs, kg = df9_force.voltage_to_force_kg(voltage)
         corners[key] = {
             "force_kg": kg,
@@ -231,12 +244,24 @@ def foot_sample_dict(f: Frame) -> dict:
         }
         total += kg
     return {
-        "ok": bool(f.foot_ok),
-        "seq": int(f.foot_seq),
-        "mask": int(f.foot_mask),
+        "ok": bool(ok),
+        "seq": int(seq),
+        "mask": int(mask),
         "force_kg": total,
         "corners": corners,
     }
+
+
+def foot_sample_dict(f: Frame) -> dict:
+    """右足。"""
+    return foot_corners(f.foot_ok, f.foot_mask, f.foot_seq, f.foot_mv)
+
+
+def foot2_sample_dict(f: Frame) -> dict | None:
+    """左足。ver 14 は欄が無いので None。"""
+    if not (f.foot2_ok or f.foot2_mask or f.foot2_seq or any(f.foot2_mv)):
+        return None
+    return foot_corners(f.foot2_ok, f.foot2_mask, f.foot2_seq, f.foot2_mv)
 
 
 def ina_label(hub: int, ch: int, addr: int) -> str:

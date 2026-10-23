@@ -48,6 +48,7 @@ export function ProfilePanel({
   const [draftFoot, setDraftFoot] = useState<M5FootRoute | null>(null);
 
   const routes = draftRoutes ?? profile?.routes ?? [];
+  const jointCount = Math.max(M5_JOINTS, routes.length);
   const foot = draftFoot ?? profile?.foot ?? emptyFoot();
 
   // 下書きは「ボードから取得 / 既定 / SCAN」以外では捨てない。
@@ -104,7 +105,7 @@ export function ProfilePanel({
           onClick={() => {
             send({
               op: "prof_put",
-              routes: Array.from({ length: M5_JOINTS }, (_, i) => routes[i] ?? emptyRoute(i)),
+              routes: Array.from({ length: jointCount }, (_, i) => routes[i] ?? emptyRoute(i)),
               foot,
             });
           }}
@@ -164,7 +165,7 @@ export function ProfilePanel({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: M5_JOINTS }, (_, i) => {
+            {Array.from({ length: jointCount }, (_, i) => {
               const r = routes[i] ?? emptyRoute(i);
               const on = isOn(r);
               return (

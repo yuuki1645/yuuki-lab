@@ -101,13 +101,32 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 
 詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
 
+## ■ link
+
+ATOM と CoreS3 が共有する USB 契約と、サブ PC が USB-C を握る入口です。
+
+- フレームとメッセージ番号: [link/include/usb_frame.hpp](link/include/usb_frame.hpp)
+- 中継の起動: `python link/host/lab_debug.py`（Socket.IO 既定 **8794**）
+
+詳細は [link/README.md](link/README.md) を参照してください。
+
+## ■ core-rt
+
+腰の **CoreS3** 用 20 Hz ファームです。両脚 10 軸と両足を、アドレスを分けた 4 つの PaHub 経由で読みます。USB は ver 15 です。
+
+- 書き込み: `cd core-rt` → `pio run -t upload`
+- サブ PC: `python link/host/lab_debug.py`
+- 表示: Hub の **実機テレメトリ（M5）**。10 軸が届くと左右の列が両方生きます
+
+詳細は [core-rt/README.md](core-rt/README.md) を参照してください。
+
 ## ■ atom-rt
 
 ATOMS3 Lite（M5Stack ATOM）上の **20 Hz 制御ファーム** と、Windows PC の USB 総合デバッグです。ラズパイの `robot-daemon` とは別系統（USB CDC）です。
 
 - 書き込み: `cd atom-rt` → `pio run -t upload`
-- デバッグ: `python tools/lab_debug.py`
-- Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）は、この `lab_debug.py` が Socket.IO 既定 **8794** で中継します
+- デバッグ: リポジトリ直下で `python link/host/lab_debug.py`（`atom-rt/tools/lab_debug.py` も同じ画面を起動します）
+- Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）は、この中継が Socket.IO 既定 **8794** で届きます
 
 詳細は [atom-rt/README.md](atom-rt/README.md) を参照してください。
 

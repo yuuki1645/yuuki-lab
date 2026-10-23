@@ -1,0 +1,10 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+# CoreS3 has 16 MB flash. Ten calibration maps are about 15 KB raw.
+# Default NVS is about 20 KB, which is too small once maps are rewritten.
+# This table gives NVS 64 KB. Comments stay ASCII because PlatformIO
+# reads this file with the Windows ANSI code page.
+nvs,      data, nvs,     0x9000,  0x10000,
+otadata,  data, ota,     0x19000, 0x2000,
+app0,     app,  ota_0,   0x20000, 0x300000,
+app1,     app,  ota_1,   0x320000,0x300000,
+coredump, data, coredump,0x620000,0x10000,

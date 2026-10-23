@@ -50,9 +50,9 @@ from .lab_model import (
 _I2C_NOTE_S = 2.0
 
 
-def _hello_fw_ver(text: str) -> int:
-    """HELLO `rt-usb ver=11 lab ...` から USB プロトコル版を取る。取れなければ 0。"""
-    marker = "ver="
+def _hello_int(text: str, key: str) -> int:
+    """HELLO の `joints=10` のような整数欄。無ければ 0。"""
+    marker = key + "="
     i = text.find(marker)
     if i < 0:
         return 0
@@ -62,9 +62,12 @@ def _hello_fw_ver(text: str) -> int:
             digits.append(ch)
         else:
             break
-    if not digits:
-        return 0
-    return int("".join(digits))
+    return int("".join(digits)) if digits else 0
+
+
+def _hello_fw_ver(text: str) -> int:
+    """HELLO `rt-usb ver=11 lab ...` から USB プロトコル版を取る。取れなければ 0。"""
+    return _hello_int(text, "ver")
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -269,10 +272,16 @@ class AtomWorker:
         if msg_type == proto.MSG_PROF:
             got = proto.decode_prof(payload)
             if got is not None:
-                rs, foot, has_en = got
+                rs, foot, has_en = got[0], got[1], got[2]
+                left = got[3] if len(got) >= 4 else None
                 self._put(
                     "prof",
-                    ([route_from_bin(r) for r in rs], foot_from_bin(foot), bool(has_en)),
+                    (
+                        [route_from_bin(r) for r in rs],
+                        foot_from_bin(foot),
+                        bool(has_en),
+                        foot_from_bin(left) if left is not None else None,
+                    ),
                 )
             return
         if msg_type == proto.MSG_MAP_CHUNK:
@@ -321,7 +330,10 @@ class AtomWorker:
             return
         if msg_type == proto.MSG_MODE:
             if len(payload) >= 2:
-                self._put("mode", (proto._mode_name(payload[0]), int(payload[1])))
+                out = int(payload[1])
+                if len(payload) >= 3:
+                    out |= int(payload[2]) << 8
+                self._put("mode", (proto._mode_name(payload[0]), out))
             return
         if msg_type == proto.MSG_EVT_OC:
             self._put("evt", proto.format_rx(msg_type, payload))
@@ -343,6 +355,7 @@ class AtomSession:
         self.connected = False
         self.hello = ""
         self.fw_ver = 0
+        self.joint_count = JOINTS
         self._pending_jen: int | None = None
         self._pending_fen: int | None = None
         self.mode = "lab"
@@ -353,6 +366,8 @@ class AtomSession:
         self._scan_open = False
         self.routes: list[JointRoute] = default_routes()
         self.foot: FootRoute = default_foot()
+        self.foot_left: FootRoute | None = None
+        self.extra_cmd: dict[int, float] = {}
         self.map_points: list[tuple[float, float]] = []
         self.map_ch = 0
         self.cal_status = ""
@@ -485,6 +500,9 @@ class AtomSession:
         elif kind == "hello":
             self.hello = str(payload)
             self.fw_ver = _hello_fw_ver(self.hello)
+            joints = _hello_int(self.hello, "joints")
+            if joints > 0:
+                self.joint_count = joints
             self.note(str(payload))
             self._got_hello = True
             if not self._boot_sound_played:
@@ -525,9 +543,12 @@ class AtomSession:
             elif isinstance(payload, list):
                 routes = payload
             if isinstance(routes, list) and routes:
-                merged = default_routes()
-                for i, r in enumerate(routes[:JOINTS]):
-                    merged[i] = r
+                if len(routes) > JOINTS:
+                    merged = list(routes)
+                else:
+                    merged = default_routes()
+                    for i, r in enumerate(routes[:JOINTS]):
+                        merged[i] = r
                 # 旧ダンプは有効マスクが無く decode が全オンにする。手元の無効化を潰さない
                 if not has_en:
                     for i, r in enumerate(merged):
@@ -538,6 +559,8 @@ class AtomSession:
                 self.routes = merged
                 if isinstance(foot, FootRoute):
                     self.foot = foot
+                if len(payload) >= 4 and isinstance(payload[3], FootRoute):
+                    self.foot_left = payload[3]
                 jen = joint_en_mask(self.routes)
                 fen = int(bool(self.foot.enabled))
                 extra = "" if has_en else " マスク無し"

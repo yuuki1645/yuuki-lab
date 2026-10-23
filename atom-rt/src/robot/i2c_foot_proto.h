@@ -5,7 +5,7 @@
 /**
  * 右足 ATOMS3 Lite スレーブ（atom-foot i2c_slave）の I2C レジスタ。
  *
- * マスターは atom-rt（ATOM S3R）。専用脚マスターは使わない。
+ * マスターは atom-rt（片脚）または core-rt（腰の CoreS3）。専用脚マスターは使わない。
  * ESP32 スレーブは Repeated START で欠けることがあるので、
  * レジスタポインタは STOP 付きで書いてから requestFrom する。
  */

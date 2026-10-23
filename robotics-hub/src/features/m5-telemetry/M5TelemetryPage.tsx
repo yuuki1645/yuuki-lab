@@ -56,6 +56,7 @@ export default function M5TelemetryPage() {
   const cal = stream.cal;
   const send = stream.send;
   const frame = replaying ? rec.frame : stream.frame;
+  const jointSlots = Math.max(M5_JOINTS, frame?.cmd?.length ?? 0);
   const history = replaying ? (rec.history ?? []) : stream.history;
   const control = replaying ? rec.control : stream.control;
   const scan = replaying ? (rec.replayScan ?? stream.scan) : stream.scan;
@@ -290,7 +291,7 @@ export default function M5TelemetryPage() {
                         value={j}
                         onChange={(e) => setPanelJoint(p, Number(e.target.value))}
                       >
-                        {Array.from({ length: M5_JOINTS }, (_, i) => (
+                        {Array.from({ length: jointSlots }, (_, i) => (
                           <option key={i} value={i}>
                             {i}
                           </option>
@@ -409,7 +410,7 @@ export default function M5TelemetryPage() {
             <label>
               グラフ関節
               <select value={plotJoint} onChange={(e) => setPlotJoint(Number(e.target.value))}>
-                {Array.from({ length: M5_JOINTS }, (_, i) => (
+                {Array.from({ length: jointSlots }, (_, i) => (
                   <option key={i} value={i}>
                     {i}
                   </option>
@@ -519,7 +520,7 @@ export default function M5TelemetryPage() {
             <label>
               関節
               <select value={calCh} onChange={(e) => setCalCh(Number(e.target.value))}>
-                {Array.from({ length: M5_JOINTS }, (_, i) => (
+                {Array.from({ length: jointSlots }, (_, i) => (
                   <option key={i} value={i}>
                     {i}
                   </option>

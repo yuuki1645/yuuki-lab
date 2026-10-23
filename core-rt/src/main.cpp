@@ -137,27 +137,72 @@ static int gMapSaveJoint = -1;
 
 // ---------------------------------------------------------------------------
 // バス。開いてよい PaHub のポートは、木全体で 1 つだけ。
+// 不在のハブへ select の再送を掛けると、何も無い机上で 1 周が分単位になる。
 // ---------------------------------------------------------------------------
+static constexpr uint8_t kHubAddrs[] = {
+    kHubRightThigh, kHubLeftThigh, kHubRightShin, kHubLeftShin};
+static constexpr int kHubCount = 4;
+static constexpr uint32_t kI2cTimeoutMs = 20;
+static constexpr uint32_t kHubProbeTimeoutMs = 5;
+static constexpr uint32_t kHubProbePeriodMs = 1000;
+
+static bool gHubOk[kHubCount] = {};
+static uint32_t gHubProbeMs = 0;
+
 static bool i2cPing(uint8_t addr) {
     Wire.beginTransmission(addr);
     return Wire.endTransmission() == 0;
 }
 
+static int hubSlot(uint8_t addr) {
+    for (int i = 0; i < kHubCount; ++i) {
+        if (kHubAddrs[i] == addr) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static bool hubReady(uint8_t addr) {
+    const int slot = hubSlot(addr);
+    return slot >= 0 && gHubOk[slot];
+}
+
+/** 0x70〜0x73 の在席だけを見る。センサの読みは、応答したハブに限る。 */
+static void probeHubs(bool force) {
+    const uint32_t now = millis();
+    if (!force && static_cast<uint32_t>(now - gHubProbeMs) < kHubProbePeriodMs) {
+        return;
+    }
+    gHubProbeMs = now;
+    Wire.setTimeOut(kHubProbeTimeoutMs);
+    for (int i = 0; i < kHubCount; ++i) {
+        gHubOk[i] = i2cPing(kHubAddrs[i]);
+    }
+    Wire.setTimeOut(kI2cTimeoutMs);
+}
+
 static void closeAllHubs() {
-    for (uint8_t addr = 0x70; addr <= 0x73; ++addr) {
-        PaHub hub(addr);
+    for (int i = 0; i < kHubCount; ++i) {
+        if (!gHubOk[i]) {
+            continue;
+        }
+        PaHub hub(kHubAddrs[i]);
         hub.select(-1);
     }
 }
 
-/** hub==0 は直結（全部閉じるだけ）。それ以外は目的の 1 ポートを開く。 */
-static void openMux(uint8_t hub, int8_t ch) {
+/**
+ * 応答済みのハブの 1 ポートを開く。
+ * @return 開けたら true。ハブが無いときはバスへ再送しない。
+ */
+static bool openMux(uint8_t hub, int8_t ch) {
     closeAllHubs();
-    if (hub < 0x70 || hub > 0x77) {
-        return;
+    if (!hubReady(hub)) {
+        return false;
     }
     PaHub h(hub);
-    h.select(ch);
+    return h.select(ch);
 }
 
 static bool i2cWriteRead(uint8_t addr, uint8_t reg, uint8_t* data, size_t len) {
@@ -386,10 +431,9 @@ static bool saveProfile() {
 // ---------------------------------------------------------------------------
 static void readFoot(const FootRoute& route, FootReading& out) {
     memset(&out, 0, sizeof(out));
-    if (route.addr == 0) {
+    if (route.addr == 0 || !openMux(route.hub, route.ch)) {
         return;
     }
-    openMux(route.hub, route.ch);
     delayMicroseconds(300);
     uint8_t hdr[8] = {};
     uint8_t raw[8] = {};
@@ -432,8 +476,8 @@ static void readSensors(Snapshot& out) {
         out.amp[i] = NAN;
         out.watt[i] = NAN;
         const JointRoute route = routes[i];
-        if ((jointEn & (1u << i)) != 0 && route.enc_addr != 0) {
-            openMux(route.enc_hub, route.enc_ch);
+        if ((jointEn & (1u << i)) != 0 && route.enc_addr != 0 &&
+            openMux(route.enc_hub, route.enc_ch)) {
             delayMicroseconds(300);
             const As5600::MagnetStatus st = gAs5600.readMagnetStatus();
             out.mag[i] = As5600::statusToCode(st);
@@ -452,8 +496,8 @@ static void readSensors(Snapshot& out) {
             }
             closeAllHubs();
         }
-        if ((jointEn & (1u << i)) != 0 && route.ina_addr != 0) {
-            openMux(route.ina_hub, route.ina_ch);
+        if ((jointEn & (1u << i)) != 0 && route.ina_addr != 0 &&
+            openMux(route.ina_hub, route.ina_ch)) {
             delayMicroseconds(200);
             gIna[i].setAddress(route.ina_addr);
             if (!gInaReady[i]) {
@@ -499,10 +543,9 @@ static void writeServos() {
             continue;
         }
         const JointRoute route = routes[i];
-        if (route.act_addr == 0) {
+        if (route.act_addr == 0 || !openMux(route.act_hub, route.act_ch)) {
             continue;
         }
-        openMux(route.act_hub, route.act_ch);
         delayMicroseconds(200);
         gServo.setServoPulse(route.servo_ch, angleToPulse(cmd[i]));
         closeAllHubs();
@@ -511,10 +554,13 @@ static void writeServos() {
 
 static bool initServos() {
     // 左右ともアドレスは 0x25。begin は 1 回で、ピンモードはユニットごとに出す。
+    probeHubs(true);
     const uint8_t hubs[2] = {kHubRightShin, kHubLeftShin};
     bool any = false;
     for (uint8_t hub : hubs) {
-        openMux(hub, kServoHubChannel);
+        if (!openMux(hub, kServoHubChannel)) {
+            continue;
+        }
         delay(2);
         // 右すねが無い机上でも、応答した側の 8Servos だけ初期化する。
         if (!i2cPing(kServoAddr)) {
@@ -538,12 +584,13 @@ static bool initServos() {
 
 static void runScan() {
     gScanCount = 0;
-    const uint8_t hubs[4] = {kHubRightThigh, kHubLeftThigh, kHubRightShin, kHubLeftShin};
-    for (uint8_t hub : hubs) {
-        closeAllHubs();
-        if (!i2cPing(hub)) {
+    // 在席を取り直してから、応答したハブだけチャンネルを歩く。
+    probeHubs(true);
+    for (int i = 0; i < kHubCount; ++i) {
+        if (!gHubOk[i]) {
             continue;
         }
+        const uint8_t hub = kHubAddrs[i];
         if (gScanCount < 48) {
             UsbScanNode node{};
             node.hub = hub;
@@ -555,7 +602,9 @@ static void runScan() {
             gScan[gScanCount++] = node;
         }
         for (int ch = 0; ch < PaHub::kChannelCount; ++ch) {
-            openMux(hub, static_cast<int8_t>(ch));
+            if (!openMux(hub, static_cast<int8_t>(ch))) {
+                continue;
+            }
             delayMicroseconds(300);
             const uint8_t addrs[] = {kAs5600Addr, kInaAddr, kServoAddr, kFootAddr};
             const uint8_t kinds[] = {2, 3, 4, 5};
@@ -1016,6 +1065,7 @@ static void controlTask(void*) {
     uint32_t seq = 0;
     for (;;) {
         const uint32_t t0 = micros();
+        probeHubs(false);
         if (gScanReq) {
             gScanReq = 0;
             runScan();
@@ -1082,7 +1132,7 @@ void setup() {
     loadProfile();
     loadCal();
     gAs5600.begin(kSdaPin, kSclPin, kI2cHz);
-    closeAllHubs();
+    probeHubs(true);
     initServos();
     closeAllHubs();
 

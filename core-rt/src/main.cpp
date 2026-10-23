@@ -2,8 +2,8 @@
  * 腰の CoreS3。両脚 10 軸を 1 本の Grove I2C で 20 Hz 読む。
  *
  * Core 1 が I2C とサーボ。Core 0 が USB。バスは同時に触らない。
- * 内部 I2C（G12/G11、IMU や AW9523）はここでは開かない。
- * 外部は PORT.A の G2=SDA、G1=SCL。
+ * 内部 I2C（G12/G11）は AW9523 で PORT.A の 5V を出すときだけ使う。
+ * IMU と RTC は読まない。外部は PORT.A の G2=SDA、G1=SCL。
  *
  * 作業モード:
  *   Lab（起動時）  PWM は、出した軸だけ。
@@ -1118,6 +1118,86 @@ static void controlTask(void*) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// PORT.A の 5V。CoreS3 は AW9523（内部 I2C 0x58）が負荷スイッチを握っている。
+// 未給電の Grove 素子は保護ダイオードで SDA/SCL を Low に押さえ、NACK が
+// 返らない。ビットは M5Unified の CoreS3 と同じ（P0.1=BUS_EN、P1.7=BOOST_EN）。
+// P0 は上電時オープン・ドレインなので、ラッチの 1 では High にならない。
+// 0x11 の GPOMD を立ててプッシュ・プルにしてから BUS_EN を出す。
+// AD0=AD1=GND（アドレス 0x58）の上電時は両ピンとも Low で、5V は出ない。
+// ---------------------------------------------------------------------------
+static constexpr int kIntSdaPin = 12;
+static constexpr int kIntSclPin = 11;
+static constexpr uint8_t kAw9523Addr = 0x58;
+static constexpr uint8_t kAwOutP0 = 0x02;
+static constexpr uint8_t kAwCtl = 0x11;
+static constexpr uint8_t kAwGpomdPushPull = 0x10;  // CTL bit4。P0 をプッシュ・プルへ
+static constexpr uint8_t kAwBusEnBit = 0x02;
+static constexpr uint8_t kAwBoostEnBit = 0x80;
+
+/** AW9523 の 1 レジスタを読む。失敗時は false。 */
+static bool awReadReg(uint8_t reg, uint8_t& value) {
+    Wire1.beginTransmission(kAw9523Addr);
+    Wire1.write(reg);
+    if (Wire1.endTransmission(true) != 0) {
+        return false;
+    }
+    if (Wire1.requestFrom(static_cast<int>(kAw9523Addr), 1) != 1) {
+        return false;
+    }
+    value = static_cast<uint8_t>(Wire1.read());
+    return true;
+}
+
+/** AW9523 の 1 レジスタを書く。失敗時は false。 */
+static bool awWriteReg(uint8_t reg, uint8_t value) {
+    Wire1.beginTransmission(kAw9523Addr);
+    Wire1.write(reg);
+    Wire1.write(value);
+    return Wire1.endTransmission(true) == 0;
+}
+
+/**
+ * Grove の 5V を出す。失敗しても外部バスの初期化は続ける。
+ * @return P0 をプッシュ・プルにし、BUS_EN と BOOST_EN を書けたら true。
+ */
+static bool enableGrovePower() {
+    Wire1.begin(kIntSdaPin, kIntSclPin, kI2cHz);
+    Wire1.setTimeOut(kI2cTimeoutMs);
+
+    // CTL の試験用ビット（bit7-5, bit3-2）は 0 のまま、GPOMD だけ立てる。
+    uint8_t ctl = 0;
+    if (!awReadReg(kAwCtl, ctl)) {
+        return false;
+    }
+    if (!awWriteReg(kAwCtl, static_cast<uint8_t>(ctl | kAwGpomdPushPull))) {
+        return false;
+    }
+
+    Wire1.beginTransmission(kAw9523Addr);
+    Wire1.write(kAwOutP0);
+    if (Wire1.endTransmission(true) != 0) {
+        return false;
+    }
+    // 0x02 から 2 バイト。AW9523 は自動で 0x03（P1）へ進む。
+    if (Wire1.requestFrom(static_cast<int>(kAw9523Addr), 2) != 2) {
+        return false;
+    }
+    const uint8_t p0 = static_cast<uint8_t>(Wire1.read()) | kAwBusEnBit;
+    const uint8_t p1 = static_cast<uint8_t>(Wire1.read()) | kAwBoostEnBit;
+
+    Wire1.beginTransmission(kAw9523Addr);
+    Wire1.write(kAwOutP0);
+    Wire1.write(p0);
+    Wire1.write(p1);
+    if (Wire1.endTransmission(true) != 0) {
+        return false;
+    }
+    // 昇圧が立ち上がり、素子のクランプが外れるまで外部バスを触らない。
+    delay(50);
+    return true;
+}
+
 void setup() {
     Serial.begin(115200);
     Serial.setTxBufferSize(4096);
@@ -1131,6 +1211,8 @@ void setup() {
     gMapRx.joint = -1;
     loadProfile();
     loadCal();
+    // 外部 I2C より先。未給電の素子が PORT.A を押さえたままスキャンしない。
+    (void)enableGrovePower();
     gAs5600.begin(kSdaPin, kSclPin, kI2cHz);
     probeHubs(true);
     initServos();

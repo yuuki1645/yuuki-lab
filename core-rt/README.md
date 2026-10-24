@@ -57,3 +57,17 @@ pio device monitor -e i2c-hold
 ```
 
 測り終わったら `pio run -e core-s3 -t upload` で腰の本線に戻します。
+
+## CAN 疎通
+
+`src/can_ping/main.cpp` は、PORT.C の Unit CAN で 1 秒ごとに `0x100` を送り、受け取ったフレームをテキストで出します。相手は `atom-rt` の `can-ping`（`0x101`）です。USB の ver 15 は話しません。
+
+机上の 2 台は両方ともバスの端です。120 Ω は両方に付けます。CANH、CANL、絶縁側の G を繋ぎます。Grove の 5V が出ないとユニットは動きません。起動ログの `grove 5V on` を見てください。
+
+```text
+cd core-rt
+pio run -e can-ping -t upload
+pio device monitor -e can-ping
+```
+
+相手の `seq` が毎秒増え、`TX ... ok` と `bus=running` が続けば通っています。線を外すと `bus-off` になり、戻すと `running` に戻ります。終わったら `pio run -e core-s3 -t upload` で腰の本線に戻します。

@@ -12,7 +12,17 @@ pip install -r tools/requirements.txt
 python tools/lab_debug.py
 ```
 
-ファームは **1 本**（環境 `rt-usb`）です。書き込みのたびにスケッチを切り替える必要はありません。机上テストと機体モニタの違いは USB コマンドのモードです。
+本線は **1 本**（環境 `rt-usb`）です。書き込みのたびにスケッチを切り替える必要はありません。机上テストと機体モニタの違いは USB コマンドのモードです。
+
+机上の CAN 疎通だけ、別環境 `can-ping` です。ATOM S3R に Atomic CAN ベースを載せ、1 秒ごとに `0x101` を送ります。相手は `core-rt` の `can-ping`（`0x100`）です。`rt-usb` は話しません。戻すときは `pio run -e rt-usb -t upload` です。
+
+```text
+cd atom-rt
+pio run -e can-ping -t upload
+pio device monitor -e can-ping
+```
+
+GPIO5 が送信、GPIO6 が受信です。バスが黙ったままなら、この 2 本を入れ替えて焼き直します。机上の 2 台は両方とも端なので、120 Ω は両方に付けます。
 
 実験用の CAN・Wi-Fi 校正・複数スケッチは、別リポジトリ `atoms3-as5600-test` に残しています（本リポジトリには含めていません）。
 

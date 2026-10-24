@@ -14,7 +14,14 @@ python tools/lab_debug.py
 
 本線は **1 本**（環境 `rt-usb`）です。書き込みのたびにスケッチを切り替える必要はありません。机上テストと機体モニタの違いは USB コマンドのモードです。
 
-机上の CAN 疎通だけ、別環境 `can-ping` です。ATOM S3R に Atomic CAN ベースを載せ、1 秒ごとに `0x101` を送ります。相手は `core-rt` の `can-ping`（`0x100`）です。`rt-usb` は話しません。戻すときは `pio run -e rt-usb -t upload` です。
+机上の CAN 疎通だけ、別環境 `can-ping` です。ATOM S3R に Atomic CAN ベースを載せ、1 秒ごとに `0x101` を送ります。相手は `core-rt` の `can-ping`（`0x100`）です。
+
+片脚の本線は `can-leg` です。自分の Grove でセンサーを読み、サーボ指令を CAN で受けます。役割は PaHub のアドレスで決まります。`rt-usb` は机上用のままです。戻すときは `pio run -e rt-usb -t upload` です。
+
+```text
+cd atom-rt
+pio run -e can-leg -t upload
+```
 
 ```text
 cd atom-rt

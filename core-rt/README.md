@@ -1,8 +1,8 @@
 # core-rt
 
-腰の CoreS3 用 20 Hz ファームです。両脚 10 軸と両足を、1 本の Grove I2C で読みます。
+腰の CoreS3 用 20 Hz ファームです。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出します。
 
-USB のフレームとメッセージ番号は [link/include/usb_frame.hpp](../link/include/usb_frame.hpp) です。このボードは **ver 15** です。片脚の ATOM は [atom-rt](../atom-rt/) の ver 14 のままです。
+USB のフレームとメッセージ番号は [link/include/usb_frame.hpp](../link/include/usb_frame.hpp) です。このボードは **ver 15** です。片脚の ATOM は [atom-rt](../atom-rt/) の `can-leg` です。机上の疎通試験 `can-ping` とは別のファームです。
 
 サブ PC では [link/host/lab_debug.py](../link/host/lab_debug.py) が COM を開きます。操作は robotics-hub の実機テレメトリです。
 

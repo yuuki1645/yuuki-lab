@@ -18,6 +18,14 @@ python tools/lab_debug.py
 
 片脚の本線は `can-leg` です。自分の Grove でセンサーを読み、サーボ指令を CAN で受けます。役割は PaHub のアドレスで決まります。`rt-usb` は机上用のままです。戻すときは `pio run -e rt-usb -t upload` です。
 
+Grove 直下の 8Servos を `0x26` にする確認は `servo-addr` です。起動時はアドレスを読むだけです。モニタで `w` を送ったときだけ、PaHub を閉じた状態の `0x25` を `0x26` にします。USB を抜き差ししたあとも直下 `0x26`、すね `0x25` なら維持されています。終わったら `can-leg` を焼き直します。
+
+```text
+cd atom-rt
+pio run -e servo-addr -t upload
+pio device monitor -e servo-addr
+```
+
 ```text
 cd atom-rt
 pio run -e can-leg -t upload

@@ -11,6 +11,7 @@
  * 両方ある、またはどちらも無いときは PWM を出さない。
  *
  * 校正は持たない。経路が届くまで、この脚の既定配線で読む。
+ * サーボは 2 枚。Grove 直下 0x26 が股とひざ、すねの 0x25 がかかと。
  * 指令が 200 ms 途切れたら、最後の角度のあとピンを入力にして脱力する。
  */
 
@@ -51,7 +52,6 @@ static constexpr uint8_t kHubList[] = {kHubRightThigh, kHubLeftThigh, kHubRightS
 static As5600 gAs;
 static Ina226 gIna[kCanAxes];
 static bool gInaReady[kCanAxes] = {};
-static M5_UNIT_8SERVO gServo;
 static bool gServoReady = false;
 static bool gCanReady = false;
 
@@ -200,12 +200,12 @@ static void detectRole() {
     const bool left = (gHubMask & ((1u << 1) | (1u << 3))) != 0;
     if (right && !left) {
         gRole = kCanRoleRight;
-        fillLegRoutes(gRoute, kHubRightThigh, kHubRightShin);
-        gFoot = FootRoute{kHubRightShin, kFootHubChannel, kFootAddr};
+        fillRightLegRoutes(gRoute);
+        gFoot = FootRoute{kHubRightShin, kRightFootCh, kFootAddr};
     } else if (left && !right) {
         gRole = kCanRoleLeft;
-        fillLegRoutes(gRoute, kHubLeftThigh, kHubLeftShin);
-        gFoot = FootRoute{kHubLeftShin, kFootHubChannel, kFootAddr};
+        fillLeftLegRoutes(gRoute);
+        gFoot = FootRoute{kHubLeftShin, kLeftFootCh, kFootAddr};
     } else {
         gRole = kCanRoleUnknown;
     }
@@ -228,30 +228,63 @@ static uint16_t angleToPulse(float deg) {
     return static_cast<uint16_t>(us + 0.5f);
 }
 
+/** 指定アドレスの 8Servos へ書く。ライブラリの内部アドレスは使わない。 */
+static bool writeServo(uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    for (size_t i = 0; i < len; ++i) {
+        Wire.write(data[i]);
+    }
+    return Wire.endTransmission() == 0;
+}
+
+static bool setServoMode(uint8_t addr, uint8_t pin, uint8_t mode) {
+    if (pin > 7) {
+        return false;
+    }
+    // モードレジスタはチャンネル番号そのもの（0x00〜0x07）。
+    return writeServo(addr, pin, &mode, 1);
+}
+
+static bool setServoPulseUs(uint8_t addr, uint8_t pin, uint16_t pulse) {
+    if (pin > 7) {
+        return false;
+    }
+    uint8_t data[2] = {static_cast<uint8_t>(pulse & 0xFF), static_cast<uint8_t>(pulse >> 8)};
+    return writeServo(addr, static_cast<uint8_t>(0x60 + pin * 2), data, 2);
+}
+
 static bool tryInitServo() {
-    if (gRole == kCanRoleUnknown || gRoute[0].act_addr == 0) {
+    if (gRole == kCanRoleUnknown) {
         return false;
     }
-    if (!openMux(gRoute[0].act_hub, gRoute[0].act_ch)) {
-        return false;
-    }
-    delay(2);
-    if (!i2cPing(gRoute[0].act_addr)) {
-        closeHubs();
-        return false;
-    }
-    if (!gServoReady) {
-        gServoReady = gServo.begin(&Wire, kSdaPin, kSclPin, gRoute[0].act_addr);
-        Wire.setClock(kI2cHz);
-        Wire.setTimeOut(kI2cTimeoutMs);
-    }
-    if (gServoReady) {
-        // 起動直後は脱力。指令が来てからサーボモードに戻す。
-        for (int ch = 0; ch < kCanAxes; ++ch) {
-            gServo.setOnePinMode(static_cast<uint8_t>(ch), DIGITAL_INPUT_MODE);
+    bool any = false;
+    for (int i = 0; i < kCanAxes; ++i) {
+        const JointRoute& route = gRoute[i];
+        if (route.act_addr == 0) {
+            continue;
         }
+        bool seen = false;
+        for (int j = 0; j < i; ++j) {
+            const JointRoute& prev = gRoute[j];
+            if (prev.act_hub == route.act_hub && prev.act_ch == route.act_ch &&
+                prev.act_addr == route.act_addr && prev.servo_ch == route.servo_ch) {
+                seen = true;
+                break;
+            }
+        }
+        if (seen || !openMux(route.act_hub, route.act_ch)) {
+            continue;
+        }
+        delay(2);
+        // 起動直後は、経路にある出力だけを入力にして脱力する。
+        if (i2cPing(route.act_addr) &&
+            setServoMode(route.act_addr, route.servo_ch, DIGITAL_INPUT_MODE)) {
+            any = true;
+        }
+        closeHubs();
     }
-    closeHubs();
+    gServoReady = any;
     return gServoReady;
 }
 
@@ -264,7 +297,7 @@ static void releaseAxis(int index) {
         return;
     }
     delayMicroseconds(200);
-    gServo.setOnePinMode(route.servo_ch, DIGITAL_INPUT_MODE);
+    setServoMode(route.act_addr, route.servo_ch, DIGITAL_INPUT_MODE);
     closeHubs();
 }
 
@@ -279,9 +312,9 @@ static void driveAxis(int index, float deg) {
     delayMicroseconds(200);
     // 毎周期モードを切り替えると、パルスが途切れる。
     if ((gDriven & (1u << index)) == 0) {
-        gServo.setOnePinMode(route.servo_ch, SERVO_CTL_MODE);
+        setServoMode(route.act_addr, route.servo_ch, SERVO_CTL_MODE);
     }
-    gServo.setServoPulse(route.servo_ch, angleToPulse(deg));
+    setServoPulseUs(route.act_addr, route.servo_ch, angleToPulse(deg));
     closeHubs();
 }
 
@@ -516,6 +549,17 @@ static void runScan() {
     UsbScanNode nodes[24];
     int count = 0;
     const int leg = legIndex();
+    // 直下の 0x26 はチャンネルを開くと毎 CH に見える。閉じたまま 1 回だけ載せる。
+    closeHubs();
+    if (count < 24 && i2cPing(kRootServoAddr)) {
+        nodes[count].hub = 0;
+        nodes[count].ch = -1;
+        nodes[count].addr = kRootServoAddr;
+        nodes[count].kind = 4;
+        nodes[count].mag = 255;
+        nodes[count].agc = 255;
+        ++count;
+    }
     for (int h = 0; h < 4; ++h) {
         if ((gHubMask & (1u << h)) == 0) {
             continue;

@@ -16,7 +16,7 @@ import atexit
 import json
 import os
 import queue
-import secrets
+import re
 import shutil
 import sys
 import threading
@@ -32,6 +32,14 @@ FLUSH_SEC = 1.5
 ROTATE_SEC = 60.0
 FORMAT_ID = "core_take_v1"
 SCHEMA_FILE = "schema.md"
+# 日付フォルダに残す、その日に発行した最後の連番。take を消しても詰めない。
+_LAST_INDEX_NAME = ".last_index"
+# 003_090312。3 桁を超えても桁は伸びる。
+_PREFIXED_TAKE = re.compile(r"^(\d+)_(\d{6})$")
+# 連番を付ける前の 090312 と、同じ秒の 090312_a3f1。
+_LEGACY_TAKE = re.compile(r"^(\d{6})(?:_[0-9a-fA-F]+)?$")
+# 保管先の一覧が返らないとき、HELLO をここで止めない。
+_ARCHIVE_INDEX_TIMEOUT_SEC = 1.0
 
 # プロセス内で 1 つ。未接続のあいだは作らない（shared が最初の ver 15 で作る）。
 _SHARED: ExperimentLog | None = None
@@ -59,6 +67,50 @@ def default_storage_path() -> Path:
 def schema_source() -> Path:
     """欄の説明の正本。take へは schema.md としてコピーする。"""
     return Path(__file__).resolve().parent.parent / "schema" / f"{FORMAT_ID}.md"
+
+
+def _day_dir(root: Path, now: datetime) -> Path:
+    """実験データの日付フォルダ。中の take はその日の連番で並ぶ。"""
+    return root / f"{now.year:04d}" / f"{now.month:02d}" / f"{now.day:02d}"
+
+
+def _peek_issued(day: Path) -> tuple[int, int]:
+    """(連番の最大, 時分秒だけのフォルダ数)。無い日は (0, 0)。"""
+    if not day.is_dir():
+        return 0, 0
+    explicit = 0
+    legacy = 0
+    counter = day / _LAST_INDEX_NAME
+    if counter.is_file():
+        try:
+            explicit = int(counter.read_text(encoding="utf-8").strip() or "0")
+        except (OSError, ValueError):
+            explicit = 0
+    try:
+        children = list(day.iterdir())
+    except OSError:
+        return explicit, 0
+    for child in children:
+        if not child.is_dir():
+            continue
+        prefixed = _PREFIXED_TAKE.match(child.name)
+        if prefixed:
+            explicit = max(explicit, int(prefixed.group(1)))
+            continue
+        if _LEGACY_TAKE.match(child.name):
+            legacy += 1
+    return explicit, legacy
+
+
+def _write_last_index(day: Path, index: int) -> None:
+    """発行した連番を日付フォルダへ残す。失敗しても take の作成は止めない。"""
+    try:
+        day.mkdir(parents=True, exist_ok=True)
+        tmp = day / f"{_LAST_INDEX_NAME}.tmp"
+        tmp.write_text(f"{index}\n", encoding="utf-8")
+        tmp.replace(day / _LAST_INDEX_NAME)
+    except OSError:
+        return
 
 
 def _parse_storage_text(text: str) -> dict[str, str]:
@@ -165,7 +217,7 @@ class ExperimentLog:
                     return BeginResult(True, "already")
                 return BeginResult(False, "busy")
             now = datetime.now().astimezone()
-            directory = self._allocate_dir(now)
+            directory, day_index = self._allocate_dir(now)
             try:
                 directory.mkdir(parents=True, exist_ok=False)
             except OSError:
@@ -175,6 +227,7 @@ class ExperimentLog:
             meta: dict[str, Any] = {
                 "format_id": FORMAT_ID,
                 "take_id": take_id,
+                "day_index": day_index,
                 "started_at": now.isoformat(timespec="milliseconds"),
                 "started_unix": time.time(),
                 "ended_at": None,
@@ -306,23 +359,46 @@ class ExperimentLog:
             return None
         return take
 
-    def _allocate_dir(self, now: datetime) -> Path:
+    def _allocate_dir(self, now: datetime) -> tuple[Path, int]:
+        """その日の次の連番で `003_090312` を決める。発行済みの番号は再利用しない。"""
         assert self.paths is not None
-        day = (
-            self.paths.data_root
-            / f"{now.year:04d}"
-            / f"{now.month:02d}"
-            / f"{now.day:02d}"
-        )
-        base = now.strftime("%H%M%S")
-        candidate = day / base
-        if not candidate.exists():
-            return candidate
-        for _ in range(8):
-            alt = day / f"{base}_{secrets.token_hex(2)}"
-            if not alt.exists():
-                return alt
-        return day / f"{base}_{secrets.token_hex(4)}"
+        day = _day_dir(self.paths.data_root, now)
+        index = self._next_day_index(now)
+        stamp = now.strftime("%H%M%S")
+        directory = day / f"{index:03d}_{stamp}"
+        # カウンタだけ消えてフォルダが残っているとき、同じ名前を避ける。
+        while directory.exists():
+            index += 1
+            directory = day / f"{index:03d}_{stamp}"
+        _write_last_index(day, index)
+        if self.paths.archive_root is not None:
+            archive_day = _day_dir(self.paths.archive_root, now)
+            threading.Thread(
+                target=_write_last_index,
+                args=(archive_day, index),
+                name="experiment-day-index",
+                daemon=True,
+            ).start()
+        return directory, index
+
+    def _next_day_index(self, now: datetime) -> int:
+        """SSD・NAS・発行カウンタの最大に 1 を足す。古い時分秒フォルダはその本数を起点にする。"""
+        assert self.paths is not None
+        explicit, legacy = _peek_issued(_day_dir(self.paths.data_root, now))
+        archive_root = self.paths.archive_root
+        if archive_root is not None:
+            found: list[tuple[int, int]] = []
+
+            def _read_archive() -> None:
+                found.append(_peek_issued(_day_dir(archive_root, now)))
+
+            worker = threading.Thread(target=_read_archive, name="experiment-day-index-read", daemon=True)
+            worker.start()
+            worker.join(_ARCHIVE_INDEX_TIMEOUT_SEC)
+            if found:
+                explicit = max(explicit, found[0][0])
+                legacy = max(legacy, found[0][1])
+        return max(explicit, legacy) + 1
 
     def _open_parts_locked(self, take: _Take) -> None:
         idx = f"{take.part_index:03d}"

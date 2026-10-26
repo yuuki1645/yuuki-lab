@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -76,9 +77,12 @@ class TakeTest(unittest.TestCase):
             self.assertIsNotNone(log._take)
             log.end("COM4", "USB 切断")
             self.assertIsNone(log._take)
-            takes = list(root.glob("*/*/*/*"))
+            takes = [p for p in root.glob("*/*/*/*") if p.is_dir()]
             self.assertEqual(len(takes), 1)
+            self.assertRegex(takes[0].name, r"^001_\d{6}$")
             meta = json.loads((takes[0] / "meta.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["day_index"], 1)
+            self.assertEqual(meta["take_id"], takes[0].name)
             self.assertFalse(meta["recording"])
             self.assertEqual(meta["sample_count"], 1)
             self.assertEqual(meta["stop_reason"], "USB 切断")
@@ -87,6 +91,7 @@ class TakeTest(unittest.TestCase):
             schema = (takes[0] / "schema.md").read_text(encoding="utf-8")
             self.assertIn("core_take_v1", schema)
             self.assertIn("股ロール", schema)
+            self.assertIn("day_index", schema)
             self.assertTrue((archive / takes[0].relative_to(root) / "schema.md").is_file())
             frames = (takes[0] / "sensors" / "part-000.jsonl").read_text(encoding="utf-8").splitlines()
             self.assertEqual(len(frames), 1)
@@ -131,18 +136,71 @@ class TakeTest(unittest.TestCase):
             log.end("COM4", "USB 切断")
             self.assertTrue((archive / take.relative / "events" / "part-001.log").is_file())
 
-    def test_same_second_gets_a_suffix(self) -> None:
+    def test_day_index_increments_and_is_not_reused(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ssd"
             log = logmod.ExperimentLog(logmod.StoragePaths(root, None), copy_async=False)
-            now = datetime.now().astimezone()
-            pre = root / f"{now.year:04d}" / f"{now.month:02d}" / f"{now.day:02d}" / now.strftime("%H%M%S")
-            pre.mkdir(parents=True)
             try:
-                opened = log.begin("COM4", "hello", 15)
-                self.assertTrue(opened.ok)
+                self.assertTrue(log.begin("COM4", "hello", 15).ok)
                 assert log._take is not None
-                self.assertNotEqual(log._take.directory, pre)
+                first = log._take.directory
+                self.assertRegex(first.name, r"^001_\d{6}$")
+                log.end("COM4", "USB 切断")
+                self.assertTrue(log.begin("COM4", "hello", 15).ok)
+                assert log._take is not None
+                second = log._take.directory
+                self.assertRegex(second.name, r"^002_\d{6}$")
+                log.end("COM4", "USB 切断")
+                # フォルダを消しても、発行済みの 002 は戻らない。
+                shutil.rmtree(second)
+                self.assertTrue(log.begin("COM4", "hello", 15).ok)
+                assert log._take is not None
+                self.assertRegex(log._take.directory.name, r"^003_\d{6}$")
+                self.assertEqual(log._take.meta["day_index"], 3)
+            finally:
+                log.end("COM4", "test")
+
+    def test_legacy_folder_counts_as_a_taken_number(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ssd"
+            now = datetime.now().astimezone()
+            legacy = (
+                root
+                / f"{now.year:04d}"
+                / f"{now.month:02d}"
+                / f"{now.day:02d}"
+                / now.strftime("%H%M%S")
+            )
+            legacy.mkdir(parents=True)
+            log = logmod.ExperimentLog(logmod.StoragePaths(root, None), copy_async=False)
+            try:
+                self.assertTrue(log.begin("COM4", "hello", 15).ok)
+                assert log._take is not None
+                self.assertRegex(log._take.directory.name, r"^002_\d{6}$")
+                self.assertEqual(log._take.meta["day_index"], 2)
+                self.assertTrue(legacy.is_dir())
+            finally:
+                log.end("COM4", "test")
+
+    def test_nas_index_is_continued(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ssd"
+            archive = Path(tmp) / "nas"
+            now = datetime.now().astimezone()
+            kept = (
+                archive
+                / f"{now.year:04d}"
+                / f"{now.month:02d}"
+                / f"{now.day:02d}"
+                / "004_120000"
+            )
+            kept.mkdir(parents=True)
+            log = logmod.ExperimentLog(logmod.StoragePaths(root, archive), copy_async=False)
+            try:
+                self.assertTrue(log.begin("COM4", "hello", 15).ok)
+                assert log._take is not None
+                self.assertRegex(log._take.directory.name, r"^005_\d{6}$")
+                self.assertEqual(log._take.meta["day_index"], 5)
             finally:
                 log.end("COM4", "test")
 

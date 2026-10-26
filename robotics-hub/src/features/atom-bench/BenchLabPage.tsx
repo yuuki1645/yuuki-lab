@@ -255,8 +255,8 @@ export default function BenchLabPage() {
         </span>
         <span className="bench__chip">
           AGC {at(frame?.agc, ch) === 255 ? "—" : (at(frame?.agc, ch) ?? "—")}
-          <UiHelp title="AGC">
-            AS5600 の自動ゲインです。255 は未読。極端に高い・低いときは磁石が遠すぎるか近すぎます。
+          <UiHelp title="AGC" wide>
+            AS5600 の自動ゲイン（レジスタ 0x1A）です。0〜255 で、磁場が強いほど小さく、弱いほど大きくなります。3.3V（Grove）では有効範囲はおおむね 0〜128 で、中央付近が良い置き方です。0 付近は近すぎ・強すぎ、128 を超えると遠すぎ・弱すぎ・芯ずれです。5V のときは 0〜255 で、中央の 128 前後が目安です。255 はこの画面では未読で、— と出ます。
           </UiHelp>
         </span>
         <span className={"bench__chip" + (mapOk ? " bench__chip--ok" : "")}>

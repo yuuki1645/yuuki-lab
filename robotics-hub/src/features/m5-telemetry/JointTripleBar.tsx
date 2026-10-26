@@ -5,6 +5,7 @@ import {
   LEG_PLOT_ITEMS,
   SERVO_MAX_DEG,
   SERVO_MIN_DEG,
+  type LegBarVisibility,
   type LegPlotKey,
   type LegPlotVisibility,
   type RightLegJoint,
@@ -13,6 +14,8 @@ import {
 type Props = {
   joint: RightLegJoint;
   cmd: number | null | undefined;
+  /** AS5600 の生角。0〜360°。未読は null */
+  raw: number | null | undefined;
   corr: number | null | undefined;
   pwmOn: boolean;
   historyCmd: Array<number | null | undefined>;
@@ -23,6 +26,8 @@ type Props = {
   amp: number | null | undefined;
   /** 5 軸共通。指令・補正は左軸(°)、電圧・電流は右軸 */
   plotOn: LegPlotVisibility;
+  /** 関節カードのバー。指令・生角・ズレ・補正を個別に出す */
+  barOn: LegBarVisibility;
   selected: boolean;
   disabled: boolean;
   /** 歩行再生。バーは方策の目標で、ドラッグでは動かない */
@@ -42,6 +47,15 @@ function clampServo(v: number): number {
 
 function pct(v: number): number {
   return ((v - SERVO_MIN_DEG) / (SERVO_MAX_DEG - SERVO_MIN_DEG)) * 100;
+}
+
+/** 生角バー。エンコーダは 0〜360° なので、指令バーの 100〜170° とは別スケール */
+const RAW_MIN_DEG = 0;
+const RAW_MAX_DEG = 360;
+
+function pctRaw(v: number): number {
+  const t = (v - RAW_MIN_DEG) / (RAW_MAX_DEG - RAW_MIN_DEG);
+  return Math.min(100, Math.max(0, t * 100));
 }
 
 function fmtDeg(v: number | null | undefined): string {
@@ -77,12 +91,13 @@ function fmtLive(
 }
 
 /**
- * 1 関節の指令・ズレ・補正バーとスパークライン。
+ * 1 関節の指令・生角・ズレ・補正バーとスパークライン。
  * 指令バーはつまみ付近のドラッグのみ。PWM OFF / ロック中は disabled。
  */
 export function JointTripleBar({
   joint,
   cmd,
+  raw,
   corr,
   pwmOn,
   historyCmd,
@@ -92,6 +107,7 @@ export function JointTripleBar({
   volt,
   amp,
   plotOn,
+  barOn,
   selected,
   disabled,
   policyOwned = false,
@@ -101,6 +117,7 @@ export function JointTripleBar({
 }: Props) {
   const cmdVal = typeof cmd === "number" ? cmd : SERVO_MIN_DEG + (SERVO_MAX_DEG - SERVO_MIN_DEG) / 2;
   const corrVal = typeof corr === "number" && Number.isFinite(corr) ? corr : null;
+  const rawVal = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
   const err = corrVal != null ? corrVal - cmdVal : null;
 
   const [drag, setDrag] = useState<number | null>(null);
@@ -145,7 +162,7 @@ export function JointTripleBar({
       el.removeEventListener("selectstart", block);
       el.removeEventListener("contextmenu", block);
     };
-  }, []);
+  }, [barOn.cmd]);
 
   return (
     <article
@@ -167,6 +184,7 @@ export function JointTripleBar({
             </span>
           </header>
           <div className="m5-jrow__bars">
+            {barOn.cmd ? (
             <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>
             <div
               ref={trackRef}
@@ -199,7 +217,20 @@ export function JointTripleBar({
               <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd)}%` }} />
             </div>
           </BarRow>
+            ) : null}
 
+            {barOn.raw ? (
+          <BarRow label="生角" value={fmtDeg(rawVal)} color={LEG_BAR.raw}>
+            <div className="m5-bar">
+              <i
+                className="m5-bar__fill m5-bar__fill--hatch-raw"
+                style={{ width: rawVal != null ? `${pctRaw(rawVal)}%` : "0%" }}
+              />
+            </div>
+          </BarRow>
+            ) : null}
+
+            {barOn.err ? (
           <BarRow label="ズレ" value={fmtSigned(err)} color={LEG_BAR.err}>
             <div className="m5-bar m5-bar--err">
               {corrVal != null ? (
@@ -213,7 +244,9 @@ export function JointTripleBar({
               ) : null}
             </div>
           </BarRow>
+            ) : null}
 
+            {barOn.corr ? (
           <BarRow label="補正" value={fmtDeg(corrVal)} color={LEG_BAR.corr}>
             <div className="m5-bar">
               <i
@@ -222,6 +255,7 @@ export function JointTripleBar({
               />
             </div>
           </BarRow>
+            ) : null}
           </div>
         </div>
 

@@ -916,6 +916,16 @@
   );
 }
 
+.m5-bar__fill--hatch-raw {
+  background: repeating-linear-gradient(
+    -55deg,
+    #54a0ff,
+    #54a0ff 5px,
+    #2e6fbf 5px,
+    #2e6fbf 10px
+  );
+}
+
 .m5-bar__fill--hatch-corr {
   background: repeating-linear-gradient(
     -55deg,

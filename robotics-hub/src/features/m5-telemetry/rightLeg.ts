@@ -7,10 +7,30 @@ export const SERVO_NEUTRAL_DEG = 135;
 
 export const LEG_BAR = {
   cmd: "#f7c948",
+  raw: "#54a0ff",
   corr: "#3ee07f",
   err: "#ff4757",
   volt: "#ff6b6b",
   amp: "#4dabf7",
+};
+
+/** 関節カード左のバー。生角は AS5600 の 0〜360° */
+export type LegBarKey = "cmd" | "raw" | "err" | "corr";
+
+export type LegBarVisibility = Record<LegBarKey, boolean>;
+
+export const LEG_BAR_ITEMS: { key: LegBarKey; label: string; color: string }[] = [
+  { key: "cmd", label: "指令", color: LEG_BAR.cmd },
+  { key: "raw", label: "生角", color: LEG_BAR.raw },
+  { key: "err", label: "ズレ", color: LEG_BAR.err },
+  { key: "corr", label: "補正", color: LEG_BAR.corr },
+];
+
+export const LEG_BAR_DEFAULT: LegBarVisibility = {
+  cmd: true,
+  raw: true,
+  err: true,
+  corr: true,
 };
 
 /** 右脚 5 軸グラフで共通トグルする系列 */

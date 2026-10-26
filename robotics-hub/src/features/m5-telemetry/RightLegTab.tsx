@@ -5,10 +5,13 @@ import { JointTripleBar } from "./JointTripleBar";
 import { RightFootSole } from "./RightFootSole";
 import { StickCommandPad } from "./StickCommandPad";
 import {
+  LEG_BAR_DEFAULT,
+  LEG_BAR_ITEMS,
   LEG_PLOT_DEFAULT,
   LEG_PLOT_ITEMS,
   LEG_ROWS,
   legJoint,
+  type LegBarKey,
   type LegPlotKey,
   type LegSide,
 } from "./rightLeg";
@@ -41,6 +44,7 @@ function at<T>(xs: T[] | undefined, i: number): T | undefined {
 export function RightLegTab({ canCmd, source, control, frame, history, send, cameraPane }: Props) {
   const [selected, setSelected] = useState<string>("right-kneePitch");
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
+  const [barOn, setBarOn] = useState(LEG_BAR_DEFAULT);
   const [cmdLocked, setCmdLocked] = useState(true);
   const idleTimer = useRef<number | null>(null);
 
@@ -78,6 +82,10 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
 
   const togglePlot = (key: LegPlotKey) => {
     setPlotOn((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleBar = (key: LegBarKey) => {
+    setBarOn((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const setCmd = (ch: number, deg: number) => {
@@ -182,6 +190,27 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
         </button>
         </>
         )}
+        <div className="m5-leg__plot-togs" role="group" aria-label="バー表示項目">
+          <span className="m5-leg__plot-togs-lab">バー</span>
+          {LEG_BAR_ITEMS.map((item) => {
+            const on = barOn[item.key];
+            return (
+              <button
+                key={item.key}
+                type="button"
+                className={"m5-plot-tog" + (on ? " m5-plot-tog--on" : "")}
+                style={{
+                  color: item.color,
+                  borderColor: on ? item.color : "rgba(255,255,255,0.18)",
+                }}
+                aria-pressed={on}
+                onClick={() => toggleBar(item.key)}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="m5-leg__plot-togs" role="group" aria-label="グラフ表示項目">
           <span className="m5-leg__plot-togs-lab">グラフ</span>
           {LEG_PLOT_ITEMS.map((item) => {
@@ -227,6 +256,7 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
                     key={j.id}
                     joint={j}
                     cmd={policyOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
+                    raw={live ? at(frame?.raw, j.ch) : null}
                     corr={at(frame?.corr, j.ch)}
                     pwmOn={pwmOn}
                     historyCmd={history.map((h) => at(h.cmd, j.ch))}
@@ -236,6 +266,7 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
                     volt={at(frame?.volt, j.ch)}
                     amp={at(frame?.amp, j.ch)}
                     plotOn={plotOn}
+                    barOn={barOn}
                     selected={selected === j.id}
                     inactive={!live}
                     policyOwned={policyOwned && live}

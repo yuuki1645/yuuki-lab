@@ -24,6 +24,7 @@ import FieldManual, { useFieldManual } from "./field-manual/FieldManual";
 import { NvsVault } from "./NvsVault";
 import { EventsLog } from "./EventsLog";
 import { CalMapFiles } from "./CalMapFiles";
+import { JointCalMap, useJointCalMaps } from "./JointCalMap";
 
 type TabId = "right-leg" | "joint" | "power" | "time" | "topo" | "profile" | "cal" | "nvs" | "events";
 
@@ -74,6 +75,7 @@ export default function M5TelemetryPage() {
     w: false,
   });
   const [calCh, setCalCh] = useState(0);
+  const [mapShow, setMapShow] = useState<boolean[]>(() => Array.from({ length: M5_PANEL_COUNT }, () => false));
   const pinEvents = useRef(true);
   const manual = useFieldManual();
 
@@ -81,6 +83,25 @@ export default function M5TelemetryPage() {
   const atomOk = Boolean(status?.connected);
   // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
   const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
+  const calMaps = useJointCalMaps(cal, send, canCmd);
+  const askMapRef = useRef(calMaps.ask);
+  askMapRef.current = calMaps.ask;
+  const mapShowKey = mapShow.map((on) => (on ? "1" : "0")).join("");
+  const panelKey = panels.join(",");
+  const mapOkKey = (frame?.map_ok ?? []).map((on) => (on ? "1" : "0")).join("");
+
+  // 表示中の関節だけマップを取る。点列はチャネルごとに残す。
+  // frame 自体は 20 Hz で替わるので、マップ有無の文字列が変わったときだけ見る。
+  useEffect(() => {
+    if (tab !== "joint") return;
+    const ok = frame?.map_ok;
+    for (let p = 0; p < M5_PANEL_COUNT; p++) {
+      if (!mapShow[p]) continue;
+      const j = panels[p] ?? p;
+      const flag = ok && typeof ok[j] === "boolean" ? ok[j] : undefined;
+      askMapRef.current(j, flag);
+    }
+  }, [tab, canCmd, mapShowKey, panelKey, mapOkKey]);
 
   // タブを開いているあいだは 1 回だけ。切断復帰のたびに nvs_list しない
   const nvsListed = useRef(false);
@@ -298,7 +319,39 @@ export default function M5TelemetryPage() {
                         ))}
                       </select>
                     </label>
+                    <button
+                      type="button"
+                      className={"m5-plot-tog" + (mapShow[p] ? " m5-plot-tog--on" : "")}
+                      style={{
+                        color: M5_COLORS.unwrap,
+                        borderColor: mapShow[p] ? M5_COLORS.unwrap : "rgba(255,255,255,0.18)",
+                      }}
+                      aria-pressed={Boolean(mapShow[p])}
+                      onClick={() =>
+                        setMapShow((prev) => {
+                          const next = [...prev];
+                          next[p] = !prev[p];
+                          return next;
+                        })
+                      }
+                    >
+                      校正マップ
+                    </button>
                   </div>
+                  {mapShow[p] ? (
+                    <JointCalMap
+                      phase={calMaps.phaseOf(j)}
+                      points={calMaps.maps[j] ?? []}
+                      note={calMaps.notes[j] ?? ""}
+                      cmd={at(frame?.cmd, j) ?? null}
+                      unwrap={at(frame?.unwrap, j) ?? null}
+                      onRetry={() => {
+                        const ok = frame?.map_ok;
+                        const flag = ok && typeof ok[j] === "boolean" ? ok[j] : undefined;
+                        calMaps.ask(j, flag, true);
+                      }}
+                    />
+                  ) : null}
                   <div className="m5__metrics">
                     <Metric title="指令" color={M5_COLORS.cmd} text={fmt(at(frame?.cmd, j), "°")} />
                     <Metric title="磁石" color="#10ac84" text={MAG_LABEL[mag] ?? String(mag)} />

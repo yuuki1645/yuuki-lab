@@ -197,6 +197,45 @@
   color: #8b9bb0;
 }
 
+.m5__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.m5-calmap {
+  margin: 0 0 0.45rem;
+}
+
+.m5-calmap__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #10161d;
+  border-radius: 8px;
+}
+
+.m5-calmap__cap {
+  margin: 0.28rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #8b9bb0;
+}
+
+.m5-calmap__retry {
+  margin-left: 0.45rem;
+  min-height: 32px;
+  padding: 0.1rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: #e8eef4;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
 .m5__card-head select,
 .m5__plot-bar select,
 .m5__ina select,

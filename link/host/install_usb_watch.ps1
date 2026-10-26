@@ -24,8 +24,8 @@ $repo = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $shell = New-Object -ComObject WScript.Shell
 $lnk = $shell.CreateShortcut($lnkPath)
 $lnk.TargetPath = $powershell
-# Hidden なので失敗はログだけに残る。%LOCALAPPDATA%\yuuki-lab\usb_hub_watch.log
-$lnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Watch`""
+# -Sta はトレイアイコンに必要。Hidden なので失敗はログだけに残る。
+$lnk.Arguments = "-NoProfile -Sta -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Watch`""
 $lnk.WorkingDirectory = $repo
 $lnk.WindowStyle = 7
 $lnk.Description = "ATOM / CoreS3 を挿すと robotics-hub の実機テレメトリを開く"
@@ -42,7 +42,7 @@ function Get-WatcherProcesses {
 
 $existing = @(Get-WatcherProcesses)
 if ($existing.Count -eq 0) {
-    Start-Process -FilePath $powershell -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Watch`"" -WorkingDirectory $repo
+    Start-Process -FilePath $powershell -ArgumentList "-NoProfile -Sta -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Watch`"" -WorkingDirectory $repo
     Write-Output "監視を開始した"
 } else {
     Write-Output "監視はすでに動いている"

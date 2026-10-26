@@ -7,6 +7,7 @@
   このプロセス自身は COM を握り続けない。確認は usb_rt_probe.py が短時間読むだけ。
   Hub と lab_debug.py は、rt-usb のフレームが見えたときだけ npm run dev:m5 で起動する。
   ケーブルを抜いても Hub は止めない。実験の途中でプロセスを落とさないため。
+  時計の横にアイコンを出す。右クリックでログと、この監視だけの終了。
   ログは %LOCALAPPDATA%\yuuki-lab\usb_hub_watch.log。
 #>
 
@@ -203,8 +204,9 @@ function Invoke-WatchStep {
     if (Test-HubPage) {
         $script:starting = $false
         if (-not $script:pageOpened) {
-            Open-HubPage
+            # 開く前に立てる。ページ確認がメッセージを回すと、タイマーが重なってもう一度開く。
             $script:pageOpened = $true
+            Open-HubPage
         }
         return
     }
@@ -258,6 +260,127 @@ function Invoke-WatchStep {
     }
 }
 
+function Update-TrayStatus {
+    if (-not $script:trayStatusItem) {
+        return
+    }
+    # メニュー先頭の文言。操作はできない。監視の今をトレイから見るため。
+    $text = "待機中"
+    if ($script:starting) {
+        $text = "Hub を起動しています"
+    } elseif ($script:seenAt.Count -gt 0) {
+        $text = "ボードを確認しています"
+    }
+    $script:trayStatusItem.Text = $text
+}
+
+function Open-WatchLog {
+    # 起動直後に 1 行書いてある。無いときだけ作ってから開く。
+    if (-not (Test-Path -LiteralPath $LogPath)) {
+        Write-Log "ログを開いた"
+    }
+    Start-Process -FilePath "notepad.exe" -ArgumentList $LogPath
+}
+
+function New-WatchIcon {
+    # トレイの絵はスクリプトの隣。差し替えたら、この監視を起動し直すと反映される。
+    Add-Type -AssemblyName System.Drawing
+    $path = Join-Path $PSScriptRoot "usb_hub_watch.ico"
+    if (-not (Test-Path -LiteralPath $path)) {
+        Write-Log "アイコンが無い: $path"
+        $script:trayIconOwned = $false
+        return [System.Drawing.SystemIcons]::Application
+    }
+    $script:trayIconOwned = $true
+    return New-Object System.Drawing.Icon -ArgumentList $path
+}
+
+function Stop-WatchTray {
+    # Hub の窓は残す。止めるのはこの監視だけ。
+    Write-Log "監視を終了した"
+    if ($script:trayTimer) {
+        $script:trayTimer.Stop()
+    }
+    if ($script:trayNotify) {
+        $script:trayNotify.Visible = $false
+    }
+    if ($script:appContext) {
+        $script:appContext.ExitThread()
+    }
+}
+
+function Enter-WatchTray {
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    [System.Windows.Forms.Application]::EnableVisualStyles()
+    $script:appContext = New-Object System.Windows.Forms.ApplicationContext
+    $script:trayNotify = New-Object System.Windows.Forms.NotifyIcon
+    $script:trayIcon = New-WatchIcon
+    $script:trayNotify.Icon = $script:trayIcon
+    $script:trayNotify.Visible = $true
+    $script:trayNotify.Text = "yuuki-lab USB。挿すと実機テレメトリを開く"
+
+    $menu = New-Object System.Windows.Forms.ContextMenuStrip
+    $script:trayStatusItem = $menu.Items.Add("待機中")
+    $script:trayStatusItem.Enabled = $false
+    [void]$menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
+    $openItem = $menu.Items.Add("ログを開く")
+    $openItem.Add_Click({ Open-WatchLog })
+    $quitItem = $menu.Items.Add("監視を終了")
+    $quitItem.Add_Click({ Stop-WatchTray })
+    $script:trayNotify.ContextMenuStrip = $menu
+    $script:trayNotify.Add_DoubleClick({ Open-WatchLog })
+
+    # 監視は UI と同じスレッド。ポート確認の 1.5 秒だけ、メニューが少し遅れる。
+    $script:trayTimer = New-Object System.Windows.Forms.Timer
+    $script:trayTimer.Interval = 1000
+    $script:trayTimer.Add_Tick({
+        # 確認中は止める。Web の待ちがメッセージを回しても、次の確認が割り込まない。
+        $script:trayTimer.Stop()
+        try {
+            Invoke-WatchStep
+            Update-TrayStatus
+        } catch {
+            Write-Log $_.Exception.Message
+        } finally {
+            if ($script:trayTimer) {
+                $script:trayTimer.Start()
+            }
+        }
+    })
+    $script:trayTimer.Start()
+
+    try {
+        [System.Windows.Forms.Application]::Run($script:appContext)
+    } finally {
+        if ($script:trayTimer) {
+            $script:trayTimer.Stop()
+            $script:trayTimer.Dispose()
+        }
+        if ($script:trayNotify) {
+            $script:trayNotify.Visible = $false
+            $script:trayNotify.Dispose()
+        }
+        if ($menu) {
+            $menu.Dispose()
+        }
+        # ファイルから開いたアイコンだけ捨てる。SystemIcons は共有なので触らない。
+        if ($script:trayIconOwned -and $script:trayIcon) {
+            $script:trayIcon.Dispose()
+            $script:trayIcon = $null
+        }
+    }
+}
+
+# トレイは STA でないとアイコンが残らない。スタートアップが忘れていても、ここで起動し直す。
+if ([System.Threading.Thread]::CurrentThread.GetApartmentState() -ne [System.Threading.ApartmentState]::STA) {
+    $powershell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+    $arm = "-NoProfile -Sta -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process -FilePath $powershell -ArgumentList $arm -WorkingDirectory $RepoRoot
+    exit 0
+}
+
 # ログオンと登録の両方が起動しても、監視は 1 本にする。
 $mutex = New-Object System.Threading.Mutex($false, "Local\YuukiLabUsbHubWatch")
 $owned = $false
@@ -272,14 +395,7 @@ if (-not $owned) {
 
 try {
     Write-Log "監視を開始した"
-    while ($true) {
-        try {
-            Invoke-WatchStep
-        } catch {
-            Write-Log $_.Exception.Message
-        }
-        Start-Sleep -Seconds 1
-    }
+    Enter-WatchTray
 } finally {
     if ($owned) {
         $mutex.ReleaseMutex()

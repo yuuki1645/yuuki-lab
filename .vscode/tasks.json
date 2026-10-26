@@ -1,0 +1,129 @@
+{
+  // Cursor / VS Code のタスク定義。
+  // 起動: Ctrl+Shift+P → "Tasks: Run Task"
+  // 既定ビルド（スモーク）: Ctrl+Shift+B
+  //
+  // 学習・評価の作業ディレクトリは常に isaac-lab/。
+  // Python は .vscode/settings.json のインタプリタを使う。
+  // 引数は配列で渡すので、PowerShell の行継続（`）は不要。
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // 報酬や環境のコードを変えたあとに、editable install をやり直す。
+      "label": "Isaac: パッケージを再インストール",
+      "type": "process",
+      "command": "${command:python.interpreterPath}",
+      "args": ["-m", "pip", "install", "-e", "source/yuuki_isaac_lab"],
+      "options": {
+        "cwd": "${workspaceFolder}/isaac-lab"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      // 起動確認だけ。歩行の出来は見ない。Ctrl+Shift+B の既定タスク。
+      "label": "Isaac: スモーク（Direct, 64 env, 5 iter）",
+      "type": "process",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "scripts/rsl_rl/train.py",
+        "--task",
+        "YuukiLab-BipedPpoWalk-Direct-v0",
+        "--headless",
+        "--num_envs",
+        "64",
+        "--max_iterations",
+        "5",
+        "--run_name",
+        "${input:runName}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/isaac-lab"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      // 本学習。num_envs は Direct の本番例（4096）。反復数と run 名は実行時に聞く。
+      "label": "Isaac: 本番学習（Direct, 4096 env）",
+      "type": "process",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "scripts/rsl_rl/train.py",
+        "--task",
+        "YuukiLab-BipedPpoWalk-Direct-v0",
+        "--headless",
+        "--num_envs",
+        "4096",
+        "--max_iterations",
+        "${input:maxIterations}",
+        "--run_name",
+        "${input:runName}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/isaac-lab"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      // 前進量と 5 m / 15 m 成功率。load_run は logs/rsl_rl/biped_ppo_walk/ 以下のディレクトリ名。
+      "label": "Isaac: 評価（eval_biped_walk）",
+      "type": "process",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "scripts/eval_biped_walk.py",
+        "--load_run",
+        "${input:loadRun}",
+        "--episodes",
+        "10",
+        "--num_envs",
+        "64"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/isaac-lab"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "runName",
+      "type": "promptString",
+      "description": "run_name（ログ名の接尾辞。例: v25_smoke_foot_clearance）",
+      "default": "smoke"
+    },
+    {
+      "id": "maxIterations",
+      "type": "promptString",
+      "description": "max_iterations（本番の学習反復数）",
+      "default": "600"
+    },
+    {
+      "id": "loadRun",
+      "type": "promptString",
+      "description": "評価する run ディレクトリ名（logs/rsl_rl/biped_ppo_walk/ 以下）"
+    }
+  ]
+}

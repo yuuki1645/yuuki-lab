@@ -3,7 +3,7 @@
  * 点列はボードの map_get で届く。USB を占有するので、同時に取るのは 1 関節だけ。
  */
 import { useEffect, useRef, useState } from "react";
-import { M5_COLORS, type M5Cal, type M5CalPoint, type M5Cmd } from "./types";
+import type { M5Cal, M5CalPoint, M5Cmd } from "./types";
 
 const FETCH_MS = 12000;
 
@@ -138,74 +138,55 @@ function finite(v: number | null | undefined): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-function tickLabel(v: number): string {
-  if (Math.abs(v - Math.round(v)) < 0.05) return String(Math.round(v));
-  return v.toFixed(1);
+function degText(v: number, digits: number): string {
+  return v.toFixed(digits);
 }
 
-/** 横軸はサーボ角、縦軸はマップに入っている unwrap（360° をまたいで連続）。 */
-function MapCurve({ points, cmd, unwrap }: { points: M5CalPoint[]; cmd: number | null; unwrap: number | null }) {
-  const servos = points.map((p) => p.servo).filter(finite);
-  const angs = points.map((p) => p.as5600).filter(finite);
-  if (servos.length < 2 || angs.length < 2) return null;
-  let x0 = Math.min(...servos);
-  let x1 = Math.max(...servos);
-  let y0 = Math.min(...angs);
-  let y1 = Math.max(...angs);
-  if (x1 - x0 < 1) {
-    x0 -= 1;
-    x1 += 1;
+/** サーボ角の昇順。いまの指令に一番近い行だけ印を付ける。 */
+function MapTable({ points, cmd }: { points: M5CalPoint[]; cmd: number | null }) {
+  const rows = [...points].filter((p) => finite(p.servo) && finite(p.as5600)).sort((a, b) => a.servo - b.servo);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const markedRef = useRef<HTMLTableRowElement>(null);
+  let marked = -1;
+  if (finite(cmd) && rows.length) {
+    let best = 0;
+    let bestAbs = Math.abs(rows[0]!.servo - cmd);
+    for (let i = 1; i < rows.length; i++) {
+      const d = Math.abs(rows[i]!.servo - cmd);
+      if (d < bestAbs) {
+        best = i;
+        bestAbs = d;
+      }
+    }
+    marked = best;
   }
-  if (y1 - y0 < 1) {
-    y0 -= 1;
-    y1 += 1;
-  }
-  const w = 320;
-  const h = 148;
-  const padL = 46;
-  const padR = 10;
-  const padT = 10;
-  const padB = 22;
-  const sx = (x: number) => padL + ((x - x0) / (x1 - x0)) * (w - padL - padR);
-  const sy = (y: number) => padT + (1 - (y - y0) / (y1 - y0)) * (h - padT - padB);
-  const sorted = [...points].filter((p) => finite(p.servo) && finite(p.as5600)).sort((a, b) => a.servo - b.servo);
-  const d = sorted
-    .map((p, i) => `${i === 0 ? "M" : "L"}${sx(p.servo).toFixed(1)},${sy(p.as5600).toFixed(1)}`)
-    .join(" ");
-  const cmdV = finite(cmd) ? cmd : null;
-  const angV = finite(unwrap) ? unwrap : null;
-  const cmdOn = cmdV !== null && cmdV >= x0 && cmdV <= x1;
-  const angOn = angV !== null && angV >= y0 && angV <= y1;
-  const xTicks = [x0, (x0 + x1) / 2, x1];
+  useEffect(() => {
+    const box = scrollerRef.current;
+    const row = markedRef.current;
+    if (!box || !row) return;
+    const top = row.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    box.scrollTop = Math.max(0, top - box.clientHeight / 2 + row.offsetHeight / 2);
+  }, [marked, rows.length]);
+  if (rows.length < 2) return null;
   return (
-    <svg className="m5-calmap__svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="校正マップ">
-      <text x={4} y={sy(y1) + 3} fill="#8b9bb0" fontSize="10">
-        {tickLabel(y1)}
-      </text>
-      <text x={4} y={sy(y0) + 3} fill="#8b9bb0" fontSize="10">
-        {tickLabel(y0)}
-      </text>
-      {xTicks.map((x) => (
-        <text key={x} x={sx(x)} y={h - 6} fill="#8b9bb0" fontSize="10" textAnchor="middle">
-          {tickLabel(x)}
-        </text>
-      ))}
-      <path d={d} fill="none" stroke={M5_COLORS.unwrap} strokeWidth="1.75" />
-      {cmdOn && cmdV !== null ? (
-        <line
-          x1={sx(cmdV)}
-          x2={sx(cmdV)}
-          y1={padT}
-          y2={h - padB}
-          stroke={M5_COLORS.cmd}
-          strokeWidth="1"
-          strokeDasharray="3 3"
-        />
-      ) : null}
-      {cmdOn && angOn && cmdV !== null && angV !== null ? (
-        <circle cx={sx(cmdV)} cy={sy(angV)} r="3.6" fill={M5_COLORS.cmd} />
-      ) : null}
-    </svg>
+    <div className="m5-calmap__scroll" ref={scrollerRef}>
+      <table className="m5-calmap__table">
+        <thead>
+          <tr>
+            <th scope="col">サーボ°</th>
+            <th scope="col">unwrap°</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((p, i) => (
+            <tr key={`${p.servo}-${i}`} ref={i === marked ? markedRef : undefined} className={i === marked ? "m5-calmap__row--now" : undefined}>
+              <td>{degText(p.servo, 1)}</td>
+              <td>{degText(p.as5600, 2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -216,9 +197,9 @@ export function JointCalMap({ phase, points, note, cmd, unwrap, onRetry }: PlotP
     <div className="m5-calmap">
       {phase === "ready" ? (
         <>
-          <MapCurve points={points} cmd={cmd} unwrap={unwrap} />
+          <MapTable points={points} cmd={cmd} />
           <p className="m5-calmap__cap">
-            {points.length}点 · 横 サーボ° · 縦 unwrap° · いまの指令 {cmdText} / unwrap {angText}
+            {points.length}点 · 強調はいまの指令 {cmdText} · unwrap {angText}
           </p>
         </>
       ) : null}

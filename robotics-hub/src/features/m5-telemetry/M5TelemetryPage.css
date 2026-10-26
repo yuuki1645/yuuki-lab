@@ -209,12 +209,42 @@
   margin: 0 0 0.45rem;
 }
 
-.m5-calmap__svg {
-  display: block;
-  width: 100%;
-  height: auto;
+.m5-calmap__scroll {
+  max-height: 220px;
+  overflow: auto;
   background: #10161d;
   border-radius: 8px;
+}
+
+.m5-calmap__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.m5-calmap__table th,
+.m5-calmap__table td {
+  padding: 0.18rem 0.55rem;
+  text-align: right;
+}
+
+.m5-calmap__table th {
+  position: sticky;
+  top: 0;
+  background: #17202a;
+  color: #8b9bb0;
+  font-weight: 600;
+}
+
+.m5-calmap__table td {
+  color: #e8eef4;
+}
+
+.m5-calmap__row--now td {
+  background: rgba(255, 159, 67, 0.18);
+  color: #ff9f43;
 }
 
 .m5-calmap__cap {

@@ -1,0 +1,10 @@
+# 実験記録の保存先サンプル。このファイルはプログラムが読まない。
+# 各 PC で次の場所へコピーし、パスだけ書き換える:
+#   C:\Users\<ユーザー名>\.yuuki-lab\storage.yaml
+#
+# data_root     実験中に書くローカル SSD
+# archive_root  閉じたファイルをあとから置く NAS 上の親フォルダ
+#               NAS のホスト名やパスワードは書かない。割り当て済みドライブにする。
+
+data_root: "D:/yuuki-lab-data"
+archive_root: "Z:/lab-experiments"

@@ -112,6 +112,7 @@ from .m5_hub_bridge import (
     M5HubBridge,
     lan_ipv4,
 )
+from . import experiment_log
 from .m5_record_store import M5RecordStore
 
 
@@ -2582,6 +2583,10 @@ class LabApp(tk.Tk):
         self._record_stop(reason="ツール終了")
         for s in self.sessions.values():
             s.disconnect()
+        # 切断イベントをファイルに書いてから take を閉じる。
+        for s in self.sessions.values():
+            s.pump()
+        experiment_log.close_if_started("ツール終了")
         self.destroy()
 
     # ----- 描画 -----

@@ -975,6 +975,31 @@ def format_tx(data: bytes) -> str:
     return names.get(t, f"cmd=0x{t:02X}")
 
 
+def tx_record(data: bytes) -> dict[str, object]:
+    """送信フレームを記録用の辞書にする。
+
+    format_tx の CMD は種類だけなので、関節指令は ch と deg、
+    モードと出力許可は値も残す。不明なフレームは text だけ。
+    """
+    rec: dict[str, object] = {"text": format_tx(data)}
+    if len(data) < FRAME_OVERHEAD or data[0] != 0xAA or data[1] != 0x55:
+        return rec
+    kind = data[2]
+    payload = data[5:-2]
+    if kind == CMD_JOINT and len(payload) >= _CMD_JOINT.size:
+        ch, deg = _CMD_JOINT.unpack(payload[: _CMD_JOINT.size])
+        rec["ch"] = int(ch)
+        rec["deg"] = float(deg)
+    elif kind == CMD_MODE and len(payload) >= _CMD_MODE.size:
+        (mode,) = _CMD_MODE.unpack(payload[: _CMD_MODE.size])
+        rec["mode"] = "robot" if mode else "lab"
+    elif kind == CMD_OUT and len(payload) >= _CMD_OUT.size:
+        ch, on = _CMD_OUT.unpack(payload[: _CMD_OUT.size])
+        rec["ch"] = int(ch)
+        rec["on"] = bool(on)
+    return rec
+
+
 def parse_cli_line(text: str) -> list[bytes]:
     """
     rt_usb_log のキーボード入力。

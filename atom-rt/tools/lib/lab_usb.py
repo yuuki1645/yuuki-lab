@@ -19,6 +19,7 @@ from tkinter import messagebox
 import serial
 import serial.tools.list_ports
 
+from . import experiment_log
 from . import rt_usb_proto as proto
 from .lab_const import (
     BAUD,
@@ -39,6 +40,7 @@ from .lab_model import (
     default_foot,
     default_routes,
     describe_i2c_fails,
+    foot_corners,
     foot_from_bin,
     frame_from_telem,
     joint_en_mask,
@@ -68,6 +70,37 @@ def _hello_int(text: str, key: str) -> int:
 def _hello_fw_ver(text: str) -> int:
     """HELLO `rt-usb ver=11 lab ...` から USB プロトコル版を取る。取れなければ 0。"""
     return _hello_int(text, "ver")
+
+
+def _frame_record(f: Frame) -> dict:
+    """自動記録の 1 サンプル。適用指令 cmd と両足を、欠測のまま入れる。"""
+    return {
+        "t": f.t,
+        "seq": f.seq,
+        "period_us": f.period_us,
+        "loop_us": f.loop_us,
+        "sense_us": f.sense_us,
+        "jitter_us": f.jitter_us,
+        "overrun": f.overrun,
+        "cmd": list(f.cmd),
+        "raw": list(f.raw),
+        "unwrap": list(f.unwrap),
+        "corr": list(f.corr),
+        "as_ok": list(f.as_ok),
+        "mag": list(f.mag),
+        "agc": list(f.agc),
+        "volt": list(f.volt),
+        "amp": list(f.amp),
+        "watt": list(f.watt),
+        "ina_ok": list(f.ina_ok),
+        "i2c_err": f.i2c_err,
+        "servo_ok": f.servo_ok,
+        "mode": f.mode,
+        "out_mask": f.out_mask,
+        "map_ok": list(f.map_ok),
+        "foot": foot_corners(f.foot_ok, f.foot_mask, f.foot_seq, f.foot_mv),
+        "foot_left": foot_corners(f.foot2_ok, f.foot2_mask, f.foot2_seq, f.foot2_mv),
+    }
 
 # Windows 標準。WAV を追加依存なしで再生する（ATOMS3R 移行までの暫定）
 try:
@@ -209,7 +242,8 @@ class AtomWorker:
                     msg = self._tx.get_nowait()
                     ser.write(msg)
                     ser.flush()
-                    self._put("tx", proto.format_tx(msg))
+                    # 文字列にすると関節角度が落ちる。記録側で tx_record する。
+                    self._put("tx", msg)
                     # マップチャンクは CDC が溢れないよう間隔を空ける（30ms では 32/191 で落ちた）
                     if len(msg) >= 3 and msg[2] == proto.CMD_MAPCHUNK:
                         time.sleep(0.12)
@@ -399,6 +433,8 @@ class AtomSession:
         self._startup_overrun = False
         self._startup_overcurrent = False
         self._i2c_err_at_hello: int | None = None
+        # storage.yaml が無いときの通知は、接続ごとに 1 回だけリングへ出す。
+        self._exp_warned = False
 
     def connect(self) -> None:
         self.disconnect()
@@ -437,6 +473,7 @@ class AtomSession:
         self._i2c_fail_sig = ()
         self._i2c_note_at = 0.0
         self._i2c_err_at_note = 0
+        self._exp_warned = False
 
     def send(self, data: bytes) -> None:
         if self.worker is not None:
@@ -464,6 +501,8 @@ class AtomSession:
         self.event_seq += 1
         self.events.append(line)
         self._event_pending.append({"seq": self.event_seq, "text": line})
+        # ver 15 の take が開いていれば、リングとは別に日付つきで残す。
+        experiment_log.append_event(self.port, line)
 
     def drain_event_pending(self) -> list[dict[str, object]]:
         """未送信の追記バッチを取り出す。接続前の分は hello スナップショットで補う。"""
@@ -493,16 +532,29 @@ class AtomSession:
                 if not self._got_scan:
                     self.send(proto.cmd_scan())
                 self.send(proto.cmd_prof_get())
+            else:
+                # ワーカー終了時の「切断」。HELLO からここまでが 1 take。
+                experiment_log.end_if_started(self.port, "USB 切断")
         elif kind == "error":
             self.connected = False
             self.note(f"ERROR  {payload}")
             self._green_sound_failed = True
+            experiment_log.end_if_started(self.port, "USB エラー")
         elif kind == "hello":
             self.hello = str(payload)
             self.fw_ver = _hello_fw_ver(self.hello)
             joints = _hello_int(self.hello, "joints")
             if joints > 0:
                 self.joint_count = joints
+            # 片脚の ver 14 は机上用。自動記録は腰の CoreS3（ver 15）だけ。
+            if self.fw_ver >= proto.FW_VER_CORE:
+                opened = experiment_log.shared().begin(self.port, self.hello, self.fw_ver)
+                if not opened.ok and not self._exp_warned:
+                    self._exp_warned = True
+                    if opened.reason == "no_config":
+                        self.note("実験記録なし  storage.yaml がありません")
+                    elif opened.reason == "mkdir_failed":
+                        self.note("実験記録なし  ローカルの保存先を作れませんでした")
             self.note(str(payload))
             self._got_hello = True
             if not self._boot_sound_played:
@@ -641,12 +693,18 @@ class AtomSession:
         elif kind == "log":
             self.note(str(payload))
         elif kind == "tx":
+            raw = bytes(payload) if isinstance(payload, (bytes, bytearray)) else b""
+            text = proto.format_tx(raw) if raw else str(payload)
             if self.log_fp:
-                self.log_fp.write(f"< {payload}\n")
+                self.log_fp.write(f"< {text}\n")
+            if raw:
+                experiment_log.append_command(self.port, proto.tx_record(raw))
 
     def _on_frame(self, f: Frame) -> None:
         self.last_frame = f
         self.history.append(f)
+        # cmd はこのフレームの適用指令。足の mV は欠測でも両方残す。
+        experiment_log.append_frame(self.port, _frame_record(f))
         self.mode = f.mode
         self.out_mask = f.out_mask
         if self.log_fp:

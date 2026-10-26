@@ -1,10 +1,10 @@
 # robot-daemon
 
-ラズベリーパイ等で動かす **ロボット側デーモン**です。サーボ指令は **REST API**、IMU（MPU6050）ストリームは **Socket.IO** で **robotics-hub** などのフロントから利用します。
+ラズベリーパイ等で動かす、**以前の**ロボット側デーモンです。サーボ指令は **REST API**、IMU（MPU6050）ストリームは **Socket.IO** です。いま機体のサーボを動かしている経路ではありません。関節の本線は [docs/robot_control.md](../docs/robot_control.md)（腰の CoreS3 と両脚の ATOM S3R）です。
 
 以前の **`servo-daemon`** ディレクトリから改名したもので、REST のサーボ API に加え IMU 連携が入っています。
 
-ATOMS3 Lite（M5Stack ATOM）の USB 制御・校正は本デーモンではなく、同じリポジトリの **[atom-rt](../atom-rt/README.md)** です。
+Hub のモーションエディタ、ポーズエディタ、レッグサーボ調整、実機テレメトリ（IMU）は、まだこの REST と Socket.IO（既定ポート 5000）を向いています。機体の USB は [link](../link/README.md) が握ります。
 
 ## 機能概要
 

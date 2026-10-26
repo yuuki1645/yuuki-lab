@@ -1,6 +1,6 @@
 # link
 
-ATOM と CoreS3 が共有する USB 契約と、サブ PC がケーブルを握る入口です。
+ATOM と CoreS3 が共有する USB 契約と、サブ PC がケーブルを握る入口です。機体の全体は [docs/robot_control.md](../docs/robot_control.md) です。
 
 | 場所 | 役割 |
 |---|---|

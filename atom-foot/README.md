@@ -2,7 +2,7 @@
 
 足裏の ATOMS3 Lite を I2C スレーブにして、四隅 DF9-40@2kg をレジスタ公開するファームです。
 
-機体のマスターは **[atom-rt](../atom-rt/)**（ATOM S3R）です。専用脚マスター（`i2c_master`）は机上確認用に残していますが、本線では使いません。
+機体のマスターは各脚の **ATOM S3R**（[atom-rt](../atom-rt/) の `can-leg`）です。すねの PaHub 越しに、右はチャンネル 1、左はチャンネル 4 で `0x28` を読みます。全体は [docs/robot_control.md](../docs/robot_control.md) です。専用脚マスター（`i2c_master`）は机上確認用に残していますが、機体では使いません。
 
 由来は別リポジトリ `atoms3-on-foot` です。
 
@@ -10,7 +10,19 @@
 
 ## 構成
 
+機体:
+
+```text
+ATOM S3R（can-leg）
+  └ Grove
+       └ すねの PaHub（右 0x72 CH1 / 左 0x73 CH4）
+            └ ATOMS3 Lite（足裏・I2C スレーブ 0x28）
+                 └ DF9-40 × 4 隅
 ```
+
+机上確認（`i2c_master`）:
+
+```text
 PC
  └ USB-C
     └ ATOMS3 Lite（脚・I2C マスター）
@@ -23,8 +35,9 @@ PC
 
 | 役割 | ボード | PlatformIO 環境 | 給電 |
 |------|--------|-----------------|------|
-| マスター | 脚の ATOMS3 Lite | `i2c_master` | PC の USB-C |
-| スレーブ | 足裏の ATOMS3 Lite | `i2c_slave` | Grove Hub の 5V（マスター経由） |
+| 機体のマスター | 脚の ATOM S3R | `atom-rt` の `can-leg` | 脚側の電源。CoreS3 の USB ではない |
+| 机上のマスター | ATOMS3 Lite | `i2c_master` | PC の USB-C |
+| スレーブ | 足裏の ATOMS3 Lite | `i2c_slave` | Grove の 5V（マスター経由）。書き込み後は USB を外す |
 
 両方を USB 給電したままだと Grove の 5V 同士が Hub で短絡します。長時間の二重給電は避けてください。スレーブは書き込み後に USB を外し、Grove だけで動かします。
 
@@ -51,7 +64,7 @@ PC
 
 センサー電源は **ATOMS3 Lite 表面の 3V3 ピンソケット**（Grove PORT.CUSTOM ではない）から取ります。G38 などの GPIO は使いません。
 
-### 1. PC ↔ マスター ↔ スレーブ（Grove）
+### 1. 机上（i2c_master）の PC ↔ マスター ↔ スレーブ
 
 ```
 PC USB-C ── 脚 ATOMS3 Lite USB-C

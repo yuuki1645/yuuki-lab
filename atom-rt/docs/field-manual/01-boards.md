@@ -2,7 +2,7 @@
 
 どちらも ESP32-S3・フラッシュ 8 MB・Grove は **G1=SCL / G2=SDA** です。違うのは中のメモリと、LED・画面・センサです。
 
-## ATOMS3 Lite（いまのファームが想定）
+## ATOMS3 Lite（この手帳の rt-usb が想定）
 
 - SoC: **ESP32-S3FN8**（パッケージ内 8 MB フラッシュ、**PSRAM なし**）
 - 見た目: 液晶なし。状態は **WS2812（GPIO35）** の 1 ドット
@@ -12,7 +12,7 @@
 
 `platformio.ini` のピン（SDA=2、SCL=1、LED=35、ボタン=41）はこの Lite に合わせています。Arduino の `Serial` は **HWCDC** です。TinyUSB の `Serial.enableReboot()` はありません。ダウンロードモード用のリセットは、レジスタ `RTC_CNTL_USB_RESET_DISABLE` で抑えています（DTR で書き込み中に落ちないように）。書き込みそのものは、従来どおり緑 LED のダウンロードモードが必要です。
 
-## ATOM S3R（次の制御中枢）
+## ATOM S3R（機体の脚）
 
 - SoC: **ESP32-S3-PICO-1-N8R8**（8 MB フラッシュ + **8 MB Octal PSRAM**）
 - 0.85 インチ 128×128、BMI270 + BMM150
@@ -20,7 +20,7 @@
 - ボタンは同じく GPIO41
 - システム RGB は WS2812 ではなく **LP5562**（内部 I2C）。GPIO35 の FastLED はそのままでは点きません
 
-`i2c_foot_proto.h` は「マスターは ATOM S3R」と書いてあります。右足スレーブは別の **ATOMS3 Lite（I2C 0x28）** のまま、という役割分担です。S3R へ焼くときは LED・画面・PSRAM を足す必要があり、今の `rt-usb` を無変更では載せられません。
+機体の各脚はこのボードで、ファームは `can-leg` です。足裏スレーブは別の ATOMS3 Lite（I2C `0x28`）です。全体の配線は [docs/robot_control.md](../../../docs/robot_control.md) です。この手帳の `rt-usb` は Lite 想定で、S3R へ無変更では載りません。
 
 ## フラッシュは「プログラム」と「設定」が別区画
 

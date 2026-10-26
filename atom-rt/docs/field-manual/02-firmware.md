@@ -1,6 +1,6 @@
 # ファーム
 
-環境名は `rt-usb`。入口は `src/rt_usb/main.cpp` だけです。Wi-Fi はありません。プロトコル番号は `kUsbFwVer`（いま **14**）です。Python の `FW_VER` と揃えます。
+環境名は `rt-usb`。入口は `src/rt_usb/main.cpp` だけです。Wi-Fi はありません。プロトコル番号は `kUsbFwVer`（いま **14**）です。Python の `FW_VER` と揃えます。機体の脚は `can-leg`、腰は `core-rt` で、この章の外です。
 
 ## 二つのコア
 
@@ -35,7 +35,7 @@ AS5600 は一度失敗するとその周期では諦めます。INA は欠測し
 | モード | PWM | 政策 | 用途 |
 |---|---|---|---|
 | **Lab**（焼いた直後） | 明示するまでオフ | 許可軸だけの手動角 | 机。挿抜・磁石 |
-| **Robot** | 全軸オン | 135° | 機体、従来の `rt_monitor` |
+| **Robot** | 全軸オン | 135° | `rt-usb` で全軸を 135° にする。従来の `rt_monitor` |
 
 LED（Identify 中以外）:
 

@@ -79,25 +79,31 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 
 <br>
 
+# 実機制御
+
+機体の関節は、腰の **CoreS3** と両脚の **ATOM S3R** です。基本は [docs/robot_control.md](docs/robot_control.md) にまとめています。
+
+ラズパイの `robot-daemon` は、いまの関節指令の経路ではありません。Hub のモーションエディタなどは、まだそちらを向いています。
+
 # ディレクトリ解説
 
 ## ■ robotics-hub（メイン）
 
 **フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
-実機とつなぐときは、同じリポジトリの **`robot-daemon`** を起動し、ブラウザから API（既定ポート 5000）および必要に応じて Socket.IO（IMU）にアクセスします。ATOM（M5）の関節・校正は **`atom-rt`** の `lab_debug.py` 経由です。
+機体の関節・電源・校正は、サブ PC の **`link/host/lab_debug.py`** が CoreS3 の USB（ver 15）を握り、**「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）へ中継します。iPad はサブ PC の LAN からこの画面を開きます。
 
 - **Isaac Lab 学習** … ハブの **「Isaac 学習進捗」**（`/isaac-rl-log`）で `isaac-lab/logs/rsl_rl/` を参照できます。
 - **MuJoCo RL（レガシー）** … [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) の `train.py` と併用する場合は **「学習テレメトリ」**（`/training-telemetry`、Socket.IO 既定 **8791**）が利用できます。
-- **ATOM / M5** … [atom-rt](atom-rt/) の `lab_debug.py` と **「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）。
+- **実機（M5）** … [docs/robot_control.md](docs/robot_control.md)。中継は [link/host/lab_debug.py](link/host/lab_debug.py)、画面は **「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
 
 ## ■ robot-daemon
 
-ラズパイ上でサーボドライバに指令を出すとともに、IMU データを Socket.IO で配信する **Flask + Flask-SocketIO** のサーバーです（REST はサーボ用）。
+ラズパイ上の **以前の** サーボ REST と IMU（Socket.IO）です。いま機体のサーボを動かしている経路ではありません。
 
-**[robotics-hub](robotics-hub/)** からこのデーモンの REST API と Socket.IO を利用します（開発・運用の主経路）。
+Hub のモーションエディタ、ポーズエディタ、レッグサーボ調整、実機テレメトリ（IMU）は、まだこのデーモン（既定ポート **5000**）を向いています。機体の関節は [core-rt](core-rt/) と [atom-rt](atom-rt/) です。
 
 詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
 
@@ -113,7 +119,7 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC が USB-C を握る入
 
 ## ■ core-rt
 
-腰の **CoreS3** 用 20 Hz ファームです。両脚 10 軸と両足を、アドレスを分けた 4 つの PaHub 経由で読みます。USB は ver 15 です。
+腰の **CoreS3** 用 20 Hz ファームです。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB（ver 15）でサブ PC へ出します。脚の PaHub は CoreS3 では開きません。
 
 - 書き込み: `cd core-rt` → `pio run -t upload`
 - サブ PC: `python link/host/lab_debug.py`
@@ -123,20 +129,20 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC が USB-C を握る入
 
 ## ■ atom-rt
 
-ATOMS3 Lite（M5Stack ATOM）上の **20 Hz 制御ファーム** と、Windows PC の USB 総合デバッグです。ラズパイの `robot-daemon` とは別系統（USB CDC）です。
+脚の **ATOM S3R** 用ファーム（`can-leg`）と、机上の USB 直結（`rt-usb`、ver 14）です。機体ではセンサを読み、腰からの角度を PWM にします。角度の計算は [core-rt](core-rt/) です。
 
-- 書き込み: `cd atom-rt` → `pio run -t upload`
-- デバッグ: リポジトリ直下で `python link/host/lab_debug.py`（`atom-rt/tools/lab_debug.py` も同じ画面を起動します）
-- Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）は、この中継が Socket.IO 既定 **8794** で届きます
+- 機体への書き込み: `cd atom-rt` → `pio run -e can-leg -t upload`
+- 机上（`rt-usb`）: `pio run -e rt-usb -t upload`（`pio run -t upload` もこちら）
+- デバッグ: リポジトリ直下で `python link/host/lab_debug.py`（`atom-rt/tools/lab_debug.py` も同じプロセスです）
 
 詳細は [atom-rt/README.md](atom-rt/README.md) を参照してください。
 
 ## ■ atom-foot
 
-足裏 DF9-40 四隅用の **I2C スレーブ**（ATOMS3 Lite）です。機体では [atom-rt](atom-rt/) がマスターになり、PaHub 経由で 20 Hz 読みします。専用脚マスターは机上確認用。
+足裏 DF9-40 四隅用の **I2C スレーブ**（ATOMS3 Lite、`0x28`）です。機体では各脚の ATOM S3R（`can-leg`）が PaHub 越しに 20 Hz で読みます。専用の脚マスターは机上確認用です。
 
 - スレーブ書き込み: `cd atom-foot` → `pio run -e i2c_slave -t upload`（書き込み後は USB を外し Grove 給電）
-- 表示: Hub の **実機テレメトリ（M5）** 右脚タブ（模式図の上）
+- 表示: Hub の **実機テレメトリ（M5）**。CoreS3（ver 15）では左右の足裏が出ます
 
 詳細は [atom-foot/README.md](atom-foot/README.md) を参照してください。
 

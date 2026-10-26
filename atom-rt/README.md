@@ -1,8 +1,12 @@
 # atom-rt
 
-等身大ロボットの **ATOMS3 Lite**（M5Stack ATOM）用リアルタイム制御ファームと、机上・機体の両方で使う総合デバッグツールです。
+脚の **ATOM S3R** 用ファームと、机上の USB 直結ファーム、総合デバッグです。機体の全体は [docs/robot_control.md](../docs/robot_control.md) です。
 
-本ディレクトリは公開リポジトリ [yuuki-lab](../README.md) の一部です（旧称 `yuuki-lab-robot-side`）。ラズパイ側のサーボ／IMU は [`robot-daemon`](../robot-daemon/README.md)、ブラウザ UI は [`robotics-hub`](../robotics-hub/README.md) です。ATOM の USB はここの `lab_debug.py` が受け、Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）へ Socket.IO（既定 **:8794**）で中継します。操作と今後の UI 改善は Hub 側です。`lab_debug.py` の Tk 画面は非推奨（USB 中継のため起動は必要、機能は残しています）。現場手帳は [`docs/field-manual/`](docs/field-manual/)（Hub の「ATOM 手帳」から読めます）。
+機体の片脚は環境 `can-leg` です。自分の Grove でセンサを読み、腰の [core-rt](../core-rt/) から届いた角度を 8Servos に書きます。次の角度はここでは計算しません。役割は PaHub のアドレスで決まります。`0x70` / `0x72` が右、`0x71` / `0x73` が左です。
+
+机上は環境 `rt-usb`（USB ver 14）です。ATOMS3 Lite を USB でサブ PC に直結し、Lab / Robot と有効マスクで切り替えます。現場手帳 [`docs/field-manual/`](docs/field-manual/) はこの机上経路です。Hub の「ATOM 手帳」から読めます。
+
+USB を開く入口は [link/host/lab_debug.py](../link/host/lab_debug.py) です。下の `python tools/lab_debug.py` も同じプロセスです。Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）へ Socket.IO（既定 **:8794**）で中継します。Tk 画面は非推奨です（中継のため起動は必要、機能は残しています）。操作は Hub 側です。
 
 作業は **このディレクトリをカレント** にしてください。
 
@@ -12,11 +16,9 @@ pip install -r tools/requirements.txt
 python tools/lab_debug.py
 ```
 
-本線は **1 本**（環境 `rt-usb`）です。書き込みのたびにスケッチを切り替える必要はありません。机上テストと機体モニタの違いは USB コマンドのモードです。
+`pio run -t upload` は机上の `rt-usb` です。機体の脚へは `can-leg` を焼きます。
 
-机上の CAN 疎通だけ、別環境 `can-ping` です。ATOM S3R に Atomic CAN ベースを載せ、1 秒ごとに `0x101` を送ります。相手は `core-rt` の `can-ping`（`0x100`）です。
-
-片脚の本線は `can-leg` です。自分の Grove でセンサーを読み、サーボ指令を CAN で受けます。役割は PaHub のアドレスで決まります。`rt-usb` は机上用のままです。戻すときは `pio run -e rt-usb -t upload` です。
+机上の CAN 疎通だけ、別環境 `can-ping` です。ATOM S3R に Atomic CAN ベースを載せ、1 秒ごとに `0x101` を送ります。相手は `core-rt` の `can-ping`（`0x100`）です。本線ではありません。
 
 Grove 直下の 8Servos を `0x26` にする確認は `servo-addr` です。起動時はアドレスを読むだけです。モニタで `w` を送ったときだけ、PaHub を閉じた状態の `0x25` を `0x26` にします。USB を抜き差ししたあとも直下 `0x26`、すね `0x25` なら維持されています。終わったら `can-leg` を焼き直します。
 
@@ -43,11 +45,11 @@ GPIO5 が送信、GPIO6 が受信です。バスが黙ったままなら、こ�
 
 ---
 
-## できること
+## 机上（rt-usb）でできること
 
-ボード（一度焼けば、以降は Python 側で切り替える）:
+ボード（`rt-usb` を一度焼けば、以降の机上は Python 側のモードで切り替える）:
 
-- 20 Hz 制御ループ（Core 1）。センサ → 状態 → 政策 → サーボ
+- 20 Hz 制御ループ（Core 1）。センサを読み、Lab の手動角か Robot の 135° を PWM にする。歩行の計算は入っていない
 - USB テレメトリ（Core 0）。I2C は触らない
 - I2C スキャン（PaHub / AS5600 / INA226 / 8Servos）
 - 磁石 STATUS と AGC
@@ -81,10 +83,10 @@ USB は **固定長バイナリフレーム**（マジック + 長さ + CRC）�
 - ATOMS3 Lite
 - データ通信できる USB ケーブル
 
-机上では ATOM + 試したい Unit だけで足ります。機体では次が典型です。
+机上では ATOM + 試したい Unit だけで足ります。`rt-usb` の典型は次です。機体の配線（PaHub 4 台、8Servos が片脚 2 枚、両足）は [docs/robot_control.md](../docs/robot_control.md) と [core-rt/src/topology.hpp](../core-rt/src/topology.hpp) です。
 
 ```text
-ATOMS3 Lite / ATOM S3R Grove I2C
+ATOMS3 Lite  Grove I2C（rt-usb）
   ├ Unit 8Servos  0x25     Hub 手前
   ├ PaHub 0x70             軸 N = CHN の AS5600（0x36）
   └ PaHub 0x71
@@ -98,7 +100,7 @@ ATOMS3 Lite / ATOM S3R Grove I2C
 - 拡張ポートは CH0〜CH5
 - サーボ: RDS51150 想定。500〜2500 µs = 0〜270°。指令は **40〜230°**
 - INA226: 既定は 10 A ユニット（シャント 5 mΩ）
-- 当面 8 軸（`kSnapJoints`）。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `tools/lib/rt_usb_proto.py` を揃える
+- 当面 8 軸（`kSnapJoints`）。これは `rt-usb` の枠です。機体の 10 軸は CoreS3（USB ver 15）です。増やすときは `snapshot.hpp` / `usb_proto.hpp` / `tools/lib/rt_usb_proto.py` を揃える
 - INA 監視枠も 8（`kSnapIna`）。未割当は `ina_addr=0` で読まない
 - 右足圧スレーブは `FootRoute`（既定 `0x71` CH2 / `0x28`）。`addr=0` で読まない。USB プロトコルは **ver=14**
 
@@ -118,7 +120,7 @@ USB CDC です。**lab_debug / rt_monitor / rt_usb_log を開いたままでは�
 pio run -t upload
 ```
 
-既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=14** です。焼き直してください。
+既定環境は `rt-usb` だけです（`platformio.ini` の `default_envs`）。このプロトコルは **ver=14** です。機体の脚は、先の `pio run -e can-leg -t upload` です。
 
 通信の確認はシリアルモニタではなく:
 
@@ -130,12 +132,14 @@ python tools/rt_usb_log.py
 
 ---
 
-## 起動後のモード
+## 起動後のモード（rt-usb）
 
 | モード | PWM | 政策 | 用途 |
 |---|---|---|---|
 | **Lab**（焼いた直後の既定） | オフ | 手動指令（出力を許可した軸だけ） | 机上。挿抜、スキャン、磁石確認 |
-| **Robot** | 全軸オン | Hold 135° | 機体や、従来の `rt_monitor` |
+| **Robot** | 全軸オン | Hold 135° | `rt-usb` で全軸を 135° にする。従来の `rt_monitor` |
+
+機体の脚は `can-leg` で、この Lab / Robot ではありません。角度は腰の CoreS3 から CAN で届きます。
 
 `rt_monitor.py` は接続すると Robot モードを送ります。モニタを開いただけでサーボが 135° に動きます。机で暴れたくないときは `lab_debug.py` を使い、Lab のままにしてください。
 

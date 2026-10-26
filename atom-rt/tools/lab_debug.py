@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-ATOMS3 Lite 総合デバッグ（机上ラボ / 機体の両用）。起動エントリ。
+USB を開く総合デバッグ。入口の正本は link/host/lab_debug.py で、このファイルを起動する。
 
   pip install -r tools/requirements.txt
   python tools/lab_debug.py
 
-Tk GUI は非推奨。操作と今後の UI 改善は robotics-hub の
+CoreS3（USB ver 15）と、机上の rt-usb（ver 14）のどちらも、このプロセスが COM を開く。
+Tk GUI は非推奨。操作は robotics-hub の
 「実機テレメトリ（M5）」http://127.0.0.1:5173/m5-telemetry。
 USB 中継のため本プロセスは起動したままにする（機能は残している）。
 
@@ -14,7 +15,7 @@ Socket.IO :8794 で中継する。iPad 接続中は PC 側のロボット操作�
 （全停止と USB 接続／切断は残す）。
 
 依存マップ（tools/ は起動物、tools/lib/ は部品）:
-  このファイル              入口。main() だけ
+  このファイル              Tk を起動する。外からは link/host/lab_debug.py が呼ぶ
   lib/lab_app.py            Tk GUI（LabApp）。操作は apply_op()
   lib/lab_usb.py            AtomWorker / AtomSession / COM / 起動音
   lib/lab_model.py          Frame / JointRoute / 変換

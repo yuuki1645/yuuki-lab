@@ -1,6 +1,8 @@
 # core-rt
 
-腰の CoreS3 用 20 Hz ファームです。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出します。
+腰の CoreS3 用 20 Hz ファームです。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出します。機体の全体は [docs/robot_control.md](../docs/robot_control.md) です。
+
+脚の I2C はここでは開きません。下の PaHub は各脚の ATOM S3R 上にあり、経路の正本を CoreS3 が持って CAN で配ります。
 
 USB のフレームとメッセージ番号は [link/include/usb_frame.hpp](../link/include/usb_frame.hpp) です。このボードは **ver 15** です。片脚の ATOM は [atom-rt](../atom-rt/) の `can-leg` です。机上の疎通試験 `can-ping` とは別のファームです。
 

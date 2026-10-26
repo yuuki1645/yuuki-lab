@@ -10,7 +10,7 @@ PC 側で手を動かす起動物は `atom-rt/tools/` 直下の 3 本だけで�
 | `rt_monitor.py` | 1 台の 20 Hz グラフ。**接続すると Robot になる**（机では暴れる） |
 | `rt_usb_log.py` | 解釈済みの送受信。キーボードで ping / scan / hold など |
 
-起動:
+起動の正本はリポジトリの `python link/host/lab_debug.py` です。`npm run dev:m5` もそれを上げます。下の `python tools/lab_debug.py` は同じプロセスです。
 
 ```text
 cd atom-rt

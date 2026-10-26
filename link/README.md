@@ -15,7 +15,7 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC がケーブルを握�
 
 ## USB を挿したら Hub を開く
 
-常駐するのは `host/usb_hub_watch.ps1` だけです。時計の横の絵は `host/usb_hub_watch.ico` です。差し替えたら監視を終了して、もう一度 `just usb-watch-on` です。右クリックでログを開くか、監視だけ終了できます。`^` の中に入っているときは、そこからドラッグして外に出せます。`robotics-hub` と `lab_debug.py` は、ボードが rt-usb のフレームを出しているときだけ `npm run dev:m5` で起動し、ブラウザで `http://127.0.0.1:5173/m5-telemetry` を開きます。ケーブルを抜いても Hub は止めません。
+常駐するのは `host/usb_hub_watch.ps1` だけです。時計の横の絵は `host/usb_hub_watch.ico` です。差し替えたら監視を終了して、もう一度 `just usb-watch-on` です。右クリックでログを開くか、監視だけ終了できます。`^` の中に入っているときは、そこからドラッグして外に出せます。`robotics-hub` と `lab_debug.py` は、ボードが rt-usb のフレームを出しているときだけ `npm run dev:m5` で起動します。ケーブルは 1 本です。机の rt-usb（ver 14）ならブラウザで `http://127.0.0.1:5173/atom-bench`、腰の CoreS3（ver 15）なら `http://127.0.0.1:5173/m5-telemetry` を開きます。長さで版が分からないときは実機テレメトリです。ケーブルを抜いても Hub は止めません。
 
 登録は今サインインしているユーザーだけです。どちらか一方で足ります。
 

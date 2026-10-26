@@ -20,7 +20,7 @@ python tools/lab_debug.py
 
 Hub と同時ならリポジトリの `robotics-hub` で `npm run dev:m5`。リポジトリ直下の `just lab` でも両方上がります。
 
-ATOM S3R か CoreS3 を挿したときに Hub と実機テレメトリを自動で開くなら、`just usb-watch-on` でサインイン時の監視を登録します。外すときは `just usb-watch-off` です。監視自身は COM を握り続けません。詳しくは [link/README.md](../../../link/README.md) です。
+USB を 1 本挿したときに Hub を自動で開くなら、`just usb-watch-on` でサインイン時の監視を登録します。机の rt-usb（ver 14）は ATOM 机上ラボ（`/atom-bench`）、腰の CoreS3（ver 15）は実機テレメトリ（`/m5-telemetry`）です。外すときは `just usb-watch-off` です。監視自身は COM を握り続けません。詳しくは [link/README.md](../../../link/README.md) です。
 
 接続時（HELLO）に `audio/right_leg_boot.wav`、異常がなければ `audio/system_all_green.wav`。判定は HELLO → 初回 SCAN → 約 10 フレームで、overrun / 過電流 / 見えている AS5600・INA の欠測が無いこと。Windows の `winsound` なので追加パッケージは不要です。
 

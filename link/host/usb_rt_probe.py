@@ -3,8 +3,14 @@
 COM を短時間だけ読み、rt-usb のフレームが流れていれば終了コード 0 で戻る。
 
 アプリは 20 Hz でテレメトリを出し続ける。HELLO は起動時の 1 回なので、
-ここでは CRC の通ったフレームが 1 つでもあればアプリ稼働とみなす。
-ダウンロードモードの ROM は無音なので 1。ポートを開けなければ 2。
+画面の見分けはテレメトリの長さを優先する。stdout に 1 語だけ書く。
+
+    bench    机の rt-usb（ver 14）。Hub は /atom-bench
+    core     腰の CoreS3（ver 15）。Hub は /m5-telemetry
+    unknown  フレームはあるが、上のどちらでもない
+
+終了コードは 0 = フレームあり、1 = 無音（ダウンロードモード）、2 = 開けない。
+ケーブルは 1 本の想定。同時に 2 台は見ない。
 
 DTR と RTS は立てない。pyserial の既定オープンは再接続のたびにリセットする。
 手順は atom-rt/tools/lib/lab_usb.py の open_atom_serial と同じ。
@@ -28,8 +34,8 @@ import rt_usb_proto as proto  # noqa: E402
 _BAUD = 115200
 
 
-def listen_for_rt_usb(port: str, timeout_s: float) -> int:
-    """0 = フレームあり、1 = 無音、2 = 開けない。"""
+def listen_for_rt_usb(port: str, timeout_s: float) -> tuple[int, str]:
+    """(終了コード, 画面)。コード 0 のとき画面は bench / core / unknown。"""
     ser = serial.Serial()
     ser.port = port
     ser.baudrate = _BAUD
@@ -42,18 +48,27 @@ def listen_for_rt_usb(port: str, timeout_s: float) -> int:
         ser.open()
     except serial.SerialException as exc:
         print(str(exc), file=sys.stderr)
-        return 2
+        return 2, ""
     # open が線を動かしたあとも、もう一度下ろす。
     ser.dtr = False
     ser.rts = False
     parser = proto.FrameParser()
     deadline = time.monotonic() + timeout_s
+    saw_frame = False
     try:
         while time.monotonic() < deadline:
             chunk = ser.read(256)
-            if chunk and parser.feed(chunk):
-                return 0
-        return 1
+            if not chunk:
+                continue
+            # 先頭がスキャン等でも、同じ 1.5 秒のあいだにテレメトリが続く。
+            for msg_type, payload in parser.feed(chunk):
+                saw_frame = True
+                kind = proto.usb_screen_kind(msg_type, payload)
+                if kind is not None:
+                    return 0, kind
+        if saw_frame:
+            return 0, "unknown"
+        return 1, ""
     finally:
         try:
             ser.close()
@@ -73,7 +88,11 @@ def main(argv: list[str]) -> int:
     if timeout_s <= 0:
         print("seconds は正の数", file=sys.stderr)
         return 2
-    return listen_for_rt_usb(argv[1], timeout_s)
+    code, kind = listen_for_rt_usb(argv[1], timeout_s)
+    # 監視はこの 1 語だけを見る。ログは stderr。
+    if code == 0 and kind:
+        print(kind, flush=True)
+    return code
 
 
 if __name__ == "__main__":

@@ -683,6 +683,29 @@ def decode_hello(payload: bytes) -> Hello | None:
     return Hello(ver, _mode_name(mode), joints, ina, servo, out_mask)
 
 
+def usb_screen_kind(msg_type: int, payload: bytes) -> str | None:
+    """監視が開く画面。bench は机の rt-usb、core は腰の CoreS3。
+
+    HELLO は起動時の 1 回なので、挿してから数秒後に残っているのはテレメトリ。
+    テレメトリの長さは版で重ならない（モジュール読込時に検査している）。
+    スキャンなど、長さだけでは版が決まらないフレームは None。
+    """
+    if msg_type == MSG_HELLO:
+        hello = decode_hello(payload)
+        if hello is None:
+            return None
+        if hello.ver >= FW_VER_CORE:
+            return "core"
+        return "bench"
+    if msg_type != MSG_TELEMETRY:
+        return None
+    if len(payload) == _TELEM_V15.size and _TELEM_V15.size not in _TELEM_BY_SIZE:
+        return "core"
+    if len(payload) in _TELEM_BY_SIZE:
+        return "bench"
+    return None
+
+
 def decode_scan_node(payload: bytes) -> ScanNodeBin | None:
     if len(payload) != _SCAN_NODE.size:
         return None

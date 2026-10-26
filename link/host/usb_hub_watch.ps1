@@ -1,10 +1,13 @@
 ﻿#requires -Version 5.1
 <#
 .SYNOPSIS
-  ATOM S3R / CoreS3（VID 303A）が見えたら robotics-hub を起動し、実機テレメトリを開く。
+  ATOM / CoreS3（VID 303A）が 1 本見えたら robotics-hub を起動し、版に合う画面を開く。
 
 .NOTES
   このプロセス自身は COM を握り続けない。確認は usb_rt_probe.py が短時間読むだけ。
+  机の rt-usb（ver 14、probe の bench）は /atom-bench。
+  腰の CoreS3（ver 15、probe の core）は /m5-telemetry。
+  判別できないフレームは実機テレメトリを開く。ケーブルは 1 本の想定。
   Hub と lab_debug.py は、rt-usb のフレームが見えたときだけ npm run dev:m5 で起動する。
   ケーブルを抜いても Hub は止めない。実験の途中でプロセスを落とさないため。
   時計の横にアイコンを出す。右クリックでログと、この監視だけの終了。
@@ -16,7 +19,9 @@ $ErrorActionPreference = "Continue"
 $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $HubDir = Join-Path $RepoRoot "robotics-hub"
 $Probe = Join-Path $PSScriptRoot "usb_rt_probe.py"
-$HubUrl = "http://127.0.0.1:5173/m5-telemetry"
+# vite がページを返せるかの確認先。開き先とは分ける。
+$HubReadyUrl = "http://127.0.0.1:5173/m5-telemetry"
+$HubOrigin = "http://127.0.0.1:5173"
 $LogPath = Join-Path $env:LOCALAPPDATA "yuuki-lab\usb_hub_watch.log"
 
 # 挿してからポートが安定するまで待つ。列挙直後に開くと、書き込みのリセットとぶつかる。
@@ -31,6 +36,9 @@ $ProbeSeconds = "1.5"
 $script:seenAt = @{}
 $script:silentAt = @{}
 $script:pageOpened = $false
+# 直近のプローブが書いた 1 語。空のときは実機テレメトリを開く。
+$script:probeKind = ""
+$script:openUrl = "$HubOrigin/m5-telemetry"
 $script:absentSince = $null
 $script:starting = $false
 $script:startAt = Get-Date
@@ -103,7 +111,7 @@ function Test-HubPage {
         return $false
     }
     try {
-        $resp = Invoke-WebRequest -Uri $HubUrl -UseBasicParsing -TimeoutSec 3
+        $resp = Invoke-WebRequest -Uri $HubReadyUrl -UseBasicParsing -TimeoutSec 3
         return ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400)
     } catch {
         return $false
@@ -126,16 +134,28 @@ function Test-FlashBusy {
     return $false
 }
 
+function Get-HubOpenUrl {
+    param([string]$Kind)
+    # 机の ver 14 だけ机上ラボ。core も、長さが読めない unknown も実機側。
+    if ($Kind -eq "bench") {
+        return "$HubOrigin/atom-bench"
+    }
+    return "$HubOrigin/m5-telemetry"
+}
+
 function Invoke-RtProbe {
     param([string]$Port)
+    $script:probeKind = ""
     $python = Get-Command python -ErrorAction SilentlyContinue
     if (-not $python) {
         Write-Log "python が PATH に無い"
         return 2
     }
-    # stdout を関数の戻り値に混ぜない。開けなかった理由はログへ残す。
+    # ネイティブの stdout は文字列で受け、戻り値には終了コードだけを残す。
+    # ファイルへ > すると Windows PowerShell 5 が UTF-16 で書き、1 語が壊れる。
     $errFile = Join-Path $env:TEMP "yuuki-lab-usb-probe-err.txt"
-    & $python.Source $Probe $Port $ProbeSeconds 2> $errFile | Out-Null
+    $text = & $python.Source $Probe $Port $ProbeSeconds 2> $errFile | Out-String
+    $script:probeKind = $text.Trim()
     if (Test-Path -LiteralPath $errFile) {
         $errText = [System.IO.File]::ReadAllText($errFile).Trim()
         if ($errText) {
@@ -164,8 +184,8 @@ function Start-DevM5 {
 }
 
 function Open-HubPage {
-    Write-Log "ブラウザを開く $HubUrl"
-    Start-Process $HubUrl
+    Write-Log "ブラウザを開く $script:openUrl"
+    Start-Process $script:openUrl
 }
 
 function Remove-MissingPorts {
@@ -201,22 +221,26 @@ function Invoke-WatchStep {
     $script:absentSince = $null
     Remove-MissingPorts -Ports $ports
 
-    if (Test-HubPage) {
-        $script:starting = $false
-        if (-not $script:pageOpened) {
-            # 開く前に立てる。ページ確認がメッセージを回すと、タイマーが重なってもう一度開く。
-            $script:pageOpened = $true
-            Open-HubPage
+    # 起動待ちのあいだは COM を開かない。lab_debug が掴む前にプローブが競合する。
+    if ($script:starting) {
+        if (Test-HubPage) {
+            $script:starting = $false
+            if (-not $script:pageOpened) {
+                $script:pageOpened = $true
+                Open-HubPage
+            }
+        } else {
+            $elapsed = ((Get-Date) - $script:startAt).TotalSeconds
+            if ($elapsed -gt $HubWaitSeconds) {
+                Write-Log "Hub が $HubWaitSeconds 秒以内に応答しなかった"
+                $script:starting = $false
+            }
         }
         return
     }
 
-    if ($script:starting) {
-        $elapsed = ((Get-Date) - $script:startAt).TotalSeconds
-        if ($elapsed -gt $HubWaitSeconds) {
-            Write-Log "Hub が $HubWaitSeconds 秒以内に応答しなかった"
-            $script:starting = $false
-        }
+    # この挿し込みで一度開いたあとは、抜けるまで繰り返さない。
+    if ($script:pageOpened -and (Test-HubPage)) {
         return
     }
 
@@ -244,6 +268,15 @@ function Invoke-WatchStep {
         $code = Invoke-RtProbe -Port $port
         if ($code -eq 0) {
             $null = $script:silentAt.Remove($port)
+            $script:openUrl = Get-HubOpenUrl $script:probeKind
+            Write-Log "$port の画面は $($script:probeKind) → $script:openUrl"
+            if (Test-HubPage) {
+                # Hub は抜き差しでは止めない。準備済みなら、プローブで決めた URL を開く。
+                # 開く前に立てる。ページ確認がメッセージを回すと、タイマーが重なってもう一度開く。
+                $script:pageOpened = $true
+                Open-HubPage
+                return
+            }
             if (Start-DevM5 -Port $port) {
                 $script:starting = $true
                 $script:startAt = Get-Date

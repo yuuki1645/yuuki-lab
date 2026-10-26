@@ -7,8 +7,25 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC がケーブルを握�
 | `include/usb_frame.hpp` | フレーム、CRC、メッセージ番号 |
 | `py/rt_usb_proto.py` | 上と同じ並びの Python |
 | `host/lab_debug.py` | COM を開くプロセス。中継は Socket.IO :8794 |
+| `host/usb_hub_watch.ps1` | サインイン後に残る監視。VID `303A` で rt-usb が見えたら Hub を起動する |
+| `host/install_usb_watch.cmd` | 監視をスタートアップへ登録する。外すのは `uninstall_usb_watch.cmd` |
 
 テレメトリの中身は版で違います。ver 14 は片脚 8 軸、ver 15 は CoreS3 の 10 軸と両足です。番号を足すときは `usb_frame.hpp` と `rt_usb_proto.py` を同じ変更にします。
+
+## USB を挿したら Hub を開く
+
+常駐するのは `host/usb_hub_watch.ps1` だけです。`robotics-hub` と `lab_debug.py` は、ボードが rt-usb のフレームを出しているときだけ `npm run dev:m5` で起動し、ブラウザで `http://127.0.0.1:5173/m5-telemetry` を開きます。ケーブルを抜いても Hub は止めません。
+
+登録は今サインインしているユーザーだけです。どちらか一方で足ります。
+
+```text
+just usb-watch-on
+link\host\install_usb_watch.cmd
+```
+
+外すときは `just usb-watch-off` または `link\host\uninstall_usb_watch.cmd` です。失敗したときの記録は `%LOCALAPPDATA%\yuuki-lab\usb_hub_watch.log` です。
+
+ダウンロードモードはフレームを出さないので、監視はポートをすぐ閉じます。`pio` や `esptool` が動いているあいだは開きません。すでに Hub が COM を握っているときは、書く前にその窓を閉じてください。
 
 ## 実験記録
 

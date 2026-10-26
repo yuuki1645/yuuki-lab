@@ -107,6 +107,7 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC が USB-C を握る入
 
 - フレームとメッセージ番号: [link/include/usb_frame.hpp](link/include/usb_frame.hpp)
 - 中継の起動: `python link/host/lab_debug.py`（Socket.IO 既定 **8794**）
+- USB を挿したら Hub を開く監視: `just usb-watch-on`（外すときは `just usb-watch-off`）
 
 詳細は [link/README.md](link/README.md) を参照してください。
 

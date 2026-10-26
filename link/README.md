@@ -20,4 +20,4 @@ CoreS3 の USB ver 15 HELLO から切断まで、`lab_debug.py` がセンサー�
 C:\Users\<ユーザー名>\.yuuki-lab\storage.yaml
 ```
 
-`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/時分秒/` です。
+`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/時分秒/` です。各 take には欄の説明 `schema.md` が入ります。正本は [schema/core_take_v1.md](schema/core_take_v1.md) です。

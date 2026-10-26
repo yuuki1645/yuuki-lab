@@ -31,6 +31,7 @@ FLUSH_SEC = 1.5
 # 閉じた断片を NAS へ出せる間隔。開いたままのファイルは対象にしない。
 ROTATE_SEC = 60.0
 FORMAT_ID = "core_take_v1"
+SCHEMA_FILE = "schema.md"
 
 # プロセス内で 1 つ。未接続のあいだは作らない（shared が最初の ver 15 で作る）。
 _SHARED: ExperimentLog | None = None
@@ -53,6 +54,11 @@ class BeginResult:
 def default_storage_path() -> Path:
     """ログイン中のユーザーだけが読む設定。リポジトリには置かない。"""
     return Path.home() / ".yuuki-lab" / "storage.yaml"
+
+
+def schema_source() -> Path:
+    """欄の説明の正本。take へは schema.md としてコピーする。"""
+    return Path(__file__).resolve().parent.parent / "schema" / f"{FORMAT_ID}.md"
 
 
 def _parse_storage_text(text: str) -> dict[str, str]:
@@ -180,6 +186,7 @@ class ExperimentLog:
                 "fw_ver": int(fw_ver),
                 "sample_count": 0,
                 "stop_reason": "",
+                "schema": "",
                 "open_parts": [],
             }
             take = _Take(
@@ -202,6 +209,11 @@ class ExperimentLog:
             )
             self._take = take
             self._open_parts_locked(take)
+            # 説明は追記しない。開いた瞬間に閉じたファイルとして置く。
+            if self._install_schema(take):
+                self._enqueue(take.directory / SCHEMA_FILE, touch=True)
+            else:
+                self._write_event_locked(take, "説明ファイルなし")
             self._write_event_locked(take, f"記録開始  {relative.as_posix()}")
             self._write_meta_locked(take)
             print(f"実験記録開始  {relative.as_posix()}")
@@ -274,6 +286,19 @@ class ExperimentLog:
                 continue
             seen.add(src)
             self._enqueue(src, touch=False)
+
+    def _install_schema(self, take: _Take) -> bool:
+        """正本を take の schema.md へコピーする。無いときは記録自体は続ける。"""
+        src = schema_source()
+        if not src.is_file():
+            return False
+        dest = take.directory / SCHEMA_FILE
+        try:
+            shutil.copyfile(src, dest)
+        except OSError:
+            return False
+        take.meta["schema"] = SCHEMA_FILE
+        return True
 
     def _accept(self, port: str) -> _Take | None:
         take = self._take

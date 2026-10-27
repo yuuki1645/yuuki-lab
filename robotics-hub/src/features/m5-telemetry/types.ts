@@ -98,6 +98,13 @@ export type M5Frame = {
   period_us: number;
   loop_us: number;
   sense_us: number;
+  /**
+   * 1 周期の内訳 [µs]。受信時刻から左へ、センサ → 状態+政策 → 指令送信、と積む。
+   * 古い中継や Isaac では欠ける。欠けるときは 0 扱いで、印は受信時刻の点だけ。
+   */
+  state_us?: number;
+  policy_us?: number;
+  act_us?: number;
   jitter_us: number;
   overrun: boolean;
   cmd: Array<number | null>;
@@ -323,6 +330,10 @@ export function frameToHistory(frame: M5Frame): M5HistoryPoint {
     period_ms: frame.period_us / 1000,
     loop_ms: frame.loop_us / 1000,
     sense_ms: frame.sense_us / 1000,
+    state_ms: (frame.state_us ?? 0) / 1000,
+    policy_ms: (frame.policy_us ?? 0) / 1000,
+    act_ms: (frame.act_us ?? 0) / 1000,
+    overrun: Boolean(frame.overrun),
   };
 }
 
@@ -359,6 +370,13 @@ export type M5HistoryPoint = {
   period_ms: number;
   loop_ms: number;
   sense_ms: number;
+  /** アンラップと校正マップ。政策の前 */
+  state_ms: number;
+  /** 角度を決める処理。いまのファームは 0 */
+  policy_ms: number;
+  /** 指令を脚へ送る処理 */
+  act_ms: number;
+  overrun: boolean;
 };
 
 export type M5Cmd = Record<string, unknown> & { op: string };

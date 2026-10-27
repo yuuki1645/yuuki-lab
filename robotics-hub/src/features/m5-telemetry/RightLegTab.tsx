@@ -16,6 +16,7 @@ import {
   type LegSide,
 } from "./rightLeg";
 import type { M5LinkSource } from "./useM5TelemetryStream";
+import { CycleSweep } from "./CycleSweep";
 import type { M5Cmd, M5Control, M5Frame, M5HistoryPoint } from "./types";
 
 type Props = {
@@ -26,6 +27,10 @@ type Props = {
   frame: M5Frame | null;
   history: M5HistoryPoint[];
   send: (cmd: M5Cmd) => void;
+  /** 再生中は記録の時刻。ライブは null で、タイムラインが壁時計で進む。 */
+  sweepClockSec?: number | null;
+  /** ライブなら true。再生は記録時刻に合わせ、壁時計では動かさない。 */
+  sweepLive?: boolean;
   /** 左カラム上段。実機カメラ（ライブ／再生） */
   cameraPane: ReactNode;
 };
@@ -41,7 +46,17 @@ function at<T>(xs: T[] | undefined, i: number): T | undefined {
  * 左右 5 行の操作画面。左列が左脚、右列が右脚。
  * 指令バーは操作ロック解除かつ PWM ON かつ、その関節が接続されているときだけ動く。
  */
-export function RightLegTab({ canCmd, source, control, frame, history, send, cameraPane }: Props) {
+export function RightLegTab({
+  canCmd,
+  source,
+  control,
+  frame,
+  history,
+  send,
+  cameraPane,
+  sweepClockSec = null,
+  sweepLive = true,
+}: Props) {
   const [selected, setSelected] = useState<string>("right-kneePitch");
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
   const [barOn, setBarOn] = useState(LEG_BAR_DEFAULT);
@@ -233,6 +248,8 @@ export function RightLegTab({ canCmd, source, control, frame, history, send, cam
           })}
         </div>
       </div>
+
+      <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} />
 
       <div className="m5-leg__layout">
         {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}

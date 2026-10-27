@@ -281,6 +281,8 @@ export default function M5TelemetryPage() {
           frame={frame}
           history={history}
           send={send}
+          sweepClockSec={replaying ? (frame?.t ?? null) : null}
+          sweepLive={!replaying}
           cameraPane={
             <M5CameraPane
               camera={camera}

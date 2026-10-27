@@ -26,6 +26,11 @@ class Frame:
     period_us: int
     loop_us: int
     sense_us: int
+    # 周期の内訳 [µs]。Hub の制御タイムラインが、受信時刻から左へ積む。
+    # 0 のときは印は受信時刻の点だけになる。
+    state_us: int
+    policy_us: int
+    act_us: int
     jitter_us: int
     overrun: bool
     cmd: list[float | None] = field(default_factory=lambda: [None] * JOINTS)
@@ -134,6 +139,9 @@ def frame_from_telem(t: proto.Telemetry) -> Frame:
         period_us=t.period_us,
         loop_us=t.loop_us,
         sense_us=t.sense_us,
+        state_us=t.state_us,
+        policy_us=t.policy_us,
+        act_us=t.act_us,
         jitter_us=t.jitter_us,
         overrun=t.overrun,
         cmd=list(t.cmd),

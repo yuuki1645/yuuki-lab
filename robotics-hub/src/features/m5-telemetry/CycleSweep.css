@@ -1,0 +1,100 @@
+.m5-sweep {
+  margin: 0 0 0.8rem;
+  padding: 0.7rem 0.75rem 0.55rem;
+  border-radius: 10px;
+  background: #141c28;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.m5-sweep__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.m5-sweep h2 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.m5-sweep__head p {
+  margin: 0;
+  color: #8b9bb0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  max-width: 46rem;
+}
+
+.m5-sweep__readout {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: #e8eef4;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.m5-sweep__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.6rem;
+  margin: 0.55rem 0 0.35rem;
+}
+
+.m5-sweep__picks label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 9.5rem;
+  min-width: 0;
+  color: #8b9bb0;
+  font-size: 0.68rem;
+}
+
+.m5-sweep__picks select {
+  min-height: 34px;
+  max-width: 100%;
+  background: #0c121c;
+  color: #e8eef4;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.m5-sweep__canvas {
+  width: 100%;
+}
+
+.m5-sweep__plot {
+  width: 100%;
+  height: 348px;
+  display: block;
+  touch-action: none;
+}
+
+.m5-sweep__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  align-items: center;
+  margin-top: 0.25rem;
+  color: #c5d0dc;
+  font-size: 0.75rem;
+}
+
+.m5-sweep__legend i {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.45rem;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.m5-sweep__legend-note {
+  flex-basis: 100%;
+  color: #8b9bb0;
+  font-size: 0.7rem;
+}

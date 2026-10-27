@@ -37,6 +37,19 @@ type Props = {
 
 /** 指令バー無操作で自動ロック（誤タッチ防止） */
 const CMD_IDLE_LOCK_MS = 12_000;
+/** 制御タイムラインの開閉。このタブを開いているあいだだけ残す。 */
+const SWEEP_OPEN_KEY = "m5-sweep-open";
+
+function loadSweepOpen(): boolean {
+  try {
+    const raw = sessionStorage.getItem(SWEEP_OPEN_KEY);
+    if (raw === "0") return false;
+    if (raw === "1") return true;
+  } catch {
+    // 保存が読めないときは、今までどおり開いた状態にする。
+  }
+  return true;
+}
 
 function at<T>(xs: T[] | undefined, i: number): T | undefined {
   return xs && i >= 0 && i < xs.length ? xs[i] : undefined;
@@ -60,6 +73,7 @@ export function RightLegTab({
   const [selected, setSelected] = useState<string>("right-kneePitch");
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
   const [barOn, setBarOn] = useState(LEG_BAR_DEFAULT);
+  const [sweepOpen, setSweepOpen] = useState(loadSweepOpen);
   const [cmdLocked, setCmdLocked] = useState(true);
   const idleTimer = useRef<number | null>(null);
 
@@ -247,9 +261,34 @@ export function RightLegTab({
             );
           })}
         </div>
+        <div className="m5-leg__plot-togs" role="group" aria-label="制御タイムラインの表示">
+          <span className="m5-leg__plot-togs-lab">タイムライン</span>
+          <button
+            type="button"
+            className={"m5-plot-tog" + (sweepOpen ? " m5-plot-tog--on" : "")}
+            style={{
+              color: "#d6deea",
+              borderColor: sweepOpen ? "#d6deea" : "rgba(255,255,255,0.18)",
+            }}
+            aria-pressed={sweepOpen}
+            onClick={() => {
+              const next = !sweepOpen;
+              setSweepOpen(next);
+              try {
+                sessionStorage.setItem(SWEEP_OPEN_KEY, next ? "1" : "0");
+              } catch {
+                // 保存できなくても、この表示のあいだは押した状態のまま。
+              }
+            }}
+          >
+            表示
+          </button>
+        </div>
       </div>
 
-      <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} />
+      {sweepOpen ? (
+        <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} />
+      ) : null}
 
       <div className="m5-leg__layout">
         {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}

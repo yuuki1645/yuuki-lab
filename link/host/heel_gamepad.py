@@ -565,7 +565,7 @@ def _run(url: str) -> None:
                     hold.append("左は接地中なので床側を止めました")
                 if right_held:
                     hold.append("右は接地中なので床側を止めました")
-                if homing:
+                if reading["homing"]:
                     hold.append("135° の位置へ戻しています")
                 extra = (" " + " ".join(hold)) if hold else ""
                 print(

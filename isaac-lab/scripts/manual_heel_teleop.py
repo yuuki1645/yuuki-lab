@@ -18,7 +18,7 @@
     右スティック  右踵。同じ向き。
     L / R         肩のバンパー。押しているあいだ、その足を腰の天井側へ。
     ZL / ZR       肩のトリガー。引いているあいだ、その足を腰の床側へ。
-    スタート      押しているあいだ、開始時の両踵へゆっくり戻る。離すと止まる。
+    スタート      押しているあいだ、全関節 135°（0 rad）の踵へゆっくり戻る。離すと止まる。
     スティックや肩ボタンを戻しても、そこまでの踵位置は保持する。
 
 ``robot_description/isaac_hub_bridge.py`` が 127.0.0.1:8796 で待っていれば、
@@ -61,6 +61,7 @@ from yuuki_isaac_lab.manual_heel.leg_ik import (
     Y_HIP_LEFT,
     Y_HIP_RIGHT,
     fk_heel,
+    stand_heel,
     step_heel_target,
 )
 
@@ -121,9 +122,9 @@ def main() -> None:
     right_q = _leg_angles(robot, joint_index, _RIGHT_JOINTS)
     left_target, _ = fk_heel(left_q, Y_HIP_LEFT, ROLL_SIGN_LEFT)
     right_target, _ = fk_heel(right_q, Y_HIP_RIGHT, ROLL_SIGN_RIGHT)
-    # 出現姿勢を初期位置として残す。このあとの積算では上書きしない。
-    left_home = np.array(left_target, dtype=float)
-    right_home = np.array(right_target, dtype=float)
+    # 戻る先は出現姿勢ではなく、全関節 0 rad（実機の 135°）の踵。
+    left_home = np.array(stand_heel(Y_HIP_LEFT, ROLL_SIGN_LEFT), dtype=float)
+    right_home = np.array(stand_heel(Y_HIP_RIGHT, ROLL_SIGN_RIGHT), dtype=float)
     _report_model_error(robot, waist_id, left_sole_id, right_sole_id, left_target, right_target)
 
     if getattr(args_cli, "headless", False):
@@ -140,7 +141,7 @@ def main() -> None:
     print(
         "操作: 左スティック=左踵、右スティック=右踵（腰のXY、奥が前、右がロボットの右）。\n"
         "      L/R バンパーで天井側、ZL/ZR トリガーで床側。離すとその位置を保持します。\n"
-        "      スタートを押しているあいだ、開始時の踵へゆっくり戻ります。離すと止まります。\n"
+        "      スタートを押しているあいだ、全関節 135° の踵へゆっくり戻ります。離すと止まります。\n"
         "      緑の球が左踵の目標、橙の球が右踵の目標です。届かない高さは自動でずらします。\n"
         "      橋（isaac_hub_bridge.py）があれば、実機テレメトリの補正（シミュ）と足裏へ出します。",
         flush=True,
@@ -155,7 +156,7 @@ def main() -> None:
     try:
         while simulation_app.is_running():
             frame_dt = min(float(sim_dt), 0.05)
-            # スタート中はスティックを使わず、出現時の踵へ一定の速さで戻す。
+            # スタート中はスティックを使わず、全関節 0 rad の踵へ一定の速さで戻す。
             if pad.start_held():
                 left_delta = _home_step(left_target, left_home, frame_dt)
                 right_delta = _home_step(right_target, right_home, frame_dt)

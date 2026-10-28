@@ -8,7 +8,8 @@ Isaac の手動操作と同じ積算と逆運動学を、USB を握っている 
 角度は URDF の可動域と、ファームが受ける 40〜230° の内側に収める。
 画面の 100〜170° は机上の単軸実験用で、そのままだと膝が約 35° しか曲がらない。
 足裏の合計がしきい値を超えているあいだは、その足を腰の床側へは進めない。
-スタートを押しているあいだは、開始時の踵へゆっくり戻る。離すと止まる。
+スタートを押しているあいだは、全関節 135° の踵へゆっくり戻る。離すと止まる。
+補正角は不安定なので、このプロセスは参照しない。今の姿勢は指令角だけを見る。
 
 起動（lab_debug.py が先に COM を開いていること）::
 
@@ -305,18 +306,29 @@ class _Telemetry:
             self._sio.disconnect()
 
 
+def _neutral_heels(ik) -> tuple[np.ndarray, np.ndarray]:
+    """全関節 135°（関節 0 rad）の左右の踵。補正角は見ない。"""
+    left = np.array(ik.stand_heel(ik.Y_HIP_LEFT, ik.ROLL_SIGN_LEFT), dtype=float)
+    right = np.array(ik.stand_heel(ik.Y_HIP_RIGHT, ik.ROLL_SIGN_RIGHT), dtype=float)
+    return left, right
+
+
 def _seed_from_frame(frame: dict, ik) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """今の補正角を、左右の関節と踵目標にする。欠測の軸は 135°。"""
-    corr = list(frame.get("corr") or [])
-    ok = list(frame.get("as_ok") or [])
+    """今の指令角を、左右の関節と踵目標にする。欠測の軸は 135°。
+
+    補正角はセンサ処理が揺れるので使わない。指令が無い軸だけ 135° にする。
+    """
+    cmd = list(frame.get("cmd") or [])
     radians = []
     for index in range(10):
-        value = corr[index] if index < len(corr) else None
-        good = True if index >= len(ok) else bool(ok[index])
-        if value is None or not good:
+        value = cmd[index] if index < len(cmd) else None
+        if value is None:
             radians.append(0.0)
-        else:
+            continue
+        try:
             radians.append(deg_to_rad(float(value)))
+        except (TypeError, ValueError):
+            radians.append(0.0)
     right_q = _clip_command(np.array(radians[0:5], dtype=float))
     left_q = _clip_command(np.array(radians[5:10], dtype=float))
     left_heel, _ = ik.fk_heel(left_q, ik.Y_HIP_LEFT, ik.ROLL_SIGN_LEFT)
@@ -348,25 +360,24 @@ def _run(url: str) -> None:
     print(f"橋へ接続します: {url}", flush=True)
     print("PWM は入れません。動かしたい関節は、実機テレメトリで PWM を入れてください。", flush=True)
     print("足が床を押しているあいだは、その足を床側へは動かしません。", flush=True)
-    print("スタートを押しているあいだ、開始時の踵へゆっくり戻ります。離すと止まります。", flush=True)
+    print("スタートを押しているあいだ、全関節 135° の踵へゆっくり戻ります。離すと止まります。", flush=True)
     link.connect()
-    print("補正角が届くまで待ちます。", flush=True)
+    print("指令角が届くまで待ちます。補正角は使いません。", flush=True)
     deadline = time.perf_counter() + 10.0
     frame = None
     while time.perf_counter() < deadline:
         frame = link.latest()
-        corr = frame.get("corr") if isinstance(frame, dict) else None
-        if isinstance(corr, list) and len(corr) >= 10:
+        cmd = frame.get("cmd") if isinstance(frame, dict) else None
+        if isinstance(cmd, list) and len(cmd) >= 10:
             break
         time.sleep(0.05)
     else:
         link.close()
-        raise RuntimeError("10 秒待っても補正角が 10 軸届きません。CoreS3 の USB と lab_debug.py を確認してください。")
+        raise RuntimeError("10 秒待っても指令角が 10 軸届きません。CoreS3 の USB と lab_debug.py を確認してください。")
 
     left_q, right_q, left_heel, right_heel = _seed_from_frame(frame, ik)
-    # このあと踵は積算で動く。初期位置は開始時のコピーを残す。
-    left_home = np.array(left_heel, dtype=float)
-    right_home = np.array(right_heel, dtype=float)
+    # 戻る先は、いまの指令ではなく、全関節 135° の踵。
+    left_home, right_home = _neutral_heels(ik)
     print(
         f"開始  L heel=({left_heel[0]:+.3f},{left_heel[1]:+.3f},{left_heel[2]:+.3f}) "
         f"R heel=({right_heel[0]:+.3f},{right_heel[1]:+.3f},{right_heel[2]:+.3f})",
@@ -384,7 +395,7 @@ def _run(url: str) -> None:
             latest = link.latest() or {}
             left_load = _foot_kg(latest.get("foot_left"))
             right_load = _foot_kg(latest.get("foot"))
-            # スタート中はスティックを使わず、開始時の踵へ一定の速さで戻す。
+            # スタート中はスティックを使わず、全関節 135° の踵へ一定の速さで戻す。
             homing = pad.start_held()
             if homing:
                 left_delta = _home_step(left_heel, left_home, dt)
@@ -425,7 +436,7 @@ def _run(url: str) -> None:
                 if right_held:
                     hold.append("右は接地中なので床側を止めました")
                 if homing:
-                    hold.append("初期位置へ戻しています")
+                    hold.append("135° の位置へ戻しています")
                 extra = (" " + " ".join(hold)) if hold else ""
                 print(
                     f"L=({left_heel[0]:+.3f},{left_heel[1]:+.3f},{left_heel[2]:+.3f}) "
@@ -467,6 +478,21 @@ def _self_check() -> None:
     near = _home_step(np.array([0.0004, 0.0, 0.0]), np.zeros(3), 0.02)
     if abs(float(near[0]) + 0.0004) > 1.0e-12:
         raise AssertionError(f"home step overshot a short gap: {near}")
+    # 補正角が揺れても、開始姿勢は指令角だけを見る。無い軸は 135°。
+    seeded_l, seeded_r, _, _ = _seed_from_frame(
+        {"cmd": [135.0] * 10, "corr": [90.0] * 10},
+        ik,
+    )
+    if float(np.max(np.abs(seeded_l))) > 1.0e-9 or float(np.max(np.abs(seeded_r))) > 1.0e-9:
+        raise AssertionError("seed used corrected angles or did not treat 135° as neutral")
+    only_corr_l, _, _, _ = _seed_from_frame({"corr": [170.0] * 10}, ik)
+    if float(np.max(np.abs(only_corr_l))) > 1.0e-9:
+        raise AssertionError("seed fell back to corrected angles")
+    home_l, home_r = _neutral_heels(ik)
+    if float(np.linalg.norm(home_l - ik.stand_heel(ik.Y_HIP_LEFT, ik.ROLL_SIGN_LEFT))) > 1.0e-9:
+        raise AssertionError("left home is not the all-135 pose")
+    if float(np.linalg.norm(home_r - ik.stand_heel(ik.Y_HIP_RIGHT, ik.ROLL_SIGN_RIGHT))) > 1.0e-9:
+        raise AssertionError("right home is not the all-135 pose")
     blocked = _block_into_floor(np.array([0.01, 0.0, -0.02]), True)
     if blocked[2] != 0.0 or blocked[0] != 0.01:
         raise AssertionError(f"floor block changed the wrong axis: {blocked}")

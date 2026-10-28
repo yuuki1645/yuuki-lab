@@ -8,6 +8,7 @@ Isaac の手動操作と同じ積算と逆運動学を、USB を握っている 
 角度は URDF の可動域と、ファームが受ける 40〜230° の内側に収める。
 画面の 100〜170° は机上の単軸実験用で、そのままだと膝が約 35° しか曲がらない。
 足裏の合計がしきい値を超えているあいだは、その足を腰の床側へは進めない。
+スタートを押しているあいだは、開始時の踵へゆっくり戻る。離すと止まる。
 
 起動（lab_debug.py が先に COM を開いていること）::
 
@@ -55,10 +56,15 @@ _TRIGGER_DEAD_ZONE = 0.08
 # L/R は ON/OFF だけなので、倒し切りと同じ 1.0 だと天井側が一気に動く。
 # トリガーの中間くらいに合わせ、天井側の速さは上下最高速の約 1/3 にする。
 _BUMPER_RATE = 1.0 / 3.0
+# スタート押下中に、開始時の踵へ戻る速さ。倒し切りより遅く、一気に飛ばない。
+_HOME_SPEED_MPS = 0.06
+# これより近ければ、そのフレームで初期位置へ着ける。
+_HOME_ARRIVE_M = 0.001
 
-# XInput の肩ボタン。バンパーが天井側、トリガーが床側。
+# XInput の肩ボタン。バンパーが天井側、トリガーが床側。スタートは初期位置へ戻す。
 _BTN_LEFT_SHOULDER = 0x0100
 _BTN_RIGHT_SHOULDER = 0x0200
+_BTN_START = 0x0010
 
 # 画面と同じ順。右 5 のあと左 5。
 _RIGHT_NAMES = (
@@ -118,6 +124,21 @@ def _shoulder_rate(bumper: bool, trigger: float) -> float:
         down = (trigger - _TRIGGER_DEAD_ZONE) / (1.0 - _TRIGGER_DEAD_ZONE)
         down = float(np.clip(down, 0.0, 1.0)) ** 2
     return up - down
+
+
+def _home_step(current: np.ndarray, home: np.ndarray, dt: float) -> np.ndarray:
+    """初期位置へ、最高でも _HOME_SPEED_MPS で近づく変位を返す。
+
+    残りが 1 フレーム分より短ければ、その差分だけ返す。行き過ぎない。
+    """
+    delta = np.asarray(home, dtype=float) - np.asarray(current, dtype=float)
+    dist = float(np.linalg.norm(delta))
+    if dist <= _HOME_ARRIVE_M:
+        return delta
+    step = _HOME_SPEED_MPS * max(float(dt), 0.0)
+    if dist <= step:
+        return delta
+    return delta * (step / dist)
 
 
 def _thumb(raw: int) -> float:
@@ -201,6 +222,12 @@ class XInputPad:
             dtype=float,
         )
         return left, right
+
+    def start_held(self) -> bool:
+        """スタートが押されていれば True。抜いているフレームは False。"""
+        if not self.connected():
+            return False
+        return bool(int(self._state.Gamepad.wButtons) & _BTN_START)
 
 
 def _command_limits(ik) -> np.ndarray:
@@ -321,6 +348,7 @@ def _run(url: str) -> None:
     print(f"橋へ接続します: {url}", flush=True)
     print("PWM は入れません。動かしたい関節は、実機テレメトリで PWM を入れてください。", flush=True)
     print("足が床を押しているあいだは、その足を床側へは動かしません。", flush=True)
+    print("スタートを押しているあいだ、開始時の踵へゆっくり戻ります。離すと止まります。", flush=True)
     link.connect()
     print("補正角が届くまで待ちます。", flush=True)
     deadline = time.perf_counter() + 10.0
@@ -336,6 +364,9 @@ def _run(url: str) -> None:
         raise RuntimeError("10 秒待っても補正角が 10 軸届きません。CoreS3 の USB と lab_debug.py を確認してください。")
 
     left_q, right_q, left_heel, right_heel = _seed_from_frame(frame, ik)
+    # このあと踵は積算で動く。初期位置は開始時のコピーを残す。
+    left_home = np.array(left_heel, dtype=float)
+    right_home = np.array(right_heel, dtype=float)
     print(
         f"開始  L heel=({left_heel[0]:+.3f},{left_heel[1]:+.3f},{left_heel[2]:+.3f}) "
         f"R heel=({right_heel[0]:+.3f},{right_heel[1]:+.3f},{right_heel[2]:+.3f})",
@@ -353,13 +384,21 @@ def _run(url: str) -> None:
             latest = link.latest() or {}
             left_load = _foot_kg(latest.get("foot_left"))
             right_load = _foot_kg(latest.get("foot"))
-            left_w, right_w = pad.velocity_weights()
+            # スタート中はスティックを使わず、開始時の踵へ一定の速さで戻す。
+            homing = pad.start_held()
+            if homing:
+                left_delta = _home_step(left_heel, left_home, dt)
+                right_delta = _home_step(right_heel, right_home, dt)
+            else:
+                left_w, right_w = pad.velocity_weights()
+                left_delta = left_w * speed * dt
+                right_delta = right_w * speed * dt
             left_heel, left_q, left_held = _advance_leg(
                 ik,
                 limits,
                 left_heel,
                 left_q,
-                left_w * speed * dt,
+                left_delta,
                 ik.Y_HIP_LEFT,
                 ik.ROLL_SIGN_LEFT,
                 left_load is not None and left_load >= _FLOOR_HOLD_KG,
@@ -369,7 +408,7 @@ def _run(url: str) -> None:
                 limits,
                 right_heel,
                 right_q,
-                right_w * speed * dt,
+                right_delta,
                 ik.Y_HIP_RIGHT,
                 ik.ROLL_SIGN_RIGHT,
                 right_load is not None and right_load >= _FLOOR_HOLD_KG,
@@ -385,6 +424,8 @@ def _run(url: str) -> None:
                     hold.append("左は接地中なので床側を止めました")
                 if right_held:
                     hold.append("右は接地中なので床側を止めました")
+                if homing:
+                    hold.append("初期位置へ戻しています")
                 extra = (" " + " ".join(hold)) if hold else ""
                 print(
                     f"L=({left_heel[0]:+.3f},{left_heel[1]:+.3f},{left_heel[2]:+.3f}) "
@@ -419,6 +460,13 @@ def _self_check() -> None:
         raise AssertionError("bumper lift is not one third of full vertical speed")
     if abs(_shoulder_rate(False, 1.0) + 1.0) > 1.0e-9:
         raise AssertionError("full trigger is not full downward speed")
+    # 0.3 m 先を 0.06 m/s で 0.02 秒進めると、1.2 mm だけ初期位置へ寄る。
+    far = _home_step(np.array([0.3, 0.0, 0.0]), np.zeros(3), 0.02)
+    if abs(float(np.linalg.norm(far)) - 0.0012) > 1.0e-9 or far[0] >= 0.0:
+        raise AssertionError(f"home step is not a slow approach: {far}")
+    near = _home_step(np.array([0.0004, 0.0, 0.0]), np.zeros(3), 0.02)
+    if abs(float(near[0]) + 0.0004) > 1.0e-12:
+        raise AssertionError(f"home step overshot a short gap: {near}")
     blocked = _block_into_floor(np.array([0.01, 0.0, -0.02]), True)
     if blocked[2] != 0.0 or blocked[0] != 0.01:
         raise AssertionError(f"floor block changed the wrong axis: {blocked}")

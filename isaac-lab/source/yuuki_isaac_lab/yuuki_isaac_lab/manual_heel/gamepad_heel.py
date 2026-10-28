@@ -8,6 +8,7 @@ Windows 上では Xbox 360 Controller として見え、肩ボタンは次の対
 
 - L / R: バンパー（LEFT_SHOULDER / RIGHT_SHOULDER）。押しているあいだ天井側。
 - ZL / ZR: トリガー（LEFT_TRIGGER / RIGHT_TRIGGER）。引いているあいだ床側。
+- スタート: 押しているあいだ、呼び出し側が開始時の踵へ戻す。ここは押下だけを返す。
 
 スティックは速度である。中立は 0 を返し、位置を戻す責務は持たない。
 """
@@ -40,7 +41,7 @@ class HeelGamepad:
             "right_x": _SplitAxis(),
             "right_y": _SplitAxis(),
         }
-        self._buttons = {"l": 0.0, "zl": 0.0, "r": 0.0, "zr": 0.0}
+        self._buttons = {"l": 0.0, "zl": 0.0, "r": 0.0, "zr": 0.0, "start": 0.0}
         # ビューポートがパッドをカメラ操作に取らないようにする。
         carb.settings.get_settings().set_bool("/persistent/app/omniverse/gamepadCameraControl", False)
         self._input = carb.input.acquire_input_interface()
@@ -87,6 +88,10 @@ class HeelGamepad:
         )
         return left, right
 
+    def start_held(self) -> bool:
+        """スタートが押されていれば True。ボタン名が無いパッドは False。"""
+        return float(self._buttons.get("start", 0.0)) >= 0.5
+
     def snapshot(self) -> str:
         """コンソール表示用に、今の入力を短い文字列にする。"""
         left, right = self.velocity_weights()
@@ -125,6 +130,12 @@ class HeelGamepad:
             _require(pad, "LEFT_TRIGGER"): "zl",
             _require(pad, "RIGHT_TRIGGER"): "zr",
         }
+        # スタートは機種で名前が違う。無いときは戻る操作だけ無効にして、他は動かす。
+        start = _find(pad, "START", "MENU")
+        if start is None:
+            print("gamepad: スタートボタンが見つからないので、初期位置へは戻りません。", flush=True)
+        else:
+            self._button_map[start] = "start"
 
     @staticmethod
     def _shaped_stick(value: float) -> float:
@@ -176,6 +187,14 @@ class _SplitAxis:
         if self.negative > self.positive:
             return -self.negative
         return self.positive
+
+
+def _find(enum_type, *names: str):
+    """GamepadInput のメンバーを探す。無ければ None。"""
+    for name in names:
+        if hasattr(enum_type, name):
+            return getattr(enum_type, name)
+    return None
 
 
 def _require(enum_type, *names: str):

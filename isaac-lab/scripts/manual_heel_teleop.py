@@ -18,7 +18,8 @@
     右スティック  右踵。同じ向き。
     L / R         肩のバンパー。押しているあいだ、その足を腰の天井側へ。
     ZL / ZR       肩のトリガー。引いているあいだ、その足を腰の床側へ。
-    スティックやボタンを戻しても、そこまでの踵位置は保持する。
+    スタート      押しているあいだ、開始時の両踵へゆっくり戻る。離すと止まる。
+    スティックや肩ボタンを戻しても、そこまでの踵位置は保持する。
 
 ``robot_description/isaac_hub_bridge.py`` が 127.0.0.1:8796 で待っていれば、
 目標角・今の関節角・足裏を robotics-hub の実機テレメトリへ出す。橋が無くても操作は続く。
@@ -80,6 +81,9 @@ _RIGHT_JOINTS = (
 )
 # 足裏中心から踵まで。板の長さ 0.30 m の後ろ半分。下面の高さが足裏中心と同じ。
 _HEEL_IN_SOLE = (-0.15, 0.0, 0.0)
+# 実機の heel_gamepad.py と同じ。スタート押下中に開始時の踵へ戻る速さ。
+_HOME_SPEED_MPS = 0.06
+_HOME_ARRIVE_M = 0.001
 
 
 def main() -> None:
@@ -117,6 +121,9 @@ def main() -> None:
     right_q = _leg_angles(robot, joint_index, _RIGHT_JOINTS)
     left_target, _ = fk_heel(left_q, Y_HIP_LEFT, ROLL_SIGN_LEFT)
     right_target, _ = fk_heel(right_q, Y_HIP_RIGHT, ROLL_SIGN_RIGHT)
+    # 出現姿勢を初期位置として残す。このあとの積算では上書きしない。
+    left_home = np.array(left_target, dtype=float)
+    right_home = np.array(right_target, dtype=float)
     _report_model_error(robot, waist_id, left_sole_id, right_sole_id, left_target, right_target)
 
     if getattr(args_cli, "headless", False):
@@ -133,6 +140,7 @@ def main() -> None:
     print(
         "操作: 左スティック=左踵、右スティック=右踵（腰のXY、奥が前、右がロボットの右）。\n"
         "      L/R バンパーで天井側、ZL/ZR トリガーで床側。離すとその位置を保持します。\n"
+        "      スタートを押しているあいだ、開始時の踵へゆっくり戻ります。離すと止まります。\n"
         "      緑の球が左踵の目標、橙の球が右踵の目標です。届かない高さは自動でずらします。\n"
         "      橋（isaac_hub_bridge.py）があれば、実機テレメトリの補正（シミュ）と足裏へ出します。",
         flush=True,
@@ -146,18 +154,25 @@ def main() -> None:
     status_interval = max(1, int(round(2.0 / sim_dt)))
     try:
         while simulation_app.is_running():
-            left_weight, right_weight = pad.velocity_weights()
             frame_dt = min(float(sim_dt), 0.05)
+            # スタート中はスティックを使わず、出現時の踵へ一定の速さで戻す。
+            if pad.start_held():
+                left_delta = _home_step(left_target, left_home, frame_dt)
+                right_delta = _home_step(right_target, right_home, frame_dt)
+            else:
+                left_weight, right_weight = pad.velocity_weights()
+                left_delta = left_weight * speed * frame_dt
+                right_delta = right_weight * speed * frame_dt
             left_target, left_q, _ = step_heel_target(
                 left_target,
-                left_weight * speed * frame_dt,
+                left_delta,
                 Y_HIP_LEFT,
                 left_q,
                 roll_sign=ROLL_SIGN_LEFT,
             )
             right_target, right_q, _ = step_heel_target(
                 right_target,
-                right_weight * speed * frame_dt,
+                right_delta,
                 Y_HIP_RIGHT,
                 right_q,
                 roll_sign=ROLL_SIGN_RIGHT,
@@ -277,11 +292,30 @@ class _IdleGamepad:
         zero = np.zeros(3)
         return zero, zero.copy()
 
+    def start_held(self) -> bool:
+        """パッドが無いときは戻さない。"""
+        return False
+
     def snapshot(self) -> str:
         return "pad idle"
 
     def close(self) -> None:
         return None
+
+
+def _home_step(current: np.ndarray, home: np.ndarray, dt: float) -> np.ndarray:
+    """初期位置へ、最高でも _HOME_SPEED_MPS で近づく変位を返す。
+
+    実機の link/host/heel_gamepad.py と同じ規則。残りが 1 フレームより短ければ着ける。
+    """
+    delta = np.asarray(home, dtype=float) - np.asarray(current, dtype=float)
+    dist = float(np.linalg.norm(delta))
+    if dist <= _HOME_ARRIVE_M:
+        return delta
+    step = _HOME_SPEED_MPS * max(float(dt), 0.0)
+    if dist <= step:
+        return delta
+    return delta * (step / dist)
 
 
 def _apply_joints(

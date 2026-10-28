@@ -4,8 +4,10 @@
 """ゲームパッドで、腰基準の左右の踵を Isaac Sim 上で動かす。
 
 強化学習の歩行環境とは別のスクリプト。方策は使わない。
-接続されている XInput パッド（Logicool を Xbox 360 Controller として認識したもの）を読み、
-スティックの速度を踵目標へ積算してから逆運動学で関節角にする。
+機体は robot_description の両脚（バランス棒なし）。接続されている XInput パッド
+（Logicool を Xbox 360 Controller として認識したもの）を読み、スティックの速度を
+踵目標へ積算してから逆運動学で関節角にする。倒し量は二乗するので、少しの倒しは遅く、
+倒し切りだけが最高速になる。
 
 起動例（isaac-lab ディレクトリ、env_isaaclab）::
 
@@ -27,8 +29,8 @@ import traceback
 from isaaclab.app import AppLauncher
 
 parser = argparse.ArgumentParser(description="Manual heel teleop in the waist frame.")
-parser.add_argument("--xy-speed", type=float, default=0.10, help="スティック倒し切りの踵の速さ [m/s]。")
-parser.add_argument("--z-speed", type=float, default=0.08, help="肩ボタンを押し切ったときの高さの速さ [m/s]。")
+parser.add_argument("--xy-speed", type=float, default=0.30, help="スティック倒し切りの踵の速さ [m/s]。")
+parser.add_argument("--z-speed", type=float, default=0.20, help="肩ボタンを押し切ったときの高さの速さ [m/s]。")
 parser.add_argument("--steps", type=int, default=0, help="0 ならウィンドウを閉じるまで。正ならその物理ステップで終了。")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
@@ -45,9 +47,16 @@ from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 from isaaclab.sim import SimulationContext
 from isaaclab.utils.math import quat_apply, quat_apply_inverse
 
-from yuuki_isaac_lab.assets.robots.yuuki_biped import YUUKI_BIPED_CFG
+from yuuki_isaac_lab.assets.robots.yuuki_legs import YUUKI_LEGS_CFG
 from yuuki_isaac_lab.manual_heel.gamepad_heel import HeelGamepad
-from yuuki_isaac_lab.manual_heel.leg_ik import Y_HIP_LEFT, Y_HIP_RIGHT, stand_heel, step_heel_target
+from yuuki_isaac_lab.manual_heel.leg_ik import (
+    ROLL_SIGN_LEFT,
+    ROLL_SIGN_RIGHT,
+    Y_HIP_LEFT,
+    Y_HIP_RIGHT,
+    fk_heel,
+    step_heel_target,
+)
 
 # 片脚の関節名。逆運動学の並びと一致させる。
 _LEFT_JOINTS = (
@@ -64,10 +73,8 @@ _RIGHT_JOINTS = (
     "right_ankle_pitch",
     "right_ankle_roll",
 )
-# 足裏リンクから踵点まで。URDF の heel_bottom_site と同じ。
-_HEEL_IN_SOLE = (-0.025, 0.0, 0.0)
-# 胴体のバランス軸は、この操作では中立のまま持つ。
-_HOLD_JOINTS = ("basket_top_roll", "balance_pitch")
+# 足裏中心から踵まで。板の長さ 0.30 m の後ろ半分。下面の高さが足裏中心と同じ。
+_HEEL_IN_SOLE = (-0.15, 0.0, 0.0)
 
 
 def main() -> None:
@@ -93,17 +100,18 @@ def main() -> None:
     sim.step()
     robot.update(sim.get_physics_dt())
 
-    joint_index = {name: int(robot.find_joints(name)[0][0]) for name in (*_LEFT_JOINTS, *_RIGHT_JOINTS, *_HOLD_JOINTS)}
-    waist_id = int(robot.find_bodies("basket_thigh")[0][0])
-    # 踵サイトは固定リンクのため、この USD の関節ボディには入らない。足裏姿勢からオフセットする。
+    joint_index = {name: int(robot.find_joints(name)[0][0]) for name in (*_LEFT_JOINTS, *_RIGHT_JOINTS)}
+    # カゴ底の中心が腰の原点。固定リンクの足裏は、USD でもリンクとして残してある。
+    waist_id = int(robot.find_bodies("basket")[0][0])
     left_sole_id = int(robot.find_bodies("left_sole")[0][0])
     right_sole_id = int(robot.find_bodies("right_sole")[0][0])
 
-    # 目標の初期値は運動学の立位。測定値で上書きしないので、接地の沈みを目標に取り込まない。
-    left_target = stand_heel(Y_HIP_LEFT)
-    right_target = stand_heel(Y_HIP_RIGHT)
-    left_q = np.zeros(5)
-    right_q = np.zeros(5)
+    # 出現姿勢（少し開いた足裏平行）を、その順運動学の踵として保持する。
+    # 測定した沈みは目標に取り込まない。
+    left_q = _leg_angles(robot, joint_index, _LEFT_JOINTS)
+    right_q = _leg_angles(robot, joint_index, _RIGHT_JOINTS)
+    left_target, _ = fk_heel(left_q, Y_HIP_LEFT, ROLL_SIGN_LEFT)
+    right_target, _ = fk_heel(right_q, Y_HIP_RIGHT, ROLL_SIGN_RIGHT)
     _report_model_error(robot, waist_id, left_sole_id, right_sole_id, left_target, right_target)
 
     if getattr(args_cli, "headless", False):
@@ -132,9 +140,19 @@ def main() -> None:
     while simulation_app.is_running():
         left_weight, right_weight = pad.velocity_weights()
         frame_dt = min(float(sim_dt), 0.05)
-        left_target, left_q, _ = step_heel_target(left_target, left_weight * speed * frame_dt, Y_HIP_LEFT, left_q)
+        left_target, left_q, _ = step_heel_target(
+            left_target,
+            left_weight * speed * frame_dt,
+            Y_HIP_LEFT,
+            left_q,
+            roll_sign=ROLL_SIGN_LEFT,
+        )
         right_target, right_q, _ = step_heel_target(
-            right_target, right_weight * speed * frame_dt, Y_HIP_RIGHT, right_q
+            right_target,
+            right_weight * speed * frame_dt,
+            Y_HIP_RIGHT,
+            right_q,
+            roll_sign=ROLL_SIGN_RIGHT,
         )
         _apply_joints(robot, joint_pos, joint_index, left_q, right_q)
         robot.write_data_to_sim()
@@ -166,7 +184,7 @@ def _design_scene() -> Articulation:
     ground.func("/World/ground", ground)
     light = sim_utils.DomeLightCfg(intensity=2500.0, color=(0.75, 0.75, 0.75))
     light.func("/World/Light", light)
-    robot_cfg = YUUKI_BIPED_CFG.replace(prim_path="/World/Robot")
+    robot_cfg = YUUKI_LEGS_CFG.replace(prim_path="/World/Robot")
     return Articulation(cfg=robot_cfg)
 
 
@@ -237,14 +255,12 @@ def _apply_joints(
     left_q: np.ndarray,
     right_q: np.ndarray,
 ) -> None:
-    """逆運動学の角度を位置目標にする。胴体の 2 軸は中立を維持する。"""
+    """逆運動学の角度を位置目標にする。この機体に胴体関節は無い。"""
     targets = joint_pos.clone()
     for name, angle in zip(_LEFT_JOINTS, left_q, strict=True):
         targets[0, joint_index[name]] = float(angle)
     for name, angle in zip(_RIGHT_JOINTS, right_q, strict=True):
         targets[0, joint_index[name]] = float(angle)
-    for name in _HOLD_JOINTS:
-        targets[0, joint_index[name]] = 0.0
     robot.set_joint_position_target(targets)
     robot.set_joint_velocity_target(torch.zeros_like(targets))
 
@@ -276,6 +292,12 @@ def _report_model_error(
             )
 
 
+def _leg_angles(robot: Articulation, joint_index: dict[str, int], names: tuple[str, ...]) -> np.ndarray:
+    """名前の順で、今の関節角 [rad] を 5 個取り出す。"""
+    positions = robot.data.joint_pos[0].detach().cpu().numpy()
+    return np.array([float(positions[joint_index[name]]) for name in names], dtype=float)
+
+
 def _heel_in_waist(robot: Articulation, waist_id: int, sole_id: int) -> np.ndarray:
     """足裏姿勢に踵オフセットを足し、今の腰座標で読む。"""
     waist_pos = robot.data.body_pos_w[0, waist_id]
@@ -291,5 +313,9 @@ def _heel_in_waist(robot: Articulation, waist_id: int, sole_id: int) -> np.ndarr
 if __name__ == "__main__":
     try:
         main()
+    except BaseException:
+        # Kit は close の中でプロセスを終わらせることがあり、その後の表示が消える。
+        traceback.print_exc()
+        raise
     finally:
         simulation_app.close()

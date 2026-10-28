@@ -1,14 +1,17 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""yuuki_biped 片脚の逆運動学。
+"""robot_description の両脚の逆運動学。
 
-腰（URDF の ``basket_thigh``）を原点にした座標系で、踵 ``heel_bottom_site`` の位置から
-5 関節の角度を求める。股のヨーは無い。
+腰（URDF の ``basket``、カゴ底の中心）を原点にした座標系で、足裏板の後ろ端（踵）の位置から
+5 関節の角度を求める。股のヨーは無い。バランス棒も胴体関節も無い。
 
 関節の並びは次のとおり。
 
     hip_roll, hip_pitch, knee_pitch, ankle_pitch, ankle_roll
+
+左のロール軸は +X、右のロール軸は -X。関節角 q の回転は ``Rx(roll_sign * q)`` で、
+右は ``roll_sign = -1``。正のピッチと正の膝は、どちらも脚を腰の -X（後ろ）へ折る。
 
 足裏は、関節余裕があるかぎり腰の XY と平行に保つ（足首で股のロールとピッチ合計を打ち消す）。
 指定した XY が今の高さでは脚の長さか関節可動域の外なら、XY を優先して高さを一番近い届く値にずらす。
@@ -19,78 +22,79 @@ from __future__ import annotations
 
 import numpy as np
 
-# 股ロール関節から股ピッチ関節まで（腰の下向き）。
+# 股ロール関節から股ピッチ関節まで（腰の下向き）。サーボ 1 段。
 _L_HIP = 0.065
-# 股ピッチから膝まで。
-_L_THIGH = 0.20
-# 膝から足首ピッチまで。すねの固定オフセット 0.065 と、すね長 0.20 の和。
-_L_SHIN = 0.265
-# 足首ピッチから足首ロールまで。
+# 股ピッチから膝まで。yaml の segment length。
+_L_THIGH = 0.226
+# 膝から足首ピッチまで。腿と同じ軸間距離。
+_L_SHIN = 0.226
+# 足首ピッチから足首ロールまで。サーボ 1 段。
 _L_ANKLE = 0.065
-# 足裏が腰と平行なとき、踵を腰座標で見たオフセット。
-# 足首ロール関節から sole まで (0, 0, -0.065)、sole から踵まで (-0.025, 0, 0)。
-_HEEL_FROM_ANKLE_ROLL = np.array([-0.025, 0.0, -0.065])
+# 足裏が腰と平行なとき、足首ロール関節から踵までの腰座標オフセット。
+# 足リンクから足裏中心は (0.05, 0, -0.058)。板の長さ 0.30 m の後ろ半分が踵。
+# 踵 = 足裏中心 + (-0.15, 0, 0) = 足首ロールから (-0.10, 0, -0.058)。
+_HEEL_FROM_ANKLE_ROLL = np.array([-0.10, 0.0, -0.058])
 
-# 伸ばし切った立位の踵。ルート高さ 0.66 m と合わせると、床が z=0 になる。
-_STAND_HEEL_LOCAL = np.array([-0.025, 0.0, -0.66])
-
-# URDF の可動域 [rad]。左右で同じ（軸は鏡像になっていない）。
+# yuuki_biped.yaml の可動域 [rad]。左右で同じ。正の膝は後ろへ折れる。
 LEG_LIMITS = np.array(
     [
-        [-0.523599, 1.570796],  # hip roll
-        [-1.919862, 0.523599],  # hip pitch
-        [0.000000, 1.745329],  # knee pitch（正が前方へ折る）
-        [-0.349066, 1.570796],  # ankle pitch
-        [-0.349066, 0.349066],  # ankle roll
+        [-0.785398, 0.785398],  # hip roll ±45 deg
+        [-0.785398, 1.570796],  # hip pitch -45..+90 deg
+        [0.000000, 2.094395],  # knee 0..120 deg
+        [-0.785398, 0.785398],  # ankle pitch ±45 deg
+        [-0.523599, 0.523599],  # ankle roll ±30 deg
     ],
     dtype=float,
 )
 
-# 股関節の Y。左が腰の +Y。
-Y_HIP_LEFT = 0.12
-Y_HIP_RIGHT = -0.12
+# 股ロール軸の Y。左が腰の +Y。間隔は yaml の 0.09 m。
+Y_HIP_LEFT = 0.09
+Y_HIP_RIGHT = -0.09
+# ロール軸の符号。左は +X、右は -X。関節角に掛けてから Rx する。
+ROLL_SIGN_LEFT = 1.0
+ROLL_SIGN_RIGHT = -1.0
 
 # 位置を「届いた」とみなす許容 [m]。これより悪い XY は、その高さを不採用にする。
 _POS_TOL = 0.008
 
 
-def stand_heel(y_hip: float) -> np.ndarray:
+def stand_heel(y_hip: float, roll_sign: float = 1.0) -> np.ndarray:
     """全関節 0 のときの踵位置（腰座標系）を返す。"""
-    heel = _STAND_HEEL_LOCAL.copy()
-    heel[1] = y_hip
+    heel, _ = fk_heel(np.zeros(5), y_hip, roll_sign)
     return heel
 
 
-def fk_heel(q: np.ndarray, y_hip: float) -> tuple[np.ndarray, np.ndarray]:
+def fk_heel(q: np.ndarray, y_hip: float, roll_sign: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
     """関節角から踵位置と足裏の回転を求める。
 
     Args:
         q: ``[hip_roll, hip_pitch, knee_pitch, ankle_pitch, ankle_roll]`` [rad]。
         y_hip: 股ロール関節の腰座標系 Y [m]。左は正、右は負。
+        roll_sign: 左は +1、右は -1。股ロールと足首ロールの軸に掛ける。
 
     Returns:
         踵位置 [m] と、足裏フレームの回転行列（列が腰座標での足裏の軸）。
         回転が単位行列なら、足裏は腰の XY と平行。
     """
     q1, q2, q3, q4, q5 = (float(v) for v in np.asarray(q, dtype=float).reshape(5))
-    # 親フレームの回転を掛けながら、次の関節原点へ進む。URDF の回転軸は右ねじ。
+    # 右脚のロール軸は -X。関節の正方向は、その軸まわりの右ねじ。
+    signed_roll = float(roll_sign)
     rotation = np.eye(3)
     point = np.array([0.0, y_hip, 0.0])
 
-    rotation = rotation @ _rx(q1)
+    rotation = rotation @ _rx(signed_roll * q1)
     point = point + rotation @ np.array([0.0, 0.0, -_L_HIP])
 
     rotation = rotation @ _ry(q2)
     point = point + rotation @ np.array([0.0, 0.0, -_L_THIGH])
 
     rotation = rotation @ _ry(q3)
-    # 膝リンクからすねの固定関節、さらに足首ピッチ関節まで。
     point = point + rotation @ np.array([0.0, 0.0, -_L_SHIN])
 
     rotation = rotation @ _ry(q4)
     point = point + rotation @ np.array([0.0, 0.0, -_L_ANKLE])
 
-    rotation = rotation @ _rx(q5)
+    rotation = rotation @ _rx(signed_roll * q5)
     point = point + rotation @ _HEEL_FROM_ANKLE_ROLL
     return point, rotation
 
@@ -101,6 +105,7 @@ def step_heel_target(
     y_hip: float,
     q_seed: np.ndarray,
     limits: np.ndarray | None = None,
+    roll_sign: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """今の目標に変位を足し、届くときだけ目標と関節角を更新する。
 
@@ -113,6 +118,7 @@ def step_heel_target(
         y_hip: 股関節の Y。
         q_seed: 直前の関節角。数値解の初期値と、失敗したときの保持に使う。
         limits: 関節の上下限。省略時は URDF の可動域。
+        roll_sign: 左は +1、右は -1。
 
     Returns:
         新しい目標、新しい関節角、このフレームで目標を進めたか。
@@ -125,7 +131,7 @@ def step_heel_target(
         return current, seed, False
 
     proposed = current + step
-    solved_q, solved_heel, ok = solve_heel(proposed, y_hip, seed, limits)
+    solved_q, solved_heel, ok = solve_heel(proposed, y_hip, seed, limits, roll_sign)
     if not ok:
         return current, seed, False
 
@@ -146,6 +152,7 @@ def solve_heel(
     y_hip: float,
     q_seed: np.ndarray,
     limits: np.ndarray | None = None,
+    roll_sign: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """腰座標系の踵目標を関節角に落とす。
 
@@ -161,19 +168,19 @@ def solve_heel(
     joint_limits = LEG_LIMITS if limits is None else np.asarray(limits, dtype=float)
     seed = _clip_joints(np.asarray(q_seed, dtype=float).reshape(5), joint_limits)
 
-    exact = _analytical_if_reaches(desired, y_hip, joint_limits, match_height=True)
+    exact = _analytical_if_reaches(desired, y_hip, joint_limits, match_height=True, roll_sign=roll_sign)
     if exact is not None:
         return exact
 
-    scanned = _closest_height_analytical(desired, y_hip, joint_limits)
+    scanned = _closest_height_analytical(desired, y_hip, joint_limits, roll_sign)
     if scanned is not None:
         return scanned
 
-    numerical = _closest_height_numerical(desired, y_hip, seed, joint_limits)
+    numerical = _closest_height_numerical(desired, y_hip, seed, joint_limits, roll_sign)
     if numerical is not None:
         return numerical
 
-    held, _ = fk_heel(seed, y_hip)
+    held, _ = fk_heel(seed, y_hip, roll_sign)
     return seed, held, False
 
 
@@ -182,13 +189,14 @@ def _analytical_if_reaches(
     y_hip: float,
     limits: np.ndarray,
     match_height: bool,
+    roll_sign: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray, bool] | None:
     """足裏平行の解析解が、許容内で目標に届くときだけ返す。"""
-    q = _analytical_flat_sole(desired, y_hip)
+    q = _analytical_flat_sole(desired, y_hip, roll_sign)
     if q is None or not _within_limits(q, limits):
         return None
     q = _clip_joints(q, limits)
-    heel, rotation = fk_heel(q, y_hip)
+    heel, rotation = fk_heel(q, y_hip, roll_sign)
     if float(np.linalg.norm(heel[:2] - desired[:2])) > _POS_TOL:
         return None
     if match_height and abs(float(heel[2] - desired[2])) > _POS_TOL:
@@ -203,6 +211,7 @@ def _closest_height_analytical(
     desired: np.ndarray,
     y_hip: float,
     limits: np.ndarray,
+    roll_sign: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray, bool] | None:
     """同じ XY で、指令高さに一番近い届く高さを解析解から選ぶ。
 
@@ -213,7 +222,7 @@ def _closest_height_analytical(
     def reaches(height: float) -> tuple[np.ndarray, np.ndarray, bool] | None:
         trial = desired.copy()
         trial[2] = height
-        return _analytical_if_reaches(trial, y_hip, limits, match_height=True)
+        return _analytical_if_reaches(trial, y_hip, limits, match_height=True, roll_sign=roll_sign)
 
     return _project_height(float(desired[2]), reaches)
 
@@ -223,6 +232,7 @@ def _closest_height_numerical(
     y_hip: float,
     seed: np.ndarray,
     limits: np.ndarray,
+    roll_sign: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray, bool] | None:
     """足裏の平行を緩めた数値解を、直前姿勢から 1 回だけ求める。
 
@@ -230,15 +240,15 @@ def _closest_height_numerical(
     ここは足首の可動域で足裏を平行にできないとき用なので、高さの総当たりはしない。
     高さも位置も指令どおりに届かなければ、高さの重みを下げてもう一度だけ解く。
     """
-    seed_heel, _ = fk_heel(seed, y_hip)
+    seed_heel, _ = fk_heel(seed, y_hip, roll_sign)
     if float(np.linalg.norm(seed_heel - desired)) < 0.05:
         start = seed
     else:
-        free = _analytical_flat_sole(desired, y_hip)
+        free = _analytical_flat_sole(desired, y_hip, roll_sign)
         start = seed if free is None else _clip_joints(free, limits)
 
-    q = _ik_numerical(desired, y_hip, start, limits, z_weight=1.0, iters=10)
-    heel, _ = fk_heel(q, y_hip)
+    q = _ik_numerical(desired, y_hip, start, limits, z_weight=1.0, iters=10, roll_sign=roll_sign)
+    heel, _ = fk_heel(q, y_hip, roll_sign)
     xy_err = float(np.linalg.norm(heel[:2] - desired[:2]))
     z_err = abs(float(heel[2]) - float(desired[2]))
     if xy_err <= _POS_TOL * 1.5 and z_err <= _POS_TOL * 1.5:
@@ -247,19 +257,20 @@ def _closest_height_numerical(
         return q, heel, True
 
     # 高さを固定したままだと XY が犠牲になるので、高さだけ緩める。
-    q = _ik_numerical(desired, y_hip, q, limits, z_weight=0.15, iters=10)
-    heel, _ = fk_heel(q, y_hip)
+    q = _ik_numerical(desired, y_hip, q, limits, z_weight=0.15, iters=10, roll_sign=roll_sign)
+    heel, _ = fk_heel(q, y_hip, roll_sign)
     if float(np.linalg.norm(heel[:2] - desired[:2])) > _POS_TOL * 1.5:
         return None
     return q, heel, True
 
 
-def _analytical_flat_sole(heel: np.ndarray, y_hip: float) -> np.ndarray | None:
+def _analytical_flat_sole(heel: np.ndarray, y_hip: float, roll_sign: float = 1.0) -> np.ndarray | None:
     """足裏を腰と平行に保ったときの解析解。可動域は見ない。
 
     足裏平行の条件は ``ankle_roll = -hip_roll`` かつ ``ankle_pitch = -(hip_pitch + knee)``。
+    左右のロール軸が同じ符号で逆向きなので、足首ロールを股ロールの逆にすれば足裏は平行に戻る。
     このとき足首から踵までのベクトルは腰座標で一定なので、股と膝の 3 関節で位置が決まる。
-    膝は前方へ折れる枝（``knee >= 0``）だけを返す。
+    膝は後ろへ折れる枝（``knee >= 0``）だけを返す。
     """
     # 足首ロール関節の目標位置。足裏平行なら踵から一定の引き戻し。
     ankle_roll_point = np.asarray(heel, dtype=float).reshape(3) - _HEEL_FROM_ANKLE_ROLL
@@ -269,8 +280,10 @@ def _analytical_flat_sole(heel: np.ndarray, y_hip: float) -> np.ndarray | None:
     # 股の下のリンク長より近い点は、足裏を平行にしたままでは届かない。
     if radius < _L_HIP + _L_ANKLE + 1.0e-6:
         return None
-    # ロール後の「真下」方向への射影。radius * sin(q1) = lateral, radius * cos(q1) = -vertical。
-    hip_roll = float(np.arctan2(lateral, -vertical))
+    # +X まわりの回転角。radius * sin(a) = lateral, radius * cos(a) = -vertical。
+    # 右脚は軸が -X なので、同じ幾何の角を符号反転して関節角にする。
+    about_plus_x = float(np.arctan2(lateral, -vertical))
+    hip_roll = float(roll_sign) * about_plus_x
     # 股ピッチ・膝が動かす矢状面内の残り長さ。正が腰の下向き。
     radial_after_hip = radius - _L_ANKLE - _L_HIP
     # Ry の右ねじでは、正のピッチが足を腰の -X（後ろ）へ振る。
@@ -281,7 +294,7 @@ def _analytical_flat_sole(heel: np.ndarray, y_hip: float) -> np.ndarray | None:
     if cosine_knee < -1.0 - 1.0e-6 or cosine_knee > 1.0 + 1.0e-6:
         return None
     cosine_knee = float(np.clip(cosine_knee, -1.0, 1.0))
-    # 正の膝角が、この機体の「前方へ折る」唯一の枝。
+    # 正の膝角が、この機体の「後ろへ折れる」枝。sin を正にしてその枝だけを採る。
     sine_knee = float(np.sqrt(max(0.0, 1.0 - cosine_knee * cosine_knee)))
     knee = float(np.arctan2(sine_knee, cosine_knee))
     hip_pitch = float(
@@ -300,6 +313,7 @@ def _ik_numerical(
     limits: np.ndarray,
     z_weight: float = 1.0,
     iters: int = 25,
+    roll_sign: float = 1.0,
 ) -> np.ndarray:
     """位置を主、足裏の傾きを従にした減衰最小二乗の反復。"""
     q = _clip_joints(q_init, limits)
@@ -312,7 +326,7 @@ def _ik_numerical(
     best_err = float("inf")
     stalled = 0
     for _ in range(iters):
-        heel, rotation = fk_heel(q, y_hip)
+        heel, rotation = fk_heel(q, y_hip, roll_sign)
         tilt = _sole_tilt(rotation)
         error = np.array(
             [
@@ -331,7 +345,7 @@ def _ik_numerical(
             best_q = q.copy()
         if pos_err < 1.0e-4 and float(np.linalg.norm(tilt)) < 0.02:
             break
-        jacobian = _finite_difference_jacobian(q, y_hip, desired, error, lo, hi)
+        jacobian = _finite_difference_jacobian(q, y_hip, desired, error, lo, hi, roll_sign)
         system = jacobian.T @ weight @ jacobian + (damping * damping) * np.eye(5)
         # J は残差（目標 - 現在）の微分。残差を消す方向は -J^T r。
         rhs = -jacobian.T @ weight @ error
@@ -345,7 +359,7 @@ def _ik_numerical(
         improved_err = weighted_err
         for scale in (1.0, 0.5, 0.25):
             trial = _clip_joints(q + scale * step, limits)
-            trial_heel, _ = fk_heel(trial, y_hip)
+            trial_heel, _ = fk_heel(trial, y_hip, roll_sign)
             trial_err = _weighted_position_error(desired - trial_heel, z_weight)
             if trial_err + 1.0e-9 < improved_err:
                 improved = trial
@@ -372,6 +386,7 @@ def _finite_difference_jacobian(
     error: np.ndarray,
     lo: np.ndarray,
     hi: np.ndarray,
+    roll_sign: float = 1.0,
 ) -> np.ndarray:
     """誤差ベクトルの関節微分。可動域で止まった関節の列は 0。"""
     jacobian = np.zeros((5, 5), dtype=float)
@@ -382,7 +397,7 @@ def _finite_difference_jacobian(
         delta = float(nudged[index] - q[index])
         if abs(delta) < 1.0e-8:
             continue
-        heel, rotation = fk_heel(nudged, y_hip)
+        heel, rotation = fk_heel(nudged, y_hip, roll_sign)
         tilt = _sole_tilt(rotation)
         nudged_error = np.array(
             [
@@ -427,7 +442,8 @@ def _project_height(target_z: float, reaches, coarse_step: int = 1):
 
 def _height_candidates(target_z: float) -> np.ndarray:
     """腰座標系で踵が届きうる高さを、指令高さに近い順で返す。"""
-    coarse = np.linspace(-0.78, 0.05, 42)
+    # 全関節 0 の踵は約 -0.64 m。折り畳みと前方への振りで、これより上にも届く。
+    coarse = np.linspace(-0.80, 0.20, 51)
     order = np.argsort(np.abs(coarse - target_z))
     return coarse[order]
 
@@ -460,27 +476,43 @@ def _ry(angle: float) -> np.ndarray:
 
 def run_self_check() -> None:
     """解析解の往復と、伸び切った脚の高さ緩和を確認する。"""
-    # 立位は全関節 0 で、踵が床の高さになる。
-    heel, rotation = fk_heel(np.zeros(5), Y_HIP_LEFT)
-    if np.linalg.norm(heel - stand_heel(Y_HIP_LEFT)) > 1.0e-9:
-        raise AssertionError(f"stand FK mismatch: {heel}")
+    # 全関節 0 の踵。板の後ろ端は、足首の真下より 0.10 m 後ろ、足裏と同じ高さ。
+    heel, rotation = fk_heel(np.zeros(5), Y_HIP_LEFT, ROLL_SIGN_LEFT)
+    expected = np.array([-0.10, Y_HIP_LEFT, -(_L_HIP + _L_THIGH + _L_SHIN + _L_ANKLE) - 0.058])
+    if np.linalg.norm(heel - expected) > 1.0e-9:
+        raise AssertionError(f"stand FK mismatch: {heel} expected {expected}")
+    if np.linalg.norm(heel - stand_heel(Y_HIP_LEFT, ROLL_SIGN_LEFT)) > 1.0e-9:
+        raise AssertionError(f"stand helper mismatch: {heel}")
     if np.linalg.norm(rotation - np.eye(3)) > 1.0e-9:
         raise AssertionError("stand sole is not aligned with the waist")
 
+    # 正の股ロールは左右とも脚を開く。右は軸が -X なので、同じ正の角が -Y へ出る。
+    left_open, _ = fk_heel(np.array([0.30, 0.0, 0.0, 0.0, -0.30]), Y_HIP_LEFT, ROLL_SIGN_LEFT)
+    right_open, right_rot = fk_heel(np.array([0.30, 0.0, 0.0, 0.0, -0.30]), Y_HIP_RIGHT, ROLL_SIGN_RIGHT)
+    if left_open[1] <= Y_HIP_LEFT or right_open[1] >= Y_HIP_RIGHT:
+        raise AssertionError(f"roll sign does not open both legs: L={left_open} R={right_open}")
+    if np.linalg.norm(right_rot - np.eye(3)) > 1.0e-6:
+        raise AssertionError("right flat sole did not cancel the mirrored roll")
+    # 正の膝は後ろ（-X）へ折れる。
+    bent, _ = fk_heel(np.array([0.0, 0.0, 0.40, -0.40, 0.0]), Y_HIP_LEFT, ROLL_SIGN_LEFT)
+    if bent[0] >= heel[0]:
+        raise AssertionError(f"positive knee did not swing backward: {bent[0]} vs {heel[0]}")
+
     rng = np.random.default_rng(0)
     checked = 0
-    for y_hip in (Y_HIP_LEFT, Y_HIP_RIGHT):
+    for y_hip, roll_sign in ((Y_HIP_LEFT, ROLL_SIGN_LEFT), (Y_HIP_RIGHT, ROLL_SIGN_RIGHT)):
         for _ in range(80):
-            q1 = float(rng.uniform(-0.30, 0.30))
-            q2 = float(rng.uniform(-1.1, 0.35))
-            q3 = float(rng.uniform(0.0, 1.1))
+            # 足首の可動域に収まる足裏平行の姿勢だけを往復させる。
+            q1 = float(rng.uniform(-0.40, 0.40))
+            q2 = float(rng.uniform(-0.50, 0.70))
+            q3 = float(rng.uniform(0.0, 0.90))
             q = np.array([q1, q2, q3, -(q2 + q3), -q1], dtype=float)
             if not _within_limits(q, LEG_LIMITS):
                 continue
-            target, target_rot = fk_heel(q, y_hip)
+            target, target_rot = fk_heel(q, y_hip, roll_sign)
             if np.linalg.norm(_sole_tilt(target_rot)) > 1.0e-6:
                 raise AssertionError("flat-sole sample is tilted")
-            solved_q, solved_heel, ok = solve_heel(target, y_hip, np.zeros(5))
+            solved_q, solved_heel, ok = solve_heel(target, y_hip, np.zeros(5), roll_sign=roll_sign)
             if not ok or np.linalg.norm(solved_heel - target) > 1.0e-4:
                 raise AssertionError(f"roundtrip failed y={y_hip} q={q} got={solved_heel} ok={ok}")
             # 関節そのものも戻る。膝の枝を一つにしているので、別解へ飛ばない。
@@ -491,12 +523,13 @@ def run_self_check() -> None:
         raise AssertionError(f"too few roundtrip samples: {checked}")
 
     # 伸び切った状態から水平に動かすと、同じ高さでは届かない。高さは上がる。
-    straight = stand_heel(Y_HIP_LEFT)
+    straight = stand_heel(Y_HIP_LEFT, ROLL_SIGN_LEFT)
     moved, q_moved, advanced = step_heel_target(
         straight,
         np.array([0.06, 0.0, 0.0]),
         Y_HIP_LEFT,
         np.zeros(5),
+        roll_sign=ROLL_SIGN_LEFT,
     )
     if not advanced:
         raise AssertionError("forward step from full extension was rejected")
@@ -506,35 +539,39 @@ def run_self_check() -> None:
         raise AssertionError(f"height was not relaxed upward: {straight[2]} -> {moved[2]}")
 
     # 中立（変位ゼロ）では、緩和したあとの位置を保つ。
-    held, q_held, advanced_again = step_heel_target(moved, np.zeros(3), Y_HIP_LEFT, q_moved)
+    held, q_held, advanced_again = step_heel_target(
+        moved, np.zeros(3), Y_HIP_LEFT, q_moved, roll_sign=ROLL_SIGN_LEFT
+    )
     if advanced_again or np.linalg.norm(held - moved) > 0.0 or np.linalg.norm(q_held - q_moved) > 0.0:
         raise AssertionError("neutral input moved the stored heel")
 
     # さらに床側へは伸びしろが無いので、目標を溜めない。
-    down = stand_heel(Y_HIP_LEFT)
-    stayed, _, advanced_down = step_heel_target(down, np.array([0.0, 0.0, -0.03]), Y_HIP_LEFT, np.zeros(5))
+    down = stand_heel(Y_HIP_LEFT, ROLL_SIGN_LEFT)
+    stayed, _, advanced_down = step_heel_target(
+        down, np.array([0.0, 0.0, -0.03]), Y_HIP_LEFT, np.zeros(5), roll_sign=ROLL_SIGN_LEFT
+    )
     if advanced_down or np.linalg.norm(stayed - down) > 0.0:
         raise AssertionError("unreachable downward step was stored")
 
     # 数値解は、直前の姿勢から数ミリ動かす使い方をする。伸び切りの特異点は解析解が担当する。
     q_near = np.array([0.0, -0.35, 0.45, -0.10, 0.0], dtype=float)
-    heel_near, _ = fk_heel(q_near, Y_HIP_LEFT)
+    heel_near, _ = fk_heel(q_near, Y_HIP_LEFT, ROLL_SIGN_LEFT)
     nudged = heel_near + np.array([0.01, 0.012, -0.008])
-    q_num = _ik_numerical(nudged, Y_HIP_LEFT, q_near, LEG_LIMITS, iters=10)
-    heel_num, _ = fk_heel(q_num, Y_HIP_LEFT)
+    q_num = _ik_numerical(nudged, Y_HIP_LEFT, q_near, LEG_LIMITS, iters=10, roll_sign=ROLL_SIGN_LEFT)
+    heel_num, _ = fk_heel(q_num, Y_HIP_LEFT, ROLL_SIGN_LEFT)
     if np.linalg.norm(heel_num - nudged) > 0.008:
         raise AssertionError(f"numerical IK missed {nudged} got {heel_num}")
 
     # 横へ小刻みに積んでも、届かない分は目標に残らない。
-    lateral = stand_heel(Y_HIP_LEFT)
+    lateral = stand_heel(Y_HIP_LEFT, ROLL_SIGN_LEFT)
     q_lat = np.zeros(5)
     for _ in range(40):
         lateral, q_lat, _ = step_heel_target(
-            lateral, np.array([0.0, 0.01, 0.0]), Y_HIP_LEFT, q_lat
+            lateral, np.array([0.0, 0.01, 0.0]), Y_HIP_LEFT, q_lat, roll_sign=ROLL_SIGN_LEFT
         )
     if lateral[1] > 0.55:
         raise AssertionError(f"lateral target wound up: {lateral}")
-    heel_lat, _ = fk_heel(q_lat, Y_HIP_LEFT)
+    heel_lat, _ = fk_heel(q_lat, Y_HIP_LEFT, ROLL_SIGN_LEFT)
     if np.linalg.norm(heel_lat[:2] - lateral[:2]) > 0.02:
         raise AssertionError(f"stored target left the foot: target={lateral} heel={heel_lat}")
 

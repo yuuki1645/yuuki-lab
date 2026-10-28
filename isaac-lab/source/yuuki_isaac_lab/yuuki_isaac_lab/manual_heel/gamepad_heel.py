@@ -126,22 +126,31 @@ class HeelGamepad:
 
     @staticmethod
     def _shaped_stick(value: float) -> float:
-        """デッドゾーンの外側を、倒し切りが ±1 になるよう伸ばす。"""
+        """デッドゾーンの外側を 0..1 に伸ばし、二乗してから符号を戻す。
+
+        少し倒したときはゆっくり、倒し切りだけが最高速になる。
+        中立は 0 のままなので、離したあとの位置は積算側が保持する。
+        """
         magnitude = abs(value)
         if magnitude < _STICK_DEAD_ZONE:
             return 0.0
         shaped = (magnitude - _STICK_DEAD_ZONE) / (1.0 - _STICK_DEAD_ZONE)
-        return float(np.clip(shaped, 0.0, 1.0)) * (1.0 if value > 0.0 else -1.0)
+        shaped = float(np.clip(shaped, 0.0, 1.0)) ** 2
+        return shaped * (1.0 if value > 0.0 else -1.0)
 
     @staticmethod
     def _shoulder_rate(up_value: float, down_value: float) -> float:
-        """バンパーを天井側、トリガーを床側にして、同時押しは相殺する。"""
+        """バンパーを天井側、トリガーを床側にして、同時押しは相殺する。
+
+        トリガーはアナログなので、スティックと同じ二乗カーブにする。
+        バンパーは押すか離すかだけなので、押しているあいだは最高速。
+        """
         up = 0.0 if up_value < 0.5 else 1.0
         if down_value < _TRIGGER_DEAD_ZONE:
             down = 0.0
         else:
             down = (down_value - _TRIGGER_DEAD_ZONE) / (1.0 - _TRIGGER_DEAD_ZONE)
-            down = float(np.clip(down, 0.0, 1.0))
+            down = float(np.clip(down, 0.0, 1.0)) ** 2
         return up - down
 
 

@@ -53,6 +53,16 @@ def _spawn_yuuki_legs(prim_path: str, cfg: UrdfFileCfg, translation=None, orient
     return prim
 
 
+def _applied_api_known(schema_name: str) -> bool:
+    """この Kit に、その Applied API の定義があるか。"""
+    from pxr import Usd
+
+    try:
+        return bool(Usd.SchemaRegistry.IsAppliedAPISchema(schema_name))
+    except Exception:
+        return False
+
+
 def _enable_self_collision(prim_path: str) -> None:
     """関節の根に自己衝突を付ける。
 
@@ -77,18 +87,28 @@ def _enable_self_collision(prim_path: str) -> None:
         if not under_robot:
             continue
         schemas = set(prim.GetAppliedSchemas())
-        if "PhysicsArticulationRootAPI" not in schemas and "NewtonArticulationRootAPI" not in schemas:
+        has_physx_root = "PhysicsArticulationRootAPI" in schemas
+        has_newton_root = "NewtonArticulationRootAPI" in schemas
+        if not has_physx_root and not has_newton_root:
             continue
-        if "NewtonArticulationRootAPI" not in schemas:
-            prim.ApplyAPI("NewtonArticulationRootAPI")
-        attr = prim.GetAttribute("newton:selfCollisionEnabled")
-        if not attr or not attr.IsValid():
-            attr = prim.CreateAttribute("newton:selfCollisionEnabled", Sdf.ValueTypeNames.Bool)
-        attr.Set(True)
-        # 古い PhysX 属性が残っている変換でも、同じ意味にする。
-        physx_attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
-        if physx_attr and physx_attr.IsValid():
-            physx_attr.Set(True)
+        # Isaac Sim 6 は Newton。スキーマが無い Kit で ApplyAPI すると、その場で落ちる。
+        if has_newton_root or _applied_api_known("NewtonArticulationRootAPI"):
+            if not has_newton_root:
+                prim.ApplyAPI("NewtonArticulationRootAPI")
+            attr = prim.GetAttribute("newton:selfCollisionEnabled")
+            if not attr or not attr.IsValid():
+                attr = prim.CreateAttribute("newton:selfCollisionEnabled", Sdf.ValueTypeNames.Bool)
+            attr.Set(True)
+        # Isaac Sim 5.1 は PhysX。URDF 取り込みが自己衝突を 0 のまま残すことがある。
+        if has_physx_root:
+            physx_attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
+            if not physx_attr or not physx_attr.IsValid():
+                from pxr import PhysxSchema
+
+                PhysxSchema.PhysxArticulationAPI.Apply(prim)
+                physx_attr = prim.GetAttribute("physxArticulation:enabledSelfCollisions")
+            if physx_attr and physx_attr.IsValid():
+                physx_attr.Set(True)
 
 
 def _enable_nested_contact_report(prim_path: str) -> None:

@@ -59,6 +59,22 @@ export function fmtRouteField(key: Exclude<keyof M5Route, "enabled">, n: number)
   return `0x${n.toString(16).toUpperCase().padStart(2, "0")}`;
 }
 
+/**
+ * 関節カードに出す PWM の出力先。
+ *
+ * カード見出しの ch は機体全体の論理関節（右 0〜4、左 5〜9）で、こことは別番号。
+ * act_hub が 0 なら Grove 直下の 8Servos。0 以外なら、その PaHub の act_ch の先。
+ * servo_ch は 8Servos 基板上の出力番号。act_addr が 0 の軸はサーボが無い。
+ */
+export function pwmRouteLabel(route: M5Route | undefined): string {
+  if (!route || !route.act_addr) return "経路なし";
+  const addr = `0x${(route.act_addr & 0xff).toString(16).toUpperCase().padStart(2, "0")}`;
+  const servo = `8Servos ${addr} · 出力 ${route.servo_ch}`;
+  if (!route.act_hub) return `直下 ${servo}`;
+  const hub = `0x${(route.act_hub & 0xff).toString(16).toUpperCase().padStart(2, "0")}`;
+  return `PaHub ${hub} ch${route.act_ch} · ${servo}`;
+}
+
 /** INA226 セレクトの表示値。未割当は「なし」 */
 export function inaSelectValue(route: M5Route | undefined): string {
   if (!route || !route.ina_addr) return "なし";

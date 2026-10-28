@@ -13,6 +13,8 @@ import {
 
 type Props = {
   joint: RightLegJoint;
+  /** PWM の物理経路。論理関節の ch とは別 */
+  routeLabel: string;
   cmd: number | null | undefined;
   /** AS5600 の生角。0〜360°。未読は null */
   raw: number | null | undefined;
@@ -96,6 +98,7 @@ function fmtLive(
  */
 export function JointTripleBar({
   joint,
+  routeLabel,
   cmd,
   raw,
   corr,
@@ -176,13 +179,19 @@ export function JointTripleBar({
     >
       <div className="m5-jrow__body">
         <div className="m5-jrow__left">
-          <header className="m5-jrow__head">
-            <h2>{joint.label}</h2>
-            <span>ch{joint.ch}</span>
-            <span className={"m5-jrow__pwm" + ((pwmOn || policyOwned) && !inactive ? " m5-jrow__pwm--on" : "")}>
-              {inactive ? "未接続" : policyOwned ? "方策" : pwmOn ? "PWM ON" : "PWM OFF"}
-            </span>
-          </header>
+          <div className="m5-jrow__name">
+            <header className="m5-jrow__head">
+              <h2>{joint.label}</h2>
+              <span>ch{joint.ch}</span>
+              <span className={"m5-jrow__pwm" + ((pwmOn || policyOwned) && !inactive ? " m5-jrow__pwm--on" : "")}>
+                {inactive ? "未接続" : policyOwned ? "方策" : pwmOn ? "PWM ON" : "PWM OFF"}
+              </span>
+            </header>
+            {/* 見出しの ch は論理関節。ここは PaHub と 8Servos の出力先 */}
+            <p className="m5-jrow__route" title="PWM の出力先。上の ch は論理関節番号です。">
+              {routeLabel}
+            </p>
+          </div>
           <div className="m5-jrow__bars">
             {barOn.cmd ? (
             <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>

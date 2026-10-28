@@ -278,6 +278,7 @@ export default function M5TelemetryPage() {
           canCmd={canCmd}
           source={stream.source}
           control={control}
+          routes={routes}
           frame={frame}
           history={history}
           send={send}

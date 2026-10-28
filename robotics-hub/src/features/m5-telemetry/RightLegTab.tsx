@@ -17,13 +17,16 @@ import {
 } from "./rightLeg";
 import type { M5LinkSource } from "./useM5TelemetryStream";
 import { CycleSweep } from "./CycleSweep";
-import type { M5Cmd, M5Control, M5Frame, M5HistoryPoint } from "./types";
+import { pwmRouteLabel } from "./m5Route";
+import type { M5Cmd, M5Control, M5Frame, M5HistoryPoint, M5Route } from "./types";
 
 type Props = {
   canCmd: boolean;
   /** atom は右脚だけ実在。isaac は 10 関節。未接続は null */
   source: M5LinkSource | null;
   control: M5Control | null;
+  /** ボードの関節プロファイル。添字は論理関節。PWM の物理経路をカードに出す */
+  routes: M5Route[];
   frame: M5Frame | null;
   history: M5HistoryPoint[];
   send: (cmd: M5Cmd) => void;
@@ -63,6 +66,7 @@ export function RightLegTab({
   canCmd,
   source,
   control,
+  routes,
   frame,
   history,
   send,
@@ -311,6 +315,7 @@ export function RightLegTab({
                   <JointTripleBar
                     key={j.id}
                     joint={j}
+                    routeLabel={pwmRouteLabel(routes[j.ch])}
                     cmd={policyOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
                     raw={live ? at(frame?.raw, j.ch) : null}
                     corr={at(frame?.corr, j.ch)}

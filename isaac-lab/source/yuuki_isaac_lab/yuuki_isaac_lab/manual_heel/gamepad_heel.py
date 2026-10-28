@@ -24,6 +24,8 @@ import omni
 _STICK_DEAD_ZONE = 0.15
 # トリガーはアナログで、指を置いただけの値を高さ指令にしない。
 _TRIGGER_DEAD_ZONE = 0.08
+# L/R は ON/OFF だけなので、押しているあいだの天井側は上下最高速の約 1/3。
+_BUMPER_RATE = 1.0 / 3.0
 
 
 class HeelGamepad:
@@ -143,9 +145,9 @@ class HeelGamepad:
         """バンパーを天井側、トリガーを床側にして、同時押しは相殺する。
 
         トリガーはアナログなので、スティックと同じ二乗カーブにする。
-        バンパーは押すか離すかだけなので、押しているあいだは最高速。
+        バンパーは押すか離すかだけなので、押しているあいだは最高速の約 1/3 に留める。
         """
-        up = 0.0 if up_value < 0.5 else 1.0
+        up = 0.0 if up_value < 0.5 else _BUMPER_RATE
         if down_value < _TRIGGER_DEAD_ZONE:
             down = 0.0
         else:

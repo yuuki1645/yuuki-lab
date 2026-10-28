@@ -52,6 +52,9 @@ _XY_SPEED_MPS = 0.30
 _Z_SPEED_MPS = 0.20
 _STICK_DEAD_ZONE = 0.15
 _TRIGGER_DEAD_ZONE = 0.08
+# L/R は ON/OFF だけなので、倒し切りと同じ 1.0 だと天井側が一気に動く。
+# トリガーの中間くらいに合わせ、天井側の速さは上下最高速の約 1/3 にする。
+_BUMPER_RATE = 1.0 / 3.0
 
 # XInput の肩ボタン。バンパーが天井側、トリガーが床側。
 _BTN_LEFT_SHOULDER = 0x0100
@@ -104,8 +107,11 @@ def _shaped_stick(value: float) -> float:
 
 
 def _shoulder_rate(bumper: bool, trigger: float) -> float:
-    """バンパーを天井側、トリガーを床側。トリガーは二乗する。"""
-    up = 1.0 if bumper else 0.0
+    """バンパーを天井側、トリガーを床側。トリガーは二乗する。
+
+    バンパーは押しているあいだ一定なので、最高速ではなく _BUMPER_RATE で上げる。
+    """
+    up = _BUMPER_RATE if bumper else 0.0
     if trigger < _TRIGGER_DEAD_ZONE:
         down = 0.0
     else:
@@ -408,6 +414,11 @@ def _self_check() -> None:
     half = _shaped_stick(0.15 + 0.5 * (1.0 - 0.15))
     if not 0.20 < half < 0.30:
         raise AssertionError(f"half stick should be near 1/4 speed, got {half}")
+    # バンパーはデジタルなので、押しているあいだの天井側は最高速の 1/3。
+    if abs(_shoulder_rate(True, 0.0) - (1.0 / 3.0)) > 1.0e-9:
+        raise AssertionError("bumper lift is not one third of full vertical speed")
+    if abs(_shoulder_rate(False, 1.0) + 1.0) > 1.0e-9:
+        raise AssertionError("full trigger is not full downward speed")
     blocked = _block_into_floor(np.array([0.01, 0.0, -0.02]), True)
     if blocked[2] != 0.0 or blocked[0] != 0.01:
         raise AssertionError(f"floor block changed the wrong axis: {blocked}")

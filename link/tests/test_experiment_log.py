@@ -101,9 +101,36 @@ class TakeTest(unittest.TestCase):
             )
             self.assertEqual(command["ch"], 2)
             self.assertEqual(command["deg"], 12.5)
+            # パッドを書かなかった take は、空の gamepad ファイルを残さない。
+            self.assertFalse((takes[0] / "gamepad" / "part-000.jsonl").is_file())
             archived = archive / takes[0].relative_to(root) / "meta.json"
             self.assertTrue(archived.is_file())
             self.assertEqual(list(root.rglob("*.pending")), [])
+
+    def test_gamepad_row_is_not_a_joint_command(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ssd"
+            log = logmod.ExperimentLog(self._paths(root, None), copy_async=False)
+            self.assertTrue(log.begin("COM4", "rt-usb ver=15 lab", 15).ok)
+            log.append_gamepad(
+                "COM4",
+                {
+                    "op": "gamepad",
+                    "connected": True,
+                    "homing": False,
+                    "left": {"forward": 0.25, "lateral": 0.0, "vertical": 0.0},
+                    "accepted_left": False,
+                    "heel_left": [0.01, 0.09, -0.64],
+                },
+            )
+            log.end("COM4", "USB 切断")
+            takes = [p for p in root.glob("*/*/*/*") if p.is_dir()]
+            row = json.loads((takes[0] / "gamepad" / "part-000.jsonl").read_text(encoding="utf-8"))
+            self.assertNotIn("op", row)
+            self.assertEqual(row["left"]["forward"], 0.25)
+            self.assertFalse(row["accepted_left"])
+            self.assertIn("t", row)
+            self.assertFalse((takes[0] / "commands" / "part-000.jsonl").is_file())
 
     def test_rotate_copies_closed_part_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

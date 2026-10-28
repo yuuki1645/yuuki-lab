@@ -3,7 +3,8 @@
 
 Isaac の手動操作と同じ積算と逆運動学を、USB を握っている lab_debug.py へ渡す。
 このプロセスは COM を開かない。Socket.IO（既定 http://127.0.0.1:8794）の m5/cmd で
-関節角を送る。PWM は入れない。出力は、実機テレメトリで入れた関節だけが動く。
+関節角を送る。同じソケットで、スティックの倒し量も実験記録へ渡す。
+PWM は入れない。出力は、実機テレメトリで入れた関節だけが動く。
 
 角度は URDF の可動域と、ファームが受ける 40〜230° の内側に収める。
 画面の 100〜170° は机上の単軸実験用で、そのままだと膝が約 35° しか曲がらない。
@@ -204,36 +205,79 @@ class XInputPad:
         code = int(self._get_state(self._index, self._ctypes.byref(self._state)))
         return code == 0
 
-    def velocity_weights(self) -> tuple[np.ndarray, np.ndarray]:
-        """左右の速度係数 [-1, 1]。未接続のフレームはゼロ。"""
+    def read(self) -> dict:
+        """パッドを 1 回読む。未接続でも辞書を返し、スティックは 0。
+
+        forward は腰の +X（前）が正。lateral はロボットの右（腰の −Y）が正。
+        vertical は天井が正。raw_* はデッドゾーンを掛ける前で、軽く倒して
+        死角に入っているかを記録で区別するために残す。
+        shaped の 3 成分は、このフレームの速度係数そのもの。
+        """
+        blank = {
+            "forward": 0.0,
+            "lateral": 0.0,
+            "vertical": 0.0,
+            "raw_forward": 0.0,
+            "raw_lateral": 0.0,
+            "bumper": False,
+            "trigger": 0.0,
+        }
         if not self.connected():
-            zero = np.zeros(3)
-            return zero, zero.copy()
+            return {
+                "connected": False,
+                "homing": False,
+                "left": dict(blank),
+                "right": dict(blank),
+                "left_shaped": np.zeros(3),
+                "right_shaped": np.zeros(3),
+            }
         pad = self._state.Gamepad
         buttons = int(pad.wButtons)
-        left = np.array(
+        left_raw_forward = _thumb(int(pad.sThumbLY))
+        # スティック右がロボットの右。腰座標では −Y なので、記録の正方向に合わせて符号を反転する。
+        left_raw_lateral = -_thumb(int(pad.sThumbLX))
+        right_raw_forward = _thumb(int(pad.sThumbRY))
+        right_raw_lateral = -_thumb(int(pad.sThumbRX))
+        left_trigger = int(pad.bLeftTrigger) / 255.0
+        right_trigger = int(pad.bRightTrigger) / 255.0
+        left_bumper = bool(buttons & _BTN_LEFT_SHOULDER)
+        right_bumper = bool(buttons & _BTN_RIGHT_SHOULDER)
+        left_shaped = np.array(
             [
-                _shaped_stick(_thumb(int(pad.sThumbLY))),
-                -_shaped_stick(_thumb(int(pad.sThumbLX))),
-                _shoulder_rate(bool(buttons & _BTN_LEFT_SHOULDER), int(pad.bLeftTrigger) / 255.0),
+                _shaped_stick(left_raw_forward),
+                _shaped_stick(left_raw_lateral),
+                _shoulder_rate(left_bumper, left_trigger),
             ],
             dtype=float,
         )
-        right = np.array(
+        right_shaped = np.array(
             [
-                _shaped_stick(_thumb(int(pad.sThumbRY))),
-                -_shaped_stick(_thumb(int(pad.sThumbRX))),
-                _shoulder_rate(bool(buttons & _BTN_RIGHT_SHOULDER), int(pad.bRightTrigger) / 255.0),
+                _shaped_stick(right_raw_forward),
+                _shaped_stick(right_raw_lateral),
+                _shoulder_rate(right_bumper, right_trigger),
             ],
             dtype=float,
         )
-        return left, right
 
-    def start_held(self) -> bool:
-        """スタートが押されていれば True。抜いているフレームは False。"""
-        if not self.connected():
-            return False
-        return bool(int(self._state.Gamepad.wButtons) & _BTN_START)
+        def hand(shaped: np.ndarray, raw_forward: float, raw_lateral: float, bumper: bool, trigger: float) -> dict:
+            return {
+                "forward": float(shaped[0]),
+                "lateral": float(shaped[1]),
+                "vertical": float(shaped[2]),
+                "raw_forward": float(raw_forward),
+                "raw_lateral": float(raw_lateral),
+                "bumper": bumper,
+                "trigger": float(trigger),
+            }
+
+        return {
+            "connected": True,
+            "homing": bool(buttons & _BTN_START),
+            "left": hand(left_shaped, left_raw_forward, left_raw_lateral, left_bumper, left_trigger),
+            "right": hand(right_shaped, right_raw_forward, right_raw_lateral, right_bumper, right_trigger),
+            "left_shaped": left_shaped,
+            "right_shaped": right_shaped,
+        }
 
 
 def _command_limits(ik) -> np.ndarray:
@@ -327,6 +371,15 @@ class _Telemetry:
                 {"op": "joint", "ch": channel, "deg": float(deg), "wide": True},
             )
 
+    def send_gamepad(self, sample: dict) -> None:
+        """倒し量を実験記録へ渡す。USB の関節指令とは別の行になる。
+
+        記録が開いていなくても、受け側は捨てる。このプロセスは COM を持たない。
+        """
+        payload = {"op": "gamepad"}
+        payload.update(sample)
+        self._sio.emit("m5/cmd", payload)
+
     def close(self) -> None:
         if self._sio.connected:
             self._sio.disconnect()
@@ -364,9 +417,14 @@ def _seed_from_frame(frame: dict, ik) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
 
 def _advance_leg(ik, limits, target, q, delta, y_hip, roll_sign, loaded: bool):
-    """1 本の脚を 1 フレーム進める。接地中の床方向は動かさない。"""
+    """1 本の脚を 1 フレーム進める。接地中の床方向は動かさない。
+
+    Returns:
+        新しい踵目標、新しい関節角、床側を捨てたか、逆運動学が目標を進めたか。
+        4 つ目が false のあいだは、スティックを倒していても関節角は変わらない。
+    """
     step = _block_into_floor(delta, loaded)
-    new_target, new_q, _ = ik.step_heel_target(
+    new_target, new_q, advanced = ik.step_heel_target(
         target, step, y_hip, q, limits=limits, roll_sign=roll_sign
     )
     clipped = _clip_command(new_q)
@@ -374,7 +432,38 @@ def _advance_leg(ik, limits, target, q, delta, y_hip, roll_sign, loaded: bool):
         # ファームの端で切った角度に、記憶している踵を合わせる。端の外へ溜めない。
         new_target, _ = ik.fk_heel(clipped, y_hip, roll_sign)
         new_q = clipped
-    return new_target, new_q, bool(loaded and float(delta[2]) < 0.0 and float(step[2]) == 0.0)
+    floor_held = bool(loaded and float(delta[2]) < 0.0 and float(step[2]) == 0.0)
+    return new_target, new_q, floor_held, bool(advanced)
+
+
+def _heel_xyz(heel: np.ndarray) -> list[float]:
+    """記録用に、踵目標をメートルの小数 5 桁へ丸める。"""
+    return [round(float(heel[0]), 5), round(float(heel[1]), 5), round(float(heel[2]), 5)]
+
+
+def _gamepad_record(
+    reading: dict,
+    left_heel: np.ndarray,
+    right_heel: np.ndarray,
+    accepted_left: bool,
+    accepted_right: bool,
+    floor_left: bool,
+    floor_right: bool,
+) -> dict:
+    """実験記録へ出す 1 行。積分に使う配列は含めない。"""
+    return {
+        "t": time.time(),
+        "connected": bool(reading["connected"]),
+        "homing": bool(reading["homing"]),
+        "left": reading["left"],
+        "right": reading["right"],
+        "heel_left": _heel_xyz(left_heel),
+        "heel_right": _heel_xyz(right_heel),
+        "accepted_left": bool(accepted_left),
+        "accepted_right": bool(accepted_right),
+        "floor_hold_left": bool(floor_left),
+        "floor_hold_right": bool(floor_right),
+    }
 
 
 def _run(url: str) -> None:
@@ -423,16 +512,16 @@ def _run(url: str) -> None:
             latest = link.latest() or {}
             left_load = _foot_kg(latest.get("foot_left"))
             right_load = _foot_kg(latest.get("foot"))
+            # 1 回の読みを、積分と記録の両方に使う。読み直すとパケットがずれうる。
+            reading = pad.read()
             # スタート中はスティックを使わず、全関節 135° の踵へ一定の速さで戻す。
-            homing = pad.start_held()
-            if homing:
+            if reading["homing"]:
                 left_delta = _home_step(left_heel, left_home, dt)
                 right_delta = _home_step(right_heel, right_home, dt)
             else:
-                left_w, right_w = pad.velocity_weights()
-                left_delta = left_w * speed * dt
-                right_delta = right_w * speed * dt
-            left_heel, left_q, left_held = _advance_leg(
+                left_delta = reading["left_shaped"] * speed * dt
+                right_delta = reading["right_shaped"] * speed * dt
+            left_heel, left_q, left_held, left_accepted = _advance_leg(
                 ik,
                 limits,
                 left_heel,
@@ -442,7 +531,7 @@ def _run(url: str) -> None:
                 ik.ROLL_SIGN_LEFT,
                 left_load is not None and left_load >= _FLOOR_HOLD_KG,
             )
-            right_heel, right_q, right_held = _advance_leg(
+            right_heel, right_q, right_held, right_accepted = _advance_leg(
                 ik,
                 limits,
                 right_heel,
@@ -451,6 +540,18 @@ def _run(url: str) -> None:
                 ik.Y_HIP_RIGHT,
                 ik.ROLL_SIGN_RIGHT,
                 right_load is not None and right_load >= _FLOOR_HOLD_KG,
+            )
+            # 角度が変わらないフレームも残す。スティックを倒していたかの判定は、この行を見る。
+            link.send_gamepad(
+                _gamepad_record(
+                    reading,
+                    left_heel,
+                    right_heel,
+                    left_accepted,
+                    right_accepted,
+                    left_held,
+                    right_held,
+                )
             )
             if now >= next_send:
                 next_send = now + _SEND_S
@@ -540,7 +641,7 @@ def _self_check() -> None:
     if free[2] == 0.0:
         raise AssertionError("unloaded foot was not allowed downward")
     straight = ik.stand_heel(ik.Y_HIP_LEFT, ik.ROLL_SIGN_LEFT)
-    moved, q, held = _advance_leg(
+    moved, q, held, accepted = _advance_leg(
         ik,
         limits,
         straight,
@@ -550,9 +651,9 @@ def _self_check() -> None:
         ik.ROLL_SIGN_LEFT,
         True,
     )
-    if held is not True or float(np.max(np.abs(moved - straight))) > 1.0e-9:
+    if held is not True or accepted or float(np.max(np.abs(moved - straight))) > 1.0e-9:
         raise AssertionError("loaded leg stored a downward step")
-    lifted, q_up, held_up = _advance_leg(
+    lifted, q_up, held_up, accepted_up = _advance_leg(
         ik,
         limits,
         straight,
@@ -562,7 +663,7 @@ def _self_check() -> None:
         ik.ROLL_SIGN_LEFT,
         True,
     )
-    if held_up or lifted[2] <= straight[2]:
+    if held_up or not accepted_up or lifted[2] <= straight[2]:
         raise AssertionError("loaded leg refused to lift")
     degrees = [rad_to_deg(float(v)) for v in q_up]
     if any(d < _SERVO_MIN_DEG - 1.0e-6 or d > _SERVO_MAX_DEG + 1.0e-6 for d in degrees):

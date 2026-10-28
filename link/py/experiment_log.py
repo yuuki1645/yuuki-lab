@@ -171,9 +171,12 @@ class _Take:
     sensors: Any
     commands: Any
     events: Any
+    # ゲームパッドの倒し量。関節の USB 指令とは別ファイル。パッドを使わない take では空のまま閉じる。
+    gamepad: Any
     sensor_path: Path
     command_path: Path
     event_path: Path
+    gamepad_path: Path
 
 
 class ExperimentLog:
@@ -256,9 +259,11 @@ class ExperimentLog:
                 sensors=None,
                 commands=None,
                 events=None,
+                gamepad=None,
                 sensor_path=directory / "sensors" / "part-000.jsonl",
                 command_path=directory / "commands" / "part-000.jsonl",
                 event_path=directory / "events" / "part-000.log",
+                gamepad_path=directory / "gamepad" / "part-000.jsonl",
             )
             self._take = take
             self._open_parts_locked(take)
@@ -297,6 +302,21 @@ class ExperimentLog:
             body = dict(command)
             body.setdefault("t", time.time())
             self._write_line(take.commands, body)
+            self._after_write_locked(take)
+
+    def append_gamepad(self, port: str, sample: dict[str, Any]) -> None:
+        """ゲームパッドの操作 1 件。USB の関節指令とは別のファイルへ書く。
+
+        倒し量は腰を経由しない。commands に混ぜると、ボードへ送った角度と
+        スティックの読みが同じ列に並んで区別しにくくなる。
+        """
+        with self._lock:
+            take = self._accept(port)
+            if take is None or take.gamepad is None:
+                return
+            body = {key: value for key, value in sample.items() if key != "op"}
+            body.setdefault("t", time.time())
+            self._write_line(take.gamepad, body)
             self._after_write_locked(take)
 
     def append_event(self, port: str, text: str) -> None:
@@ -405,18 +425,21 @@ class ExperimentLog:
         take.sensor_path = take.directory / "sensors" / f"part-{idx}.jsonl"
         take.command_path = take.directory / "commands" / f"part-{idx}.jsonl"
         take.event_path = take.directory / "events" / f"part-{idx}.log"
-        for path in (take.sensor_path, take.command_path, take.event_path):
+        take.gamepad_path = take.directory / "gamepad" / f"part-{idx}.jsonl"
+        for path in (take.sensor_path, take.command_path, take.event_path, take.gamepad_path):
             path.parent.mkdir(parents=True, exist_ok=True)
         # 行バッファにしない。FLUSH_SEC までメモリに溜める。
         take.sensors = take.sensor_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.commands = take.command_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.events = take.event_path.open("a", encoding="utf-8", buffering=64 * 1024)
+        take.gamepad = take.gamepad_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.part_opened = self._clock()
         take.part_bytes = 0
         take.meta["open_parts"] = [
             take.sensor_path.relative_to(take.directory).as_posix(),
             take.command_path.relative_to(take.directory).as_posix(),
             take.event_path.relative_to(take.directory).as_posix(),
+            take.gamepad_path.relative_to(take.directory).as_posix(),
         ]
 
     def _write_line(self, fp: Any, obj: dict[str, Any]) -> None:
@@ -442,7 +465,7 @@ class ExperimentLog:
             self._rotate_locked(take)
 
     def _flush_locked(self, take: _Take) -> None:
-        for fp in (take.sensors, take.commands, take.events):
+        for fp in (take.sensors, take.commands, take.events, take.gamepad):
             if fp is None:
                 continue
             fp.flush()
@@ -459,15 +482,20 @@ class ExperimentLog:
         self._write_meta_locked(take)
 
     def _close_parts_locked(self, take: _Take) -> None:
-        """開いている 3 ファイルを閉じ、中身があるものだけコピー待ちにする。"""
+        """開いているファイルを閉じ、中身があるものだけコピー待ちにする。
+
+        ゲームパッドを使わなかった take は gamepad が空なので、ここでは消す。
+        """
         pairs = (
             (take.sensors, take.sensor_path),
             (take.commands, take.command_path),
             (take.events, take.event_path),
+            (take.gamepad, take.gamepad_path),
         )
         take.sensors = None
         take.commands = None
         take.events = None
+        take.gamepad = None
         for fp, path in pairs:
             if fp is None:
                 continue
@@ -667,6 +695,13 @@ def append_command(port: str, command: dict[str, Any]) -> None:
     log = _SHARED
     if log is not None:
         log.append_command(port, command)
+
+
+def append_gamepad(port: str, sample: dict[str, Any]) -> None:
+    """開いている take が無ければ何もしない。パッド側は記録の有無で止まらない。"""
+    log = _SHARED
+    if log is not None:
+        log.append_gamepad(port, sample)
 
 
 def end_if_started(port: str, reason: str) -> None:

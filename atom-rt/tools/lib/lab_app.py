@@ -796,9 +796,14 @@ class LabApp(tk.Tk):
         全停止と本記録は iPad 操作中でも PC から残す。
         """
         op = str(msg.get("op") or "")
+        s = sess if sess is not None else self._sess()
+        # パッドの倒し量は操作ロックより先に記録する。サーボは動かさない。
+        # iPad 接続で PC がロックされていても、スティックの行は残す。
+        if op == "gamepad":
+            experiment_log.append_gamepad(s.port if s is not None else "", msg)
+            return
         if op not in ("hold", "record_start", "record_stop") and self._pc_locked():
             return
-        s = sess if sess is not None else self._sess()
         if op == "hold":
             self._hold_all()
             self._m5_publish_control()

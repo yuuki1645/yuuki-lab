@@ -288,34 +288,61 @@ static bool tryInitServo() {
     return gServoReady;
 }
 
-static void releaseAxis(int index) {
-    if (!gServoReady) {
-        return;
-    }
-    const JointRoute& route = gRoute[index];
-    if (route.act_addr == 0 || !openMux(route.act_hub, route.act_ch)) {
+/**
+ * サーボへ書く前の待ち。
+ * 直下の 8Servos は Grove に常時つながっている。
+ * PaHub の先はチャンネルを開いた直後、200 µs では 0x25 がまだ ACK しない。
+ * エンコーダ読み（kMuxSettleUs）と同じ時間を置く。
+ */
+static void settleActuator(uint8_t actHub) {
+    if (actHub != 0) {
+        delayMicroseconds(kMuxSettleUs);
         return;
     }
     delayMicroseconds(200);
-    setServoMode(route.act_addr, route.servo_ch, DIGITAL_INPUT_MODE);
-    closeHubs();
 }
 
-static void driveAxis(int index, float deg) {
+/** ピンを入力に戻して脱力する。書けたら true。PaHub を開けなければ false で、次周期にやり直す。 */
+static bool releaseAxis(int index) {
     if (!gServoReady) {
-        return;
+        return false;
+    }
+    const JointRoute& route = gRoute[index];
+    if (route.act_addr == 0) {
+        return true;
+    }
+    if (!openMux(route.act_hub, route.act_ch)) {
+        return false;
+    }
+    settleActuator(route.act_hub);
+    const bool ok = setServoMode(route.act_addr, route.servo_ch, DIGITAL_INPUT_MODE);
+    closeHubs();
+    return ok;
+}
+
+/**
+ * 1 軸へパルスを書く。モード切替とパルスの両方が ACK されたときだけ true。
+ * 失敗時は呼び出し側が gDriven を立てないので、次の周期はサーボモードからやり直す。
+ * 一度成功した軸はモードを毎周期いじらない。切り直すとパルスが途切れる。
+ */
+static bool driveAxis(int index, float deg) {
+    if (!gServoReady) {
+        return false;
     }
     const JointRoute& route = gRoute[index];
     if (route.act_addr == 0 || !openMux(route.act_hub, route.act_ch)) {
-        return;
+        return false;
     }
-    delayMicroseconds(200);
-    // 毎周期モードを切り替えると、パルスが途切れる。
+    settleActuator(route.act_hub);
+    bool ok = true;
     if ((gDriven & (1u << index)) == 0) {
-        setServoMode(route.act_addr, route.servo_ch, SERVO_CTL_MODE);
+        ok = setServoMode(route.act_addr, route.servo_ch, SERVO_CTL_MODE);
     }
-    setServoPulseUs(route.act_addr, route.servo_ch, angleToPulse(deg));
+    if (ok) {
+        ok = setServoPulseUs(route.act_addr, route.servo_ch, angleToPulse(deg));
+    }
     closeHubs();
+    return ok;
 }
 
 static void releaseAll() {
@@ -340,14 +367,15 @@ static void applyCommand(const CanLegCommand& cmd) {
     gForceOff = false;
     for (int i = 0; i < kCanAxes; ++i) {
         if ((cmd.mask & (1u << i)) == 0) {
-            if ((gDriven & (1u << i)) != 0) {
-                releaseAxis(i);
+            // 脱力が書けた軸だけ駆動済みを外す。書けなければ次の指令でやり直す。
+            if ((gDriven & (1u << i)) != 0 && releaseAxis(i)) {
                 gDriven = static_cast<uint8_t>(gDriven & ~(1u << i));
             }
             continue;
         }
-        driveAxis(i, static_cast<float>(cmd.deci[i]) / 10.0f);
-        gDriven = static_cast<uint8_t>(gDriven | (1u << i));
+        if (driveAxis(i, static_cast<float>(cmd.deci[i]) / 10.0f)) {
+            gDriven = static_cast<uint8_t>(gDriven | (1u << i));
+        }
     }
 }
 

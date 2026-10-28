@@ -79,6 +79,7 @@ npm run dev:m5
 - あわせて [link/host/lab_debug.py](../link/host/lab_debug.py) を起動（Socket.IO 既定 **:8794**、Tk ウィンドウも開く）。中身は [atom-rt/tools/lab_debug.py](../atom-rt/tools/lab_debug.py) と同じプロセス
 - iPad では Hub の **実機テレメトリ（M5）**（`/m5-telemetry`）を開く。機体は CoreS3（USB ver 15）。机上の `rt-usb`（ver 14）も同じ画面につながる
 - タイトル横の **ATOM 手帳** は机上の `rt-usb` 用（`#manual/usb` など。正本は [atom-rt/docs/field-manual](../atom-rt/docs/field-manual/)）。機体の基本は [docs/robot_control.md](../docs/robot_control.md)
+- パッドで踵を動かすとき、実機は上の `dev:m5`（:8794）のまま [link/host/heel_gamepad.py](../link/host/heel_gamepad.py) を足す。シミュの数値を同じ画面に出す日は `dev:m5` を止めて `npm run dev` と [isaac_hub_bridge.py](../robot_description/isaac_hub_bridge.py)（:8795）にする。手順は [docs/heel_teleop.md](../docs/heel_teleop.md)
 - 先に `atom-rt` で `pip install -r tools/requirements.txt` が必要。`:8794` は 1 プロセスだけ
 
 ### LAN に公開する（同一ネット内の他端末からアクセス）

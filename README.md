@@ -81,7 +81,7 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 
 # 実機制御
 
-機体の関節は、腰の **CoreS3** と両脚の **ATOM S3R** です。基本は [docs/robot_control.md](docs/robot_control.md) にまとめています。
+機体の関節は、腰の **CoreS3** と両脚の **ATOM S3R** です。基本は [docs/robot_control.md](docs/robot_control.md) にまとめています。ゲームパッドで踵を動かす起動と操作は [docs/heel_teleop.md](docs/heel_teleop.md) です。
 
 ラズパイの `robot-daemon` は、いまの関節指令の経路ではありません。Hub のモーションエディタなどは、まだそちらを向いています。
 

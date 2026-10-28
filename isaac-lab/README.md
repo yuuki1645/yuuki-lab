@@ -201,6 +201,14 @@ python scripts/rsl_rl/play.py --task YuukiLab-BipedPpoWalk-Play-v0 --load_run 20
 python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-v0 --headless --resume --load_run 2026-07-19_04-52-15
 ```
 
+## ゲームパッドで踵を動かす
+
+歩行の学習とは別です。起動、スティックの向き、Hub への出し方は [docs/heel_teleop.md](../docs/heel_teleop.md) にまとめてあります。この PC では次で窓を開きます。
+
+```powershell
+python .\scripts\manual_heel_teleop.py "--kit_args=--/app/vulkan=false"
+```
+
 ## Robotics Hub 連携
 
 学習ログは [robotics-hub/server/isaac_rl_log_server.py](../robotics-hub/server/isaac_rl_log_server.py) 経由で Hub の「Isaac 学習進捗」画面に表示できます。

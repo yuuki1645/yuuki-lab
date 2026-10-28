@@ -7,6 +7,7 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC がケーブルを握�
 | `include/usb_frame.hpp` | フレーム、CRC、メッセージ番号 |
 | `py/rt_usb_proto.py` | 上と同じ並びの Python |
 | `host/lab_debug.py` | COM を開くプロセス。中継は Socket.IO :8794 |
+| `host/heel_gamepad.py` | パッドで実機の踵を動かす。COM は開かない。手順は [docs/heel_teleop.md](../docs/heel_teleop.md) |
 | `host/usb_hub_watch.ps1` | サインイン後に残る監視。VID `303A` で rt-usb が見えたら Hub を起動する |
 | `host/usb_hub_watch.ico` | 時計の横に出す絵。元の画像は隣の `usb_hub_watch.png` |
 | `host/install_usb_watch.cmd` | 監視をスタートアップへ登録する。外すのは `uninstall_usb_watch.cmd` |

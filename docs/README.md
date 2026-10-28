@@ -7,6 +7,7 @@
 | ファイル | 内容 |
 |---------|------|
 | [robot_control.md](robot_control.md) | **実機の制御**（CoreS3、両脚の ATOM S3R、CAN、サブ PC、タブレット） |
+| [heel_teleop.md](heel_teleop.md) | **ゲームパッドで踵を動かす**（Isaac の起動、Hub への出し方、実機の起動と操作） |
 | [rl/](rl/README.md) | **強化学習の汎用解説**（基礎・PPO 等・実務・学び直し） |
 | [experiments/](experiments/README.md) | **強化学習実験の詳細解説**（本線: Isaac / 参照: MuJoCo exp_030） |
 | [prometheus.md](prometheus.md) | **プロメテウス（レガシー）** — 自宅 LAN 分散強化学習（旧 `dispatch`） |
@@ -22,7 +23,7 @@
 
 ## 使い方の目安
 
-1. **機体の制御を確認する** → [robot_control.md](robot_control.md)。
+1. **機体の制御を確認する** → [robot_control.md](robot_control.md)。パッドで踵を動かす手順は [heel_teleop.md](heel_teleop.md)。
 2. **いま学習を回す** → [../isaac-lab/README.md](../isaac-lab/README.md) と [experiments/isaac_biped_ppo_walk](experiments/isaac_biped_ppo_walk/README.md)。
 3. **強化学習の基礎・PPO の復習** → [rl/README.md](rl/README.md)（学び直しは [rl/yuuki-lab/sutton-barto-map.md](rl/yuuki-lab/sutton-barto-map.md) から）。
 4. **報酬設計**（「人間らしい膝曲げ」など）→ `human_joint_kinematics.md` の歩行時角度と、シミュレーションの符号・軸を `sim_human_comparison.md` で照合する。

@@ -128,3 +128,7 @@ isaaclab.bat -p Z:\Projects\yuuki-lab\robot_description\stand_one.py --viz kit
 トルク上限と速度上限は URDF の `limit` に入っています。位置制御の PD ゲインは URDF に無く、この確認では再生スクリプトと同じ仮の値（剛性 80、減衰 2）を使っています。
 
 実機と揃えるときに効くのは、左右の股の間隔、足板の前後位置、足首から足裏までの距離、直立が本当に 0 か、ロールの符号、です。
+
+## ゲームパッドで踵を動かす
+
+この README の `isaac_hub_play.py` は、画面のバーで関節を追わせる起動です。スティックで左右の踵を動かす起動（`env_isaaclab` と `manual_heel_teleop.py`、実機は `link/host/heel_gamepad.py`）は [docs/heel_teleop.md](../docs/heel_teleop.md) です。実機の `:8794` と、この橋の `:8795` は同時に画面へ出しません。

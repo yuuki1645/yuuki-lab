@@ -312,50 +312,8 @@ void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff) {
     }
 }
 
-static void sendRouteFrame(int leg, const uint8_t* data) {
-    canSend(canCmdId(leg, kCmdRoute), data);
-}
-
-void canHostSendRoutes(const JointRoute* routes, const FootRoute* feet, uint16_t jointEn,
-                       uint8_t footEn, uint8_t gen) {
-    if (gen == 0) {
-        gen = 1;
-    }
-    for (int leg = 0; leg < kCanLegCount; ++leg) {
-        if (!gLeg[leg].seen) {
-            continue;
-        }
-        uint8_t d[8];
-        memset(d, 0, sizeof(d));
-        d[0] = gen;
-        d[1] = 0xFE;
-        d[2] = static_cast<uint8_t>((jointEn >> (leg * kCanAxes)) & 0x1F);
-        d[3] = static_cast<uint8_t>((footEn >> leg) & 0x01);
-        sendRouteFrame(leg, d);
-
-        for (int i = 0; i < kCanAxes; ++i) {
-            uint8_t raw[sizeof(JointRoute)];
-            memcpy(raw, &routes[leg * kCanAxes + i], sizeof(JointRoute));
-            memset(d, 0, sizeof(d));
-            d[0] = gen;
-            d[1] = static_cast<uint8_t>(i);
-            memcpy(d + 2, raw, 6);
-            sendRouteFrame(leg, d);
-            memset(d, 0, sizeof(d));
-            d[0] = gen;
-            d[1] = static_cast<uint8_t>(0x80 | i);
-            memcpy(d + 2, raw + 6, 4);
-            sendRouteFrame(leg, d);
-        }
-        memset(d, 0, sizeof(d));
-        d[0] = gen;
-        d[1] = 0x05;
-        d[2] = feet[leg].hub;
-        d[3] = static_cast<uint8_t>(feet[leg].ch);
-        d[4] = feet[leg].addr;
-        sendRouteFrame(leg, d);
-    }
-}
+/** 残しているだけ。制御ループからは呼ばない。脚もこの電文を採用しない。 */
+void canHostSendRoutes(const JointRoute*, const FootRoute*, uint16_t, uint8_t, uint8_t) {}
 
 int canHostCollectScan(UsbScanNode* out, int maxNodes, uint32_t waitMs) {
     gScanSeq = static_cast<uint8_t>(gScanSeq + 1);

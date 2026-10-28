@@ -274,9 +274,6 @@ export function NvsVault({
         <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "nvs_list" })}>
           ボードから読む
         </button>
-        <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "prof_default" })}>
-          経路を既定に戻す
-        </button>
         <button
           type="button"
           className="m5__btn m5__btn--danger"
@@ -294,12 +291,16 @@ export function NvsVault({
           className="m5__btn"
           disabled={!canCmd}
           onClick={() => {
-            if (window.confirm("関節経路（NVS jprof）を消し、既定配線を書き込みます。よろしいですか？")) {
+            if (
+              window.confirm(
+                "フラッシュに残っている古い経路（jprof）を消します。脚の配線はファームの表のままです。よろしいですか？",
+              )
+            ) {
               send({ op: "nvs_erase", ns: "jprof" });
             }
           }}
         >
-          経路を消して既定
+          保存した経路を消す
         </button>
       </div>
 

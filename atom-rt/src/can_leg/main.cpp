@@ -10,7 +10,8 @@
  * 役割はアドレスで決める。0x70 / 0x72 が右、0x71 / 0x73 が左。
  * 両方ある、またはどちらも無いときは PWM を出さない。
  *
- * 校正は持たない。経路が届くまで、この脚の既定配線で読む。
+ * 校正は持たない。配線はファームの既定表で、見えた PaHub が右か左かを決める。
+ * CAN の配線表は採用しない。届いてもサーボは初期化し直さない。
  * サーボは 2 枚。Grove 直下 0x26 が股とひざ、すねの 0x25 がかかと。
  * 指令が 200 ms 途切れたら、最後の角度のあとピンを入力にして脱力する。
  */
@@ -61,13 +62,6 @@ static JointRoute gRoute[kCanAxes];
 static FootRoute gFoot{};
 static uint8_t gJointEn = 0x1F;
 static uint8_t gFootEn = 1;
-
-static uint8_t gRouteGen = 0;
-static uint16_t gRouteGot = 0;
-static uint8_t gRouteJointEn = 0x1F;
-static uint8_t gRouteFootEn = 1;
-static uint8_t gRouteRaw[kCanAxes][sizeof(JointRoute)];
-static FootRoute gRouteFoot{};
 
 static CanLegCommand gCmd{};
 static uint8_t gAppliedSeq = 0;
@@ -201,11 +195,11 @@ static void detectRole() {
     if (right && !left) {
         gRole = kCanRoleRight;
         fillRightLegRoutes(gRoute);
-        gFoot = FootRoute{kHubRightShin, kRightFootCh, kFootAddr};
+        gFoot = FootRoute{kHubRightShin, static_cast<int8_t>(channelOf(kRightShin, kSlotFoot, -1)), kFootAddr};
     } else if (left && !right) {
         gRole = kCanRoleLeft;
         fillLeftLegRoutes(gRoute);
-        gFoot = FootRoute{kHubLeftShin, kLeftFootCh, kFootAddr};
+        gFoot = FootRoute{kHubLeftShin, static_cast<int8_t>(channelOf(kLeftShin, kSlotFoot, -1)), kFootAddr};
     } else {
         gRole = kCanRoleUnknown;
     }
@@ -379,57 +373,6 @@ static void applyCommand(const CanLegCommand& cmd) {
     }
 }
 
-static void commitRoutes() {
-    for (int i = 0; i < kCanAxes; ++i) {
-        memcpy(&gRoute[i], gRouteRaw[i], sizeof(JointRoute));
-        if (gRoute[i].enc_addr == 0x40) {
-            gRoute[i].enc_addr = kAs5600Addr;
-        }
-    }
-    gFoot = gRouteFoot;
-    gJointEn = gRouteJointEn;
-    gFootEn = gRouteFootEn;
-    for (int i = 0; i < kCanAxes; ++i) {
-        gInaReady[i] = false;
-    }
-    gServoReady = false;
-    gDriven = 0;
-    tryInitServo();
-}
-
-static void takeRoute(const uint8_t* d) {
-    const uint8_t gen = d[0];
-    const uint8_t tag = d[1];
-    if (gen == 0) {
-        return;
-    }
-    if (gen != gRouteGen) {
-        gRouteGen = gen;
-        gRouteGot = 0;
-    }
-    if (tag == 0xFE) {
-        gRouteJointEn = d[2] & 0x1F;
-        gRouteFootEn = d[3] & 0x01;
-        gRouteGot = static_cast<uint16_t>(gRouteGot | (1u << 11));
-    } else if (tag == 0x05) {
-        gRouteFoot.hub = d[2];
-        gRouteFoot.ch = static_cast<int8_t>(d[3]);
-        gRouteFoot.addr = d[4];
-        gRouteGot = static_cast<uint16_t>(gRouteGot | (1u << 10));
-    } else if (tag < kCanAxes) {
-        memcpy(gRouteRaw[tag], d + 2, 6);
-        gRouteGot = static_cast<uint16_t>(gRouteGot | (1u << (tag * 2)));
-    } else if ((tag & 0x80) != 0 && (tag & 0x7F) < kCanAxes) {
-        const uint8_t index = tag & 0x7F;
-        memcpy(gRouteRaw[index] + 6, d + 2, 4);
-        gRouteGot = static_cast<uint16_t>(gRouteGot | (1u << (index * 2 + 1)));
-    }
-    if (gRouteGot == 0x0FFF) {
-        gRouteGot = 0;
-        commitRoutes();
-    }
-}
-
 static void pollCan() {
     canRecover();
     if (gRole == kCanRoleUnknown) {
@@ -446,13 +389,12 @@ static void pollCan() {
         if (!canParseCmd(msg.identifier, gotLeg, slot) || gotLeg != leg) {
             continue;
         }
+        // kCmdRoute は読まない。配線は起動時の既定表のままにする。
         if (slot == kCmdA || slot == kCmdB) {
             if (canCommandPush(gCmd, slot, msg.data) && gCmd.seq != gAppliedSeq) {
                 applyCommand(gCmd);
                 gCmd.got = 0;
             }
-        } else if (slot == kCmdRoute) {
-            takeRoute(msg.data);
         } else if (slot == kCmdScan) {
             gScanSeq = msg.data[0];
             gScanReq = true;

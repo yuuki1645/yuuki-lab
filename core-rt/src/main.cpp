@@ -1,7 +1,7 @@
 /**
  * 腰の CoreS3。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出す。
  *
- * Core 1 が CAN と指令。Core 0 が USB。校正と経路の正本はここ。
+ * Core 1 が CAN と指令。Core 0 が USB。校正の正本はここ。配線表は topology.hpp。
  * 内部 I2C（G12/G11）は AW9523 で Grove の 5V を出すときだけ使う。
  * Unit CAN は PORT.C。送信 GPIO17、受信 GPIO18。5V を出さないとトランシーバは黙る。
  * IMU と RTC は読まない。脚の I2C はここでは開かない。
@@ -91,9 +91,6 @@ static JointRoute gRoute[kCoreJoints];
 static FootRoute gFoot[kCoreFeet];
 static uint16_t gJointEn = 0x03FF;  // 10 軸
 static uint8_t gFootEn = 0x03;      // bit0 右、bit1 左
-static uint8_t gRouteGen = 1;
-static uint8_t gRouteSent = 0;
-static uint32_t gRouteMs = 0;
 static uint8_t gServoOk = 0;
 
 static float gUnwrapPrev[kCoreJoints];
@@ -279,54 +276,11 @@ static bool saveCal(int joint) {
     return wrote;
 }
 
-/** 誤って保存した 0x40 を、AS5600 の 0x36 に戻す。 */
-static void rewriteEncoderAddr() {
-    for (int i = 0; i < kCoreJoints; ++i) {
-        if (gRoute[i].enc_addr == 0x40) {
-            gRoute[i].enc_addr = kAs5600Addr;
-        }
-    }
-}
-
+/** 配線は topology.hpp。NVS に残った古い表は読まない。 */
 static void loadProfile() {
     fillDefaultTopology(gRoute, gFoot);
-    if (!prefsOpen("jprof", true)) {
-        return;
-    }
-    JointRoute routes[kCoreJoints];
-    FootRoute feet[kCoreFeet];
-    const size_t routeBytes = sizeof(routes);
-    const size_t footBytes = sizeof(feet);
-    const bool routesOk = gPrefs.getBytes("r", routes, routeBytes) == routeBytes;
-    const bool feetOk = gPrefs.getBytes("feet", feet, footBytes) == footBytes;
-    uint8_t en[3] = {};
-    const bool enOk = gPrefs.getBytes("en", en, sizeof(en)) == sizeof(en);
-    gPrefs.end();
-    if (routesOk && feetOk) {
-        memcpy(gRoute, routes, routeBytes);
-        memcpy(gFoot, feet, footBytes);
-        rewriteEncoderAddr();
-    }
-    if (enOk) {
-        gJointEn = static_cast<uint16_t>(en[0] | (static_cast<uint16_t>(en[1]) << 8));
-        gFootEn = en[2];
-    }
-}
-
-static bool saveProfile() {
-    if (!prefsOpen("jprof", false)) {
-        return false;
-    }
-    const bool routesOk = gPrefs.putBytes("r", gRoute, sizeof(gRoute)) == sizeof(gRoute);
-    const bool feetOk = gPrefs.putBytes("feet", gFoot, sizeof(gFoot)) == sizeof(gFoot);
-    uint8_t en[3] = {
-        static_cast<uint8_t>(gJointEn & 0xFF),
-        static_cast<uint8_t>(gJointEn >> 8),
-        gFootEn,
-    };
-    const bool enOk = gPrefs.putBytes("en", en, sizeof(en)) == sizeof(en);
-    gPrefs.end();
-    return routesOk && feetOk && enOk;
+    gJointEn = 0x03FF;
+    gFootEn = 0x03;
 }
 
 
@@ -539,35 +493,13 @@ static void acceptMapChunk(const uint8_t* payload, uint16_t len) {
     usbSend(kUsbMapOk, &ok, sizeof(ok));
 }
 
-static void acceptProfile(const uint8_t* payload, uint16_t len) {
-    // n + 10 routes + 2 feet + joint_en u16 + foot_en u8
-    const size_t need = 1 + sizeof(JointRoute) * kCoreJoints + sizeof(FootRoute) * kCoreFeet + 3;
-    if (len < 1 || payload[0] != kCoreJoints || len != need) {
-        uint8_t reason = kUsbReasonCount;
-        usbSend(kUsbProfErr, &reason, 1);
-        return;
-    }
-    portENTER_CRITICAL(&gLock);
-    memcpy(gRoute, payload + 1, sizeof(gRoute));
-    memcpy(gFoot, payload + 1 + sizeof(gRoute), sizeof(gFoot));
-    rewriteEncoderAddr();
-    const size_t enAt = 1 + sizeof(gRoute) + sizeof(gFoot);
-    gJointEn = static_cast<uint16_t>(payload[enAt] | (static_cast<uint16_t>(payload[enAt + 1]) << 8));
-    gFootEn = payload[enAt + 2];
-    portEXIT_CRITICAL(&gLock);
-    gRouteGen = static_cast<uint8_t>(gRouteGen + 1);
-    if (gRouteGen == 0) {
-        gRouteGen = 1;
-    }
-    if (!saveProfile()) {
-        uint8_t reason = kUsbReasonNvs;
-        usbSend(kUsbProfErr, &reason, 1);
-        return;
-    }
+/** 届いた配線表は捨て、ファームの表を返す。脚の配線は変えない。 */
+static void rejectProfileEdit() {
     UsbProfOk ok{};
     ok.n = kCoreJoints;
-    ok.is_default = 0;
+    ok.is_default = 1;
     usbSend(kUsbProfOk, &ok, sizeof(ok));
+    sendProfile();
 }
 
 static void setMode(WorkMode mode) {
@@ -636,33 +568,12 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
         case kUsbCmdProfGet:
             sendProfile();
             break;
-        case kUsbCmdProfDefault: {
-            // 制御タスクが経路をコピーしている間に途中の値を見せない。
-            JointRoute routes[kCoreJoints];
-            FootRoute feet[kCoreFeet];
-            fillDefaultTopology(routes, feet);
-            portENTER_CRITICAL(&gLock);
-            memcpy(gRoute, routes, sizeof(gRoute));
-            memcpy(gFoot, feet, sizeof(gFoot));
-            gJointEn = 0x03FF;
-            gFootEn = 0x03;
-            portEXIT_CRITICAL(&gLock);
-            gRouteGen = static_cast<uint8_t>(gRouteGen + 1);
-            if (gRouteGen == 0) {
-                gRouteGen = 1;
-            }
-            saveProfile();
-            {
-                UsbProfOk ok{};
-                ok.n = kCoreJoints;
-                ok.is_default = 1;
-                usbSend(kUsbProfOk, &ok, sizeof(ok));
-            }
-            sendProfile();
+        case kUsbCmdProfDefault:
+            // 画面の古いボタン。配線はファームの表のまま、その表を返す。
+            rejectProfileEdit();
             break;
-        }
         case kUsbCmdProfPut:
-            acceptProfile(payload, len);
+            rejectProfileEdit();
             break;
         case kUsbCmdMapGet:
             if (len >= sizeof(UsbCmdMapGet)) {
@@ -770,22 +681,6 @@ static void controlTask(void*) {
             gScanReq = 0;
             gScanCount = canHostCollectScan(gScan, 48, 1500);
             gScanReady = 1;
-        }
-        const uint32_t nowMs = millis();
-        if (gRouteSent != gRouteGen || static_cast<uint32_t>(nowMs - gRouteMs) > 1000) {
-            JointRoute routes[kCoreJoints];
-            FootRoute feet[kCoreFeet];
-            uint16_t jointEn = 0;
-            uint8_t footEn = 0;
-            portENTER_CRITICAL(&gLock);
-            memcpy(routes, gRoute, sizeof(routes));
-            memcpy(feet, gFoot, sizeof(feet));
-            jointEn = gJointEn;
-            footEn = gFootEn;
-            portEXIT_CRITICAL(&gLock);
-            canHostSendRoutes(routes, feet, jointEn, footEn, gRouteGen);
-            gRouteSent = gRouteGen;
-            gRouteMs = nowMs;
         }
         const uint32_t tSense0 = micros();
         CanHostView view{};

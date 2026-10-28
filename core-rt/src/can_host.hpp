@@ -58,7 +58,7 @@ void canHostRead(CanHostView& out);
 /** 論理軸の角度と 10 bit マスクを、現れている脚へ分ける。forceOff で両脚を切る。 */
 void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff);
 
-/** 片脚 5 軸ぶんの経路。gen は 0 以外。右が routes[0]、左が routes[5]。 */
+/** 片脚 5 軸ぶんの経路。腰はもう送らない。脚はファームの表を使う。 */
 void canHostSendRoutes(const JointRoute* routes, const FootRoute* feet, uint16_t jointEn,
                        uint8_t footEn, uint8_t gen);
 

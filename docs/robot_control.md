@@ -53,7 +53,7 @@ CoreS3 の Core 1 が CAN と指令、Core 0 が USB です。Core 0 は集め�
 - INA226（`0x41`）が各軸の電圧と電流です。
 - 足裏スレーブ（`0x28`）は右が `0x72` のチャンネル 1、左が `0x73` のチャンネル 4 です。四隅の電圧を返します。
 
-チャンネルの初期値は [core-rt/src/topology.hpp](../core-rt/src/topology.hpp) です。左右で番号が違います。経路の正本は CoreS3 の NVS で、CAN で脚へ配ります。CoreS3 は脚の I2C を開きません。
+配線の正本は [core-rt/src/topology.hpp](../core-rt/src/topology.hpp) です。左右でチャンネル番号が違います。各脚のファームに焼き込み、起動時に見えた PaHub で右か左かを決めます。腰は配線表を CAN で送りません。CoreS3 は脚の I2C を開きません。
 
 サーボは RDS51150 を想定しています。指令の範囲は 40〜230° です。
 

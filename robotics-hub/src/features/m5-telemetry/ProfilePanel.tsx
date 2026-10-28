@@ -1,38 +1,40 @@
 /**
- * 関節プロファイル（AS5600 / サーボ / INA226 の経路）パネル。
+ * 実機の配線表。表示だけ。
  *
- * NVS の jprof に入るので、配線を変えてもファームの焼き直しは要らない。
- * 入力は下書きに溜め、「ボードへ送信」で初めて ATOM に渡す。
- *
- * 有効チェックは経路と独立。機体のアドレスはそのまま残し、無効軸は
- * 20 Hz の I2C と PWM から外す（机上で未配線の軸を切る用）。
+ * 中身は腰が返す、ファームに焼き込んだ既定表です。
+ * 編集は core-rt/src/topology.hpp を直して、両脚へ書き込みます。
  */
-import { useState } from "react";
 import { UiHelp } from "@/shared/components/UiHelp";
-import {
-  emptyFoot,
-  emptyRoute,
-  fmtFootRoute,
-  fmtRouteField,
-  parseFootOption,
-} from "./m5Route";
-import { M5_JOINTS, type M5Cmd, type M5FootRoute, type M5Profile, type M5Route } from "./types";
+import { fmtFootRoute, pwmRouteLabel } from "./m5Route";
+import { type M5Cmd, type M5FootRoute, type M5Profile, type M5Route } from "./types";
 
-const ROUTE_KEYS = [
-  "enc_hub",
-  "enc_ch",
-  "enc_addr",
-  "act_hub",
-  "act_ch",
-  "act_addr",
-  "servo_ch",
-  "ina_hub",
-  "ina_ch",
-  "ina_addr",
-] as const;
+const JOINT_NAMES = [
+  "右 股ロール",
+  "右 股ピッチ",
+  "右 ひざ",
+  "右 かかとピッチ",
+  "右 かかとロール",
+  "左 股ロール",
+  "左 股ピッチ",
+  "左 ひざ",
+  "左 かかとピッチ",
+  "左 かかとロール",
+];
 
-function isOn(r: { enabled?: boolean } | undefined): boolean {
-  return r?.enabled !== false;
+function place(hub: number, ch: number, addr: number): string {
+  if (!addr) return "なし";
+  const hex = `0x${(addr & 0xff).toString(16).toUpperCase().padStart(2, "0")}`;
+  if (!hub) return `直下 ${hex}`;
+  const hubHex = `0x${(hub & 0xff).toString(16).toUpperCase().padStart(2, "0")}`;
+  return `PaHub ${hubHex} CH${ch}  ${hex}`;
+}
+
+function footLine(label: string, foot: M5FootRoute | null | undefined) {
+  return (
+    <p className="m5__meta">
+      {label}：{foot && foot.addr ? fmtFootRoute(foot) : "なし"}
+    </p>
+  );
 }
 
 export function ProfilePanel({
@@ -44,201 +46,59 @@ export function ProfilePanel({
   canCmd: boolean;
   send: (cmd: M5Cmd) => void;
 }) {
-  const [draftRoutes, setDraftRoutes] = useState<M5Route[] | null>(null);
-  const [draftFoot, setDraftFoot] = useState<M5FootRoute | null>(null);
-
-  const routes = draftRoutes ?? profile?.routes ?? [];
-  const jointCount = Math.max(M5_JOINTS, routes.length);
-  const foot = draftFoot ?? profile?.foot ?? emptyFoot();
-
-  // 下書きは「ボードから取得 / 既定 / SCAN」以外では捨てない。
-  // 送信エコーが古い全オンのまま来ても、チェックが勝手に戻らないようにする。
-
-  const baseRoutes = (): M5Route[] => {
-    const base = (
-      draftRoutes ??
-      profile?.routes ??
-      Array.from({ length: M5_JOINTS }, (_, k) => emptyRoute(k))
-    ).map((r) => ({ ...r }));
-    while (base.length < M5_JOINTS) base.push(emptyRoute(base.length));
-    return base;
-  };
-
-  const applyDraft = (i: number, key: (typeof ROUTE_KEYS)[number], raw: string) => {
-    const base = baseRoutes();
-    const n = raw.trim().toLowerCase().startsWith("0x") ? parseInt(raw, 16) : Number(raw);
-    if (!Number.isFinite(n)) return;
-    const next: M5Route = { ...emptyRoute(i), ...base[i] };
-    next[key] = n;
-    base[i] = next;
-    setDraftRoutes(base);
-  };
-
-  const setJointEnabled = (i: number, on: boolean) => {
-    const base = baseRoutes();
-    base[i] = { ...emptyRoute(i), ...base[i], enabled: on };
-    setDraftRoutes(base);
-  };
+  const routes = profile?.routes ?? [];
 
   return (
     <section className="m5__section">
       <div className="m5__toolbar">
-        <UiHelp title="プロファイル" wide>
-          経路（アドレス）と有効は別です。有効を外しても hub/addr は残ります。ボードへ送信するまで ATOM の RAM と NVS には入りません。ver 13 未満はマスクを落とします。ボードから取得は RAM 上のいまの値で、フラッシュの確認は NVS タブの en を見てください。
+        <UiHelp title="配線表" wide>
+          腰のファームに焼き込んだ既定です。画面からは変えられません。端子を動かすときは
+          core-rt/src/topology.hpp を直して、両脚の ATOM S3R へ同じファームを書き込みます。
         </UiHelp>
         <button
           type="button"
           className="m5__btn"
           disabled={!canCmd}
-          onClick={() => {
-            setDraftRoutes(null);
-            setDraftFoot(null);
-            send({ op: "prof_get" });
-          }}
+          onClick={() => send({ op: "prof_get" })}
         >
-          ボードから取得
-        </button>
-        <button
-          type="button"
-          className="m5__btn m5__btn--on"
-          disabled={!canCmd}
-          onClick={() => {
-            send({
-              op: "prof_put",
-              routes: Array.from({ length: jointCount }, (_, i) => routes[i] ?? emptyRoute(i)),
-              foot,
-            });
-          }}
-        >
-          ボードへ送信
-        </button>
-        <button
-          type="button"
-          className="m5__btn"
-          disabled={!canCmd}
-          onClick={() => {
-            setDraftRoutes(null);
-            setDraftFoot(null);
-            send({ op: "prof_default" });
-          }}
-        >
-          既定に戻す
-        </button>
-        <button
-          type="button"
-          className="m5__btn"
-          disabled={!canCmd}
-          onClick={() => {
-            setDraftRoutes(null);
-            setDraftFoot(null);
-            send({ op: "prof_from_scan" });
-          }}
-        >
-          SCANから仮割当
+          腰から読み直す
         </button>
       </div>
       <p className="m5__meta">
-        経路は機体構成のまま残せます。左の「有効」を外すとその軸の AS5600 / INA / PWM
-        を読まなくなります。机上では使わない軸を切ってください。送信するまでボードには入りません。
+        各脚は起動時に見えた PaHub で、右用か左用かを選びます。PWM のオンとオフは脚タブのボタンです。
       </p>
-      <div className="m5__table-wrap">
-        <table className="m5__table">
-          <thead>
-            <tr>
-              <th>
-                有効
-                <UiHelp title="有効" size="sm">
-                  この軸の AS5600・INA・PWM を 20 Hz から外します。アドレスは消しません。机上で未配線の軸を切る用です。
-                </UiHelp>
-              </th>
-              <th>関節</th>
-              <th>enc_hub</th>
-              <th>enc_ch</th>
-              <th>enc_addr</th>
-              <th>act_hub</th>
-              <th>act_ch</th>
-              <th>act_addr</th>
-              <th>servo</th>
-              <th>ina_hub</th>
-              <th>ina_ch</th>
-              <th>ina_addr</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: jointCount }, (_, i) => {
-              const r = routes[i] ?? emptyRoute(i);
-              const on = isOn(r);
-              return (
-                <tr key={i} className={on ? "" : "m5__table-row--off"}>
-                  <td>
-                    <label className="m5-en">
-                      <input
-                        type="checkbox"
-                        disabled={!canCmd}
-                        checked={on}
-                        onChange={(e) => setJointEnabled(i, e.target.checked)}
-                        aria-label={`関節 ${i} を有効`}
-                      />
-                    </label>
-                  </td>
-                  <td>{i}</td>
-                  {ROUTE_KEYS.map((key) => (
-                    <td key={key}>
-                      <input
-                        disabled={!canCmd}
-                        defaultValue={fmtRouteField(key, r[key])}
-                        key={`${i}-${key}-${r[key]}`}
-                        onBlur={(e) => applyDraft(i, key, e.target.value)}
-                      />
-                    </td>
-                  ))}
+      {routes.length === 0 ? (
+        <p className="m5__meta">腰から配線表が届いていません。「腰から読み直す」を押してください。</p>
+      ) : (
+        <div className="m5__table-wrap">
+          <table className="m5__table">
+            <thead>
+              <tr>
+                <th>関節</th>
+                <th>角度センサ</th>
+                <th>サーボ</th>
+                <th>電流センサ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {routes.map((route: M5Route, i: number) => (
+                <tr key={i}>
+                  <td>{JOINT_NAMES[i] ?? String(i)}</td>
+                  <td>{place(route.enc_hub, route.enc_ch, route.enc_addr)}</td>
+                  <td>{pwmRouteLabel(route)}</td>
+                  <td>{place(route.ina_hub, route.ina_ch, route.ina_addr)}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <div className={"m5-foot-prof" + (isOn(foot) ? "" : " m5-foot-prof--off")}>
-        <label className="m5-en">
-          <input
-            type="checkbox"
-            disabled={!canCmd}
-            checked={isOn(foot)}
-            onChange={(e) => {
-              const cur = draftFoot ?? profile?.foot ?? emptyFoot();
-              setDraftFoot({ ...cur, enabled: e.target.checked });
-            }}
-            aria-label="右足スレーブを有効"
-          />
-          有効
-          <UiHelp title="右足の有効" size="sm">
-            経路は残したまま、20 Hz の足圧読みだけ止めます。
-          </UiHelp>
-        </label>
-        <p className="m5__meta">
-          右足スレーブ（ATOM S3 Lite / DF9-40）。経路は残したまま、無効にすると 20 Hz の読みを止めます。
-        </p>
-        <label className="m5-foot-prof__lab">
-          経路
-          <select
-            disabled={!canCmd}
-            value={fmtFootRoute(foot)}
-            onChange={(e) => {
-              const parsed = parseFootOption(e.target.value);
-              if (parsed) setDraftFoot({ ...parsed, enabled: isOn(foot) });
-            }}
-          >
-            {(profile?.foot_options?.includes(fmtFootRoute(foot))
-              ? profile.foot_options
-              : [...(profile?.foot_options ?? ["なし"]), fmtFootRoute(foot)]
-            ).map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {profile ? (
+        <>
+          {footLine("右足", profile.foot)}
+          {footLine("左足", profile.foot_left)}
+        </>
+      ) : null}
     </section>
   );
 }

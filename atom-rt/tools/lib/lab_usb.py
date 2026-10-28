@@ -176,6 +176,75 @@ def save_names(names: dict[str, str]) -> None:
         pass
 
 
+def _joint_channel(frame: bytes) -> int | None:
+    """CMD_JOINT の軸番号。関節指令でなければ None。
+
+    フレームは AA 55 | type | len_lo | len_hi | payload | crc。
+    関節指令の payload 先頭 1 バイトが軸。長さが足りない列は、
+    順番を守る側へ回す（壊れたパケットを軸の上書きで消さない）。
+    """
+    # payload は軸 1 バイト + 角度 float。オーバーヘッドは magic から CRC まで。
+    if len(frame) < proto.FRAME_OVERHEAD + 5:
+        return None
+    if frame[0] != 0xAA or frame[1] != 0x55:
+        return None
+    if frame[2] != proto.CMD_JOINT:
+        return None
+    plen = frame[3] | (frame[4] << 8)
+    if plen < 5 or len(frame) < proto.FRAME_OVERHEAD + plen:
+        return None
+    return frame[5]
+
+
+class _UsbTxQueue:
+    """USB へ出すバイト列。関節指令は軸ごとの最新だけを残す。
+
+    パッドは 0.10 秒ごとに 10 軸を積む。送信スレッドがテレメトリ待ちの
+    あいだに 1 本しか出さないと、毎秒 100 本入って 20 本しか出ず、
+    列が伸びてサーボが数秒遅れる。同じ軸の古い角度はここで捨てる。
+    モード、出力許可、校正チャンクは積んだ順を守る。
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        # ("raw", frame) か ("joint", 軸)。関節は _joints の最新を指す。
+        self._order: deque[tuple[str, bytes | int]] = deque()
+        self._joints: dict[int, bytes] = {}
+
+    def put(self, frame: bytes) -> None:
+        """1 フレームを積む。同じ軸の関節指令は、末尾の最新 1 本に置き換える。"""
+        channel = _joint_channel(frame)
+        with self._lock:
+            if channel is None:
+                self._order.append(("raw", frame))
+                return
+            if channel in self._joints:
+                # 古い位置に残すと、その後に積んだモードより先に最新角が出る。
+                self._order = deque(
+                    item for item in self._order if item != ("joint", channel)
+                )
+            self._joints[channel] = frame
+            self._order.append(("joint", channel))
+
+    def drain(self) -> list[bytes]:
+        """今溜まっている分を順番どおり取り出す。次の put は別の列に入る。"""
+        with self._lock:
+            order = self._order
+            joints = self._joints
+            self._order = deque()
+            self._joints = {}
+        out: list[bytes] = []
+        for kind, value in order:
+            if kind == "raw" and isinstance(value, bytes):
+                out.append(value)
+                continue
+            if isinstance(value, int):
+                packet = joints.get(value)
+                if packet is not None:
+                    out.append(packet)
+        return out
+
+
 def open_atom_serial(port: str) -> serial.Serial:
     """
     ATOM の USB-Serial-JTAG を開く。
@@ -204,7 +273,8 @@ class AtomWorker:
         self.port = port
         self.out = out
         self._stop = threading.Event()
-        self._tx: queue.Queue[bytes] = queue.Queue()
+        # 無制限 FIFO にすると、関節指令がテレメトリ周期より速く積まれて遅れが伸びる。
+        self._tx = _UsbTxQueue()
         self._thread = threading.Thread(target=self._run, daemon=True)
 
     def start(self) -> None:
@@ -215,6 +285,7 @@ class AtomWorker:
         self._thread.join(timeout=2.0)
 
     def send(self, data: bytes) -> None:
+        """ボードへの 1 フレーム。関節指令は軸ごとの最新だけが残る。"""
         self._tx.put(data)
 
     def _put(self, kind: str, payload: object) -> None:
@@ -241,8 +312,9 @@ class AtomWorker:
         map_total = 0
         try:
             while not self._stop.is_set():
-                try:
-                    msg = self._tx.get_nowait()
+                # 溜まっている最新を、テレメトリの読みで止まる前に全部出す。
+                # 1 本ずつ次の読みまで待つと、パッドの 10 軸が列の後ろに残る。
+                for msg in self._tx.drain():
                     ser.write(msg)
                     ser.flush()
                     # 文字列にすると関節角度が落ちる。記録側で tx_record する。
@@ -250,8 +322,6 @@ class AtomWorker:
                     # マップチャンクは CDC が溢れないよう間隔を空ける（30ms では 32/191 で落ちた）
                     if len(msg) >= 3 and msg[2] == proto.CMD_MAPCHUNK:
                         time.sleep(0.12)
-                except queue.Empty:
-                    pass
                 try:
                     waiting = ser.in_waiting
                     chunk = ser.read(waiting if waiting > 0 else 256)

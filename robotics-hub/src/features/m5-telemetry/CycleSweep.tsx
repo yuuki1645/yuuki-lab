@@ -58,6 +58,8 @@ type Props = {
   clockSec: number | null;
   /** ライブのとき true。再生中は記録時刻に合わせ、壁時計では動かさない。 */
   live: boolean;
+  /** Isaac のときは「補正（シミュ）」。実機は「補正」。 */
+  corrLabel?: string;
 };
 
 function loadSlots(): string[] {
@@ -92,8 +94,10 @@ function parseSlot(raw: string): SlotSpec {
   return { ch, field: known.key };
 }
 
-function fieldMeta(field: FieldKey): { label: string; unit: string } {
-  return FIELDS.find((f) => f.key === field) ?? { label: "指令", unit: "°" };
+function fieldMeta(field: FieldKey, corrLabel = "補正"): { label: string; unit: string } {
+  const found = FIELDS.find((f) => f.key === field) ?? { label: "指令", unit: "°" };
+  if (field === "corr") return { label: corrLabel, unit: found.unit };
+  return found;
 }
 
 function sampleValue(point: M5HistoryPoint, spec: SlotSpec): number | null {
@@ -179,10 +183,11 @@ type PropsDraw = {
   history: M5HistoryPoint[];
   slots: string[];
   hoverPhase: number | null;
+  corrLabel: string;
 };
 
 function drawSweep(d: PropsDraw): void {
-  const { ctx, width, now, history, slots, hoverPhase } = d;
+  const { ctx, width, now, history, slots, hoverPhase, corrLabel } = d;
   const gutter = width < 560 ? 78 : 118;
   const padR = 12;
   const plotW = Math.max(20, width - gutter - padR);
@@ -245,7 +250,7 @@ function drawSweep(d: PropsDraw): void {
   slots.forEach((raw, index) => {
     const spec = parseSlot(raw);
     const top = laneTop + index * (laneH + 4);
-    const meta = spec ? fieldMeta(spec.field) : null;
+    const meta = spec ? fieldMeta(spec.field, corrLabel) : null;
     const title = spec ? `ch${spec.ch} ${meta?.label ?? ""}` : "空";
     ctx.fillStyle = "#c5d0dc";
     ctx.textAlign = "right";
@@ -379,7 +384,13 @@ function drawSweep(d: PropsDraw): void {
   }
 }
 
-function hoverText(history: M5HistoryPoint[], slots: string[], now: number, phase: number): string {
+function hoverText(
+  history: M5HistoryPoint[],
+  slots: string[],
+  now: number,
+  phase: number,
+  corrLabel: string,
+): string {
   // 見えている周のなかで、カーソルに一番近いサンプルを読む。
   let best: M5HistoryPoint | null = null;
   let bestDist = Infinity;
@@ -398,13 +409,13 @@ function hoverText(history: M5HistoryPoint[], slots: string[], now: number, phas
     if (!spec) return null;
     const v = sampleValue(best, spec);
     if (v == null) return null;
-    const meta = fieldMeta(spec.field);
+    const meta = fieldMeta(spec.field, corrLabel);
     return `ch${spec.ch} ${meta.label} ${v.toFixed(1)}${meta.unit}`;
   });
   return [head, ...parts.filter((p): p is string => Boolean(p))].join(" · ");
 }
 
-export function CycleSweep({ history, clockSec, live }: Props) {
+export function CycleSweep({ history, clockSec, live, corrLabel = "補正" }: Props) {
   const reactId = useId();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -415,7 +426,9 @@ export function CycleSweep({ history, clockSec, live }: Props) {
   const paintRef = useRef<() => void>(() => {});
   const clockRef = useRef(clockSec);
   const liveRef = useRef(live);
+  const corrLabelRef = useRef(corrLabel);
   historyRef.current = history;
+  corrLabelRef.current = corrLabel;
   clockRef.current = clockSec;
   liveRef.current = live;
 
@@ -458,6 +471,7 @@ export function CycleSweep({ history, clockSec, live }: Props) {
         history: historyRef.current,
         slots: slotsRef.current,
         hoverPhase: hoverRef.current,
+        corrLabel: corrLabelRef.current,
       });
       if (readoutRef.current) {
         const phase = phaseOf(now);
@@ -465,7 +479,7 @@ export function CycleSweep({ history, clockSec, live }: Props) {
         readoutRef.current.textContent =
           hover == null
             ? `${phase.toFixed(2)} / ${WINDOW_S.toFixed(2)} 秒`
-            : hoverText(historyRef.current, slotsRef.current, now, hover);
+            : hoverText(historyRef.current, slotsRef.current, now, hover, corrLabelRef.current);
       }
     };
     paintRef.current = paint;
@@ -499,7 +513,7 @@ export function CycleSweep({ history, clockSec, live }: Props) {
   const options = FIELDS.flatMap((field) =>
     Array.from({ length: 10 }, (_, ch) => ({
       value: `${ch}:${field.key}`,
-      label: `${channelName(ch)} ${field.label}`,
+      label: `${channelName(ch)} ${field.key === "corr" ? corrLabel : field.label}`,
     }))
   );
 

@@ -362,7 +362,11 @@ export default function M5TelemetryPage() {
                     <Metric title="AGC" color="#8b9bb0" text={at(frame?.agc, j) === 255 ? "—" : String(at(frame?.agc, j) ?? "—")} />
                     <Metric title="unwrap" color={M5_COLORS.unwrap} text={fmt(at(frame?.unwrap, j), "°")} />
                     <Metric title="電圧" color={M5_COLORS.volt} text={fmt(at(frame?.volt, j), "V")} />
-                    <Metric title="補正" color={M5_COLORS.corr} text={fmt(at(frame?.corr, j), "°")} />
+                    <Metric
+                      title={stream.source === "isaac" ? "補正（シミュ）" : "補正"}
+                      color={M5_COLORS.corr}
+                      text={fmt(at(frame?.corr, j), "°")}
+                    />
                     <Metric title="電流" color={M5_COLORS.amp} text={fmt(at(frame?.amp, j), "A")} />
                     <Metric title="電力" color={M5_COLORS.watt} text={fmt(at(frame?.watt, j), "W")} />
                   </div>
@@ -478,7 +482,7 @@ export default function M5TelemetryPage() {
                 ["cmd", "指令", M5_COLORS.cmd],
                 ["raw", "生角", M5_COLORS.raw],
                 ["unwrap", "unwrap", M5_COLORS.unwrap],
-                ["corr", "補正", M5_COLORS.corr],
+                ["corr", stream.source === "isaac" ? "補正（シミュ）" : "補正", M5_COLORS.corr],
                 ["v", "電圧", M5_COLORS.volt],
                 ["a", "電流", M5_COLORS.amp],
                 ["w", "電力", M5_COLORS.watt],

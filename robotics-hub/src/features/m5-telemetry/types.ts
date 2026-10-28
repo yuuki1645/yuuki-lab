@@ -135,6 +135,11 @@ export type M5Frame = {
    * x は右が正、y は奥が正。vx は方策が受け取った前進 [m/s]。
    */
   stick?: M5Stick | null;
+  /**
+   * Isaac の出し元。heel は手動の踵操作、walk は歩行再生。
+   * 実機と、バーで関節を動かす再生には無い。
+   */
+  drive?: "heel" | "walk" | null;
 };
 
 /** 歩行再生で、指の位置と方策への速度を分ける */

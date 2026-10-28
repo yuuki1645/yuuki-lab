@@ -19,6 +19,9 @@
     L / R         肩のバンパー。押しているあいだ、その足を腰の天井側へ。
     ZL / ZR       肩のトリガー。引いているあいだ、その足を腰の床側へ。
     スティックやボタンを戻しても、そこまでの踵位置は保持する。
+
+``robot_description/isaac_hub_bridge.py`` が 127.0.0.1:8796 で待っていれば、
+目標角・今の関節角・足裏を robotics-hub の実機テレメトリへ出す。橋が無くても操作は続く。
 """
 
 from __future__ import annotations
@@ -44,11 +47,13 @@ import torch
 import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+from isaaclab.sensors import ContactSensor, ContactSensorCfg
 from isaaclab.sim import SimulationContext
 from isaaclab.utils.math import quat_apply, quat_apply_inverse
 
 from yuuki_isaac_lab.assets.robots.yuuki_legs import YUUKI_LEGS_CFG
 from yuuki_isaac_lab.manual_heel.gamepad_heel import HeelGamepad
+from yuuki_isaac_lab.manual_heel.hub_telemetry import HubTelemetry
 from yuuki_isaac_lab.manual_heel.leg_ik import (
     ROLL_SIGN_LEFT,
     ROLL_SIGN_RIGHT,
@@ -83,7 +88,7 @@ def main() -> None:
     sim = SimulationContext(sim_cfg)
     # 前方やや右から、足と腰が見える位置。
     sim.set_camera_view(eye=[1.35, -1.15, 0.72], target=[0.0, 0.0, 0.32])
-    robot = _design_scene()
+    robot, contact = _design_scene()
     left_marker, right_marker = _target_markers()
     sim.reset()
 
@@ -128,64 +133,95 @@ def main() -> None:
     print(
         "操作: 左スティック=左踵、右スティック=右踵（腰のXY、奥が前、右がロボットの右）。\n"
         "      L/R バンパーで天井側、ZL/ZR トリガーで床側。離すとその位置を保持します。\n"
-        "      緑の球が左踵の目標、橙の球が右踵の目標です。届かない高さは自動でずらします。",
+        "      緑の球が左踵の目標、橙の球が右踵の目標です。届かない高さは自動でずらします。\n"
+        "      橋（isaac_hub_bridge.py）があれば、実機テレメトリの補正（シミュ）と足裏へ出します。",
         flush=True,
     )
+    hub = HubTelemetry()
 
     sim_dt = sim.get_physics_dt()
     # 速度の単位は m/s。1 フレームが遅れても、目標が一気に飛ばないようにする。
     speed = np.array([args_cli.xy_speed, args_cli.xy_speed, args_cli.z_speed], dtype=float)
     step_index = 0
     status_interval = max(1, int(round(2.0 / sim_dt)))
-    while simulation_app.is_running():
-        left_weight, right_weight = pad.velocity_weights()
-        frame_dt = min(float(sim_dt), 0.05)
-        left_target, left_q, _ = step_heel_target(
-            left_target,
-            left_weight * speed * frame_dt,
-            Y_HIP_LEFT,
-            left_q,
-            roll_sign=ROLL_SIGN_LEFT,
-        )
-        right_target, right_q, _ = step_heel_target(
-            right_target,
-            right_weight * speed * frame_dt,
-            Y_HIP_RIGHT,
-            right_q,
-            roll_sign=ROLL_SIGN_RIGHT,
-        )
-        _apply_joints(robot, joint_pos, joint_index, left_q, right_q)
-        robot.write_data_to_sim()
-        _draw_targets(left_marker, right_marker, robot, waist_id, left_target, right_target)
-        sim.step()
-        robot.update(sim_dt)
-        step_index += 1
-        if step_index % status_interval == 0:
-            print(
-                f"L target=({left_target[0]:+.3f},{left_target[1]:+.3f},{left_target[2]:+.3f}) "
-                f"R target=({right_target[0]:+.3f},{right_target[1]:+.3f},{right_target[2]:+.3f}) "
-                f"{pad.snapshot()}",
-                flush=True,
+    try:
+        while simulation_app.is_running():
+            left_weight, right_weight = pad.velocity_weights()
+            frame_dt = min(float(sim_dt), 0.05)
+            left_target, left_q, _ = step_heel_target(
+                left_target,
+                left_weight * speed * frame_dt,
+                Y_HIP_LEFT,
+                left_q,
+                roll_sign=ROLL_SIGN_LEFT,
             )
-        if args_cli.steps > 0 and step_index >= args_cli.steps:
-            break
-    print(
-        f"done steps={step_index} "
-        f"L=({left_target[0]:+.3f},{left_target[1]:+.3f},{left_target[2]:+.3f}) "
-        f"R=({right_target[0]:+.3f},{right_target[1]:+.3f},{right_target[2]:+.3f})",
-        flush=True,
-    )
-    pad.close()
+            right_target, right_q, _ = step_heel_target(
+                right_target,
+                right_weight * speed * frame_dt,
+                Y_HIP_RIGHT,
+                right_q,
+                roll_sign=ROLL_SIGN_RIGHT,
+            )
+            _apply_joints(robot, joint_pos, joint_index, left_q, right_q)
+            robot.write_data_to_sim()
+            _draw_targets(left_marker, right_marker, robot, waist_id, left_target, right_target)
+            sim.step()
+            robot.update(sim_dt)
+            # 目標角は逆運動学、実測角はステップ後の関節。足裏は床との接触。
+            hub.publish(robot, joint_index, left_q, right_q, contact, step_index * sim_dt)
+            step_index += 1
+            if step_index % status_interval == 0:
+                print(
+                    f"L target=({left_target[0]:+.3f},{left_target[1]:+.3f},{left_target[2]:+.3f}) "
+                    f"R target=({right_target[0]:+.3f},{right_target[1]:+.3f},{right_target[2]:+.3f}) "
+                    f"{pad.snapshot()}",
+                    flush=True,
+                )
+            if args_cli.steps > 0 and step_index >= args_cli.steps:
+                break
+        print(
+            f"done steps={step_index} "
+            f"L=({left_target[0]:+.3f},{left_target[1]:+.3f},{left_target[2]:+.3f}) "
+            f"R=({right_target[0]:+.3f},{right_target[1]:+.3f},{right_target[2]:+.3f})",
+            flush=True,
+        )
+    finally:
+        pad.close()
+        hub.close()
 
 
-def _design_scene() -> Articulation:
-    """地面と両脚を置く。ベースは固定しない。倒れていても腰の軸で動かすため。"""
+def _design_scene() -> tuple[Articulation, ContactSensor]:
+    """地面と両脚を置く。ベースは固定しない。倒れていても腰の軸で動かすため。
+
+    足の接触は床の面で絞る。四隅の圧力は、このセンサの接触点から分ける。
+    """
     ground = sim_utils.GroundPlaneCfg()
     ground.func("/World/ground", ground)
     light = sim_utils.DomeLightCfg(intensity=2500.0, color=(0.75, 0.75, 0.75))
     light.func("/World/Light", light)
     robot_cfg = YUUKI_LEGS_CFG.replace(prim_path="/World/Robot")
-    return Articulation(cfg=robot_cfg)
+    robot = Articulation(cfg=robot_cfg)
+    contact_cfg = ContactSensorCfg(
+        prim_path="/World/Robot/.*",
+        # 平らな床の衝突面。このプリムで絞らないと、圧力中心が取れない。
+        filter_prim_paths_expr=[_ground_collision_path()],
+        track_contact_points=True,
+        max_contact_data_count_per_prim=8,
+        history_length=0,
+    )
+    return robot, ContactSensor(contact_cfg)
+
+
+def _ground_collision_path() -> str:
+    """床 USD の衝突面。置き場所が版で違っても、名前で拾う。"""
+    from isaaclab.sim.utils.stage import get_current_stage
+
+    stage = get_current_stage()
+    for prim in stage.Traverse():
+        path = prim.GetPath().pathString
+        if path.startswith("/World/ground") and prim.GetName() == "CollisionPlane":
+            return path
+    return "/World/ground/GroundPlane/CollisionPlane"
 
 
 def _target_markers() -> tuple[VisualizationMarkers, VisualizationMarkers]:

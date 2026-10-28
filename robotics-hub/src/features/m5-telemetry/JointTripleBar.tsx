@@ -34,6 +34,8 @@ type Props = {
   disabled: boolean;
   /** 歩行再生。バーは方策の目標で、ドラッグでは動かない */
   policyOwned?: boolean;
+  /** 補正バーの名前。Isaac では「補正（シミュ）」 */
+  corrLabel?: string;
   /** この関節のセンサが無い。枠は残し、操作と色だけ落とす */
   inactive?: boolean;
   onSelect: () => void;
@@ -114,6 +116,7 @@ export function JointTripleBar({
   selected,
   disabled,
   policyOwned = false,
+  corrLabel = "補正",
   inactive = false,
   onSelect,
   onCommand,
@@ -256,7 +259,7 @@ export function JointTripleBar({
             ) : null}
 
             {barOn.corr ? (
-          <BarRow label="補正" value={fmtDeg(corrVal)} color={LEG_BAR.corr}>
+          <BarRow label={corrLabel} value={fmtDeg(corrVal)} color={LEG_BAR.corr}>
             <div className="m5-bar">
               <i
                 className="m5-bar__fill m5-bar__fill--hatch-corr"

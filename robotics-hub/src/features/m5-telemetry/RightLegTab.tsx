@@ -150,8 +150,12 @@ export function RightLegTab({
     });
   };
 
-  // 歩行再生は方策が関節を持つ。バーは目標角の表示で、ドラッグでは動かない。
+  // 歩行再生は方策が、手動操作は逆運動学が関節を持つ。バーは表示だけで、ドラッグでは動かない。
   const policyOwned = frame?.stick != null;
+  const heelOwned = frame?.drive === "heel";
+  const remoteOwned = policyOwned || heelOwned;
+  // 実機の補正はエンコーダ処理後。Isaac の同じ欄は、シミュレータの関節角。
+  const corrLabel = source === "isaac" ? "補正（シミュ）" : "補正";
 
   return (
     <section
@@ -160,11 +164,13 @@ export function RightLegTab({
     >
       <div className="m5-leg__toolbar">
         <p className="m5__meta">
-          {policyOwned
-            ? "歩行再生です。指令は方策の目標角、補正は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
+          {heelOwned
+            ? "手動の踵操作です。指令は逆運動学の目標角、補正（シミュ）はシミュレータの関節角です。バーはドラッグできません。電圧・電流は未計測です。"
+            : policyOwned
+            ? "歩行再生です。指令は方策の目標角、補正（シミュ）は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
             : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。指令バーはつまみを掴んでドラッグ。ライブ指令は 100〜170°。接続の無い脚と、電圧・電流が無い欄は枠を残して暗くします。"}
         </p>
-        {policyOwned ? null : (
+        {remoteOwned ? null : (
         <>
         <div className="m5-leg__lock" role="group" aria-label="指令バー操作ロック">
           <span
@@ -239,7 +245,7 @@ export function RightLegTab({
                 aria-pressed={on}
                 onClick={() => toggleBar(item.key)}
               >
-                {item.label}
+                {item.key === "corr" ? corrLabel : item.label}
               </button>
             );
           })}
@@ -260,7 +266,7 @@ export function RightLegTab({
                 aria-pressed={on}
                 onClick={() => togglePlot(item.key)}
               >
-                {item.label}
+                {item.key === "corr" ? corrLabel : item.label}
               </button>
             );
           })}
@@ -291,7 +297,7 @@ export function RightLegTab({
       </div>
 
       {sweepOpen ? (
-        <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} />
+        <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} corrLabel={corrLabel} />
       ) : null}
 
       <div className="m5-leg__layout">
@@ -316,7 +322,7 @@ export function RightLegTab({
                     key={j.id}
                     joint={j}
                     routeLabel={pwmRouteLabel(routes[j.ch])}
-                    cmd={policyOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
+                    cmd={remoteOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
                     raw={live ? at(frame?.raw, j.ch) : null}
                     corr={at(frame?.corr, j.ch)}
                     pwmOn={pwmOn}
@@ -330,8 +336,9 @@ export function RightLegTab({
                     barOn={barOn}
                     selected={selected === j.id}
                     inactive={!live}
-                    policyOwned={policyOwned && live}
-                    disabled={policyOwned || !live || !canCmd || cmdLocked || !pwmOn}
+                    policyOwned={remoteOwned && live}
+                    corrLabel={corrLabel}
+                    disabled={remoteOwned || !live || !canCmd || cmdLocked || !pwmOn}
                     onSelect={() => setSelected(j.id)}
                     onCommand={(deg) => setCmd(j.ch, deg)}
                   />

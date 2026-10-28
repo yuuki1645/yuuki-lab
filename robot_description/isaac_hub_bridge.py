@@ -10,6 +10,8 @@ Isaac とは 127.0.0.1:8796 の TCP で JSON を 1 行ずつやり取りする�
 歩行再生（YuukiLab-BipedWalk-Play）は、関節の実測に加えて方策の目標角
 （cmd_rad）と左スティック（stick）を送る。このとき画面の「指令」は
 方策の目標角になる。橋が返す目標は歩行側では関節に書かない。
+手動の踵操作は cmd_rad と ``drive: "heel"`` を送る。スティックは付けない。
+画面の「補正」はどちらも今の関節角で、Isaac 接続中は「補正（シミュ）」と出る。
 バーで関節を動かす isaac_hub_play は、今までどおり cmd_rad も stick も付けない。
 
 起動（Hub 用の Python。flask-socketio が入っているもの）:
@@ -74,6 +76,24 @@ def _as_cmd_rad(value: Any) -> list[float | None] | None:
     return parsed
 
 
+def _as_drive(value: Any, stick: dict | None) -> str | None:
+    """画面が手動操作と歩行再生を分けて読む印。未知の値は捨てる。"""
+    if value == "heel":
+        return "heel"
+    if value == "walk" or stick is not None:
+        return "walk"
+    return None
+
+
+def _hello(drive: str | None, has_stick: bool) -> str:
+    """状態行の一文。実機の補正角と、シミュの関節角を取り違えない。"""
+    if drive == "heel":
+        return "手動の踵操作。指令は目標角、補正（シミュ）は今の関節角。電圧・電流は未計測。"
+    if drive == "walk" or has_stick:
+        return "歩行再生。指令は方策の目標角、補正（シミュ）は今の関節角。電圧・電流は未計測。"
+    return "電圧・電流は未計測。135° が直立です。"
+
+
 def _as_stick(value: Any) -> dict | None:
     """左スティック。x は右が正、y は奥が正。vx は方策へ渡した前進 [m/s]。"""
     if not isinstance(value, dict):
@@ -115,6 +135,8 @@ class Bridge:
         # policy_cmd_rad があると、画面の「指令」はスライダーではなく方策の目標角になる。
         self.policy_cmd_rad: list[float | None] | None = None
         self.stick: dict | None = None
+        # "heel" は手動の踵操作、"walk" は歩行再生。バー操作の再生は None。
+        self.drive: str | None = None
         self.sim_time = 0.0
         self.isaac_connected = False
         self.seq = 0
@@ -144,8 +166,10 @@ class Bridge:
             self.foot = _as_foot(msg.get("foot"))
             self.foot_left = _as_foot(msg.get("foot_left"))
             # 歩行再生は方策の目標角とスティックを付ける。無い行はバー操作の再生。
+            # 手動の踵操作は drive=heel。スティックは歩行用なので付けない。
             self.policy_cmd_rad = _as_cmd_rad(msg.get("cmd_rad"))
             self.stick = _as_stick(msg.get("stick"))
+            self.drive = _as_drive(msg.get("drive"), self.stick)
             self.isaac_connected = True
             self.seq += 1
             frame = self._frame_locked()
@@ -198,6 +222,7 @@ class Bridge:
                 self.foot_left = None
                 self.policy_cmd_rad = None
                 self.stick = None
+                self.drive = None
             status = self._status_locked()
         self._emit(EVT_STATUS, status)
         if connected and self._isaac_send is not None:
@@ -273,6 +298,9 @@ class Bridge:
         # 歩行再生だけ。実機とバー操作の再生ではキー自体を出さない。
         if self.stick is not None:
             frame["stick"] = self.stick
+        # 手動操作と歩行再生を、画面が取り違えないための印。
+        if self.drive is not None:
+            frame["drive"] = self.drive
         return frame
 
     def _status_locked(self) -> dict:
@@ -282,11 +310,7 @@ class Bridge:
             "connected": self.isaac_connected,
             "port": "isaac",
             "name": "Isaac Sim",
-            "hello": (
-                "歩行再生。指令は方策の目標角、補正は今の関節角。電圧・電流は未計測。"
-                if self.stick is not None
-                else "電圧・電流は未計測。135° が直立です。"
-            ),
+            "hello": _hello(self.drive, self.stick is not None),
             "mode": "isaac",
             "bridge_port": HUB_PORT,
         }

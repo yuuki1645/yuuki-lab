@@ -10,6 +10,7 @@ import {
   LEG_PLOT_DEFAULT,
   LEG_PLOT_ITEMS,
   LEG_ROWS,
+  SERVO_NEUTRAL_DEG,
   legJoint,
   type LegBarKey,
   type LegPlotKey,
@@ -150,6 +151,23 @@ export function RightLegTab({
     });
   };
 
+  /**
+   * 接続中の全関節の指令角を中立（135°）へ戻す。
+   * 操作ロックはバーの誤タッチ用なので、この明示ボタンはロック中でも押せる。
+   * PWM が OFF の軸は橋が角度だけ覚え、サーボは動かさない。ON の軸はそのまま 135° へ出る。
+   */
+  const homeAllCmd = () => {
+    if (!canCmd) return;
+    (["left", "right"] as const).forEach((side) => {
+      LEG_ROWS.forEach((_, row) => {
+        if (!jointLive(side, row)) return;
+        send({ op: "joint", ch: legJoint(side, row).ch, deg: SERVO_NEUTRAL_DEG });
+      });
+    });
+  };
+
+  const anyLive = LEG_ROWS.some((_, row) => jointLive("left", row) || jointLive("right", row));
+
   // 歩行再生は方策が、手動操作は逆運動学が関節を持つ。バーは表示だけで、ドラッグでは動かない。
   const policyOwned = frame?.stick != null;
   const heelOwned = frame?.drive === "heel";
@@ -226,6 +244,15 @@ export function RightLegTab({
           onClick={() => pwmSide("right", false)}
         >
           右脚 PWM OFF
+        </button>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd || !anyLive}
+          title="接続中の全部の指令角を 135° にします。PWM OFF の関節は記憶だけ更新し、次に ON にしたとき 135° から動きます。"
+          onClick={homeAllCmd}
+        >
+          全指令を 135°
         </button>
         </>
         )}

@@ -3,7 +3,8 @@
 
 Isaac の手動操作と同じ積算と逆運動学を、USB を握っている lab_debug.py へ渡す。
 このプロセスは COM を開かない。Socket.IO（既定 http://127.0.0.1:8794）の m5/cmd で
-関節角を送る。同じソケットで、スティックの倒し量も実験記録へ渡す。
+10 関節を 1 件にまとめて送る。スティックの倒し量も同じソケットに載せる。
+受け側は操作記録を画面の待ち行列へ入れない。
 PWM は入れない。出力は、実機テレメトリで入れた関節だけが動く。
 
 角度は URDF の可動域と、ファームが受ける 40〜230° の内側に収める。
@@ -364,12 +365,15 @@ class _Telemetry:
             return None if self.frame is None else dict(self.frame)
 
     def send_joints(self, degrees: list[float]) -> None:
-        """10 関節を 1 回ずつ出す。wide で机上の 100〜170° クランプを外す。"""
-        for channel, deg in enumerate(degrees):
-            self._sio.emit(
-                "m5/cmd",
-                {"op": "joint", "ch": channel, "deg": float(deg), "wide": True},
-            )
+        """10 関節を 1 件で出す。wide で机上の 100〜170° クランプを外す。
+
+        1 関節ずつ出すと毎秒 100 件になり、受け側の画面スレッドに古い角度が残る。
+        その列が伸びると、倒してからサーボが動くまでが数秒になる。
+        """
+        self._sio.emit(
+            "m5/cmd",
+            {"op": "joints", "deg": [float(deg) for deg in degrees], "wide": True},
+        )
 
     def send_gamepad(self, sample: dict) -> None:
         """倒し量を実験記録へ渡す。USB の関節指令とは別の行になる。

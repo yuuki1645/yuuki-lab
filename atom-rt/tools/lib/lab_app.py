@@ -11,6 +11,7 @@ Tk 画面は非推奨。操作と今後の UI 改善は robotics-hub の
 from __future__ import annotations
 
 import random
+import threading
 import time
 import webbrowser
 from tkinter import filedialog, messagebox, ttk
@@ -116,6 +117,35 @@ from . import experiment_log
 from .m5_record_store import M5RecordStore
 
 
+def _live_joint_updates(msg: dict) -> dict[int, tuple[float, bool]]:
+    """m5/cmd の joint / joints を、チャンネルごとの角度にする。
+
+    deg が無い行（シミュの rad など）は空にする。サーボの度数と混ぜない。
+    wide は机上の 100〜170° を外し、ファームの 40〜230° を通す印。
+    """
+    wide = bool(msg.get("wide"))
+    op = str(msg.get("op") or "")
+    out: dict[int, tuple[float, bool]] = {}
+    if op == "joint":
+        try:
+            ch = int(msg.get("ch", 0))
+            deg = float(msg.get("deg", 135.0))
+        except (TypeError, ValueError):
+            return out
+        if ch >= 0:
+            out[ch] = (deg, wide)
+        return out
+    raw = msg.get("deg")
+    if not isinstance(raw, list):
+        return out
+    for ch, deg in enumerate(raw):
+        try:
+            out[ch] = (float(deg), wide)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _value_label(parent: tk.Misc, fg: str, font: tuple = MONO, *, anchor: str = "e") -> tk.Label:
     """頻繁更新する数値用。等幅＋固定幅で桁位置とパネル幅を固定する。"""
     return tk.Label(
@@ -169,6 +199,11 @@ class LabApp(tk.Tk):
         self._m5_st_sig: object = None
         # iPad コマンド処理中は PC 操作ガードを外す（同じハンドラを再利用するため）
         self._from_ipad = False
+        # 関節の m5/cmd は Tk の after に 1 件ずつ積まない。最新だけ残し、1 回で出す。
+        # 積むと、スティックの時点の角度が数秒後にサーボへ再生される。
+        self._live_lock = threading.Lock()
+        self._live_joints: dict[int, tuple[float, bool]] = {}
+        self._live_posted = False
         # 本記録は ATOM 接続 PC のディスク。明示開始まで書かない。
         self._record_store = M5RecordStore()
         self._record_pub_t = 0.0
@@ -422,7 +457,80 @@ class LabApp(tk.Tk):
         self.after(0, lambda: self._on_ipad_clients(n))
 
     def _m5_cmd_from_thread(self, msg: dict) -> None:
+        """Socket スレッドから届いた操作。関節と操作記録は Tk の列に積まない。
+
+        ここに 1 件ずつ after(0) すると、画面スレッドが追いつけない。
+        倒した瞬間の角度が列の後ろに残り、サーボが数秒後にその古い角度を踏む。
+        """
+        op = str(msg.get("op") or "")
+        if op == "gamepad":
+            # サーボもウィジェットも触らない。記録のロックだけで足りる。
+            experiment_log.append_gamepad(self._m5_log_port(), msg)
+            return
+        if op in ("joint", "joints"):
+            # 届いた順に再生しない。チャンネルごとの最新だけを 1 回の after で出す。
+            if self._m5_note_live_joints(_live_joint_updates(msg)):
+                self.after(0, self._m5_apply_live_joints)
+            return
         self.after(0, lambda m=dict(msg): self._m5_handle_cmd(m))
+
+    def _m5_log_port(self) -> str:
+        """開いている実験記録の COM。Socket スレッドから呼ぶ。
+
+        選択中が接続中ならそれを使う。切れていれば、接続中の 1 台へ残す。
+        ポートが記録と違う行は、記録側が捨てる。
+        """
+        current = self.current
+        if isinstance(current, str) and current:
+            session = self.sessions.get(current)
+            if session is not None and session.connected:
+                return session.port
+        try:
+            sessions = list(self.sessions.values())
+        except RuntimeError:
+            return ""
+        for session in sessions:
+            if session.connected:
+                return session.port
+        return ""
+
+    def _m5_note_live_joints(self, updates: dict[int, tuple[float, bool]]) -> bool:
+        """最新角を上書きする。Tk を起こす必要があるときだけ True。"""
+        if not updates:
+            return False
+        with self._live_lock:
+            self._live_joints.update(updates)
+            if self._live_posted:
+                return False
+            self._live_posted = True
+            return True
+
+    def _m5_apply_live_joints(self) -> None:
+        """Tk スレッドで、溜まっている最新角を一度に出す。適用中に届いた分はもう一度。"""
+        with self._live_lock:
+            pending = self._live_joints
+            self._live_joints = {}
+        try:
+            self._from_ipad = True
+            try:
+                s = self._m5_sess()
+                # 校正掃引中の PWM は PC が握る。パッドの角度は捨てる。
+                if s is not None and pending and self._pc_cal is None:
+                    for ch, (deg, wide) in pending.items():
+                        self._apply_live_joint_cmd(s, ch, deg, wide)
+                    self._m5_publish_control()
+                    self._m5_publish_status()
+            finally:
+                self._from_ipad = False
+        finally:
+            again = False
+            with self._live_lock:
+                if self._live_joints:
+                    again = True
+                else:
+                    self._live_posted = False
+            if again:
+                self.after(0, self._m5_apply_live_joints)
 
     def _on_ipad_clients(self, n: int) -> None:
         prev = self._ipad_clients
@@ -797,8 +905,8 @@ class LabApp(tk.Tk):
         """
         op = str(msg.get("op") or "")
         s = sess if sess is not None else self._sess()
-        # パッドの倒し量は操作ロックより先に記録する。サーボは動かさない。
-        # iPad 接続で PC がロックされていても、スティックの行は残す。
+        # パッドの倒し量は、Socket 受信で記録済みならここへ来ない。
+        # 直接 apply_op されたときも、サーボは動かさず操作ロックより先に残す。
         if op == "gamepad":
             experiment_log.append_gamepad(s.port if s is not None else "", msg)
             return
@@ -817,7 +925,7 @@ class LabApp(tk.Tk):
         if s is None:
             return
         if self._pc_cal is not None and (
-            op in ("out", "joint", "random", "mode") or str(op).startswith("cop_")
+            op in ("out", "joint", "joints", "random", "mode") or str(op).startswith("cop_")
         ):
             # 校正掃引中は 40〜230° PWM を PC が握る
             return
@@ -863,34 +971,24 @@ class LabApp(tk.Tk):
                     self.rand_vars[j].set(False)
                     if j == copctrl.HEEL_CH:
                         self._cop_stop("かかとピッチ PWM OFF")
+        elif op == "joints":
+            # 直接 apply_op された一式。Socket 受信は _m5_apply_live_joints が最新だけを出す。
+            wide = bool(msg.get("wide"))
+            raw = msg.get("deg")
+            if isinstance(raw, list):
+                for ch, (deg, one_wide) in _live_joint_updates(
+                    {"op": "joints", "deg": raw, "wide": wide}
+                ).items():
+                    self._apply_live_joint_cmd(s, ch, deg, one_wide)
         elif op == "joint":
-            j = int(msg.get("ch", 0))
-            n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
-            if JOINTS <= j < n_joint:
-                deg = self._clamp_live_deg(float(msg.get("deg", 135.0)), bool(msg.get("wide")))
-                s.extra_cmd[j] = deg
-                while len(self._last_cmd_t) <= j:
-                    self._last_cmd_t.append(0.0)
-                now = time.time()
-                if (s.out_mask & (1 << j)) and now - self._last_cmd_t[j] >= 0.08:
-                    self._last_cmd_t[j] = now
-                    s.send(proto.cmd_joint(j, deg))
-            elif 0 <= j < JOINTS:
-                if j == copctrl.HEEL_CH and (self._cop.p_on or self._cop.sweep_on):
-                    self._cop_stop("手動指令で P/スイープ停止")
-                # wide は机上ラボ（1 サーボ）用。ファーム可動域 40〜230° をそのまま使う
-                deg = self._clamp_live_deg(float(msg.get("deg", 135.0)), bool(msg.get("wide")))
-                self._syncing = True
-                try:
-                    self.cmd_vars[j].set(round(deg, 1))
-                finally:
-                    self._syncing = False
-                if self.rand_vars[j].get():
-                    self.rand_vars[j].set(False)
-                now = time.time()
-                if self.out_vars[j].get() and now - self._last_cmd_t[j] >= 0.08:
-                    self._last_cmd_t[j] = now
-                    s.send(proto.cmd_joint(j, deg))
+            try:
+                j = int(msg.get("ch", 0))
+                deg = float(msg.get("deg", 135.0))
+            except (TypeError, ValueError):
+                j = -1
+                deg = 135.0
+            if j >= 0:
+                self._apply_live_joint_cmd(s, j, deg, bool(msg.get("wide")))
         elif op == "random":
             j = int(msg.get("ch", 0))
             if 0 <= j < JOINTS:
@@ -1027,6 +1125,41 @@ class LabApp(tk.Tk):
         ファームの可動域 40〜230° をそのまま通す。
         """
         return clamp_cal_deg(deg) if wide else copctrl.clamp_cmd(deg)
+
+    def _apply_live_joint_cmd(self, s: AtomSession, j: int, deg: float, wide: bool) -> None:
+        """1 軸の最新指令を画面と USB へ反映する。Tk スレッドで呼ぶ。
+
+        USB は軸ごとに 0.08 秒より短く出さない。パッドは同じ姿勢を 0.10 秒ごとに
+        送り直すので、ここで落とした 1 回も次の最新値で届く。
+        """
+        if self._pc_cal is not None:
+            return
+        n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
+        if JOINTS <= j < n_joint:
+            deg = self._clamp_live_deg(float(deg), wide)
+            s.extra_cmd[j] = deg
+            while len(self._last_cmd_t) <= j:
+                self._last_cmd_t.append(0.0)
+            now = time.time()
+            if (s.out_mask & (1 << j)) and now - self._last_cmd_t[j] >= 0.08:
+                self._last_cmd_t[j] = now
+                s.send(proto.cmd_joint(j, deg))
+        elif 0 <= j < JOINTS:
+            if j == copctrl.HEEL_CH and (self._cop.p_on or self._cop.sweep_on):
+                self._cop_stop("手動指令で P/スイープ停止")
+            # wide は机上ラボ（1 サーボ）用。ファーム可動域 40〜230° をそのまま使う
+            deg = self._clamp_live_deg(float(deg), wide)
+            self._syncing = True
+            try:
+                self.cmd_vars[j].set(round(deg, 1))
+            finally:
+                self._syncing = False
+            if self.rand_vars[j].get():
+                self.rand_vars[j].set(False)
+            now = time.time()
+            if self.out_vars[j].get() and now - self._last_cmd_t[j] >= 0.08:
+                self._last_cmd_t[j] = now
+                s.send(proto.cmd_joint(j, deg))
 
     def _send_live_joint(self, s: AtomSession, j: int, deg: float, *, wide: bool = False) -> None:
         """ライブ PWM。既定は 100〜170° へクランプして送る（校正スイープは使わない）。"""

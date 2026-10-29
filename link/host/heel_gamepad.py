@@ -12,7 +12,8 @@ PWM は入れない。出力は、実機テレメトリで入れた関節だけ�
 足裏の合計がしきい値を超えているあいだは、その足を腰の床側へは進めない。
 スタートを押しているあいだは、全関節 135° の踵へゆっくり戻る。離すと止まる。
 補正角は不安定なので、このプロセスは参照しない。今の姿勢は指令角だけを見る。
-左股ピッチだけ、ホーンの向きが URDF と逆なので、送る直前に 135° を中心へ折り返す。
+ホーンの向きが URDF と逆の関節は、送る直前に 135° を中心へ折り返す。
+右は股ロール・ひざ・かかとピッチ・かかとロール。左は股ピッチだけ。
 
 起動（lab_debug.py が先に COM を開いていること）::
 
@@ -85,10 +86,14 @@ _LEFT_NAMES = (
     "left_ankle_pitch",
     "left_ankle_roll",
 )
-# 実機のホーンが URDF の正方向と逆だったチャンネル。2026-10-28 の左脚確認。
-# 左股ピッチは、135° より大きい指令で脚が前へ出た。URDF の正は後ろへ曲げる向き。
-# 右脚は未確認なので、ここでは反転しない。
-_SERVO_FLIP_CHANNELS = frozenset({6})
+# 実機のホーンが URDF の正方向と逆だったチャンネル。135° を中心に折り返して出す。
+# 左股ピッチ（6）: 2026-10-28。135° より大きいと脚が前へ出た。URDF の正は後ろ。
+# 右脚（2026-10-29）: 股ピッチ（1）だけ一致。ほかは次のとおり逆だった。
+#   0 股ロール   135° より大きいと内側へ閉じる。URDF の正は外側へ開く。
+#   2 ひざ       135° より大きいと伸びる。URDF の正は屈曲。
+#   3 かかとピッチ 135° より大きいとつま先が上がる。URDF の正はつま先が下がる。
+#   4 かかとロール 135° より大きいと足裏の内側が上がる。URDF の正は内側が下がる。
+_SERVO_FLIP_CHANNELS = frozenset({0, 2, 3, 4, 6})
 
 
 def _load_ik():
@@ -299,7 +304,7 @@ def _mirror_neutral(degrees: float) -> float:
 def _to_servo_deg(channel: int, urdf_deg: float) -> float:
     """URDF の度を、その関節のサーボへ出す度にする。
 
-    反転する関節は、逆運動学が「後ろ」と判断した角度を、実機が後ろへ動く側へ出す。
+    反転する関節は、逆運動学の正方向を、実機がその方向へ動くサーボ角へ出す。
     40〜230° は 135° の両側へ同じ幅なので、折り返してもファームの範囲は同じ。
     """
     if channel in _SERVO_FLIP_CHANNELS:
@@ -409,7 +414,7 @@ def _seed_from_frame(frame: dict, ik) -> tuple[np.ndarray, np.ndarray, np.ndarra
             radians.append(0.0)
             continue
         try:
-            # 画面の指令はサーボの度。左股ピッチは折り返してから URDF の角度にする。
+            # 画面の指令はサーボの度。ホーンが逆の軸は折り返してから URDF の角度にする。
             radians.append(deg_to_rad(_from_servo_deg(index, float(value))))
         except (TypeError, ValueError):
             radians.append(0.0)
@@ -481,7 +486,10 @@ def _run(url: str) -> None:
     print("PWM は入れません。動かしたい関節は、実機テレメトリで PWM を入れてください。", flush=True)
     print("足が床を押しているあいだは、その足を床側へは動かしません。", flush=True)
     print("スタートを押しているあいだ、全関節 135° の踵へゆっくり戻ります。離すと止まります。", flush=True)
-    print("左股ピッチだけ、サーボの向きが逆なので 135° を中心に折り返して出します。", flush=True)
+    print(
+        "右の股ロール・ひざ・両かかとと、左股ピッチは、サーボの向きが逆なので 135° を中心に折り返します。",
+        flush=True,
+    )
     link.connect()
     print("指令角が届くまで待ちます。補正角は使いません。", flush=True)
     deadline = time.perf_counter() + 10.0
@@ -630,6 +638,17 @@ def _self_check() -> None:
         raise AssertionError(f"left hip pitch was not mirrored around 135°: {hip_servo}")
     if abs(_to_servo_deg(7, 145.0) - 145.0) > 1.0e-9:
         raise AssertionError("left knee sign was changed")
+    # 右脚は股ピッチだけ一致。ほかの4軸は 145° を 125° で出す。
+    if abs(_to_servo_deg(1, 145.0) - 145.0) > 1.0e-9:
+        raise AssertionError("right hip pitch was mirrored")
+    for channel in (0, 2, 3, 4):
+        mirrored = _to_servo_deg(channel, 145.0)
+        if abs(mirrored - 125.0) > 1.0e-9:
+            raise AssertionError(f"right channel {channel} was not mirrored: {mirrored}")
+    # 右股ロールの 125° は、外側へ開く正の関節角として読み戻す。
+    _, seeded_right, _, _ = _seed_from_frame({"cmd": [125.0] + [135.0] * 9}, ik)
+    if abs(float(seeded_right[0]) - hip_back) > 1.0e-9:
+        raise AssertionError(f"right hip roll seed did not undo the mirror: {seeded_right[0]}")
     seeded_flip, _, _, _ = _seed_from_frame({"cmd": [135.0] * 6 + [125.0] + [135.0] * 3}, ik)
     if abs(float(seeded_flip[1]) - hip_back) > 1.0e-9:
         raise AssertionError(f"left hip pitch seed did not undo the mirror: {seeded_flip[1]}")

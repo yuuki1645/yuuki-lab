@@ -11,6 +11,8 @@
  * 両方ある、またはどちらも無いときは PWM を出さない。
  *
  * 校正は持たない。配線はファームの既定表で、見えた PaHub が右か左かを決める。
+ * 指令は理想角（135° が真下）。パルスの直前に、ホーンの向きとブラケットのズレを足す。
+ * electrical ビットの軸だけは電気角のまま書く。校正掃引が使う。
  * CAN の配線表は採用しない。届いてもサーボは初期化し直さない。
  * サーボは 2 枚。Grove 直下 0x26 が股とひざ、すねの 0x25 がかかと。
  * 指令が 200 ms 途切れたら、最後の角度のあとピンを入力にして脱力する。
@@ -23,6 +25,7 @@
 
 #include "as5600.hpp"
 #include "can_leg.hpp"
+#include "mount_bias.hpp"
 #include "driver/twai.h"
 #include "i2c_foot_proto.h"
 #include "ina226.hpp"
@@ -367,7 +370,12 @@ static void applyCommand(const CanLegCommand& cmd) {
             }
             continue;
         }
-        if (driveAxis(i, static_cast<float>(cmd.deci[i]) / 10.0f)) {
+        float deg = static_cast<float>(cmd.deci[i]) / 10.0f;
+        if ((cmd.electrical & (1u << i)) == 0) {
+            // 腰から来た理想角を、このサーボの電気角にしてからパルスにする。
+            deg = mountIdealToElectrical(legIndex() * kCanAxes + i, deg);
+        }
+        if (driveAxis(i, deg)) {
             gDriven = static_cast<uint8_t>(gDriven | (1u << i));
         }
     }

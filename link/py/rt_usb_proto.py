@@ -78,6 +78,8 @@ CMD_MAPGET = 0x8D
 CMD_MAPCHUNK = 0x8E
 CMD_NVSLIST = 0x8F
 CMD_NVSERASE = 0x90
+# 関節指令と同じ並び。度は電気角で、脚の取り付け変換を通さない。校正掃引用。
+CMD_JOINT_ELEC = 0x91
 
 REASON = {
     0: "ok",
@@ -283,6 +285,11 @@ def cmd_out(ch: int | None, on: bool) -> bytes:
 
 def cmd_joint(ch: int, deg: float) -> bytes:
     return encode_frame(CMD_JOINT, _CMD_JOINT.pack(ch, float(deg)))
+
+
+def cmd_joint_elec(ch: int, deg: float) -> bytes:
+    """校正掃引用。度は電気角のままで、ホーンの向きとブラケットのズレを足さない。"""
+    return encode_frame(CMD_JOINT_ELEC, _CMD_JOINT.pack(ch, float(deg)))
 
 
 def cmd_probe_root(addr: int) -> bytes:
@@ -994,6 +1001,7 @@ def format_tx(data: bytes) -> str:
         CMD_MAPCHUNK: "MAPCHUNK",
         CMD_NVSLIST: "NVSLIST",
         CMD_NVSERASE: "NVSERASE",
+        CMD_JOINT_ELEC: "JOINT_ELEC",
     }
     return names.get(t, f"cmd=0x{t:02X}")
 
@@ -1009,7 +1017,7 @@ def tx_record(data: bytes) -> dict[str, object]:
         return rec
     kind = data[2]
     payload = data[5:-2]
-    if kind == CMD_JOINT and len(payload) >= _CMD_JOINT.size:
+    if kind in (CMD_JOINT, CMD_JOINT_ELEC) and len(payload) >= _CMD_JOINT.size:
         ch, deg = _CMD_JOINT.unpack(payload[: _CMD_JOINT.size])
         rec["ch"] = int(ch)
         rec["deg"] = float(deg)

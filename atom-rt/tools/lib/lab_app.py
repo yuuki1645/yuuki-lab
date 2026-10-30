@@ -1839,7 +1839,11 @@ class LabApp(tk.Tk):
         self.cal_status_lab.configure(text=f"状態: {msg}")
 
     def _send_cal_pwm(self, s: AtomSession, ch: int, deg: float) -> None:
-        """校正専用の PWM。40〜230° をそのまま Joint 指令する。"""
+        """校正専用の PWM。40〜230° の電気角を、取り付け変換を通さず指令する。
+
+        マップの縦軸は、掃引で実際にパルスへした電気角。理想角の折り返しや
+        ズレを足すと、既存のマップの 135° が別の磁石位置を指す。
+        """
         deg = clamp_cal_deg(deg)
         self._syncing = True
         try:
@@ -1853,7 +1857,7 @@ class LabApp(tk.Tk):
             s.extra_cmd[ch] = deg
             s.out_mask |= 1 << ch
         s.send(proto.cmd_out(ch, True))
-        s.send(proto.cmd_joint(ch, deg))
+        s.send(proto.cmd_joint_elec(ch, deg))
 
     def _cal_abort(self) -> None:
         s = self._sess()

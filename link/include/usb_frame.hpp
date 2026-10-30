@@ -76,6 +76,8 @@ enum UsbMsg : uint8_t {
     kUsbCmdMapChunk = 0x8E,
     kUsbCmdNvsList = 0x8F,
     kUsbCmdNvsErase = 0x90,
+    /** 関節指令と同じ並び。度は電気角で、取り付けの折り返しとズレを通さない。校正掃引用。 */
+    kUsbCmdJointElec = 0x91,
 };
 
 /** 失敗理由。GUI の REASON と番号を揃える。 */

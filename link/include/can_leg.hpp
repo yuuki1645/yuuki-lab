@@ -14,7 +14,7 @@
  * 連番が揃った組だけを採用する。途中の組は捨てる。
  *
  * 角度の計測は 0.01 度の uint16（0〜36000）。0xFFFF は欠測。
- * サーボ指令は 0.1 度の int16。
+ * サーボ指令は 0.1 度の int16。脚 B の 7 バイト目は、変換を通さない軸のマスク。
  */
 
 #include <stdint.h>
@@ -163,6 +163,8 @@ struct CanLegCommand {
     uint8_t seq;
     uint8_t mask;
     uint8_t flags;
+    /** ビットが 1 のローカル軸は、すでに電気角。取り付け変換を通さない。 */
+    uint8_t electrical;
     int16_t deci[kCanAxes];
     uint8_t got;
 };
@@ -335,13 +337,16 @@ static inline bool canCommandPush(CanLegCommand& c, uint8_t slot, const uint8_t*
         c.flags = d[1];
         c.deci[3] = canGetI16(d + 2);
         c.deci[4] = canGetI16(d + 4);
+        // 空きバイト。校正掃引など、電気角のままパルスにしたい軸。
+        c.electrical = d[6];
         c.got = static_cast<uint8_t>(c.got | 0x02);
     }
     return c.got == 0x03;
 }
 
 static inline void canPackCommand(uint8_t a[8], uint8_t b[8], uint8_t seq, uint8_t mask,
-                                  uint8_t flags, const int16_t deci[kCanAxes]) {
+                                  uint8_t flags, const int16_t deci[kCanAxes],
+                                  uint8_t electrical = 0) {
     memset(a, 0, 8);
     memset(b, 0, 8);
     a[0] = seq;
@@ -353,4 +358,5 @@ static inline void canPackCommand(uint8_t a[8], uint8_t b[8], uint8_t seq, uint8
     b[1] = flags;
     canPutI16(b + 2, deci[3]);
     canPutI16(b + 4, deci[4]);
+    b[6] = static_cast<uint8_t>(electrical & 0x1F);
 }

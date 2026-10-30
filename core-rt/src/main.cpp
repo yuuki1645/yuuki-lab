@@ -8,7 +8,7 @@
  *
  * 作業モード:
  *   Lab（起動時）  PWM は、出した軸だけ。
- *   Robot         10 軸を 135° で保持。
+ *   Robot         10 軸を理想角 135°（真下）で保持。向きとズレは脚が吸収する。
  *
  * 校正マップは論理軸 0〜9 に結び、64 KB の NVS に残す。
  * USB は ver 15。番号の正本は link/include/usb_frame.hpp。
@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "can_host.hpp"
+#include "mount_bias.hpp"
 #include "topology.hpp"
 #include "usb_proto.hpp"
 
@@ -97,6 +98,8 @@ static float gUnwrapPrev[kCoreJoints];
 static float gUnwrapped[kCoreJoints];
 static bool gUnwrapInit[kCoreJoints];
 static float gCmd[kCoreJoints];
+/** ビットが 1 の軸は電気角。校正掃引だけ立て、通常の指令と 135° 保持で下ろす。 */
+static uint16_t gElectricalMask = 0;
 
 static WorkMode gMode = WorkMode::Lab;
 static uint16_t gOutMask = 0;
@@ -506,6 +509,7 @@ static void setMode(WorkMode mode) {
     gMode = mode;
     if (mode == WorkMode::Robot) {
         gOutMask = static_cast<uint16_t>((1u << kCoreJoints) - 1u);
+        gElectricalMask = 0;
         for (int i = 0; i < kCoreJoints; ++i) {
             gCmd[i] = kHoldDeg;
         }
@@ -528,6 +532,7 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             gIdentifyCan = 1;
             break;
         case kUsbCmdHold:
+            gElectricalMask = 0;
             for (int i = 0; i < kCoreJoints; ++i) {
                 gCmd[i] = kHoldDeg;
             }
@@ -557,11 +562,18 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             }
             break;
         case kUsbCmdJoint:
+        case kUsbCmdJointElec:
             if (len >= sizeof(UsbCmdJoint)) {
                 UsbCmdJoint c{};
                 memcpy(&c, payload, sizeof(c));
                 if (c.ch < kCoreJoints) {
                     gCmd[c.ch] = clampMove(c.deg);
+                    if (type == kUsbCmdJointElec) {
+                        // 校正掃引。マップと同じ電気角を、脚の変換を通さずパルスにする。
+                        gElectricalMask = static_cast<uint16_t>(gElectricalMask | (1u << c.ch));
+                    } else {
+                        gElectricalMask = static_cast<uint16_t>(gElectricalMask & ~(1u << c.ch));
+                    }
                 }
             }
             break;
@@ -728,11 +740,17 @@ static void controlTask(void*) {
             const float corr = interpMap(gCal[i], snap.unwrap_deg[i]);
             snap.map_ok[i] = gCal[i].ok ? 1 : 0;
             portEXIT_CRITICAL(&gMapLock);
-            snap.corr_deg[i] = corr;
+            // マップは電気角。通常指令のあいだだけ理想角へ戻し、指令との差を追従誤差にする。
+            // マップが無い軸は unwrap のままなので、ズレを引かない。
+            if (snap.map_ok[i] && (gElectricalMask & (1u << i)) == 0) {
+                snap.corr_deg[i] = mountElectricalToIdeal(i, corr);
+            } else {
+                snap.corr_deg[i] = corr;
+            }
         }
         const uint32_t tState = micros();
         const uint32_t tAct0 = micros();
-        canHostSendMotion(gCmd, gOutMask, view.fault || view.overcurrent);
+        canHostSendMotion(gCmd, gOutMask, view.fault || view.overcurrent, gElectricalMask);
         const uint32_t tAct1 = micros();
         snap.seq = seq++;
         snap.t_period_us = t0 - prev;

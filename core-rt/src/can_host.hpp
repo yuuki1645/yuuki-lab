@@ -55,8 +55,11 @@ void canHostPoll();
  */
 void canHostRead(CanHostView& out);
 
-/** 論理軸の角度と 10 bit マスクを、現れている脚へ分ける。forceOff で両脚を切る。 */
-void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff);
+/**
+ * 論理軸の角度と 10 bit マスクを、現れている脚へ分ける。forceOff で両脚を切る。
+ * electrical のビットが 1 の軸は電気角のまま送り、脚は取り付け変換を通さない。
+ */
+void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff, uint16_t electrical = 0);
 
 /** 片脚 5 軸ぶんの経路。腰はもう送らない。脚はファームの表を使う。 */
 void canHostSendRoutes(const JointRoute* routes, const FootRoute* feet, uint16_t jointEn,

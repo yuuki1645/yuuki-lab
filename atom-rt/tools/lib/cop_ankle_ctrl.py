@@ -7,6 +7,8 @@ PC 閉ループ。ATOM ファームは触らない。lab_debug.py が 20 Hz テ�
 
 COP_y: Hub と同じ正規化。つま先 = -1、かかと = +1、板の前後中心 = 0。
 P 制御: 目標角 = ニュートラル + sign * Kp * (0 - COP_y)、変化は最大 5°/s。
+指令は理想角。かかとピッチは ATOM が向きを折り返すので、増やすとつま先が下がる。
+既定の符号は −。電気角のまま足していた頃の + だと、踵側の荷重をさらに踵へ寄せる。
 自動スイープ: 100〜170° を 2°/s で往復し、COP_y のゼロ交差からニュートラルを推定する。
 """
 
@@ -113,7 +115,7 @@ class CopCtrl:
     p_on: bool = False
     sweep_on: bool = False
     sweep_dir: float = 1.0
-    sign: float = 1.0
+    sign: float = -1.0
     kp: float = KP_DEFAULT
     held: bool = False
     confirmed: float | None = None

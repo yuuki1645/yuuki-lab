@@ -12,8 +12,7 @@ PWM は入れない。出力は、実機テレメトリで入れた関節だけ�
 足裏の合計がしきい値を超えているあいだは、その足を腰の床側へは進めない。
 スタートを押しているあいだは、全関節 135° の踵へゆっくり戻る。離すと止まる。
 補正角は不安定なので、このプロセスは参照しない。今の姿勢は指令角だけを見る。
-ホーンの向きが URDF と逆の関節は、送る直前に 135° を中心へ折り返す。
-右は股ロール・ひざ・かかとピッチ・かかとロール。左は股ピッチだけ。
+135° は真下、増える向きは URDF の正。ホーンの向きとブラケットのズレは脚の ATOM が吸収する。
 
 起動（lab_debug.py が先に COM を開いていること）::
 
@@ -43,7 +42,7 @@ _HUB = _REPO / "robot_description"
 if str(_HUB) not in sys.path:
     sys.path.insert(0, str(_HUB))
 
-from hub_link import NEUTRAL_DEG, deg_to_rad, rad_to_deg  # noqa: E402
+from hub_link import deg_to_rad, rad_to_deg  # noqa: E402
 
 # ファームが受ける指令。これより外はボードへ届かない。
 _SERVO_MIN_DEG = 40.0
@@ -86,16 +85,6 @@ _LEFT_NAMES = (
     "left_ankle_pitch",
     "left_ankle_roll",
 )
-# 実機のホーンが URDF の正方向と逆だったチャンネル。135° を中心に折り返して出す。
-# 左股ピッチ（6）: 2026-10-28。135° より大きいと脚が前へ出た。URDF の正は後ろ。
-# 右脚（2026-10-29）: 股ピッチ（1）だけ一致。ほかは次のとおり逆だった。
-#   0 股ロール   135° より大きいと内側へ閉じる。URDF の正は外側へ開く。
-#   2 ひざ       135° より大きいと伸びる。URDF の正は屈曲。
-#   3 かかとピッチ 135° より大きいとつま先が上がる。URDF の正はつま先が下がる。
-#   4 かかとロール 135° より大きいと足裏の内側が上がる。URDF の正は内側が下がる。
-_SERVO_FLIP_CHANNELS = frozenset({0, 2, 3, 4, 6})
-
-
 def _load_ik():
     """逆運動学だけを読む。パッケージ初期化は Isaac を引き込むので使わない。"""
     path = (
@@ -296,27 +285,6 @@ def _command_limits(ik) -> np.ndarray:
     return limits
 
 
-def _mirror_neutral(degrees: float) -> float:
-    """135° を中心に折り返す。2 回かけると元の角度に戻る。"""
-    return (2.0 * NEUTRAL_DEG) - float(degrees)
-
-
-def _to_servo_deg(channel: int, urdf_deg: float) -> float:
-    """URDF の度を、その関節のサーボへ出す度にする。
-
-    反転する関節は、逆運動学の正方向を、実機がその方向へ動くサーボ角へ出す。
-    40〜230° は 135° の両側へ同じ幅なので、折り返してもファームの範囲は同じ。
-    """
-    if channel in _SERVO_FLIP_CHANNELS:
-        return _mirror_neutral(urdf_deg)
-    return float(urdf_deg)
-
-
-def _from_servo_deg(channel: int, servo_deg: float) -> float:
-    """サーボに出している度を、逆運動学の度に戻す。折り返しは自分自身の逆変換。"""
-    return _to_servo_deg(channel, servo_deg)
-
-
 def _clip_command(q: np.ndarray) -> np.ndarray:
     """送り角を 40〜230° に収め、そのラジアンを返す。"""
     degrees = np.array([rad_to_deg(float(v)) for v in q], dtype=float)
@@ -414,8 +382,8 @@ def _seed_from_frame(frame: dict, ik) -> tuple[np.ndarray, np.ndarray, np.ndarra
             radians.append(0.0)
             continue
         try:
-            # 画面の指令はサーボの度。ホーンが逆の軸は折り返してから URDF の角度にする。
-            radians.append(deg_to_rad(_from_servo_deg(index, float(value))))
+            # 画面の指令は理想角。135° が 0 rad で、ホーンの向きは脚側で吸収済み。
+            radians.append(deg_to_rad(float(value)))
         except (TypeError, ValueError):
             radians.append(0.0)
     right_q = _clip_command(np.array(radians[0:5], dtype=float))
@@ -486,10 +454,7 @@ def _run(url: str) -> None:
     print("PWM は入れません。動かしたい関節は、実機テレメトリで PWM を入れてください。", flush=True)
     print("足が床を押しているあいだは、その足を床側へは動かしません。", flush=True)
     print("スタートを押しているあいだ、全関節 135° の踵へゆっくり戻ります。離すと止まります。", flush=True)
-    print(
-        "右の股ロール・ひざ・両かかとと、左股ピッチは、サーボの向きが逆なので 135° を中心に折り返します。",
-        flush=True,
-    )
+    print("135° は真下です。ホーンの向きとブラケットのズレは、脚の ATOM が吸収します。", flush=True)
     link.connect()
     print("指令角が届くまで待ちます。補正角は使いません。", flush=True)
     deadline = time.perf_counter() + 10.0
@@ -567,8 +532,7 @@ def _run(url: str) -> None:
             )
             if now >= next_send:
                 next_send = now + _SEND_S
-                urdf_degrees = [rad_to_deg(float(v)) for v in (*right_q, *left_q)]
-                degrees = [_to_servo_deg(channel, deg) for channel, deg in enumerate(urdf_degrees)]
+                degrees = [rad_to_deg(float(v)) for v in (*right_q, *left_q)]
                 link.send_joints(degrees)
             if now >= next_status:
                 next_status = now + 2.0
@@ -630,28 +594,20 @@ def _self_check() -> None:
     only_corr_l, _, _, _ = _seed_from_frame({"corr": [170.0] * 10}, ik)
     if float(np.max(np.abs(only_corr_l))) > 1.0e-9:
         raise AssertionError("seed fell back to corrected angles")
-    # 左股ピッチは、URDF で後ろへ曲げる正の角度を、サーボでは 135° 未満にして出す。
-    # 実機は 135° より大きいと前へ出る。読み戻すと、同じ正の関節角に戻る。
+    # 送る角度は理想角。145° は真下より +10° で、折り返さずにそのまま出す。
     hip_back = deg_to_rad(145.0)
-    hip_servo = _to_servo_deg(6, rad_to_deg(hip_back))
-    if abs(hip_servo - 125.0) > 1.0e-9:
-        raise AssertionError(f"left hip pitch was not mirrored around 135°: {hip_servo}")
-    if abs(_to_servo_deg(7, 145.0) - 145.0) > 1.0e-9:
-        raise AssertionError("left knee sign was changed")
-    # 右脚は股ピッチだけ一致。ほかの4軸は 145° を 125° で出す。
-    if abs(_to_servo_deg(1, 145.0) - 145.0) > 1.0e-9:
-        raise AssertionError("right hip pitch was mirrored")
-    for channel in (0, 2, 3, 4):
-        mirrored = _to_servo_deg(channel, 145.0)
-        if abs(mirrored - 125.0) > 1.0e-9:
-            raise AssertionError(f"right channel {channel} was not mirrored: {mirrored}")
-    # 右股ロールの 125° は、外側へ開く正の関節角として読み戻す。
-    _, seeded_right, _, _ = _seed_from_frame({"cmd": [125.0] + [135.0] * 9}, ik)
+    if abs(rad_to_deg(hip_back) - 145.0) > 1.0e-9:
+        raise AssertionError("145° did not stay an ideal angle")
+    # 右股ロールの 145° は、外側へ開く正の関節角として読む。125° は逆向きの −10°。
+    _, seeded_right, _, _ = _seed_from_frame({"cmd": [145.0] + [135.0] * 9}, ik)
     if abs(float(seeded_right[0]) - hip_back) > 1.0e-9:
-        raise AssertionError(f"right hip roll seed did not undo the mirror: {seeded_right[0]}")
-    seeded_flip, _, _, _ = _seed_from_frame({"cmd": [135.0] * 6 + [125.0] + [135.0] * 3}, ik)
-    if abs(float(seeded_flip[1]) - hip_back) > 1.0e-9:
-        raise AssertionError(f"left hip pitch seed did not undo the mirror: {seeded_flip[1]}")
+        raise AssertionError(f"right hip roll seed changed the ideal angle: {seeded_right[0]}")
+    _, seeded_low, _, _ = _seed_from_frame({"cmd": [125.0] + [135.0] * 9}, ik)
+    if abs(float(seeded_low[0]) - deg_to_rad(125.0)) > 1.0e-9:
+        raise AssertionError(f"right hip roll seed mirrored 125°: {seeded_low[0]}")
+    seeded_left, _, _, _ = _seed_from_frame({"cmd": [135.0] * 6 + [145.0] + [135.0] * 3}, ik)
+    if abs(float(seeded_left[1]) - hip_back) > 1.0e-9:
+        raise AssertionError(f"left hip pitch seed changed the ideal angle: {seeded_left[1]}")
     home_l, home_r = _neutral_heels(ik)
     if float(np.linalg.norm(home_l - ik.stand_heel(ik.Y_HIP_LEFT, ik.ROLL_SIGN_LEFT))) > 1.0e-9:
         raise AssertionError("left home is not the all-135 pose")

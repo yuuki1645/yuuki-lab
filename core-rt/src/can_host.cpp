@@ -284,7 +284,7 @@ void canHostRead(CanHostView& out) {
     out.i2c_err = err > 0xFFFF ? 0xFFFF : static_cast<uint16_t>(err);
 }
 
-void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff) {
+void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff, uint16_t electrical) {
     int16_t deci[kCanAxes];
     uint8_t a[8];
     uint8_t b[8];
@@ -306,7 +306,8 @@ void canHostSendMotion(const float* deg, uint16_t mask, bool forceOff) {
         for (int i = 0; i < kCanAxes; ++i) {
             deci[i] = static_cast<int16_t>(deg[base + i] * 10.0f);
         }
-        canPackCommand(a, b, seq, local, flags, deci);
+        const uint8_t localElectrical = static_cast<uint8_t>((electrical >> base) & 0x1F);
+        canPackCommand(a, b, seq, local, flags, deci, localElectrical);
         canSend(canCmdId(leg, kCmdA), a);
         canSend(canCmdId(leg, kCmdB), b);
     }

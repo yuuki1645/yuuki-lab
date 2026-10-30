@@ -31,12 +31,7 @@ export interface HubTool {
  * 新規ツールは `src/features/<名前>/` に実装し、ここに 1 件追加する（`group` も指定）。
  */
 const MotionEditorPage = lazy(() => import("@/features/motion-editor/MotionEditorPage"));
-const LegServoTunerPage = lazy(() => import("@/features/leg-servo-tuner/LegServoTunerPage"));
 const PoseEditorPage = lazy(() => import("@/features/pose-editor/PoseEditorPage"));
-const DaemonSocketTestPage = lazy(
-  () => import("@/features/daemon-socket-test/DaemonSocketTestPage")
-);
-const DeviceTelemetryPage = lazy(() => import("@/features/telemetry/DeviceTelemetryPage"));
 const M5TelemetryPage = lazy(() => import("@/features/m5-telemetry/M5TelemetryPage"));
 const BenchLabPage = lazy(() => import("@/features/atom-bench/BenchLabPage"));
 const TrainingTelemetryPage = lazy(
@@ -58,28 +53,12 @@ export const hubTools: HubTool[] = [
     LazyPage: MotionEditorPage,
   },
   {
-    id: "leg-servo-tuner",
-    path: "/leg-tuner",
-    label: "レッグサーボ調整",
-    group: "edit",
-    description: "脚サーボを1本ずつ、論理角／物理角で動かして調整します。",
-    LazyPage: LegServoTunerPage,
-  },
-  {
     id: "pose-editor",
     path: "/pose",
     label: "ポーズエディタ",
     group: "edit",
     description: "メモ風スケッチで脚の関節をドラッグし、論理角を編集します。",
     LazyPage: PoseEditorPage,
-  },
-  {
-    id: "daemon-socket-test",
-    path: "/daemon-socket-test",
-    label: "Daemon Socket Test",
-    group: "device",
-    description: "robot-daemon との Socket.IO 通信を確認します。",
-    LazyPage: DaemonSocketTestPage,
   },
   {
     id: "live-capture",
@@ -89,14 +68,6 @@ export const hubTools: HubTool[] = [
     description:
       "robot-recorder（MJPEG）でビデオカメラを低遅延表示・実験フォルダへ記録。npm run dev:lab で Hub と同時起動。",
     LazyPage: LiveCapturePage,
-  },
-  {
-    id: "device-telemetry",
-    path: "/device-telemetry",
-    label: "実機テレメトリ",
-    group: "device",
-    description: "robot-daemon の実機 IMU をリアルタイム表示し、CSV ログを操作します。",
-    LazyPage: DeviceTelemetryPage,
   },
   {
     id: "m5-telemetry",

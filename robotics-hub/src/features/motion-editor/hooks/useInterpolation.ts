@@ -2,14 +2,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { getAngleAtTime } from "../utils/interpolation";
 import { moveServosToBackend } from "@/shared/api/servoTargetApi";
 import { INTERPOLATION_INTERVAL, SERVO_CHANNELS } from "@/shared/constants";
-import type { Keyframe, ServoBackendMode } from "@/shared/types";
-import type { ServoMode } from "@/shared/types";
+import type { Keyframe, ServoMode } from "@/shared/types";
 
 export function useInterpolation(
   keyframes: Keyframe[],
   duration: number,
-  mode: ServoMode = "logical",
-  backendMode: ServoBackendMode = "daemon"
+  mode: ServoMode = "logical"
 ) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -87,7 +85,7 @@ export function useInterpolation(
       if (timestamp - lastUpdateTime >= INTERPOLATION_INTERVAL) {
         const angles = getAngleAtTime(keyframes, newTime, SERVO_CHANNELS);
         if (Object.keys(angles).length > 0) {
-          moveServosToBackend(backendMode, angles, mode).catch((err) => {
+          moveServosToBackend(angles, mode).catch((err) => {
             console.error("Failed to move servos:", err);
           });
         }
@@ -112,7 +110,6 @@ export function useInterpolation(
     loop,
     playbackSpeed,
     mode,
-    backendMode,
     stop,
   ]);
 
@@ -133,12 +130,12 @@ export function useInterpolation(
 
       const angles = getAngleAtTime(keyframes, clampedTime, SERVO_CHANNELS);
       if (Object.keys(angles).length > 0) {
-        moveServosToBackend(backendMode, angles, mode).catch((err) => {
+        moveServosToBackend(angles, mode).catch((err) => {
           console.error("Failed to move servos:", err);
         });
       }
     },
-    [duration, isPlaying, isPaused, keyframes, mode, backendMode]
+    [duration, isPlaying, isPaused, keyframes, mode]
   );
 
   return {

@@ -53,7 +53,7 @@ export function useImuDaemonStream(active: boolean): ImuDaemonStream {
     socket.on("connect_error", (err: Error) => {
       setLastError(
         `Socket.IO 接続失敗 (${url}): ${err.message}。` +
-          "MuJoCo シムを起動しているか、実機 IMU なら VITE_IMU_SOCKET_URL を robot-daemon の URL に設定してください。",
+          "MuJoCo シムを起動しているか、VITE_IMU_SOCKET_URL を確認してください。",
       );
     });
 

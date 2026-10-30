@@ -1,16 +1,16 @@
 # type: ignore
-# ruff: noqa: E741  # robot-daemon/kinematics.py に合わせて `l` を logical の略として使う
+# ruff: noqa: E741  # `l` は logical の略。短い局所名として残す
 
 """論理角(度) ⇄ MuJoCo 関節角(度) の変換テーブル。
 
-robot-daemon の `kinematics.py` と同じ思想で、サーボ毎に独立したクラスで
-「論理角 → MuJoCo 関節角」の式を直書きする。共通ヘルパで生成しないので、
+サーボごとに「論理角 → MuJoCo 関節角」の式を直書きする。共通ヘルパで生成しないので、
 読み違えやコピペミスは「そのクラスの 2 メソッドだけ」を見れば検出できる。
+
+これは MuJoCo とモーションエディタの論理角である。実機（M5）の指令角（135° 中立）とは別の数。
 
 - 各サーボ毎の式は `logical_to_mujoco_deg(logical)` と `mujoco_deg_to_logical(mujoco)` の対。
 - どちらか一方だけ書き換えると逆写像が壊れるので、**必ず両方を同時に直す**こと。
-- 値は実機（robot-daemon/kinematics.py）と Viewer の目視で校正してください。
-  初期値は「立ち姿勢で MuJoCo qpos=0 になる」よう offset を入れた最低限の構成。
+- 初期値は「立ち姿勢で MuJoCo qpos=0 になる」よう offset を入れた最低限の構成。
 """
 
 from __future__ import annotations
@@ -71,8 +71,7 @@ class JointKinematicsBase:
 
 
 # ----------------------------
-# 論理角レンジ・デフォルト
-# （robot-daemon/kinematics.py と同値。「実機の論理角」体系）
+# 論理角レンジ・デフォルト（MuJoCo / モーションエディタ。M5 の 135° 中立ではない）
 # ----------------------------
 LOGICAL_RANGE_HEEL = (-50.0, 90.0)
 LOGICAL_RANGE_HEEL_ROLL = (-20.0, 20.0)
@@ -88,7 +87,7 @@ DEFAULT_LOGICAL_HIP2 = 60.0
 
 
 # ============================================================
-# ★ 10 関節分の「個別クラス」を直書き（robot-daemon と同じ流儀）
+# ★ 10 関節分の「個別クラス」を直書き
 #   ここから先は、各サーボごとに
 #   - クランプ
 #   - オフセット

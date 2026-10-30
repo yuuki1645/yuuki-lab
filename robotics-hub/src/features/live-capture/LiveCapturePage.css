@@ -56,6 +56,10 @@
   overflow: visible;
 }
 
+.live-capture__band--media-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .live-capture__band-media {
   min-width: 0;
   /* ライブ MJPEG のため overflow を付けない */

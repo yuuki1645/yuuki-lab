@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCaptureRealtimeBaseUrl, getCaptureRealtimeStreamUrl } from "@/shared/constants";
 import ExperimentManager from "@/features/live-capture/ExperimentManager";
-import LiveCaptureLiveImuPanel from "@/features/live-capture/LiveCaptureLiveImuPanel";
 import LiveCaptureReviewPlayer from "@/features/live-capture/LiveCaptureReviewPlayer";
 import LiveCaptureReviewTelemetry from "@/features/live-capture/LiveCaptureReviewTelemetry";
 import LiveMjpegView from "@/features/live-capture/LiveMjpegView";
@@ -16,7 +15,7 @@ import "./LiveCapturePage.css";
 /**
  * 横向き iPad 向け 3 段構成:
  * 1) 実験フォルダ / 録画操作
- * 2) ライブ（左: 映像、右: リアルタイム IMU）
+ * 2) ライブ映像
  * 3) 見返し（左: シーク映像、右: 再生位置同期データ）
  */
 export default function LiveCapturePage() {
@@ -184,15 +183,12 @@ export default function LiveCapturePage() {
         ) : null}
       </section>
 
-      {/* ── 2段目: ライブ映像 | ライブ IMU ── */}
+      {/* ── 2段目: ライブ映像 ── */}
       <section className="live-capture__tier live-capture__tier--live" aria-label="ライブ">
         <h2 className="live-capture__tier-title">ライブ（低遅延）</h2>
-        <div className="live-capture__band">
+        <div className="live-capture__band live-capture__band--media-only">
           <div className="live-capture__band-media">
             <LiveMjpegView streamUrl={streamUrl} />
-          </div>
-          <div className="live-capture__band-data">
-            <LiveCaptureLiveImuPanel />
           </div>
         </div>
       </section>

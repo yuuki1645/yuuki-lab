@@ -6,11 +6,8 @@
 
 現在同梱:
 
-- **モーションエディタ** — タイムライン・キーフレーム編集（旧スタンドアロン `motion-editor-react-ts` 系から統合）
-- **レッグサーボ調整** — 脚サーボを 1 本ずつ論理／物理角で調整（旧 `leg-servo-tuner` / `leg-servo-tuner-react` 相当）
-- **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし論理角を編集
-- **Daemon Socket Test** — `robot-daemon` との Socket.IO（主に IMU）およびサーボ REST の確認用
-- **実機テレメトリ** — `robot-daemon` の IMU（`/device-telemetry`）＋ Pico W 足裏圧力（ADS1115 / DF9-40@2kg、ブリッジ既定 :8793）
+- **モーションエディタ** — タイムライン・キーフレーム編集。再生先は MuJoCo（旧スタンドアロン `motion-editor-react-ts` 系から統合）
+- **ポーズエディタ** — メモ風スケッチで脚関節をドラッグし、論理角を MuJoCo へ送る
 - **実機テレメトリ（M5）** — サブ PC の [link/host/lab_debug.py](../link/host/lab_debug.py) が CoreS3 の USB（ver 15）を Socket.IO 既定 :8794 で中継する（`/m5-telemetry`）。10 軸と両足（DF9-40、ATOMS3 Lite スレーブ）が出る。片脚の `rt-usb`（ver 14）を挿したときも同じ画面につながる。HELLO から切断までの実験記録は [link/README.md](../link/README.md) の `storage.yaml`。画面から明示して残す本記録は `atom-rt/data/recordings`。机上の解説は **ATOM 手帳**（正本は [atom-rt/docs/field-manual](../atom-rt/docs/field-manual/)、USB **ver 14**）。機体の基本は [docs/robot_control.md](../docs/robot_control.md)
 - **ATOM 机上ラボ** — 机上の ATOM + サーボ **1 本**で校正・単体テスト（`/atom-bench`）。ファームは `rt-usb`。同じ `lab_debug.py`（:8794）につなぐ。Lab のまま **40〜230°**（ファーム可動域）を出し、AS5600 の **生角**・補正・ズレ、INA226 の V/A/W、プロファイル・NVS を確認できる。トポロジは左カラムに常設（どのタブでも配線と磁石が見える）、画面下端には接続・USB ver・モード・PWM・指令角・電源・周期・I2C エラー増分を 20 Hz で更新する固定ステータスバーがある。**ATOM 手帳**もここから開ける（`?tab=profile#manual/nvs` など）
 - **学習テレメトリ** — mujoco_rl_sim 学習プロセスの Socket.IO（`/training-telemetry`、既定 :8791）
@@ -23,8 +20,8 @@
 ## 前提
 
 - Node.js（推奨: 現在の LTS）
-- 実機連携のうち、モーションエディタ、ポーズエディタ、レッグサーボ調整、実機 IMU は **`robot-daemon`**（既定ポート **5000**。ラズパイ上の以前の経路）。機体の関節はこちらではない
 - 機体（M5）は **`npm run dev:m5`**（Hub + [link/host/lab_debug.py](../link/host/lab_debug.py)、Socket.IO 既定 **8794**）。`python atom-rt/tools/lab_debug.py` も同じプロセス
+- モーションエディタとポーズエディタの再生先は MuJoCo（既定 :8787）。実機のサーボへは出さない
 - 実機カメラ表示時は **`robot-recorder`**（OpenCV・キャプチャデバイス）。Streaming Center 等と同時にデバイスを占有しないこと
 
 ## セットアップ
@@ -94,11 +91,9 @@ npx vite --host 0.0.0.0 --port 5173
 
 別端末のブラウザでは、起動ログに出る **Network** の URL（例: `http://192.168.x.x:5173`）を開くか、開発 PC の LAN IP を確認して `http://<そのIP>:5173` でアクセスします。
 
-**`robot-daemon` について:** ラズパイ時代のサーボ REST と IMU です。機体の関節経路ではありません。REST・Socket.IO のベース URL は既定で **ラズパイ固定 IP** `http://192.168.100.50:5000`（`src/shared/constants.ts` の `SERVO_DAEMON_URL` / `ROBOT_DAEMON_HOST`）です。上書きは **`VITE_SERVO_DAEMON_URL`**（実機 IMU だけ別にする場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`**）。デーモンはラズパイ上で `0.0.0.0:5000` 待ち受け、同一 LAN から届くようにしてください。モーションエディタ、ポーズエディタ、レッグサーボ調整、実機テレメトリ（IMU）がこの URL を使います。
+**テレメトリについて:** 実機は **実機テレメトリ（M5）**（`/m5-telemetry`、CoreS3 の USB を [link/host/lab_debug.py](../link/host/lab_debug.py) が :8794 で中継。片脚の `rt-usb` も同じ口）です。足圧は ATOMS3 Lite からこの画面に出ます。学習は **学習テレメトリ**（`/training-telemetry`）です。M5 画面は iPad から **Windows PC の LAN IP:5173** で開きます。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。旧 URL **`/rl-telemetry`** は学習へリダイレクトされます。
 
-**テレメトリについて:** 画面上部のナビは **実機テレメトリ**（`/device-telemetry`、ラズパイの IMU）、**実機テレメトリ（M5）**（`/m5-telemetry`、CoreS3 の USB を [link/host/lab_debug.py](../link/host/lab_debug.py) が :8794 で中継。片脚の `rt-usb` も同じ口）、**学習テレメトリ**（`/training-telemetry`）に分かれています。M5 画面は iPad から **Windows PC の LAN IP:5173** で開きます（ラズパイ `192.168.100.50` ではありません）。学習ストリームの接続先は `getTrainingTelemetrySocketUrl()`（`src/shared/constants.ts`）。既定は **`http://<ブラウザの hostname>:8791`**（各 exp の `train.py` / `config.TELEMETRY_PORT`）。別マシンで学習するときは **`VITE_TELEMETRY_SOCKET_URL`**（旧: `VITE_RL_TELEMETRY_SOCKET_URL`）を指定してください。実機 IMU は既定で **`http://192.168.100.50:5000`**（`SERVO_DAEMON_URL`）へ接続し、接続後に自動で `imu/start` を送ります。IMU だけ別ホストにしたい場合は **`VITE_TELEMETRY_IMU_SOCKET_URL`** を使います。旧 URL **`/telemetry`** は実機へ、**`/rl-telemetry`** は学習へリダイレクトされます。
-
-**圧力ブリッジ注意:** `:8793` は **必ず 1 プロセス・`0.0.0.0`** で待ち受けてください。以前の `127.0.0.1:8793` が残っていると、ブラウザ（localhost）と Pico（LAN IP）が別プロセスを見て画面が更新されません。起動は `npm run dev:pressure` または `server\start_pressure.ps1`（起動前にポートを解放します）。
+以前のラズパイ制御と Pico の足圧は、いまのファイルからは外してある。コードが要るときは git の履歴を見る。
 
 本番ビルドを LAN 向けにプレビューする場合の例:
 
@@ -118,15 +113,12 @@ npm run preview
 
 | 名前 | 説明 |
 |------|------|
-| `VITE_SERVO_DAEMON_URL` | robot-daemon（未設定時は `http://192.168.100.50:5000`） |
 | `VITE_MUJOCO_SIM_URL` | 実時間 MuJoCo HTTP シムのベース URL（未設定時は `http://<hostname>:8787`） |
-| `VITE_IMU_SOCKET_URL` | IMU 用 Socket.IO（未設定時は `getMujocoSimUrl()` と同じ。Daemon Socket Test 等） |
+| `VITE_IMU_SOCKET_URL` | ヘッダーの IMU ウィンドウ用 Socket.IO（未設定時は MuJoCo と同じ :8787） |
 | `VITE_TELEMETRY_SOCKET_URL` | 学習テレメトリ用 Socket.IO（未設定時は `VITE_RL_TELEMETRY_SOCKET_URL` のあと `http://<hostname>:8791`） |
 | `VITE_RL_TELEMETRY_SOCKET_URL` | （非推奨）上記と同用途。`VITE_TELEMETRY_SOCKET_URL` を優先してください |
-| `VITE_TELEMETRY_IMU_SOCKET_URL` | テレメトリページの実機 IMU（未設定時は `http://<hostname>:5000`） |
 | `VITE_MUJOCO_VIEWER_AUX_URL` | ビュワー補助 API（未設定時は `http://<hostname>:8788`） |
 | `VITE_ISAAC_RL_LOG_API_URL` | Isaac 学習ログ API（未設定時は `http://<hostname>:8792`） |
-| `VITE_PRESSURE_TELEMETRY_SOCKET_URL` | Pico 圧力テレメトリ Socket.IO（未設定時は `http://<hostname>:8793`） |
 | `VITE_M5_TELEMETRY_SOCKET_URL` | CoreS3 / 机上 ATOM の `lab_debug.py` 中継 Socket.IO（未設定時は `http://<hostname>:8794`）。入口は [link/host/lab_debug.py](../link/host/lab_debug.py)。iPad は Windows PC の LAN IP で Hub を開く |
 | `VITE_CAPTURE_REALTIME_URL` | 実機カメラ MJPEG ベース URL（未設定時は `http://<hostname>:8766`） |
 
@@ -179,63 +171,12 @@ npm run dev
 
 同一 LAN 内のみなら LAN IP（例: `http://192.168.x.x:8792`）でも可です。
 
-## Pico W 足裏圧力（実機テレメトリ）
-
-[pico-test](../../pico-test/) の DF9-40@2kg（ADS1115 経由）を、Hub の **実機テレメトリ** 画面に足裏フレーム四隅としてリアルタイム表示します。
-
-### センサー配置（足裏上面・つま先が上）
-
-| 位置 | ADS1115 | 状態 |
-|------|---------|------|
-| 左上 | A0 | 設置済み |
-| 右上 | A1 | 設置済み |
-| 右下 | A2 | 設置済み |
-| 左下 | A3 | 設置済み |
-
-力換算は DF9-40@2kg データシートの圧力–抵抗表（回路はセンサー上側 + 10kΩ）に準拠。1 センサのフルスケールは 2kg。
-
-### 流れ
-
-1. **この PC** で圧力ブリッジを起動（Pico からの HTTP POST を受け、ブラウザへ Socket.IO 配信）
-2. **Pico W** で `main.py` を実行（Wi-Fi → `POST /api/pressure/sample`、四隅 JSON）
-3. Hub の **実機テレメトリ**（`/device-telemetry`）で足裏フレームの四隅が動く
-
-### 1. ブリッジ起動（Hub PC = 192.168.100.104）
-
-```powershell
-cd robotics-hub\server
-pip install -r requirements.txt
-.\start_pressure.ps1
-```
-
-または:
-
-```powershell
-python pressure_telemetry_server.py --host 0.0.0.0 --port 8793
-```
-
-- Pico POST: `http://192.168.100.104:8793/api/pressure/sample`
-- Hub Socket.IO: `http://192.168.100.104:8793`（ブラウザは hostname から自動決定。上書きは `VITE_PRESSURE_TELEMETRY_SOCKET_URL`）
-
-### 2. Pico 側
-
-```text
-pico-test/
-  secrets.example.py  → コピーして secrets.py（SSID / パスワード / HUB_HOST）
-  main.py             → Hub 送信（ADS1115 A0/A1/A2）
-  ads1115_test.py     → シリアル確認用
-  df9_force.py        → データシート準拠の抵抗→力換算
-  ads1115.py          → ADS1115 ドライバ
-```
-
-`HUB_HOST` の既定は `192.168.100.104`。配線は I2C1（SDA=GP26 / SCL=GP27）+ 各チャネル 10kΩ 分圧。
-
 ## 新しいツールを追加する手順
 
 1. **`src/features/<ツールID>/`** にページ用コンポーネントを実装する（例: `MyToolPage.tsx` を default export）。
 2. **`src/app/hubTools.tsx`** の `hubTools` 配列にエントリを 1 つ追加する。
    - `lazy(() => import("…"))` で遅延読み込みすると、初回バンドルが膨らみにくいです。
-3. サーボ API や定数が必要なら **`src/shared/`**（`api/`・`constants.ts`・`hooks/useServos.ts` 等）を再利用する。
+3. 共有の定数や API が必要なら **`src/shared/`**（`api/`・`constants.ts`・`hooks/`）を再利用する。実機の関節は M5 の `:8794`、シミュの関節は MuJoCo の `:8787` です。
 
 パスは `path` で一意にし、他ツールと被らないようにしてください。
 
@@ -258,5 +199,5 @@ MuJoCo からの出力は **`mujoco-sim/programs/mujoco_test_005.py`**（`--data
 src/
   app/           # ハブシェル・ルート定義・ツール一覧（hubTools.tsx）
   shared/        # 複数ツール共通（servo API・型・定数・hooks・テレメトリ用 hooks 等）
-  features/      # ツール別（motion-editor, leg-servo-tuner, telemetry, …）
+  features/      # ツール別（motion-editor, pose-editor, m5-telemetry, …）
 ```

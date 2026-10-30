@@ -73,7 +73,7 @@ export interface MujocoSetServoResponse {
 }
 
 /**
- * mujoco-sim の `/api/set`（単一サーボ）を叩く。`robot-daemon` の `/set` と同型。
+ * mujoco-sim の `/api/set`（単一サーボ）を叩く。
  *
  * シミュ本体の `mj_step` はサーバ側のスレッドが実時間で常時回しているため、
  * このエンドポイントは **目標角度（ctrl）の更新だけ** を行う。
@@ -102,7 +102,7 @@ export interface MujocoSetServosResponse {
 }
 
 /**
- * mujoco-sim の `/api/set_multiple`（複数サーボ）を叩く。`robot-daemon` の `/set_multiple` と同型。
+ * mujoco-sim の `/api/set_multiple`（複数サーボ）を叩く。
  */
 export async function mujocoSetServos(
   mode: MujocoCtrlMode,

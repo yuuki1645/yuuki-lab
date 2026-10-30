@@ -9,38 +9,14 @@ import {
 } from "@/shared/constants";
 import { getAngleAtTime } from "../utils/interpolation";
 import { moveServosToBackend } from "@/shared/api/servoTargetApi";
-import { transitionServos } from "@/shared/api/servoApi";
 import MotionContext from "../contexts/MotionContext";
-import type { Motion, ServoBackendMode } from "@/shared/types";
-
-const BACKEND_STORAGE_KEY = "motion-editor-backend";
-
-function readStoredBackend(): ServoBackendMode {
-  try {
-    const v = sessionStorage.getItem(BACKEND_STORAGE_KEY);
-    if (v === "mujoco" || v === "daemon") return v;
-  } catch {
-    /* noop */
-  }
-  return "daemon";
-}
+import type { Motion } from "@/shared/types";
 
 interface MotionContextProviderProps {
   children: React.ReactNode;
 }
 
 export default function MotionContextProvider({ children }: MotionContextProviderProps) {
-  const [backendMode, setBackendMode] =
-    useState<ServoBackendMode>(readStoredBackend);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(BACKEND_STORAGE_KEY, backendMode);
-    } catch {
-      /* noop */
-    }
-  }, [backendMode]);
-
   const {
     motions,
     currentMotion,
@@ -65,7 +41,7 @@ export default function MotionContextProvider({ children }: MotionContextProvide
     servos,
     loading: backendLoading,
     error: backendError,
-  } = useServoBackendData(backendMode);
+  } = useServoBackendData();
 
   const [selectedKeyframeId, setSelectedKeyframeId] = useState<string | null>(
     null
@@ -92,24 +68,18 @@ export default function MotionContextProvider({ children }: MotionContextProvide
       alert("設定可能な角度がありません");
       return;
     }
-    const anglesObj: Record<string, number> = {};
     const anglesByChannel: Record<number, number> = {};
     for (const [ch, angle] of angleEntries) {
-      anglesObj[String(ch)] = angle;
       anglesByChannel[Number(ch)] = angle;
     }
     try {
-      if (backendMode === "daemon") {
-        await transitionServos(anglesObj, "logical", 3.0);
-      } else {
-        await moveServosToBackend("mujoco", anglesByChannel, "logical");
-      }
+      await moveServosToBackend(anglesByChannel, "logical");
       alert("初期位置への移動を開始しました");
     } catch (error) {
       console.error("Failed to move to initial position:", error);
       alert(`エラー: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [backendMode]);
+  }, []);
 
   const handleTimeClick = useCallback(
     (time: number, channel: number | null) => {
@@ -167,8 +137,6 @@ export default function MotionContextProvider({ children }: MotionContextProvide
       selectedKeyframe,
       selectedChannel,
       selectedServo: selectedServo ?? null,
-      backendMode,
-      setBackendMode,
       backendError,
       backendLoading,
       endKeyframeDragRef,
@@ -195,7 +163,6 @@ export default function MotionContextProvider({ children }: MotionContextProvide
       selectedKeyframe,
       selectedChannel,
       selectedServo,
-      backendMode,
       backendError,
       backendLoading,
       currentMotion,

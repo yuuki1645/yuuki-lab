@@ -10,20 +10,14 @@ interface ImportMetaEnv {
   readonly VITE_MUJOCO_SIM_URL?: string;
   /** ``mujoco_test_009.py`` のビュワー補助 API（既定は同一ホスト :8788） */
   readonly VITE_MUJOCO_VIEWER_AUX_URL?: string;
-  /** robot-daemon（サーボ REST / 実機 IMU）。未設定時はラズパイ 192.168.100.50:5000 */
-  readonly VITE_SERVO_DAEMON_URL?: string;
-  /** IMU の Socket.IO 先。未指定時は `getMujocoSimUrl()`（既定 :8787） */
+  /** ヘッダー IMU ウィンドウの Socket.IO 先。未指定時は MuJoCo（既定 :8787） */
   readonly VITE_IMU_SOCKET_URL?: string;
   /** 学習テレメトリ用 Socket.IO（exp_019 `train`）。未設定時は旧名 `VITE_RL_TELEMETRY_SOCKET_URL` のあと同一ホスト :8791 */
   readonly VITE_TELEMETRY_SOCKET_URL?: string;
   /** @deprecated `VITE_TELEMETRY_SOCKET_URL` を使用してください */
   readonly VITE_RL_TELEMETRY_SOCKET_URL?: string;
-  /** テレメトリページの実機 IMU（robot-daemon）Socket.IO（未設定時は SERVO_DAEMON_URL） */
-  readonly VITE_TELEMETRY_IMU_SOCKET_URL?: string;
   /** Isaac Lab 学習ログ API（``isaac_rl_log_server.py``、未設定時は hostname:8792） */
   readonly VITE_ISAAC_RL_LOG_API_URL?: string;
-  /** Pico 圧力テレメトリ Socket.IO（``pressure_telemetry_server.py``、未設定時は hostname:8793） */
-  readonly VITE_PRESSURE_TELEMETRY_SOCKET_URL?: string;
   /** 実機カメラ MJPEG（serve_realtime.py、未設定時は hostname:8766） */
   readonly VITE_CAPTURE_REALTIME_URL?: string;
 }

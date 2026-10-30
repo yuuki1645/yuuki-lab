@@ -23,12 +23,9 @@ export interface Servo {
   physical_min: number;
   physical_max: number;
   last_logical: number;
-  /** 物理角（レッグチューナー等で使用） */
+  /** 物理角。MuJoCo 状態の変換で埋める */
   last_physical: number;
 }
 
-/** サーボ制御モード */
+/** サーボ制御モード。モーション再生は logical だけを MuJoCo へ送る */
 export type ServoMode = "logical" | "physical";
-
-/** サーボ指令の送信先（実機 REST / MuJoCo HTTP） */
-export type ServoBackendMode = "daemon" | "mujoco";

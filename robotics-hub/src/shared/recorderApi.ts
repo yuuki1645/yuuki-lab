@@ -3,7 +3,6 @@
  * 実機カメラページ・ラボデータビュワーが共通で使う。
  */
 import { getCaptureRealtimeBaseUrl } from "@/shared/constants";
-import type { ImuDaemonSamplePayload } from "@/shared/types/imuDaemon";
 
 function recorderBaseUrl(): string {
   return getCaptureRealtimeBaseUrl().replace(/\/$/, "");
@@ -64,7 +63,6 @@ export type RecorderStatus = {
   format_id?: string;
   data_root?: string;
   disk?: RecorderDiskStatus;
-  imu_bridge?: RecorderImuBridgeSnapshot;
   /** キャプチャから1枚以上来ている */
   has_frame?: boolean;
   ffmpeg_ok?: boolean;
@@ -108,18 +106,6 @@ export type RecorderTakeDescription = {
   imu_url?: string | null;
   commands_url?: string | null;
   meta_url?: string | null;
-};
-
-export type RecorderImuBridgeSnapshot = {
-  status: string;
-  url?: string;
-  rate_hz?: number;
-  last_error?: string | null;
-};
-
-export type RecorderImuLatestResponse = {
-  sample: ImuDaemonSamplePayload | null;
-  imu_bridge?: RecorderImuBridgeSnapshot;
 };
 
 export async function fetchRecorderStatus(): Promise<RecorderStatus> {
@@ -181,16 +167,4 @@ export async function fetchExperimentTakes(
     `/api/experiments/${encodeURIComponent(experimentId)}/takes`
   );
   return data.takes ?? [];
-}
-
-/** ライブ IMU（Pi → Recorder の最新サンプル）。未受信なら sample は null。 */
-export async function fetchRecorderImuLatest(): Promise<RecorderImuLatestResponse> {
-  const data = await recorderFetch<{
-    sample?: ImuDaemonSamplePayload | null;
-    imu_bridge?: RecorderImuBridgeSnapshot;
-  }>("/api/imu/latest");
-  return {
-    sample: data.sample ?? null,
-    imu_bridge: data.imu_bridge,
-  };
 }

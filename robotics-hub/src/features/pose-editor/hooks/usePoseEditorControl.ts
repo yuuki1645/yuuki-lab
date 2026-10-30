@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { mujocoSetServo } from "@/shared/api/mujocoSimApi";
-import { moveServo } from "@/shared/api/servoApi";
-import { SERVO_NAME_TO_CH } from "@/shared/constants";
 import { SERVO_NAME_TO_MUJOCO_ACTUATOR } from "@/shared/mujocoMapping";
 import { clamp } from "@/shared/utils";
 import type { Servo } from "@/shared/types";
@@ -11,15 +9,11 @@ import {
   readLegFromServos,
   servoName,
 } from "../lib/servoUtils";
-import type { ActiveDrag, JointKey, LegId, LegPose, PoseBackendMode } from "../types";
+import type { ActiveDrag, JointKey, LegId, LegPose } from "../types";
 
 const DRAG_SENSITIVITY = 0.32;
 
-export function usePoseEditorControl(
-  servos: Servo[],
-  apiError: string | null,
-  backendMode: PoseBackendMode
-) {
+export function usePoseEditorControl(servos: Servo[], apiError: string | null) {
   const [left, setLeft] = useState<LegPose>({
     hip1: 0,
     hip2: 90,
@@ -49,10 +43,6 @@ export function usePoseEditorControl(
   useEffect(() => {
     servosRef.current = servos;
   }, [servos]);
-
-  useEffect(() => {
-    initRef.current = false;
-  }, [backendMode]);
 
   useEffect(() => {
     if (!servos.length || initRef.current) return;
@@ -92,28 +82,20 @@ export function usePoseEditorControl(
       const run = async () => {
         const seq = ++moveSeqRef.current;
         try {
-          if (backendMode === "daemon") {
-            const ch = SERVO_NAME_TO_CH[name];
-            if (ch === undefined) return;
-            await moveServo(ch, "logical", angle);
-          } else {
-            const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
-            if (actuator === undefined) return;
-            await mujocoSetServo(actuator, "logical", angle);
-          }
+          const actuator = SERVO_NAME_TO_MUJOCO_ACTUATOR[name];
+          if (actuator === undefined) return;
+          await mujocoSetServo(actuator, "logical", angle);
         } catch (err) {
           if (seq !== moveSeqRef.current) return;
-          const label =
-            backendMode === "mujoco" ? "MuJoCo 指令" : "サーボ指令";
           window.alert(
-            `${label}エラー (${name}):\n${err instanceof Error ? err.message : String(err)}`
+            `MuJoCo 指令エラー (${name}):\n${err instanceof Error ? err.message : String(err)}`
           );
         }
       };
 
       void run();
     },
-    [apiError, backendMode]
+    [apiError]
   );
 
   const flushDragPointerUp = useCallback(() => {

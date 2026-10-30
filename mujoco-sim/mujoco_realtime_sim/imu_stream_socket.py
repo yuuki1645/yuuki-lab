@@ -1,6 +1,6 @@
 # type: ignore
 
-"""robot-daemon の ``ImuStreamService`` と同じ Socket.IO イベントで IMU を配信する。"""
+"""Hub の IMU ウィンドウ向けに、Socket.IO の ``imu/*`` で姿勢を配信する。"""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class _ImuSampleSource(Protocol):
 
 
 class MujocoImuStreamService:
-    """ストリーム状態・バックグラウンドループ・IMU 用 emit（robot-daemon 互換）。"""
+    """ストリーム状態・バックグラウンドループ・IMU 用 emit。"""
 
     def __init__(self, socketio: "SocketIO", reader: _ImuSampleSource) -> None:
         self._socketio = socketio

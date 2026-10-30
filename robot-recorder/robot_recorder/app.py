@@ -16,7 +16,6 @@ import cv2
 from robot_recorder.config import AppConfig
 from robot_recorder.disk import DiskStatus, disk_status
 from robot_recorder.experiments import ExperimentStore
-from robot_recorder.imu_bridge import ImuBridge
 from robot_recorder.recording_session import RecordingSession, find_ffmpeg
 from robot_recorder.timestamp_overlay import burn_jst_timestamp
 
@@ -43,25 +42,15 @@ class RecorderApp:
     self._latest_imu: dict[str, Any] | None = None
     self._ingest_lock = threading.Lock()
     self._capture_error: str | None = None
-    self.imu_bridge: ImuBridge | None = None
 
   def start_background(self) -> None:
     self.config.data_root.mkdir(parents=True, exist_ok=True)
     (self.config.data_root / "experiments").mkdir(exist_ok=True)
     threading.Thread(target=self._capture_loop, name="capture", daemon=True).start()
     threading.Thread(target=self._disk_watch_loop, name="disk", daemon=True).start()
-    if self.config.imu_bridge_enabled:
-      self.imu_bridge = ImuBridge(
-        self,
-        self.config.robot_daemon_url,
-        rate_hz=self.config.imu_bridge_rate_hz,
-      )
-      self.imu_bridge.start()
 
   def stop(self) -> None:
     self._stop.set()
-    if self.imu_bridge is not None:
-      self.imu_bridge.stop()
     with self._rec_lock:
       sess = self._session
       self._session = None
@@ -215,7 +204,6 @@ class RecorderApp:
       "has_frame": self._frame_wh is not None,
       "ffmpeg_ok": find_ffmpeg() is not None,
       "capture_error": self._capture_error,
-      "imu_bridge": self.imu_bridge.snapshot() if self.imu_bridge else {"status": "disabled"},
     }
 
   def _wait_first_frame(self, timeout_sec: float = 8.0) -> bool:

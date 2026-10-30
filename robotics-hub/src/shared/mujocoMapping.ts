@@ -39,7 +39,7 @@ export function radiansToLogicalDegrees(rad: number): number {
 }
 
 /**
- * mujoco-sim の /api/state を useServos 互換の Servo 配列に変換する。
+ * mujoco-sim の /api/state をモーションエディタと同じ Servo 配列に変換する。
  *
  * サーバ側 kinematics で計算済みの ``logical_deg`` を最優先で使う（論理角）。
  * もし古いサーバや欠損などで取れなかった場合は、フォールバックとして

@@ -1,9 +1,9 @@
 import { CH_TO_SERVO_NAME } from "@/shared/constants";
 import { SERVO_NAME_TO_MUJOCO_ACTUATOR } from "@/shared/mujocoMapping";
-import type { ServoBackendMode, ServoMode } from "@/shared/types";
+import type { ServoMode } from "@/shared/types";
 import { mujocoSetServos } from "./mujocoSimApi";
-import { moveServos } from "./servoApi";
 
+/** チャンネル番号の角度を、MuJoCo のアクチュエータ名へ付け替える。 */
 export function mapChannelAnglesToMujocoActuators(
   servoAngles: Record<number, number>
 ): Record<string, number> {
@@ -18,15 +18,14 @@ export function mapChannelAnglesToMujocoActuators(
   return angles;
 }
 
+/**
+ * モーション再生の角度を MuJoCo へ送る。
+ * 論理角だけを受け付ける。実機の PWM には出さない。
+ */
 export async function moveServosToBackend(
-  backendMode: ServoBackendMode,
   servoAngles: Record<number, number>,
   mode: ServoMode = "logical"
 ): Promise<unknown> {
-  if (backendMode === "daemon") {
-    return moveServos(servoAngles, mode);
-  }
-
   if (mode !== "logical") {
     throw new Error("MuJoCo backend supports logical motion angles only");
   }

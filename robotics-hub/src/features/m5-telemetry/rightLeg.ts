@@ -1,4 +1,4 @@
-/** 右脚 5 軸。ATOM 論理関節 0〜4 は servo_daemon の R_HIP1…R_HEEL_ROLL と同じ順。 */
+/** 右脚 5 軸。順は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。 */
 
 /** 実験中のライブ PWM 上限。ファームは 40〜230 のまま、PC / Hub だけ狭める */
 export const SERVO_MIN_DEG = 100;

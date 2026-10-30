@@ -1,5 +1,4 @@
-import { memo, useMemo } from "react";
-import type { ImuDaemonSamplePayload } from "@/shared/types/imuDaemon";
+import { useMemo } from "react";
 
 export type LogicalRange = { lo: number; hi: number };
 
@@ -18,7 +17,6 @@ export const LOGICAL_RANGE_BY_ACTUATOR: Record<string, LogicalRange> = {
 
 export const ACC_LABELS = ["ax", "ay", "az"];
 export const GYRO_LABELS = ["gx", "gy", "gz"];
-export const ANGLE_LABELS = ["pitch", "roll", "yaw"];
 export const ZAXIS_LABELS = ["zx", "zy", "zz"];
 export const FOOT_LABELS = ["左接地", "右接地", "左足 dx", "右足 dx"];
 
@@ -158,50 +156,6 @@ export function VecTable({
   if (noPanel) return content;
   return <div className="telemetry__panel">{content}</div>;
 }
-
-function triplet(
-  a: number | undefined,
-  b: number | undefined,
-  c: number | undefined
-): number[] {
-  if (
-    typeof a === "number" &&
-    Number.isFinite(a) &&
-    typeof b === "number" &&
-    Number.isFinite(b) &&
-    typeof c === "number" &&
-    Number.isFinite(c)
-  ) {
-    return [a, b, c];
-  }
-  return [];
-}
-
-export function daemonSampleToAccelGyroAngle(s: ImuDaemonSamplePayload | null): {
-  acc: number[];
-  gyro: number[];
-  angle: number[];
-} {
-  if (!s) {
-    return { acc: [], gyro: [], angle: [] };
-  }
-  return {
-    acc: triplet(s.accel?.x, s.accel?.y, s.accel?.z),
-    gyro: triplet(s.gyro?.x, s.gyro?.y, s.gyro?.z),
-    angle: triplet(s.angle?.pitch, s.angle?.roll, s.angle?.yaw),
-  };
-}
-
-export const ImuPerfTimestampReadout = memo(function ImuPerfTimestampReadout({
-  perfS,
-}: {
-  perfS: number | undefined;
-}) {
-  if (typeof perfS !== "number" || !Number.isFinite(perfS)) {
-    return <span className="telemetry__perf-value">—</span>;
-  }
-  return <span className="telemetry__perf-value">{perfS.toFixed(9)}</span>;
-});
 
 export function wsStatusLabel(
   status: "connected" | "connecting" | "disconnected"

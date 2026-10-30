@@ -35,9 +35,6 @@ class AppConfig:
   capture: CaptureConfig = field(default_factory=CaptureConfig)
   recording: RecordingConfig = field(default_factory=RecordingConfig)
   default_format_id: str = "robot_take_v0"
-  robot_daemon_url: str = "http://192.168.100.50:5000"
-  imu_bridge_enabled: bool = True
-  imu_bridge_rate_hz: float = 10.0
 
 
 def _as_dict(path: Path) -> dict[str, Any]:
@@ -63,7 +60,6 @@ def load_config(config_path: Path | None = None) -> AppConfig:
 
   cap_raw = merged.get("capture") or {}
   rec_raw = merged.get("recording") or {}
-  daemon_raw = merged.get("robot_daemon") or {}
 
   data_root = Path(str(merged.get("data_root") or (Path.home() / "yuuki-lab-data")))
   return AppConfig(
@@ -83,7 +79,4 @@ def load_config(config_path: Path | None = None) -> AppConfig:
       disk_check_interval_sec=float(rec_raw.get("disk_check_interval_sec", 30)),
     ),
     default_format_id=str(merged.get("default_format_id") or "robot_take_v0"),
-    robot_daemon_url=str(daemon_raw.get("url") or "http://192.168.100.50:5000"),
-    imu_bridge_enabled=bool(daemon_raw.get("imu_bridge", True)),
-    imu_bridge_rate_hz=float(daemon_raw.get("imu_rate_hz", 10)),
   )

@@ -14,7 +14,7 @@ CoreS3 の Core 1 が CAN と指令、Core 0 が USB です。Core 0 は集め�
 
 サブ PC の `link/host/lab_debug.py` が USB を握り、Socket.IO（既定 **:8794**）に載せます。Hub を LAN に出すと、iPad などのブラウザが **実機テレメトリ（M5）**（`/m5-telemetry`）を開きます。Wi-Fi で流れているのは Hub の画面と Socket.IO で、センサの生パケットそのものではありません。
 
-ラズパイの [robot-daemon](../robot-daemon/README.md) は、いまの関節指令の経路ではありません。Hub のモーションエディタ、ポーズエディタ、レッグサーボ調整、実機テレメトリ（IMU）は、まだこのデーモンの REST と Socket.IO（既定 **:5000**）を向いています。
+以前のラズパイ制御と Pico の足圧は、いまのファイルからは外してある。コードが要るときは git の履歴を見る。モーションエディタとポーズエディタの再生先は MuJoCo である。
 
 ## 基板
 

@@ -8,7 +8,7 @@
 
 | 役割 | 内容 |
 |------|------|
-| 受信 | カメラ、Pi からの指令ログ／IMU など |
+| 受信 | カメラ。記録中の ingest は残しているが、購読クライアントは無い |
 | 配信 | 低遅延 MJPEG、ステータス API |
 | 保存 | Hub の記録開始〜終了のみ（実験フォルダ配下の take） |
 | 管理 | 実験フォルダの作成・改名・削除・選択 |
@@ -22,16 +22,16 @@
 3. 実験フォルダ CRUD + 「録り込む実験」の選択
 4. 記録開始／終了 → take に HLS/mp4 + meta
 5. ディスク空き容量チェック（開始時拒否 + 記録中警告）
-6. 指令ログ ingest（Pi → Recorder、recording 中のみファイル化）
-7. IMU ingest（recording 中のみファイル化）+ `/api/imu/latest`（ライブ暫定）
+6. 指令ログ ingest（recording 中のみファイル化。送り元は今は無い）
+7. IMU ingest（recording 中のみファイル化）
 8. `robotics-hub` の `dev:lab` から本サーバーを起動
 
 ### Phase 2（本 README 更新時点で実装済み）
 
 1. Hub: 実験フォルダ管理 UI（作成・選択・改名・削除）
 2. 実機カメラページを Recorder API（take_id / ディスク警告）に接続
-3. Recorder が Pi の IMU を購読（Socket.IO クライアント）し Hub は `/api/imu/latest` で表示
-4. 指令ログ非同期転送は Phase 1 済み（`RECORDER_URL`）
+3. ラズパイの IMU 購読は外した。ライブ映像だけを出す
+4. 指令ログの非同期転送も、送り元が無くなったので動かない
 
 ### Phase 3（進行中）
 
@@ -83,9 +83,9 @@ data_root/
 | GET/POST/PATCH/DELETE | `/api/experiments` ... | 実験フォルダ管理 |
 | POST | `/api/experiments/{id}/select` | 録り込む実験を選択 |
 | POST | `/api/record/start` `/stop` | 記録開始／終了 |
-| POST | `/api/ingest/command` | Pi からの指令ログ |
-| POST | `/api/ingest/imu` | Pi からの IMU サンプル |
-| GET | `/api/imu/latest` | 最新 IMU（ライブ暫定） |
+| POST | `/api/ingest/command` | 指令ログ（送り元は今は無い） |
+| POST | `/api/ingest/imu` | IMU サンプル（送り元は今は無い） |
+| GET | `/api/imu/latest` | 最新 IMU。購読が無いので空 |
 | GET | `/api/experiments/{id}/takes` | take 一覧（meta・video/hls URL） |
 | GET | `/stream.mjpg` | ライブ映像 |
 
@@ -94,7 +94,7 @@ data_root/
 
 ## 設計メモ（議論の確定事項）
 
-- 指令: iPad → Pi（適用時刻を押印）→ 非同期で本 Recorder。失敗時は捨てる（Pi バッファなし）
-- IMU 本線: Pi → Recorder → iPad（Phase 2 で Hub 切替）
+- 映像の本線は、この PC のカメラから Recorder、Hub の実機カメラ画面
+- ラズパイからの IMU 購読と指令転送は外した
 - 保存は記録ボタン区間のみ。実験名は Hub／API で管理（連番データセット直置きにしない）
 - ビュワーは Hub 内で `format_id` ごとに用意（データ同梱必須ではない）

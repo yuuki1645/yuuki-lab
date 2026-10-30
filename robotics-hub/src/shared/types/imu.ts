@@ -1,4 +1,4 @@
-/** robot-daemon の Socket.IO `imu/*` イベント用ペイロード */
+/** ヘッダーの IMU ウィンドウが受け取る Socket.IO `imu/*`。既定の送り元は MuJoCo。 */
 
 export interface ImuStatusPayload {
   streaming?: boolean;

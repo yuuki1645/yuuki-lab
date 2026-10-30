@@ -17,4 +17,4 @@
 ## 変更時の注意
 
 - 観測次元・`PolicyObs` レイアウトを変えたら **`biped_ppo.py` の `_obs_slices` と Hub の型・UI** を同時に更新する
-- 実機 IMU（`robot-daemon`）のコードパスは **触らない**（Hub テレメトリページの daemon 部分のみ RL 側を修正）
+- 実機の関節経路（CoreS3 / ATOM）は触らない。この実験は MuJoCo 側だけを直す

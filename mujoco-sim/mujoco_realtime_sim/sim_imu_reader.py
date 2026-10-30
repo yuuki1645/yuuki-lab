@@ -1,6 +1,6 @@
 # type: ignore
 
-"""MuJoCo の IMU 系センサーから、robot-daemon の MPU6050 と同形のサンプル辞書を生成する。"""
+"""MuJoCo の IMU 系センサーから、Hub の IMU ウィンドウが読むサンプル辞書を作る。"""
 
 from __future__ import annotations
 

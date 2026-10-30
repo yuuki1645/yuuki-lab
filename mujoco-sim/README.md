@@ -4,7 +4,7 @@
 
 - **`mujoco_sim_assets`** — **共有 MJCF**（`xmls/`）と `resolved_model_xml()` などのパス解決。実時間シミュも試用スクリプトもここを参照します。
 - **`mujoco_sim_common`** — 論理角 kinematics、Hub 向け Socket.IO テレメトリ、ビュワー補助 HTTP などの共有部品。
-- **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得・サーボ指令（`robot-daemon` と揃えた API）を受け付ける。
+- **`mujoco_realtime_sim`** — 脚 MJCF を **実時間で `mj_step` しながら** Flask HTTP で状態取得とサーボ指令を受け付ける。
 - **`mujoco_rl_sim`** — **PPO 実験**（`experiments/`）と各 exp 内の共有コード。wandb や SB3 サンプル利用時は **`pip install -e ".[rl]"`**。実験の学習には **PyTorch** を別途インストール。
 - **`mujoco_biped_control`** — **明示制御** による両脚歩行（非 RL）。[walk_v0](mujoco_biped_control/walk_v0/) が exp_030 と同一 MJCF を使用。
 
@@ -170,7 +170,7 @@ MuJoCo 内で新 exp を派生する場合は **exp_030 をコピーしてリネ
 | GET | `/api/meta` | MJCF パス、アクチュエータ名、`timestep`、ステッパ状態、論理角メタ |
 | GET | `/api/state` | 現在状態（`logical_deg` 等） |
 | POST | `/api/reset` | リセット後に状態を返す |
-| POST | `/api/set` | 単一サーボ（`robot-daemon` の `/set` 同形） |
+| POST | `/api/set` | 単一サーボ |
 | POST | `/api/set_multiple` | 複数サーボ一括 |
 | PUT | `/api/ctrl` | ctrl 一括 |
 | POST | `/api/pause` / `/api/resume` | 実時間ステッパの一時停止・再開 |
@@ -207,4 +207,4 @@ mujoco-sim/
 ## 備考
 
 - Gunicorn 等では **`mujoco_realtime_sim.app:create_app`** を指定。
-- `robotics-hub`・`robot-daemon` とは **別プロセス**（ハブは実時間シムに対して主に HTTP を利用。RL 学習テレメトリは学習プロセスの Socket.IO を別途利用）。
+- `robotics-hub` とは **別プロセス**（ハブは実時間シムに対して主に HTTP を利用。RL 学習テレメトリは学習プロセスの Socket.IO を別途利用）。

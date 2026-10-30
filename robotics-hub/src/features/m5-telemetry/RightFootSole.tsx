@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { DF9_FORCE_MAX_KG } from "@/shared/types/pressureTelemetry";
 import type { M5FootCorner, M5FootSample } from "./types";
 import "./RightFootSole.css";
 
@@ -43,9 +42,12 @@ function cornerKg(c: M5FootCorner | null | undefined): number {
   return Math.max(0, c.force_kg);
 }
 
+/** DF9-40 1 本の定格（kg）。熱色のフルスケールに使う。 */
+const DF9_FORCE_MAX_KG = 2;
+
 /**
  * 右脚タブ左列用のコンパクトな足裏四隅 + 圧力中心。
- * 実機テレメトリ（Pico）の FootSolePressureMap と同じ熱色・CoP の考え方。
+ * 四隅の力から圧力中心を置き、定格に対する比で熱色にする。
  */
 export function RightFootSole({ sample, large, title = "右足裏" }: Props) {
   const corners = sample?.corners ?? null;

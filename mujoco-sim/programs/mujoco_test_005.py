@@ -45,7 +45,7 @@ except ImportError as e:
 # データビュワー用 wall_unix の単調性（実機と重ならないよう大きめの基準時刻 + 再生オフセット）
 _HUB_WALL_UNIX_BASE = 1_700_000_000.0
 
-# robot-daemon 出力の servo.csv と同一ヘッダ（行は置かない）
+# データビュワーが読む servo.csv のヘッダ（このスクリプトは行を置かない）
 _SERVO_CSV_HEADER = (
     "wall_unix,perf_timestamp,endpoint,mode,ch,angle_in,logical_deg,physical_deg,extra_json\n"
 )

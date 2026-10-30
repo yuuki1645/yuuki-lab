@@ -4,7 +4,7 @@ Hub / iPad 向け Socket.IO 中継（ライブラリ。直接起動しない）�
 
 lab_debug.py がプロセス内で M5HubBridge を起動する。ATOM の USB は触らない。
 Tk スレッドから publish し、iPad からの操作はコールバックで Tk に戻す。
-既定ポート 8794（学習 8791 / Isaac 8792 / 圧力 8793）。
+既定ポート 8794（学習 8791 / Isaac 8792 と分ける）。
 """
 
 from __future__ import annotations

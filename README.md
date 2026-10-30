@@ -83,13 +83,13 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 
 機体の関節は、腰の **CoreS3** と両脚の **ATOM S3R** です。基本は [docs/robot_control.md](docs/robot_control.md) にまとめています。ゲームパッドで踵を動かす起動と操作は [docs/heel_teleop.md](docs/heel_teleop.md) です。
 
-ラズパイの `robot-daemon` は、いまの関節指令の経路ではありません。Hub のモーションエディタなどは、まだそちらを向いています。
+以前のラズパイ制御と Pico の足圧は、いまのファイルからは外してある。コードが要るときは git の履歴を見る。
 
 # ディレクトリ解説
 
 ## ■ robotics-hub（メイン）
 
-**フロントエンドの中心となる作業場所です。** モーションエディタ、レッグサーボ調整など複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
+**フロントエンドの中心となる作業場所です。** モーションエディタ、ポーズエディタなど複数ツールを 1 つの Vite + React + TypeScript アプリにまとめています。
 
 機体の関節・電源・校正は、サブ PC の **`link/host/lab_debug.py`** が CoreS3 の USB（ver 15）を握り、**「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）へ中継します。iPad はサブ PC の LAN からこの画面を開きます。
 
@@ -98,14 +98,6 @@ python replay_incident.py --run-dir ../../runs/mujoco_biped_control/walk_v0/run_
 - **実機（M5）** … [docs/robot_control.md](docs/robot_control.md)。中継は [link/host/lab_debug.py](link/host/lab_debug.py)、画面は **「実機テレメトリ（M5）」**（`/m5-telemetry`、Socket.IO 既定 **8794**）。
 
 詳細は [robotics-hub/README.md](robotics-hub/README.md) を参照してください。
-
-## ■ robot-daemon
-
-ラズパイ上の **以前の** サーボ REST と IMU（Socket.IO）です。いま機体のサーボを動かしている経路ではありません。
-
-Hub のモーションエディタ、ポーズエディタ、レッグサーボ調整、実機テレメトリ（IMU）は、まだこのデーモン（既定ポート **5000**）を向いています。機体の関節は [core-rt](core-rt/) と [atom-rt](atom-rt/) です。
-
-詳細は [robot-daemon/README.md](robot-daemon/README.md) を参照してください。
 
 ## ■ link
 

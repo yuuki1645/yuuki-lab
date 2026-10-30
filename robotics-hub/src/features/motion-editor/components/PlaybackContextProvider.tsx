@@ -10,7 +10,7 @@ interface PlaybackContextProviderProps {
 export default function PlaybackContextProvider({
   children,
 }: PlaybackContextProviderProps) {
-  const { keyframes, motionDuration, backendMode } = useMotionContext();
+  const { keyframes, motionDuration } = useMotionContext();
 
   const {
     isPlaying,
@@ -24,7 +24,7 @@ export default function PlaybackContextProvider({
     pause,
     stop,
     seekToTime,
-  } = useInterpolation(keyframes, motionDuration, "logical", backendMode);
+  } = useInterpolation(keyframes, motionDuration, "logical");
 
   const value = useMemo(
     () => ({

@@ -7,7 +7,10 @@ export const GUIDE_MAP: Record<string, string> = {
   HIP2: "/guides/hip2.JPG",
 };
 
-// サーボ名 -> チャンネル番号のマッピング（servo_daemon/app.py と一致させる）
+/**
+ * モーションエディタと MuJoCo 連携が使うサーボ名。
+ * 実機（M5）の論理軸 0〜9 とは番号が違う。左脚は 8 から始まる。
+ */
 export const SERVO_NAME_TO_CH: Record<string, number> = {
   R_HIP1: 0,
   R_HIP2: 1,
@@ -44,24 +47,8 @@ export const SERVO_TICK_VALUES: Record<string, number[]> = {
   HEEL_ROLL: [-20, 0, 20],
 };
 
-// 全サーボチャンネル番号の配列
+/** モーションエディタが走査するチャンネル。実機の論理軸 0〜9 ではない。 */
 export const SERVO_CHANNELS: number[] = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
-
-/** 自宅ラボ固定: 実機 robot-daemon を動かすラズパイ */
-export const ROBOT_DAEMON_HOST = "192.168.100.50";
-export const ROBOT_DAEMON_PORT = 5000;
-
-/**
- * robot-daemon のベース URL（サーボは REST、実機 IMU は同じオリジンで Socket.IO）。
- * ラズパイ固定 IP。上書きは ``VITE_SERVO_DAEMON_URL``。
- */
-export const SERVO_DAEMON_URL = (() => {
-  const fromEnv = import.meta.env.VITE_SERVO_DAEMON_URL;
-  if (typeof fromEnv === "string" && fromEnv.length > 0) {
-    return fromEnv.replace(/\/$/, "");
-  }
-  return `http://${ROBOT_DAEMON_HOST}:${ROBOT_DAEMON_PORT}`;
-})();
 
 /**
  * mujoco-sim（Flask）のベース URL。
@@ -96,9 +83,9 @@ export function getMujocoViewerAuxUrl(): string {
 }
 
 /**
- * IMU 用 Socket.IO の接続先。
- * - `VITE_IMU_SOCKET_URL` … 明示指定（例: 実機 MPU は `http://ホスト:5000` の robot-daemon）。
- * - 未指定時は **`getMujocoSimUrl()`**（MuJoCo シムと同じホスト・既定 :8787）。シムに Socket.IO IMU が載っている前提。
+ * ヘッダーの IMU ウィンドウが使う Socket.IO。
+ * `VITE_IMU_SOCKET_URL` があればそれを優先する。
+ * 未指定時は MuJoCo シムと同じホスト（既定 :8787）。
  */
 export function getImuSocketUrl(): string {
   const fromEnv = import.meta.env.VITE_IMU_SOCKET_URL;
@@ -145,36 +132,8 @@ export function getIsaacRlLogApiUrl(): string {
 }
 
 /**
- * テレメトリページ用の IMU（robot-daemon）Socket.IO。
- * 未設定時は ``SERVO_DAEMON_URL`` と同じ（ラズパイ ``192.168.100.50:5000``）。
- */
-export function getTelemetryImuSocketUrl(): string {
-  const fromEnv = import.meta.env.VITE_TELEMETRY_IMU_SOCKET_URL;
-  if (typeof fromEnv === "string" && fromEnv.length > 0) {
-    return fromEnv.replace(/\/$/, "");
-  }
-  return SERVO_DAEMON_URL.replace(/\/$/, "");
-}
-
-/**
- * Pico W 圧力センサー・ブリッジ（``server/pressure_telemetry_server.py``、既定 :8793）。
- * ``VITE_PRESSURE_TELEMETRY_SOCKET_URL`` があれば優先。
- */
-export function getPressureTelemetrySocketUrl(): string {
-  const fromEnv = import.meta.env.VITE_PRESSURE_TELEMETRY_SOCKET_URL;
-  if (typeof fromEnv === "string" && fromEnv.length > 0) {
-    return fromEnv.replace(/\/$/, "");
-  }
-  return (
-    "http://" +
-    (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1") +
-    ":8793"
-  );
-}
-
-/**
  * ATOM / lab_debug.py の iPad 中継 Socket.IO（既定 :8794）。
- * iPad は Windows PC の LAN IP で Hub を開く（ラズパイ 192.168.100.50 ではない）。
+ * iPad は Windows PC の LAN IP で Hub を開く。
  * ``VITE_M5_TELEMETRY_SOCKET_URL`` があれば優先。
  */
 export function getM5TelemetrySocketUrl(): string {
@@ -249,6 +208,6 @@ export const MIN_KEYFRAME_INTERVAL = 100; // 0.1秒
 /** トラックタップ時にキーフレーム中心をタップ位置に合わせるためのオフセット（px）。キーフレームは left で配置するため、見た目の中心はこの値だけ右にある */
 export const TIMELINE_KEYFRAME_CENTER_OFFSET_PX = 20;
 
-// 論理角の範囲（全サーボ共通、必要に応じてservo_daemonから取得）
+/** モーションエディタの論理角スライダー範囲（度）。実機の 135° 中立とは別。 */
 export const LOGICAL_ANGLE_MIN = -90;
 export const LOGICAL_ANGLE_MAX = 90;

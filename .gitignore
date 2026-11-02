@@ -81,4 +81,7 @@ rsync.sh
 # AWS launcher ローカル設定（AMI / SG 等）
 aws/aws_launch.config.toml
 
+# cad/export_step.py の生成物。再実行で時刻が変わり、差分になる。
+cad/out/
+
 .DS_Store

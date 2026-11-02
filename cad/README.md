@@ -28,3 +28,13 @@ python cad/export_step.py
 Python の中の数値はメートルです。STEP に書くとき build123d がミリメートルに直します。サーボの半幅 15 は 15 mm です。読み戻しは Open CASCADE がミリメートルで返すので、検査もそれに合わせています。
 
 股間隔、隙間 4 mm、足首から足裏まで、足板の前後位置は、yaml に書いてある仮値のままです。金具を測ったら yaml を変えて、このスクリプトをやり直してください。
+
+## 等身大の全身（既存設計とは別）
+
+`cad/humanoid/` は、カゴと脚の実機を使わない新規の概念モデルです。直立で足裏から頭頂まで 170 cm。寸法の正本は `humanoid/params.py` です。
+
+```powershell
+python cad/export_humanoid.py
+```
+
+生成物は `cad/out/yuuki_humanoid.step` です。頭、胴、両腕、両脚を、円柱の肢とピッチ関節のハウジングで置いています。ボルト、軸受、内部フレームはまだありません。

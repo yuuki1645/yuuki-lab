@@ -1,0 +1,4 @@
+# CAD テスト用。build123d が Open CASCADE（OCP）を連れてくる。
+# 数値の読み取りに PyYAML を使う。URDF 生成スクリプトと同じライブラリ。
+build123d>=0.8
+PyYAML>=6

@@ -13,7 +13,7 @@
  *
  * 待受の DE は Low。High のままだとサーボが返事をバスに出せない。
  * ボーレートの初期値は 115200。scan は UART を変えるだけで、サーボの EEPROM は書かない。
- * トルクを入れる WRITE は、この試験ファームからは出さない。
+ * トルクを入れる WRITE は、現在位置を目標にしたあとに限る。校正の 128 は出さない。
  */
 
 #pragma once
@@ -49,3 +49,9 @@ bool smsProbeEcho();
 bool smsPing(SmsReply* reply);
 // 届いたデータが len 未満なら false。短い成功にしないため。
 bool smsRead(uint8_t addr, uint8_t len, SmsReply* reply);
+// SRAM へ書く。dataLen は 14 まで。EEPROM（ID、ボーレート）には使わない。
+bool smsWrite8(uint8_t addr, uint8_t value, SmsReply* reply);
+bool smsWrite16(uint8_t addr, uint16_t valueLe, SmsReply* reply);
+
+// 正はそのまま、負は絶対値のビット15を立てる。大きさは 0〜32767。
+uint16_t smsEncodeSigned15(int32_t value);

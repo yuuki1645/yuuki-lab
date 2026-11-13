@@ -207,7 +207,12 @@ static void selfTest() {
     uint8_t readPkt[8];
     const size_t readLen = buildPacket(1, 0x02, readParams, 2, readPkt);
     const bool readOk = readLen == 8 && readPkt[5] == 0x28 && readPkt[6] == 0x1F && readPkt[7] == 0xB1;
-    gSelfOk = pingOk && readOk;
+    // トルク切断。アドレス 40 に 0。チェックサムは 0xCF。
+    const uint8_t offParams[2] = {40, 0};
+    uint8_t offPkt[8];
+    const size_t offLen = buildPacket(1, 0x03, offParams, 2, offPkt);
+    const bool offOk = offLen == 8 && offPkt[4] == 0x03 && offPkt[5] == 0x28 && offPkt[6] == 0x00 && offPkt[7] == 0xCF;
+    gSelfOk = pingOk && readOk && offOk;
     if (!gSelfOk) {
         Serial.println("@err cmd=self msg=checksum");
     }
@@ -293,4 +298,39 @@ bool smsRead(uint8_t addr, uint8_t len, SmsReply* reply) {
         return false;
     }
     return true;
+}
+
+static bool smsWrite(uint8_t addr, const uint8_t* data, uint8_t dataLen, SmsReply* reply) {
+    uint8_t params[16];
+    if (dataLen > 14) {
+        return false;
+    }
+    params[0] = addr;
+    for (uint8_t i = 0; i < dataLen; ++i) {
+        params[1 + i] = data[i];
+    }
+    return transact(0x03, params, (uint8_t)(dataLen + 1), reply);
+}
+
+bool smsWrite8(uint8_t addr, uint8_t value, SmsReply* reply) {
+    return smsWrite(addr, &value, 1, reply);
+}
+
+bool smsWrite16(uint8_t addr, uint16_t valueLe, SmsReply* reply) {
+    const uint8_t data[2] = {(uint8_t)(valueLe & 0xFF), (uint8_t)((valueLe >> 8) & 0xFF)};
+    return smsWrite(addr, data, 2, reply);
+}
+
+uint16_t smsEncodeSigned15(int32_t value) {
+    if (value < 0) {
+        int32_t mag = -value;
+        if (mag > 32767) {
+            mag = 32767;
+        }
+        return (uint16_t)((uint16_t)mag | 0x8000u);
+    }
+    if (value > 32767) {
+        value = 32767;
+    }
+    return (uint16_t)value;
 }

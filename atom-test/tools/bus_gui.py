@@ -3,7 +3,7 @@
 SM105BL と ATOM S3R（LTC1480）の RS485 を、USB の行テキストから見る。
 
 ファーム（atom-test の環境 rs485）がバスを話し、この GUI はバイト列を色分けする。
-トルクは入れない。接続しても軸は動かない。
+接続しただけでは軸は動かない。トルク ON は今の位置を保持し、バーは離したときだけ動く。
 
 起動:
     pip install -r tools/requirements.txt
@@ -27,6 +27,11 @@ import serial.tools.list_ports
 
 BAUD = 115200
 MAX_ROWS = 100
+# 1 周 4096。中点 2048 を 0° として表示する。atom-rs485 の試験画面と同じ。
+COUNTS_PER_REV = 4096
+# これより大きい移動は、送る前に確認する。
+CONFIRM_COUNTS = 512
+TORQUE_NAME = {0: "切断", 1: "出力中", 2: "ダンパ"}
 
 # サーボのアドレス 6。ファームの kServoBauds と同じ並び。UART が今話している速度とは別。
 SERVO_BAUDS = (1000000, 500000, 250000, 128000, 115200, 76800, 57600, 38400)
@@ -42,7 +47,9 @@ BAD = "#ee5253"
 WARN = "#feca57"
 ACCENT = "#54a0ff"
 FONT = ("Yu Gothic UI", 10)
+FONT_SM = ("Yu Gothic UI", 9)
 MONO = ("Consolas", 11)
+MONO_LG = ("Consolas", 26, "bold")
 
 
 @dataclass
@@ -83,6 +90,11 @@ def _self_check() -> None:
     assert parse_packet(ping) is not None and parse_packet(ping).cs_ok
     assert "ボーレート" in timeout_reason(True, 0)
     assert "3.3V" in timeout_reason(False, 0)
+    assert decode_bit15(0x8000 | 100) == -100
+    assert decode_bit10(0x0400 | 100) == -100
+    assert counts_from_deg(90) == 1024
+    assert is_live_read(read)
+    assert not is_live_read(ping)
     kind, kv = parse_line("@bus ms=1 us=840 echo=1 baud=115200 tx=ffff010201fb rx=ffff010200fc st=0")
     assert kind == "bus" and kv["echo"] == "1" and kv["rx"] == "ffff010200fc"
 
@@ -102,6 +114,33 @@ def parse_packet(pkt: bytes) -> Packet | None:
         return None
     cs_ok = ((~sum(pkt[2:-1])) & 0xFF) == pkt[-1]
     return Packet(pkt[2], length, pkt[4], pkt[5:-1], cs_ok)
+
+
+def decode_bit15(raw: int) -> int:
+    """ビット15が方向、下位15ビットが大きさ。位置と速度。"""
+    if raw & 0x8000:
+        return -(raw & 0x7FFF)
+    return raw & 0x7FFF
+
+
+def decode_bit10(raw: int) -> int:
+    """ビット10が方向、下位10ビットが大きさ。負荷。"""
+    sign = -1 if (raw & 0x0400) else 1
+    return sign * (raw & 0x03FF)
+
+
+def counts_from_deg(deg: float) -> int:
+    return int(round(deg * COUNTS_PER_REV / 360.0))
+
+
+def fmt_deg(counts: int) -> str:
+    return f"{counts * 360.0 / COUNTS_PER_REV:+.2f}°"
+
+
+def is_live_read(tx: bytes) -> bool:
+    """位置の定期読み（アドレス 40 から 31 バイト）。ログでは 1 行だけ更新する。"""
+    pkt = parse_packet(tx)
+    return pkt is not None and pkt.head == 0x02 and pkt.params == bytes((40, 31))
 
 
 def parse_hex(text: str) -> bytes | None:
@@ -185,6 +224,16 @@ def reply_text(master: Packet | None, reply: Packet, echo: bool, us: int) -> str
     return text
 
 
+def _num(kv: dict[str, str], key: str) -> int | None:
+    raw = kv.get(key)
+    if raw is None:
+        return None
+    try:
+        return int(raw, 10)
+    except ValueError:
+        return None
+
+
 def is_atom_hwid(hwid: str | None) -> bool:
     return "303A" in (hwid or "")
 
@@ -222,8 +271,8 @@ class BusApp(tk.Tk):
         super().__init__()
         self.title("SM105BL 通信  /  ATOM S3R + LTC1480")
         self.configure(bg=BG)
-        self.minsize(880, 560)
-        self.geometry("1080x700")
+        self.minsize(980, 680)
+        self.geometry("1180x820")
 
         self._ports: list[tuple[str, str]] = []
         self.ser: serial.Serial | None = None
@@ -234,16 +283,38 @@ class BusApp(tk.Tk):
         self._rows: list[TraceRow] = []
         self._closing = False
         self.connected = False
+        self.armed = False
+        self._pos: int | None = None
+        self._slider_ready = False
+        self._wait_cmd: str | None = None
+        self._sent_id = 1
         self._cmd_buttons: list[tk.Button] = []
+        self._move_buttons: list[tk.Button] = []
+        self.live: dict[str, tk.Label] = {}
 
         self._build()
         self._refresh_ports()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.bind("<Escape>", lambda _event: self._torque_off())
         self.after(50, self._tick)
+        self.after(500, self._poll_fb)
 
     def _build(self) -> None:
-        top = tk.Frame(self, bg=BG)
-        top.pack(fill="x", padx=12, pady=(10, 4))
+        # 上 2/3 が操作とサーボ情報、下 1/3 が往復ログ。ヘッダは高さ固定。
+        self.rowconfigure(1, weight=2)
+        self.rowconfigure(2, weight=1)
+        self.columnconfigure(0, weight=1)
+        self._build_header()
+        self._build_upper()
+        self._build_log()
+        self._set_buttons()
+
+    def _build_header(self) -> None:
+        # ポート列と操作ボタンはヘッダにまとめ、本体の 2:1 分割と混ぜない。
+        header = tk.Frame(self, bg=BG)
+        header.grid(row=0, column=0, sticky="ew", padx=12, pady=(10, 4))
+        top = tk.Frame(header, bg=BG)
+        top.pack(fill="x")
         tk.Label(top, text="ポート", bg=BG, fg=MUTED, font=FONT).pack(side="left")
         self.port_var = tk.StringVar()
         self.port_box = ttk.Combobox(top, textvariable=self.port_var, width=42, state="readonly")
@@ -255,8 +326,8 @@ class BusApp(tk.Tk):
         self.link_label = tk.Label(top, textvariable=self.link_var, bg=BG, fg=MUTED, font=FONT)
         self.link_label.pack(side="right")
 
-        cmd = tk.Frame(self, bg=BG)
-        cmd.pack(fill="x", padx=12, pady=(0, 4))
+        cmd = tk.Frame(header, bg=BG)
+        cmd.pack(fill="x", pady=(4, 0))
         tk.Label(cmd, text="ID", bg=BG, fg=MUTED, font=FONT).pack(side="left")
         self.id_var = tk.StringVar(value="1")
         spin = tk.Spinbox(
@@ -281,23 +352,124 @@ class BusApp(tk.Tk):
             button.pack(side="left", padx=(0, 6))
         self._button(cmd, "消去", self._clear).pack(side="right")
 
-        hint = tk.Frame(self, bg=BG)
-        hint.pack(fill="x", padx=12)
-        self.meta_var = tk.StringVar(value="rx=5  tx=6  de=7  /RE=GND  VCC=3.3V  115200 8N1")
-        tk.Label(hint, textvariable=self.meta_var, bg=BG, fg=MUTED, font=FONT).pack(anchor="w")
-        tk.Label(
-            hint,
-            text="灰 FF FF   青 ID   白 Length   黄 命令/status   緑チェックサム一致   赤不一致    行の地: 緑=echo あり  黄=返事のみ  赤=時間切れ",
-            bg=BG,
-            fg=MUTED,
-            font=("Yu Gothic UI", 9),
-        ).pack(anchor="w", pady=(2, 4))
+    def _build_upper(self) -> None:
+        upper = tk.Frame(self, bg=BG)
+        upper.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 6))
+        upper.columnconfigure(0, weight=3)
+        upper.columnconfigure(1, weight=2)
+        upper.rowconfigure(0, weight=1)
+        self._build_controls(upper)
+        self._build_info(upper)
 
-        card = tk.Frame(self, bg=CARD)
-        card.pack(fill="both", expand=True, padx=12, pady=(0, 12))
-        tk.Label(card, text="RS485 の往復（新しいものが上）", bg=CARD, fg=TEXT, font=FONT).grid(
-            row=0, column=0, sticky="w", padx=8, pady=(6, 0)
+    def _build_controls(self, parent: tk.Frame) -> None:
+        box = tk.Frame(parent, bg=CARD, padx=12, pady=10)
+        box.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        tk.Label(box, text="操作", bg=CARD, fg=TEXT, font=(FONT[0], 12, "bold")).pack(anchor="w")
+        tk.Label(
+            box,
+            text="トルク ON は今の位置を保持します。バーは離したとき、その位置へ動きます。",
+            bg=CARD,
+            fg=MUTED,
+            font=FONT_SM,
+            justify="left",
+        ).pack(anchor="w", pady=(2, 8))
+
+        self.limit_var = tk.StringVar(value="200")
+        self.speed_var = tk.StringVar(value="40")
+        self.acc_var = tk.StringVar(value="10")
+        self._spin_row(box, "トルク制限", self.limit_var, "0〜1000（200 = 20%）")
+        self._spin_row(box, "速度", self.speed_var, "1〜32767。0 は最高速になるので不可")
+        self._spin_row(box, "加速度", self.acc_var, "0 は最大。10 はゆっくり")
+
+        self.arm_btn = self._button(box, "トルク ON（現在位置を保持）", self._arm, fg=GOOD)
+        self.arm_btn.pack(fill="x", pady=(8, 8))
+
+        tk.Label(box, text="目標位置（0〜4095、1 周）", bg=CARD, fg=MUTED, font=FONT_SM).pack(anchor="w")
+        self.slider_var = tk.DoubleVar(value=2048)
+        self.slider = tk.Scale(
+            box,
+            from_=0,
+            to=4095,
+            orient="horizontal",
+            resolution=1,
+            showvalue=False,
+            variable=self.slider_var,
+            command=self._on_slider,
+            bg=CARD,
+            fg=TEXT,
+            troughcolor=BG,
+            activebackground=ACCENT,
+            highlightthickness=0,
+            sliderlength=28,
+            length=280,
         )
+        self.slider.pack(fill="x", pady=(4, 0))
+        # ドラッグ中は送らない。離したときだけ目標を書く。
+        self.slider.bind("<ButtonRelease-1>", self._on_slider_release)
+        self.slider_caption = tk.StringVar(value="2048    中点から +0.00°")
+        tk.Label(box, textvariable=self.slider_caption, bg=CARD, fg=TEXT, font=MONO).pack(anchor="w", pady=(2, 6))
+
+        jog = tk.Frame(box, bg=CARD)
+        jog.pack(fill="x", pady=(4, 4))
+        for text, deg in (("−15°", -15), ("−5°", -5), ("+5°", 5), ("+15°", 15)):
+            button = self._button(jog, text, lambda d=deg: self._jog(d))
+            button.pack(side="left", padx=2, expand=True, fill="x")
+            self._move_buttons.append(button)
+        self.move_btn = self._button(box, "バーの位置へ動かす", self._move_slider)
+        self.move_btn.pack(fill="x", pady=(4, 6))
+        self._move_buttons.append(self.move_btn)
+        self.off_btn = self._button(box, "トルク OFF", self._torque_off, fg=BAD)
+        self.off_btn.pack(fill="x")
+
+    def _build_info(self, parent: tk.Frame) -> None:
+        box = tk.Frame(parent, bg=CARD, padx=12, pady=10)
+        box.grid(row=0, column=1, sticky="nsew")
+        tk.Label(box, text="サーボ", bg=CARD, fg=TEXT, font=(FONT[0], 12, "bold")).pack(anchor="w")
+        self.meta_var = tk.StringVar(value="rx=5  tx=6  de=7  /RE=GND  VCC=3.3V")
+        tk.Label(box, textvariable=self.meta_var, bg=CARD, fg=MUTED, font=FONT_SM, wraplength=360, justify="left").pack(
+            anchor="w", pady=(2, 6)
+        )
+        self.big_pos = tk.Label(box, text="—", bg=CARD, fg=TEXT, font=MONO_LG)
+        self.big_pos.pack(anchor="w")
+        self.big_sub = tk.Label(box, text="現在位置", bg=CARD, fg=MUTED, font=FONT_SM)
+        self.big_sub.pack(anchor="w", pady=(0, 8))
+
+        grid = tk.Frame(box, bg=CARD)
+        grid.pack(fill="both", expand=True)
+        names = (
+            ("goal", "目標"),
+            ("spd", "速度"),
+            ("load", "負荷"),
+            ("volt", "電圧"),
+            ("temp", "温度"),
+            ("curr", "電流"),
+            ("torque", "トルク"),
+            ("moving", "移動"),
+            ("status", "状態"),
+            ("fw", "ファーム"),
+        )
+        for index, (key, title) in enumerate(names):
+            row, col = divmod(index, 2)
+            tk.Label(grid, text=title, bg=CARD, fg=MUTED, font=FONT_SM, anchor="w", width=8).grid(
+                row=row, column=col * 2, sticky="w", pady=2
+            )
+            value = tk.Label(grid, text="—", bg=CARD, fg=TEXT, font=MONO, anchor="w")
+            value.grid(row=row, column=col * 2 + 1, sticky="w", padx=(0, 12), pady=2)
+            self.live[key] = value
+
+    def _build_log(self) -> None:
+        card = tk.Frame(self, bg=CARD)
+        card.grid(row=2, column=0, sticky="nsew", padx=12, pady=(0, 12))
+        head = tk.Frame(card, bg=CARD)
+        head.grid(row=0, column=0, sticky="ew", padx=8, pady=(6, 0))
+        tk.Label(head, text="RS485 の往復（新しいものが上）", bg=CARD, fg=TEXT, font=FONT).pack(side="left")
+        tk.Label(
+            head,
+            text="灰FF  青ID  白Length  黄命令  緑checksum    地: 緑=echoあり  黄=返事のみ  赤=時間切れ",
+            bg=CARD,
+            fg=MUTED,
+            font=FONT_SM,
+        ).pack(side="left", padx=(12, 0))
         self.trace = tk.Text(
             card,
             bg=BG,
@@ -306,7 +478,7 @@ class BusApp(tk.Tk):
             relief="flat",
             font=MONO,
             wrap="none",
-            height=22,
+            height=8,
             padx=8,
             pady=6,
         )
@@ -340,17 +512,32 @@ class BusApp(tk.Tk):
         # 地色より文字色を優先する。地色 tag は background しか持たない。
         for name in ("hdr", "fid", "flen", "finst", "fparam", "fsum_ok", "fsum_bad", "dir", "ann", "plain", "muted"):
             self.trace.tag_raise(name)
-        self._set_buttons()
 
-    def _button(self, parent: tk.Misc, text: str, command) -> tk.Button:
+    def _spin_row(self, parent: tk.Frame, title: str, variable: tk.StringVar, hint: str) -> None:
+        row = tk.Frame(parent, bg=CARD)
+        row.pack(fill="x", pady=2)
+        tk.Label(row, text=title, bg=CARD, fg=MUTED, font=FONT_SM, width=10, anchor="w").pack(side="left")
+        tk.Entry(
+            row,
+            textvariable=variable,
+            width=8,
+            font=MONO,
+            bg=BG,
+            fg=TEXT,
+            insertbackground=TEXT,
+            relief="flat",
+        ).pack(side="left")
+        tk.Label(row, text=hint, bg=CARD, fg=MUTED, font=FONT_SM).pack(side="left", padx=(8, 0))
+
+    def _button(self, parent: tk.Misc, text: str, command, fg: str = TEXT) -> tk.Button:
         return tk.Button(
             parent,
             text=text,
             command=command,
             bg=CARD_HI,
-            fg=TEXT,
+            fg=fg,
             activebackground=CARD,
-            activeforeground=TEXT,
+            activeforeground=fg,
             relief="flat",
             font=FONT,
             padx=10,
@@ -369,6 +556,11 @@ class BusApp(tk.Tk):
         state = "normal" if self.connected else "disabled"
         for button in self._cmd_buttons:
             button.configure(state=state)
+        self.arm_btn.configure(state=state)
+        self.off_btn.configure(state=state)
+        move = "normal" if self.connected and self.armed else "disabled"
+        for button in self._move_buttons:
+            button.configure(state=move)
 
     def _set_status(self, text: str, color: str) -> None:
         self.link_var.set(text)
@@ -424,7 +616,14 @@ class BusApp(tk.Tk):
         # ポートを開いた瞬間にリセットがかかっても、setup が終わるまで待つ。
         self.after(400, self._kickoff)
 
-    def _disconnect(self) -> None:
+    def _disconnect(self, send_off: bool = True) -> None:
+        # 切る前にトルクを落とす。ウィンドウを閉じたあとも軸が保持しないように。
+        if send_off and self.ser is not None:
+            self._send("torque 0")
+            time.sleep(0.25)
+        self.armed = False
+        self._wait_cmd = None
+        self._slider_ready = False
         self._stop.set()
         thread = self._thread
         if thread is not None and thread is not threading.current_thread():
@@ -460,7 +659,14 @@ class BusApp(tk.Tk):
         except ValueError:
             messagebox.showwarning("ID", "ID は 0 から 254 です。254 は 1 台だけの同報です。")
             return False
-        return self._send(f"id {servo_id}")
+        if not self._send(f"id {servo_id}"):
+            return False
+        if servo_id != self._sent_id:
+            # ファームは宛先が変わると出力中を捨てる。バーはもう一度トルク ON が要る。
+            self.armed = False
+            self._set_buttons()
+        self._sent_id = servo_id
+        return True
 
     def _kickoff(self) -> None:
         if not self.connected:
@@ -483,7 +689,102 @@ class BusApp(tk.Tk):
 
     def _scan(self) -> None:
         if self._send_id():
-            self._send("scan")
+            self._send_wait("scan", "scan")
+
+    def _poll_fb(self) -> None:
+        # 位置の定期読み。操作の途中には挟まない。ログは同じ 1 行を更新する。
+        if self.connected and self._wait_cmd is None and not self._closing:
+            self._send("fb")
+        if not self._closing:
+            self.after(500, self._poll_fb)
+
+    def _motion_args(self) -> tuple[int, int, int] | None:
+        try:
+            limit = int(self.limit_var.get(), 10)
+            speed = int(self.speed_var.get(), 10)
+            acc = int(self.acc_var.get(), 10)
+        except ValueError:
+            messagebox.showwarning("数値", "トルク制限、速度、加速度は整数です。")
+            return None
+        if not (0 <= limit <= 1000 and 1 <= speed <= 32767 and 0 <= acc <= 254):
+            messagebox.showwarning(
+                "数値",
+                "トルク制限は 0〜1000、速度は 1〜32767、加速度は 0〜254 です。速度 0 は最高速になるので使えません。",
+            )
+            return None
+        return limit, speed, acc
+
+    def _send_wait(self, line: str, cmd: str) -> bool:
+        if self._wait_cmd is not None:
+            return False
+        if not self._send(line):
+            return False
+        self._wait_cmd = cmd
+        return True
+
+    def _finish_wait(self, cmd: str) -> None:
+        if self._wait_cmd == cmd:
+            self._wait_cmd = None
+
+    def _arm(self) -> None:
+        args = self._motion_args()
+        if args is None or not self._send_id():
+            return
+        limit, speed, acc = args
+        self._send_wait(f"arm {limit} {speed} {acc}", "arm")
+
+    def _torque_off(self) -> None:
+        if self.connected:
+            self._send("torque 0")
+
+    def _on_slider(self, value: str) -> None:
+        self._show_slider(int(float(value)))
+
+    def _show_slider(self, counts: int) -> None:
+        self.slider_caption.set(f"{counts}    中点から {fmt_deg(counts - 2048)}")
+
+    def _on_slider_release(self, _event: tk.Event) -> None:
+        if self.armed:
+            self._move_slider()
+
+    def _move_slider(self) -> None:
+        if not self.armed:
+            self._set_status("先にトルク ON", WARN)
+            return
+        try:
+            if self._servo_id() != self._sent_id:
+                self._set_status("ID を変えたので、もう一度トルク ON", WARN)
+                return
+        except ValueError:
+            self._set_status("ID は 0 から 254 です", WARN)
+            return
+        target = int(self.slider_var.get())
+        self._move_to(target)
+
+    def _jog(self, deg: float) -> None:
+        if not self.armed:
+            return
+        base = self._pos if self._pos is not None else int(self.slider_var.get())
+        target = max(-32767, min(32767, base + counts_from_deg(deg)))
+        if 0 <= target <= 4095:
+            self.slider_var.set(target)
+            self._show_slider(target)
+        self._move_to(target)
+
+    def _move_to(self, target: int) -> None:
+        if self._pos is not None and abs(target - self._pos) > CONFIRM_COUNTS:
+            if not messagebox.askokcancel(
+                "大きな移動",
+                f"現在 {self._pos} から {target} へ動きます（{fmt_deg(target - self._pos)}）。",
+            ):
+                return
+        self._send_wait(f"move {target}", "move")
+
+    def _sync_slider(self, pos: int) -> None:
+        # バーは 1 周分。範囲の外は数値だけ出して、バーは動かさない。
+        if 0 <= pos <= 4095:
+            self.slider_var.set(pos)
+            self._show_slider(pos)
 
     def _reader(self) -> None:
         ser = self.ser
@@ -534,13 +835,15 @@ class BusApp(tk.Tk):
             self._on_hello(kv)
         elif kind == "info":
             self._on_info(kv)
+        elif kind == "fb":
+            self._on_fb(kv)
         elif kind == "ok":
             self._on_ok(kv)
         elif kind == "err":
             self._on_err(kv)
         elif kind == "dead":
             self._push_note(f"ポートが落ちました: {kv.get('text', '')}", "bad")
-            self._disconnect()
+            self._disconnect(send_off=False)
         elif kind == "log":
             self._push_note(kv.get("text", ""), "warn")
 
@@ -609,20 +912,65 @@ class BusApp(tk.Tk):
                 baud=baud,
                 raw_rx=raw_rx,
                 extras={"n": kv.get("n", "")},
-            )
+            ),
+            live=is_live_read(tx),
         )
 
     def _on_info(self, kv: dict[str, str]) -> None:
         if kv.get("ok") != "1":
             self._set_status("INFO を読めませんでした", BAD)
             return
+        fw = kv.get("fw", "—")
+        self.live["fw"].configure(text=f"{fw}    {kv.get('baud_bps')} bps")
         self._set_status(
-            f"INFO  ID {kv.get('id')}  {kv.get('baud_bps')} bps  fw {kv.get('fw')}",
+            f"INFO  ID {kv.get('id')}  {kv.get('baud_bps')} bps  fw {fw}",
             GOOD,
         )
 
+    def _on_fb(self, kv: dict[str, str]) -> None:
+        if kv.get("ok") != "1":
+            return
+        pos_raw = _num(kv, "pos")
+        spd_raw = _num(kv, "spd")
+        load_raw = _num(kv, "load")
+        goal_raw = _num(kv, "goal")
+        if None in (pos_raw, spd_raw, load_raw, goal_raw):
+            return
+        pos = decode_bit15(pos_raw)
+        goal = decode_bit15(goal_raw)
+        self._pos = pos
+        self._show_position(pos, pos_raw)
+        if not self._slider_ready:
+            self._sync_slider(pos)
+            self._slider_ready = True
+        torque = _num(kv, "torque") or 0
+        # 保護でサーボが自分から切ることがある。表示だけ出力中のままにしない。
+        if self.armed and torque == 0 and self._wait_cmd != "arm":
+            self.armed = False
+            self._set_buttons()
+            self._set_status("サーボがトルクを切りました", WARN)
+        volt = _num(kv, "volt") or 0
+        temp = _num(kv, "temp") or 0
+        curr = _num(kv, "curr") or 0
+        status = _num(kv, "status") or 0
+        moving = _num(kv, "moving") or 0
+        self.live["goal"].configure(text=f"{goal}    {fmt_deg(goal - 2048)}")
+        self.live["spd"].configure(text=str(decode_bit15(spd_raw)))
+        self.live["load"].configure(text=f"{decode_bit10(load_raw) / 10.0:+.1f}%")
+        self.live["volt"].configure(text=f"{volt / 10.0:.1f} V")
+        self.live["temp"].configure(text=f"{temp} °C", fg=WARN if temp >= 60 else TEXT)
+        self.live["curr"].configure(text=f"{curr * 6.5:.0f} mA")
+        self.live["torque"].configure(text=TORQUE_NAME.get(torque, str(torque)))
+        self.live["moving"].configure(text="移動中" if moving else "停止")
+        self.live["status"].configure(text="0 正常" if status == 0 else str(status), fg=TEXT if status == 0 else BAD)
+
+    def _show_position(self, pos: int, raw: int) -> None:
+        self.big_pos.configure(text=fmt_deg(pos - 2048))
+        self.big_sub.configure(text=f"中点から    {pos} count    raw {raw}")
+
     def _on_ok(self, kv: dict[str, str]) -> None:
         cmd = kv.get("cmd", "")
+        self._finish_wait(cmd)
         if cmd == "ping":
             st = kv.get("st", "?")
             color = GOOD if st == "0" else WARN
@@ -632,27 +980,69 @@ class BusApp(tk.Tk):
                 self._set_status(f"応答したボーレート {kv.get('baud')} bps。このまま続けます", GOOD)
             else:
                 self._set_status("どのボーレートでも応答なし。115200 に戻しました", BAD)
+        elif cmd == "arm":
+            raw = _num(kv, "pos")
+            if raw is not None:
+                pos = decode_bit15(raw)
+                self._pos = pos
+                self._sync_slider(pos)
+                self._slider_ready = True
+                self._show_position(pos, raw)
+            self.armed = True
+            self._set_buttons()
+            self._set_status(f"トルク ON  保持 {kv.get('pos')}", GOOD)
+        elif cmd == "torque" and kv.get("value") == "0":
+            self.armed = False
+            self._set_buttons()
+            self._set_status("トルク OFF", MUTED)
+        elif cmd == "move":
+            self._set_status(f"目標 {kv.get('pos')}  raw {kv.get('raw')}", GOOD)
+        elif cmd == "id":
+            self._set_buttons()
 
     def _on_err(self, kv: dict[str, str]) -> None:
         cmd = kv.get("cmd", "?")
         msg = kv.get("msg", "")
+        self._finish_wait(cmd)
         if cmd == "self":
             self._push_note("チェックサム自己検査に失敗", "bad")
-        self._set_status(f"ERR {cmd} {msg}".strip(), BAD)
+        reasons = {
+            "torque_off": "トルクが入っていないので、位置は送っていません",
+            "timeout": "サーボが応答しません",
+            "bad_arg": "範囲外の数値です",
+            "use_arm_or_off": "トルク ON は保持ボタンだけが行います",
+            "read_pos": "現在位置を読めなかったので、トルクは入れていません",
+            "write_goal": "目標の書き込みに失敗したので、切断を試みました",
+        }
+        self._set_status(reasons.get(msg, f"ERR {cmd} {msg}".strip()), BAD)
+        if cmd == "arm":
+            self.armed = False
+            self._set_buttons()
 
     def _push_note(self, text: str, tone: str) -> None:
         self._push(TraceRow(kind="note", tone=tone, when=time.strftime("%H:%M:%S"), note=text))
 
-    def _push(self, row: TraceRow) -> None:
-        self._rows.insert(0, row)
-        del self._rows[MAX_ROWS:]
-        self._render()
+    def _push(self, row: TraceRow, live: bool = False) -> None:
+        replaced = False
+        if live:
+            row.extras["live"] = "1"
+            for index, old in enumerate(self._rows):
+                if old.extras.get("live") == "1":
+                    self._rows[index] = row
+                    replaced = True
+                    break
+        if not replaced:
+            self._rows.insert(0, row)
+            del self._rows[MAX_ROWS:]
+        # 定期読みの更新で、見ている場所を先頭へ引き戻さない。
+        self._render(follow=not replaced)
 
     def _clear(self) -> None:
         self._rows.clear()
         self._render()
 
-    def _render(self) -> None:
+    def _render(self, follow: bool = True) -> None:
+        view = self.trace.yview()
         self.trace.delete("1.0", "end")
         for row in self._rows:
             if row.kind == "note":
@@ -662,7 +1052,10 @@ class BusApp(tk.Tk):
             else:
                 self._render_bus(row)
             self.trace.insert("end", "\n")
-        self.trace.see("1.0")
+        if follow:
+            self.trace.see("1.0")
+        elif view:
+            self.trace.yview_moveto(view[0])
 
     def _render_note(self, row: TraceRow) -> None:
         start = self._line_start()

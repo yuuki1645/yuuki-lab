@@ -1,0 +1,2 @@
+# bus_gui.py。ATOM S3R の USB CDC を開く。
+pyserial>=3.5

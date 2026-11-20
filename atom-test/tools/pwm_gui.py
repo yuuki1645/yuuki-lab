@@ -5,7 +5,7 @@ RDS51150 の机上試験。ATOM S3R 底面の G5〜G8 へ出す PWM を、スラ
 ファーム（atom-test の環境 pwm）がパルスを出す。この GUI は行テキストで角度を渡す。
 接続しただけではパルスは出ない。出力 ON のあいだ、スライダを動かすと幅が変わる。
 
-    0.0° = 500 µs、135.0° = 1500 µs、270.0° = 2500 µs、周期 20 ms。
+    0.0° = 500 µs、135.0° = 1500 µs、270.0° = 2500 µs、フレームは 330 Hz。
     角度は 0.1° 単位の整数（1350 = 135.0°）。ファームと同じ式。
 
 起動:
@@ -28,7 +28,7 @@ import serial.tools.list_ports
 
 BAUD = 115200
 # ファームの tenthsToPulse / pulseToDuty と同じ。表示が実パルスとずれないようにする。
-PERIOD_US = 20_000
+HZ = 330
 BITS = 14
 DUTY_MAX = (1 << BITS) - 1
 CENTER_X10 = 1350
@@ -61,8 +61,9 @@ def pulse_us(x10: int) -> int:
     return 500 + (x10 * 2000 + 1350) // 2700
 
 
-def duty_counts(us: int) -> int:
-    return (us * DUTY_MAX + PERIOD_US // 2) // PERIOD_US
+def duty_counts(us: int, hz: int = HZ) -> int:
+    """ファームの pulseToDuty と同じ。周期の整数 µs には丸めない。"""
+    return (us * hz * DUTY_MAX + 500_000) // 1_000_000
 
 
 def _self_check() -> None:
@@ -72,10 +73,11 @@ def _self_check() -> None:
     assert pulse_us(2700) == 2500
     assert pulse_us(400) == 796
     assert pulse_us(2300) == 2204
-    # 14 ビット、20 ms。中点・両端のデューティ。ファームの pulseToDuty と同じ。
-    assert duty_counts(500) == 410
-    assert duty_counts(1500) == 1229
-    assert duty_counts(2500) == 2048
+    # 14 ビット、330 Hz。中点と両端。最長 2500 µs は 1 周期（約 3030 µs）に収まる。
+    assert duty_counts(500) == 2703
+    assert duty_counts(1500) == 8110
+    assert duty_counts(2500) == 13516
+    assert 2500 * HZ < 1_000_000
 
 
 def is_atom_hwid(hwid: str | None) -> bool:
@@ -185,7 +187,7 @@ class PwmApp(tk.Tk):
         self.state_var = tk.StringVar(value="パルス停止")
         self.state_label = tk.Label(status, textvariable=self.state_var, bg=CARD, fg=MUTED, font=MONO)
         self.state_label.pack(side="left")
-        self.hz_var = tk.StringVar(value="50 Hz 待ち")
+        self.hz_var = tk.StringVar(value="330 Hz 待ち")
         tk.Label(status, textvariable=self.hz_var, bg=CARD, fg=MUTED, font=FONT).pack(side="right")
 
         row = tk.Frame(self, bg=BG)
@@ -270,7 +272,7 @@ class PwmApp(tk.Tk):
         self.log_text.pack(fill="both", expand=True, pady=(4, 0))
 
         hint = (
-            "信号は 3.3 V、周期 20 ms。中点 135.0° はハイ 1500 µs。"
+            "信号は 3.3 V、フレームは 330 Hz（約 3.03 ms）。中点 135.0° はハイ 1500 µs。"
             " サーボ電源は基板側。GND は共通。USB の 5 V では RDS51150 は動かない。"
             " 脚に付いたままなら 40°未満と 230°超はメカ端。Esc と正面ボタンでも出力 OFF。"
         )
@@ -400,7 +402,7 @@ class PwmApp(tk.Tk):
         self.connect_btn.configure(text="接続")
         self.link_var.set("未接続")
         self.link_label.configure(fg=MUTED)
-        self.hz_var.set("50 Hz 待ち")
+        self.hz_var.set("330 Hz 待ち")
         self._paint_output()
 
     def _reader(self) -> None:

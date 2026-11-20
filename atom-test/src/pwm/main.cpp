@@ -5,12 +5,12 @@
  *   0°   = 500 µs
  *   135° = 1500 µs（中点）
  *   270° = 2500 µs
- * フレームは 20 ms（50 Hz）。8Servos 経由の本線も、幅を µs で指定している。
- * オシロで基板を見るとき、周期 20 ms のハイ時間をそのまま角度に読める。
+ * フレームは 330 Hz（周期 約 3030 µs）。角度はハイ時間だけで決まる。
+ * 270° の 2500 µs でも、1 周期の中に収まる。
+ * オシロでは、この周期のハイ時間をそのまま読む。
  *
  * ESP32-S3 の LEDC は、この Arduino コアでは 14 ビットまで。
- * 20 ms / 16384 ≒ 1.22 µs 刻み。0.1° は約 0.74 µs なので、隣の目盛りが
- * 同じパルスになることがある。GUI はファームが返した µs を表示する。
+ * 3030 µs / 16384 ≒ 0.185 µs 刻み。GUI はファームが返した µs を表示する。
  *
  * 起動しただけではピンを駆動しない。入力＋内部プルダウンにして、
  * 信号が浮いてサーボが震えないようにする。USB の「出力 ON」以降だけ出す。
@@ -37,8 +37,7 @@ static constexpr int kLedcCh[4] = {0, 2, 4, 6};
 static constexpr int kPinButton = 41;
 
 static constexpr int kCount = 4;
-static constexpr uint32_t kHz = 50;
-static constexpr uint32_t kPeriodUs = 1000000UL / kHz;  // 20000
+static constexpr uint32_t kHz = 330;
 static constexpr int kBits = 14;  // ESP32-S3 の LEDC 上限。16 だと ledcSetup が失敗する
 static_assert(kBits <= SOC_LEDC_TIMER_BIT_WIDE_NUM, "LEDC resolution");
 static constexpr uint32_t kDutyMax = (1u << kBits) - 1u;
@@ -48,6 +47,8 @@ static constexpr int kMaxX10 = 2700;  // 270.0°
 static constexpr int kCenterX10 = 1350;
 static constexpr uint16_t kPulseMinUs = 500;
 static constexpr uint16_t kPulseMaxUs = 2500;
+// 最長パルスが 1 周期を超えると、ハイのまま次のフレームに食い込む。
+static_assert(kPulseMaxUs * kHz < 1000000UL, "pulse longer than period");
 
 static constexpr uint32_t kButtonMs = 30;
 
@@ -76,10 +77,17 @@ static uint16_t tenthsToPulse(int x10) {
     return static_cast<uint16_t>(us);
 }
 
-/** ハイ時間 → 14 ビットのデューティ。20 ms が 16383。 */
+/**
+ * ハイ時間 → 14 ビットのデューティ。
+ * 1000000/330 は 3030 で、端数 0.3 µs が落ちる。Hz から直接割る。
+ * タイマが 330 ちょうどにならないときは、実際の周波数で幅を合わせる。
+ */
 static uint32_t pulseToDuty(uint16_t us) {
+    if (gActualHz == 0) {
+        return 0;
+    }
     return static_cast<uint32_t>(
-        (static_cast<uint64_t>(us) * kDutyMax + (kPeriodUs / 2)) / kPeriodUs);
+        (static_cast<uint64_t>(us) * gActualHz * kDutyMax + 500000ULL) / 1000000ULL);
 }
 
 static bool mapLooksRight() {

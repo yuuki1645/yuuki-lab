@@ -1,0 +1,2 @@
+# servo_gui.py。CoreS3 の USB CDC を開く。ATOM の USB は開かない。
+pyserial>=3.5

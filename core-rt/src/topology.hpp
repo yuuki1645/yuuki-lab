@@ -9,7 +9,10 @@
  *
  * 1行が PaHub の1チャンネル。アドレス（角度 0x36、電流 0x41、
  * すねのサーボ 0x25、足裏 0x28）は表に書かない。
- * 股とひざのサーボは PaHub の先ではなく、Grove 直下 0x26 の出力 0、1、2。
+ * 直下 0x26 の出力 0 が股ロール、1 が股ピッチ。
+ * 出力 2 は右脚だけかかとロール。以前ここはひざだった。
+ * 両脚のひざとかかとピッチは SM105BL（RS485）なので、PWM の経路は空。
+ * 左のかかとロールだけ、すね PaHub の先の 8Servos 0x25 出力 7。
  *
  * 軸の番号は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。
  */
@@ -45,8 +48,10 @@ static constexpr uint8_t kSlotIna = 2;
 static constexpr uint8_t kSlotAnkle = 3;
 static constexpr uint8_t kSlotFoot = 4;
 
-/** 股・ひざは直下 0x26。並びは股ロール、股ピッチ、ひざ。 */
+/** 直下 0x26。0 股ロール、1 股ピッチ。添字 2 は fillLegRoutes がひざに使うが、直後に外す。 */
 static constexpr uint8_t kDirectServoOut[3] = {0, 1, 2};
+/** 右かかとロールが使う、直下 0x26 の出力。 */
+static constexpr uint8_t kRightAnkleRollOut = 2;
 
 struct HubSlot {
     uint8_t kind;
@@ -214,12 +219,29 @@ inline void fillLegRoutes(JointRoute* joint, uint8_t thighHub, const HubSlot* th
     }
 }
 
+/** ひざ・かかとピッチは SM105BL。8Servos へは出さない。 */
+inline void clearServoRoute(JointRoute& joint) {
+    joint.act_hub = 0;
+    joint.act_ch = -1;
+    joint.act_addr = 0;
+    joint.servo_ch = 0;
+}
+
 inline void fillRightLegRoutes(JointRoute* joint) {
     fillLegRoutes(joint, kHubRightThigh, kRightThigh, kHubRightShin, kRightShin);
+    // ひざが退いた直下 0x26 の出力 2 を、かかとロールに使う。すねの 0x25 出力 7 ではない。
+    joint[kAxisAnkleRoll].act_hub = 0;
+    joint[kAxisAnkleRoll].act_ch = -1;
+    joint[kAxisAnkleRoll].act_addr = kRootServoAddr;
+    joint[kAxisAnkleRoll].servo_ch = kRightAnkleRollOut;
+    clearServoRoute(joint[kAxisKnee]);
+    clearServoRoute(joint[kAxisAnklePitch]);
 }
 
 inline void fillLeftLegRoutes(JointRoute* joint) {
     fillLegRoutes(joint, kHubLeftThigh, kLeftThigh, kHubLeftShin, kLeftShin);
+    clearServoRoute(joint[kAxisKnee]);
+    clearServoRoute(joint[kAxisAnklePitch]);
 }
 
 inline void fillDefaultTopology(JointRoute* joints, FootRoute* feet) {

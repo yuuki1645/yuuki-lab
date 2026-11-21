@@ -16,12 +16,16 @@
  * 先にトルクだけ入れると 0 カウントへ回る。
  *
  * 1 行 1 コマンド。応答も 1 行。
- *   hello / ping / info / id N / stream HZ / hb
+ *   hello / ping / info / id N / stream HZ / watch 0|1 / hb
  *   apply LIMIT SPEED ACC / arm LIMIT SPEED ACC / damp LIMIT
  *   move COUNTS / torque 0
  * hb は CoreS3 が 50 ms ごとに足す生存確認で、返事は出さない。
  * 行が 200 ms 来なければ、出力中ならトルクを切る。
- * 20 Hz の監視は stream 20。フィードバックはアドレス 40 から 31 バイト。
+ * 20 Hz の監視は stream 20（今選んでいる ID だけ）。
+ * watch 1 は腰の本線用。ID 1〜4 を 50 ms ごとに読み、トルクは入れない。
+ *   1 右ひざ、2 右かかとピッチ、3 左ひざ、4 左かかとピッチ。
+ * いない ID は 20 ms 待たず、500 ms に 1 回だけ短いタイムアウトで探る。
+ * フィードバックはアドレス 40 から 31 バイト。
  */
 
 #include <Arduino.h>
@@ -51,6 +55,21 @@ static uint32_t gLastHostMs = 0;
 static uint32_t gNextOffMs = 0;
 // arm または damp が成功したあとのみ move を通す。切断コマンドで戻す。
 static bool gOutputOn = false;
+
+// 腰の CoreS3 が見る 4 台。左脚は未実装でも ID だけ予約してある。
+static constexpr uint8_t kWatchIds[] = {1, 2, 3, 4};
+static constexpr int kWatchCount = 4;
+// 応答が来ている ID は毎周期。いない ID を 30 ms 待つと、右の 2 台の 20 Hz が崩れる。
+static constexpr uint32_t kWatchPeriodMs = 50;
+static constexpr uint32_t kWatchLiveTimeoutMs = 20;
+static constexpr uint32_t kWatchMissTimeoutMs = 8;
+static constexpr uint32_t kWatchRetryMs = 500;
+static bool gWatch = false;
+static uint32_t gNextWatchMs = 0;
+static bool gWatchOk[kWatchCount];
+static uint8_t gWatchMiss[kWatchCount];
+static uint32_t gWatchRetryAt[kWatchCount];
+static uint8_t gWatchProbe = 0;
 
 // Grove が本線。USB はモニタ用で、ホストがいないときは捨てる。
 static void emitRaw(const char* text, size_t n) {
@@ -154,8 +173,91 @@ static void printFb(const SmsReply& reply) {
           u16le(d + 29));
 }
 
+static void emitSmFail(uint8_t id) {
+    emitf("@sm id=%u ok=0\n", id);
+}
+
+static void emitSmOk(uint8_t id, const SmsReply& reply) {
+    const uint8_t* d = reply.data;
+    // goal はアドレス 42（指令位置）。pos はアドレス 56（現在位置）。生の 16bit のまま渡す。
+    // volt は 0.1 V、curr は 6.5 mA 単位。角度への換算は腰がやる。
+    emitf("@sm id=%u ok=1 goal=%u pos=%u volt=%u curr=%u\n",
+          id,
+          u16le(d + 2),
+          u16le(d + 16),
+          d[22],
+          u16le(d + 29));
+}
+
+static void readWatchSlot(int index, uint32_t timeoutMs) {
+    const uint8_t id = kWatchIds[index];
+    smsSetId(id);
+    SmsReply reply;
+    if (!smsReadFor(kRegBlock, kRegBlockLen, &reply, timeoutMs)) {
+        // 1 回の遅れでカードを消さない。連続して落ちてから欠測にする。
+        if (gWatchOk[index] && gWatchMiss[index] < 2) {
+            gWatchMiss[index]++;
+            return;
+        }
+        gWatchOk[index] = false;
+        gWatchMiss[index] = 0;
+        gWatchRetryAt[index] = millis() + kWatchRetryMs;
+        emitSmFail(id);
+        return;
+    }
+    gWatchOk[index] = true;
+    gWatchMiss[index] = 0;
+    gWatchRetryAt[index] = 0;
+    emitSmOk(id, reply);
+}
+
+// 50 ms に 1 巡。応答中の ID は毎周、欠測は 1 台だけ短い待ちで探る。
+static void pollWatch() {
+    if (!gWatch) {
+        return;
+    }
+    const uint32_t now = millis();
+    if (static_cast<int32_t>(now - gNextWatchMs) < 0) {
+        return;
+    }
+    gNextWatchMs = now + kWatchPeriodMs;
+
+    // この周期ですでに 1 行出した ID は、欠測ループで重ねない。
+    bool sent[kWatchCount] = {};
+    for (int i = 0; i < kWatchCount; ++i) {
+        if (!gWatchOk[i]) {
+            continue;
+        }
+        readWatchSlot(i, kWatchLiveTimeoutMs);
+        sent[i] = true;
+    }
+
+    int probe = -1;
+    for (int n = 0; n < kWatchCount; ++n) {
+        const int i = (gWatchProbe + n) % kWatchCount;
+        if (sent[i] || gWatchOk[i]) {
+            continue;
+        }
+        if (static_cast<int32_t>(now - gWatchRetryAt[i]) < 0) {
+            emitSmFail(kWatchIds[i]);
+            continue;
+        }
+        if (probe < 0) {
+            probe = i;
+        } else {
+            // 同じ周期に欠測を 2 台待たない。次の周期へ回す。
+            emitSmFail(kWatchIds[i]);
+        }
+    }
+    if (probe >= 0) {
+        gWatchProbe = static_cast<uint8_t>((probe + 1) % kWatchCount);
+        readWatchSlot(probe, kWatchMissTimeoutMs);
+    }
+}
+
 static void pollFeedback() {
-    if (gStreamHz == 0) {
+    // watch がバスを使うあいだ、単体の stream は重ねない。
+    if (gWatch || gStreamHz == 0) {
         return;
     }
     const uint32_t now = millis();
@@ -386,7 +488,33 @@ static void handleLine(char* line) {
         }
         gStreamHz = (uint8_t)a;
         gNextStreamMs = millis();
+        // 単体試験の stream と、4 台の watch は同時にバスを使わない。
+        if (gStreamHz != 0) {
+            gWatch = false;
+        }
         emitf("@ok cmd=stream value=%d\n", a);
+    } else if (sscanf(line, "watch %d", &a) == 1) {
+        if (!rangeOk(a, 0, 1)) {
+            printErr("watch", "bad_arg");
+            return;
+        }
+        // 腰は 1 秒ごとに同じ watch 1 を繰り返す。そのたびに見つけ直しすると、表示が切れる。
+        const bool was = gWatch;
+        gWatch = a == 1;
+        if (gWatch && !was) {
+            gStreamHz = 0;
+            gNextWatchMs = millis();
+            gWatchProbe = 0;
+            for (int i = 0; i < kWatchCount; ++i) {
+                gWatchOk[i] = false;
+                gWatchMiss[i] = 0;
+                gWatchRetryAt[i] = 0;
+            }
+        }
+        if (!gWatch) {
+            gStreamHz = 0;
+        }
+        emitf("@ok cmd=watch value=%d\n", a);
     } else if (sscanf(line, "apply %d %d %d", &a, &b, &c) == 3) {
         cmdApply(a, b, c);
     } else if (sscanf(line, "arm %d %d %d", &a, &b, &c) == 3) {
@@ -475,5 +603,6 @@ void setup() {
 void loop() {
     pollLink();
     pollHostTimeout();
+    pollWatch();
     pollFeedback();
 }

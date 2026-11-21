@@ -102,3 +102,41 @@ export function legJoint(side: LegSide, row: number): RightLegJoint {
 
 /** 実機 PWM ボタン用。右脚だけ、従来の ch 0〜4。 */
 export const RIGHT_LEG_JOINTS: RightLegJoint[] = LEG_ROWS.map((_, row) => legJoint("right", row));
+
+/**
+ * ひざピッチとかかとピッチは SM105BL（RS485）。
+ * 右ひざ 1、右かかとピッチ 2、左ひざ 3、左かかとピッチ 4。
+ * 論理関節は右が 0〜4、左が 5〜9。ひざは 2、かかとピッチは 3。
+ */
+export function isSm105Channel(ch: number): boolean {
+  return sm105ServoId(ch) != null;
+}
+
+export function sm105ServoId(ch: number): number | null {
+  switch (ch) {
+    case 2:
+      return 1;
+    case 3:
+      return 2;
+    case 7:
+      return 3;
+    case 8:
+      return 4;
+    default:
+      return null;
+  }
+}
+
+/**
+ * バーと右グラフの角度窓。届いた数値は範囲外でもそのまま表示する。
+ * ひざは後ろへ折れる向きが正。かかとはつま先を上げる向きが正。真下は 0°。
+ */
+export function sm105AngleWindow(ch: number): { min: number; max: number } | null {
+  if (ch === 2 || ch === 7) {
+    return { min: -30, max: 150 };
+  }
+  if (ch === 3 || ch === 8) {
+    return { min: -60, max: 60 };
+  }
+  return null;
+}

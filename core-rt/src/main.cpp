@@ -4,6 +4,7 @@
  * Core 1 が CAN と指令。Core 0 が USB。校正の正本はここ。配線表は topology.hpp。
  * 内部 I2C（G12/G11）は AW9523 で Grove の 5V を出すときだけ使う。
  * Unit CAN は PORT.C。送信 GPIO17、受信 GPIO18。5V を出さないとトランシーバは黙る。
+ * PORT.B は RS485 ベースの ATOM。ひざピッチとかかとピッチの SM105BL を読む。
  * IMU と RTC は読まない。脚の I2C はここでは開かない。
  *
  * 作業モード:
@@ -23,6 +24,7 @@
 
 #include "can_host.hpp"
 #include "mount_bias.hpp"
+#include "sms_link.hpp"
 #include "topology.hpp"
 #include "usb_proto.hpp"
 
@@ -132,6 +134,63 @@ static int gMapSaveJoint = -1;
 // ---------------------------------------------------------------------------
 // 角度と校正
 // ---------------------------------------------------------------------------
+/** ひざ・かかとピッチは SM105BL。PWM の 8Servos には出さない。 */
+static bool isSmsJoint(int joint) {
+    return joint == kAxisKnee || joint == kAxisAnklePitch || joint == kAxesPerLeg + kAxisKnee ||
+           joint == kAxesPerLeg + kAxisAnklePitch;
+}
+
+static uint8_t smsIdForJoint(int joint) {
+    if (joint == kAxisKnee) {
+        return 1;
+    }
+    if (joint == kAxisAnklePitch) {
+        return 2;
+    }
+    if (joint == kAxesPerLeg + kAxisKnee) {
+        return 3;
+    }
+    if (joint == kAxesPerLeg + kAxisAnklePitch) {
+        return 4;
+    }
+    return 0;
+}
+
+/**
+ * この 4 軸の USB 値をサーボのフィードバックで置き換える。
+ * 指令は目標角、補正は現在角。生角は出さない（as_ok でも raw は NaN）。
+ * 応答が無い軸はエンコーダ値も消す。135° の PWM 指令が補正に見えないようにする。
+ */
+static void applySmsTelemetry(Snapshot& snap) {
+    for (int joint = 0; joint < kCoreJoints; ++joint) {
+        const uint8_t id = smsIdForJoint(joint);
+        if (id == 0) {
+            continue;
+        }
+        SmsSample sample{};
+        const bool known = smsLinkRead(id, &sample);
+        snap.raw_deg[joint] = NAN;
+        snap.unwrap_deg[joint] = NAN;
+        snap.map_ok[joint] = 0;
+        snap.mag[joint] = 255;
+        snap.agc[joint] = 255;
+        if (!known || !sample.ok) {
+            snap.as_ok[joint] = 0;
+            snap.ina_ok[joint] = 0;
+            snap.corr_deg[joint] = NAN;
+            continue;
+        }
+        // cmd は NaN にしない。JSON に NaN が混ざると画面側の受信が落ちる。
+        snap.cmd_deg[joint] = sample.cmd_deg;
+        snap.corr_deg[joint] = sample.pos_deg;
+        snap.as_ok[joint] = 1;
+        snap.volt[joint] = sample.volt_v;
+        snap.amp[joint] = sample.amp_a;
+        snap.watt[joint] = sample.volt_v * sample.amp_a;
+        snap.ina_ok[joint] = 1;
+    }
+}
+
 static float clampMove(float deg) {
     if (deg < kMoveMinDeg) {
         return kMoveMinDeg;
@@ -684,6 +743,8 @@ static void controlTask(void*) {
     uint32_t seq = 0;
     for (;;) {
         const uint32_t t0 = micros();
+        // CAN の前に行を空ける。RS485 の待ちは ATOM 側なので、ここは読んだ分だけ。
+        smsLinkPoll();
         canHostPoll();
         if (gIdentifyCan) {
             gIdentifyCan = 0;
@@ -749,8 +810,16 @@ static void controlTask(void*) {
             }
         }
         const uint32_t tState = micros();
+        applySmsTelemetry(snap);
         const uint32_t tAct0 = micros();
-        canHostSendMotion(gCmd, gOutMask, view.fault || view.overcurrent, gElectricalMask);
+        // 外した RDS51150 の端子へ、ひざ・かかとピッチの PWM を出さない。
+        uint16_t pwmMask = gOutMask;
+        for (int joint = 0; joint < kCoreJoints; ++joint) {
+            if (isSmsJoint(joint)) {
+                pwmMask = static_cast<uint16_t>(pwmMask & ~(1u << joint));
+            }
+        }
+        canHostSendMotion(gCmd, pwmMask, view.fault || view.overcurrent, gElectricalMask);
         const uint32_t tAct1 = micros();
         snap.seq = seq++;
         snap.t_period_us = t0 - prev;
@@ -872,7 +941,9 @@ void setup() {
     loadProfile();
     loadCal();
     // Unit CAN の 5V。出さないと PORT.C のトランシーバは動かない。
+    // PORT.B の ATOM（RS485）も同じ 5V で起動する。
     (void)enableGrovePower();
+    smsLinkBegin();
     (void)canHostStart(kCanTxPin, kCanRxPin);
 
     xTaskCreatePinnedToCore(controlTask, "rt", kRtStack, nullptr, 3, nullptr, kRtCore);

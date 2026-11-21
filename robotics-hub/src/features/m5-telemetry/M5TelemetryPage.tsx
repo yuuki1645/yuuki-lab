@@ -14,6 +14,7 @@ import { inaSelectValue, parseInaOption } from "./m5Route";
 import { ProfilePanel } from "./ProfilePanel";
 import { TopologyPanel } from "./TopologyPanel";
 import { RightLegTab } from "./RightLegTab";
+import { isSm105Channel } from "./rightLeg";
 import { M5CameraPane } from "./M5CameraPane";
 import { M5RecordBar } from "./M5RecordBar";
 import { M5RecordLibrary } from "./M5RecordLibrary";
@@ -370,11 +371,11 @@ export default function M5TelemetryPage() {
                     <Metric title="電流" color={M5_COLORS.amp} text={fmt(at(frame?.amp, j), "A")} />
                     <Metric title="電力" color={M5_COLORS.watt} text={fmt(at(frame?.watt, j), "W")} />
                   </div>
-                  <label className="m5__check">
+                  <label className="m5__check" title={isSm105Channel(j) ? "SM105BL は表示だけです。PWM は出しません。" : undefined}>
                     <input
                       type="checkbox"
-                      checked={Boolean(at(control?.out, j))}
-                      disabled={!canCmd}
+                      checked={isSm105Channel(j) ? false : Boolean(at(control?.out, j))}
+                      disabled={!canCmd || isSm105Channel(j)}
                       onChange={(e) => send({ op: "out", ch: j, on: e.target.checked })}
                     />
                     PWM 出力する
@@ -385,15 +386,18 @@ export default function M5TelemetryPage() {
                     min={100}
                     max={170}
                     step={0.5}
-                    disabled={!canCmd}
+                    disabled={!canCmd || isSm105Channel(j)}
                     value={at(control?.cmd, j) ?? 135}
-                    onChange={(e) => send({ op: "joint", ch: j, deg: Number(e.target.value) })}
+                    onChange={(e) => {
+                      if (isSm105Channel(j)) return;
+                      send({ op: "joint", ch: j, deg: Number(e.target.value) });
+                    }}
                   />
                   <label className="m5__check m5__check--warn">
                     <input
                       type="checkbox"
-                      checked={Boolean(at(control?.rand, j))}
-                      disabled={!canCmd}
+                      checked={isSm105Channel(j) ? false : Boolean(at(control?.rand, j))}
+                      disabled={!canCmd || isSm105Channel(j)}
                       onChange={(e) => send({ op: "random", ch: j, on: e.target.checked })}
                     />
                     ランダム動作

@@ -36,6 +36,11 @@ type Props = {
   policyOwned?: boolean;
   /** 補正バーの名前。Isaac では「補正（シミュ）」 */
   corrLabel?: string;
+  /**
+   * SM105BL。生角とズレは出さない。指令バーはドラッグしない。
+   * min/max はバーと右グラフの角度窓。真下 0° が窓の中に入る。
+   */
+  serial?: { min: number; max: number; servoId: number } | null;
   /** この関節のセンサが無い。枠は残し、操作と色だけ落とす */
   inactive?: boolean;
   onSelect: () => void;
@@ -49,8 +54,10 @@ function clampServo(v: number): number {
   return Math.round(Math.min(SERVO_MAX_DEG, Math.max(SERVO_MIN_DEG, v)) * 2) / 2;
 }
 
-function pct(v: number): number {
-  return ((v - SERVO_MIN_DEG) / (SERVO_MAX_DEG - SERVO_MIN_DEG)) * 100;
+function pct(v: number, min = SERVO_MIN_DEG, max = SERVO_MAX_DEG): number {
+  if (max <= min) return 0;
+  const t = (v - min) / (max - min);
+  return Math.min(100, Math.max(0, t * 100));
 }
 
 /** 生角バー。エンコーダは 0〜360° なので、指令バーの 100〜170° とは別スケール */
@@ -117,17 +124,25 @@ export function JointTripleBar({
   disabled,
   policyOwned = false,
   corrLabel = "補正",
+  serial = null,
   inactive = false,
   onSelect,
   onCommand,
 }: Props) {
-  const cmdVal = typeof cmd === "number" ? cmd : SERVO_MIN_DEG + (SERVO_MAX_DEG - SERVO_MIN_DEG) / 2;
+  const serialView = serial != null;
+  const angleMin = serial?.min ?? SERVO_MIN_DEG;
+  const angleMax = serial?.max ?? SERVO_MAX_DEG;
+  // RDS は指令が欠けると中立を仮に出す。SM105BL はフィードバックが無いとき仮の角度を出さない。
+  const hasCmd = typeof cmd === "number" && Number.isFinite(cmd);
+  const cmdVal = hasCmd ? cmd : serialView ? null : SERVO_MIN_DEG + (SERVO_MAX_DEG - SERVO_MIN_DEG) / 2;
   const corrVal = typeof corr === "number" && Number.isFinite(corr) ? corr : null;
   const rawVal = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
-  const err = corrVal != null ? corrVal - cmdVal : null;
+  const err = corrVal != null && cmdVal != null ? corrVal - cmdVal : null;
+  const fmtCmd = serialView ? fmtSigned : fmtDeg;
 
   const [drag, setDrag] = useState<number | null>(null);
   const shownCmd = drag ?? cmdVal;
+  const lockCmd = disabled || serialView;
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -137,10 +152,10 @@ export function JointTripleBar({
       if (!el) return null;
       const r = el.getBoundingClientRect();
       if (r.width <= 0) return null;
-      const t = (deg - SERVO_MIN_DEG) / (SERVO_MAX_DEG - SERVO_MIN_DEG);
-      return r.left + t * r.width;
+      const t = (deg - angleMin) / (angleMax - angleMin);
+      return r.left + Math.min(1, Math.max(0, t)) * r.width;
     },
-    []
+    [angleMin, angleMax]
   );
 
   const applyX = useCallback(
@@ -150,11 +165,11 @@ export function JointTripleBar({
       const r = el.getBoundingClientRect();
       if (r.width <= 0) return;
       const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-      const deg = clampServo(SERVO_MIN_DEG + t * (SERVO_MAX_DEG - SERVO_MIN_DEG));
+      const deg = clampServo(angleMin + t * (angleMax - angleMin));
       setDrag(deg);
       onCommand(deg);
     },
-    [onCommand]
+    [angleMin, angleMax, onCommand]
   );
 
   // iOS は CSS だけでは長押しメニューが残ることがある
@@ -174,6 +189,7 @@ export function JointTripleBar({
     <article
       className={
         "m5-jrow" +
+        (serialView ? " m5-jrow--sm105" : "") +
         (selected && !inactive ? " m5-jrow--on" : "") +
         (inactive ? " m5-jrow--idle" : "")
       }
@@ -186,24 +202,33 @@ export function JointTripleBar({
             <header className="m5-jrow__head">
               <h2>{joint.label}</h2>
               <span>ch{joint.ch}</span>
-              <span className={"m5-jrow__pwm" + ((pwmOn || policyOwned) && !inactive ? " m5-jrow__pwm--on" : "")}>
-                {inactive ? "未接続" : policyOwned ? "方策" : pwmOn ? "PWM ON" : "PWM OFF"}
+              {serialView ? <span className="m5-jrow__kind">SM105BL</span> : null}
+              <span
+                className={
+                  "m5-jrow__pwm" +
+                  ((serialView || pwmOn || policyOwned) && !inactive ? " m5-jrow__pwm--on" : "")
+                }
+              >
+                {inactive ? "未接続" : serialView ? "受信中" : policyOwned ? "方策" : pwmOn ? "PWM ON" : "PWM OFF"}
               </span>
             </header>
-            {/* 見出しの ch は論理関節。ここは PaHub と 8Servos の出力先 */}
-            <p className="m5-jrow__route" title="PWM の出力先。上の ch は論理関節番号です。">
+            {/* 見出しの ch は論理関節。RDS は PWM の出力先、SM105BL は RS485 の ID */}
+            <p
+              className="m5-jrow__route"
+              title={serialView ? "RS485 のサーボ ID。表示だけのフィードバックです。" : "PWM の出力先。上の ch は論理関節番号です。"}
+            >
               {routeLabel}
             </p>
           </div>
           <div className="m5-jrow__bars">
             {barOn.cmd ? (
-            <BarRow label="指令" value={fmtDeg(shownCmd)} color={LEG_BAR.cmd}>
+            <BarRow label="指令" value={fmtCmd(shownCmd)} color={LEG_BAR.cmd}>
             <div
               ref={trackRef}
-              className={"m5-bar m5-bar--cmd" + (disabled && !policyOwned ? " m5-bar--off" : "")}
+              className={"m5-bar m5-bar--cmd" + (!serialView && disabled && !policyOwned ? " m5-bar--off" : "")}
               onContextMenu={(e) => e.preventDefault()}
               onPointerDown={(e) => {
-                if (disabled) return;
+                if (lockCmd || shownCmd == null) return;
                 const tx = thumbX(shownCmd);
                 if (tx == null || Math.abs(e.clientX - tx) > THUMB_HIT_PX) return;
                 e.currentTarget.setPointerCapture(e.pointerId);
@@ -213,7 +238,7 @@ export function JointTripleBar({
                 setDrag(shownCmd);
               }}
               onPointerMove={(e) => {
-                if (disabled || !dragging.current) return;
+                if (lockCmd || !dragging.current) return;
                 applyX(e.clientX);
               }}
               onPointerUp={() => {
@@ -225,13 +250,18 @@ export function JointTripleBar({
                 setDrag(null);
               }}
             >
-              <i className="m5-bar__fill m5-bar__fill--hatch-cmd" style={{ width: `${pct(shownCmd)}%` }} />
-              <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd)}%` }} />
+              <i
+                className="m5-bar__fill m5-bar__fill--hatch-cmd"
+                style={{ width: shownCmd != null ? `${pct(shownCmd, angleMin, angleMax)}%` : "0%" }}
+              />
+              {shownCmd != null ? (
+                <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd, angleMin, angleMax)}%` }} />
+              ) : null}
             </div>
           </BarRow>
             ) : null}
 
-            {barOn.raw ? (
+            {!serialView && barOn.raw ? (
           <BarRow label="生角" value={fmtDeg(rawVal)} color={LEG_BAR.raw}>
             <div className="m5-bar">
               <i
@@ -242,15 +272,15 @@ export function JointTripleBar({
           </BarRow>
             ) : null}
 
-            {barOn.err ? (
+            {!serialView && barOn.err ? (
           <BarRow label="ズレ" value={fmtSigned(err)} color={LEG_BAR.err}>
             <div className="m5-bar m5-bar--err">
               {corrVal != null ? (
                 <i
                   className="m5-bar__fill m5-bar__fill--err"
                   style={{
-                    left: `${Math.min(pct(shownCmd), pct(corrVal))}%`,
-                    width: `${Math.max(0.8, Math.abs(pct(corrVal) - pct(shownCmd)))}%`,
+                    left: `${Math.min(pct(shownCmd ?? angleMin, angleMin, angleMax), pct(corrVal, angleMin, angleMax))}%`,
+                    width: `${Math.max(0.8, Math.abs(pct(corrVal, angleMin, angleMax) - pct(shownCmd ?? angleMin, angleMin, angleMax)))}%`,
                   }}
                 />
               ) : null}
@@ -259,11 +289,11 @@ export function JointTripleBar({
             ) : null}
 
             {barOn.corr ? (
-          <BarRow label={corrLabel} value={fmtDeg(corrVal)} color={LEG_BAR.corr}>
+          <BarRow label={corrLabel} value={serialView ? fmtSigned(corrVal) : fmtDeg(corrVal)} color={LEG_BAR.corr}>
             <div className="m5-bar">
               <i
                 className="m5-bar__fill m5-bar__fill--hatch-corr"
-                style={{ width: corrVal != null ? `${pct(corrVal)}%` : "0%" }}
+                style={{ width: corrVal != null ? `${pct(corrVal, angleMin, angleMax)}%` : "0%" }}
               />
             </div>
           </BarRow>
@@ -283,7 +313,15 @@ export function JointTripleBar({
             className="m5-spark m5-spark--row"
             height={112}
             showAxes
-            series={buildPlotSeries(plotOn, historyCmd, historyCorr, historyVolt, historyAmp)}
+            series={buildPlotSeries(
+              plotOn,
+              historyCmd,
+              historyCorr,
+              historyVolt,
+              historyAmp,
+              angleMin,
+              angleMax
+            )}
           />
         </div>
       </div>
@@ -297,7 +335,9 @@ function buildPlotSeries(
   historyCmd: Array<number | null | undefined>,
   historyCorr: Array<number | null | undefined>,
   historyVolt: Array<number | null | undefined>,
-  historyAmp: Array<number | null | undefined>
+  historyAmp: Array<number | null | undefined>,
+  angleMin: number,
+  angleMax: number
 ): SparkSeries[] {
   const series: SparkSeries[] = [];
   if (plotOn.cmd) {
@@ -305,8 +345,8 @@ function buildPlotSeries(
       key: "cmd",
       color: LEG_BAR.cmd,
       values: historyCmd,
-      yMin: SERVO_MIN_DEG,
-      yMax: SERVO_MAX_DEG,
+      yMin: angleMin,
+      yMax: angleMax,
       axis: "left",
       unit: "°",
     });
@@ -316,8 +356,8 @@ function buildPlotSeries(
       key: "corr",
       color: LEG_BAR.corr,
       values: historyCorr,
-      yMin: SERVO_MIN_DEG,
-      yMax: SERVO_MAX_DEG,
+      yMin: angleMin,
+      yMax: angleMax,
       axis: "left",
       unit: "°",
     });

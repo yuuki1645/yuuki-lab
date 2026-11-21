@@ -98,7 +98,7 @@ static bool pullPacket(uint8_t* buf, size_t* n, const uint8_t* echo, size_t echo
     return false;
 }
 
-static bool transact(uint8_t inst, const uint8_t* params, uint8_t nparams, SmsReply* reply) {
+static bool transact(uint8_t inst, const uint8_t* params, uint8_t nparams, SmsReply* reply, uint32_t timeoutMs) {
     uint8_t tx[40];
     const size_t txLen = buildPacket(gId, inst, params, nparams, tx);
     rememberTx(tx, txLen);
@@ -118,7 +118,7 @@ static bool transact(uint8_t inst, const uint8_t* params, uint8_t nparams, SmsRe
     size_t n = 0;
     bool echoSkipped = false;
     const uint32_t start = millis();
-    while ((uint32_t)(millis() - start) < kReplyTimeoutMs) {
+    while ((uint32_t)(millis() - start) < timeoutMs) {
         while (gBus.available() > 0 && n < sizeof(buf)) {
             buf[n++] = (uint8_t)gBus.read();
         }
@@ -182,12 +182,16 @@ uint16_t smsEncodeSigned15(int32_t value) {
 }
 
 bool smsPing(SmsReply* reply) {
-    return transact(0x01, nullptr, 0, reply);
+    return transact(0x01, nullptr, 0, reply, kReplyTimeoutMs);
 }
 
 bool smsRead(uint8_t addr, uint8_t len, SmsReply* reply) {
+    return smsReadFor(addr, len, reply, kReplyTimeoutMs);
+}
+
+bool smsReadFor(uint8_t addr, uint8_t len, SmsReply* reply, uint32_t timeoutMs) {
     const uint8_t params[2] = {addr, len};
-    if (!transact(0x02, params, 2, reply)) {
+    if (!transact(0x02, params, 2, reply, timeoutMs)) {
         return false;
     }
     // 短い応答を「読めた」にすると、隣のレジスタを誤って表示する。
@@ -207,7 +211,7 @@ bool smsWrite(uint8_t addr, const uint8_t* data, uint8_t dataLen, SmsReply* repl
     for (uint8_t i = 0; i < dataLen; ++i) {
         params[1 + i] = data[i];
     }
-    return transact(0x03, params, (uint8_t)(dataLen + 1), reply);
+    return transact(0x03, params, (uint8_t)(dataLen + 1), reply, kReplyTimeoutMs);
 }
 
 bool smsWrite8(uint8_t addr, uint8_t value, SmsReply* reply) {

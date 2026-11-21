@@ -709,6 +709,27 @@
   box-shadow: 0 0 0 1px rgba(247, 201, 72, 0.18);
 }
 
+/* SM105BL は緑の枠。RDS51150 の黄枠と並べて区別する。 */
+.m5-jrow--sm105 {
+  background: #132018;
+  border-color: rgba(62, 224, 127, 0.42);
+}
+
+.m5-jrow--sm105.m5-jrow--on {
+  border-color: rgba(94, 234, 212, 0.9);
+  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.28);
+}
+
+.m5-jrow__kind {
+  color: #5eead4 !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.m5-jrow--sm105 .m5-bar--cmd {
+  cursor: default;
+}
+
 .m5-jrow__left {
   display: flex;
   flex-direction: column;

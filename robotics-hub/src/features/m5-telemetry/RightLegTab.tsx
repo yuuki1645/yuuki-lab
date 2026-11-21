@@ -11,7 +11,10 @@ import {
   LEG_PLOT_ITEMS,
   LEG_ROWS,
   SERVO_NEUTRAL_DEG,
+  isSm105Channel,
   legJoint,
+  sm105AngleWindow,
+  sm105ServoId,
   type LegBarKey,
   type LegPlotKey,
   type LegSide,
@@ -123,7 +126,7 @@ export function RightLegTab({
   };
 
   const setCmd = (ch: number, deg: number) => {
-    if (!canCmd || cmdLocked) return;
+    if (!canCmd || cmdLocked || isSm105Channel(ch)) return;
     // PWM はバーでは入れない。明示の PWM ON が必要
     if (!at(control?.out, ch)) return;
     send({ op: "joint", ch, deg });
@@ -146,8 +149,10 @@ export function RightLegTab({
   const pwmSide = (side: LegSide, on: boolean) => {
     if (!canCmd) return;
     LEG_ROWS.forEach((_, row) => {
-      if (!jointLive(side, row)) return;
-      send({ op: "out", ch: legJoint(side, row).ch, on });
+      const ch = legJoint(side, row).ch;
+      // ひざ・かかとピッチは SM105BL。PWM ボタンでは動かさない。
+      if (isSm105Channel(ch) || !jointLive(side, row)) return;
+      send({ op: "out", ch, on });
     });
   };
 
@@ -160,8 +165,10 @@ export function RightLegTab({
     if (!canCmd) return;
     (["left", "right"] as const).forEach((side) => {
       LEG_ROWS.forEach((_, row) => {
-        if (!jointLive(side, row)) return;
-        send({ op: "joint", ch: legJoint(side, row).ch, deg: SERVO_NEUTRAL_DEG });
+        const ch = legJoint(side, row).ch;
+        // 135° は RDS51150 の中立。SM105BL の真下は 0° で、ここからは指令しない。
+        if (isSm105Channel(ch) || !jointLive(side, row)) return;
+        send({ op: "joint", ch, deg: SERVO_NEUTRAL_DEG });
       });
     });
   };
@@ -186,7 +193,7 @@ export function RightLegTab({
             ? "手動の踵操作です。指令は逆運動学の目標角、補正（シミュ）はシミュレータの関節角です。バーはドラッグできません。電圧・電流は未計測です。"
             : policyOwned
             ? "歩行再生です。指令は方策の目標角、補正（シミュ）は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
-            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。指令バーはつまみを掴んでドラッグ。ライブ指令は 100〜170°。接続の無い脚と、電圧・電流が無い欄は枠を残して暗くします。"}
+            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。RDS51150 の指令バーはつまみを掴んでドラッグ。ライブ指令は 100〜170°。ひざピッチとかかとピッチは SM105BL で、真下を 0° とした指令と実際角を表示するだけです。生角とズレは出さず、ドラッグも PWM も送りません。"}
         </p>
         {remoteOwned ? null : (
         <>
@@ -342,30 +349,72 @@ export function RightLegTab({
             <div className="m5-leg__pair" key={def.id}>
               {(["left", "right"] as const).map((side) => {
                 const j = legJoint(side, row);
-                const live = jointLive(side, row);
+                const sm105 = isSm105Channel(j.ch);
+                const corrSample = at(frame?.corr, j.ch);
+                const rawSample = at(frame?.raw, j.ch);
+                // 補正だけあって生角もあるのは、書き換える前の AS5600。SM105BL は生角を空にする。
+                const sm105Live =
+                  sm105 &&
+                  typeof corrSample === "number" &&
+                  Number.isFinite(corrSample) &&
+                  (rawSample == null || !Number.isFinite(rawSample)) &&
+                  at(frame?.mag, j.ch) === 255;
+                const live = sm105 ? sm105Live : jointLive(side, row);
                 const pwmOn = Boolean(at(control?.out, j.ch));
+                const servoId = sm105ServoId(j.ch);
+                const angleWindow = sm105AngleWindow(j.ch);
+                const serial =
+                  sm105 && servoId != null && angleWindow
+                    ? { min: angleWindow.min, max: angleWindow.max, servoId }
+                    : null;
+                // 135° の PWM 指令が、サーボのいないカードに残らないようにする。
+                const sm105Point = (
+                  v: number | null | undefined,
+                  corr: number | null | undefined,
+                  raw: number | null | undefined
+                ) =>
+                  typeof corr === "number" && Number.isFinite(corr) && (raw == null || !Number.isFinite(raw))
+                    ? v
+                    : null;
                 return (
                   <JointTripleBar
                     key={j.id}
                     joint={j}
-                    routeLabel={pwmRouteLabel(routes[j.ch])}
-                    cmd={remoteOwned ? at(frame?.cmd, j.ch) : at(control?.cmd, j.ch)}
-                    raw={live ? at(frame?.raw, j.ch) : null}
-                    corr={at(frame?.corr, j.ch)}
+                    routeLabel={sm105 && servoId != null ? `RS485 ID ${servoId}` : pwmRouteLabel(routes[j.ch])}
+                    cmd={
+                      sm105
+                        ? sm105Live
+                          ? at(frame?.cmd, j.ch)
+                          : null
+                        : remoteOwned
+                          ? at(frame?.cmd, j.ch)
+                          : at(control?.cmd, j.ch)
+                    }
+                    raw={sm105 ? null : live ? at(frame?.raw, j.ch) : null}
+                    corr={sm105 ? (sm105Live ? corrSample : null) : at(frame?.corr, j.ch)}
                     pwmOn={pwmOn}
-                    historyCmd={history.map((h) => at(h.cmd, j.ch))}
-                    historyCorr={history.map((h) => at(h.corr, j.ch))}
-                    historyVolt={history.map((h) => at(h.volt, j.ch))}
-                    historyAmp={history.map((h) => at(h.amp, j.ch))}
-                    volt={at(frame?.volt, j.ch)}
-                    amp={at(frame?.amp, j.ch)}
+                    historyCmd={history.map((h) =>
+                      sm105 ? sm105Point(at(h.cmd, j.ch), at(h.corr, j.ch), at(h.raw, j.ch)) : at(h.cmd, j.ch)
+                    )}
+                    historyCorr={history.map((h) =>
+                      sm105 ? sm105Point(at(h.corr, j.ch), at(h.corr, j.ch), at(h.raw, j.ch)) : at(h.corr, j.ch)
+                    )}
+                    historyVolt={history.map((h) =>
+                      sm105 ? sm105Point(at(h.volt, j.ch), at(h.corr, j.ch), at(h.raw, j.ch)) : at(h.volt, j.ch)
+                    )}
+                    historyAmp={history.map((h) =>
+                      sm105 ? sm105Point(at(h.amp, j.ch), at(h.corr, j.ch), at(h.raw, j.ch)) : at(h.amp, j.ch)
+                    )}
+                    volt={sm105 ? (sm105Live ? at(frame?.volt, j.ch) : null) : at(frame?.volt, j.ch)}
+                    amp={sm105 ? (sm105Live ? at(frame?.amp, j.ch) : null) : at(frame?.amp, j.ch)}
                     plotOn={plotOn}
                     barOn={barOn}
                     selected={selected === j.id}
                     inactive={!live}
-                    policyOwned={remoteOwned && live}
+                    policyOwned={!sm105 && remoteOwned && live}
                     corrLabel={corrLabel}
-                    disabled={remoteOwned || !live || !canCmd || cmdLocked || !pwmOn}
+                    serial={serial}
+                    disabled={sm105 || remoteOwned || !live || !canCmd || cmdLocked || !pwmOn}
                     onSelect={() => setSelected(j.id)}
                     onCommand={(deg) => setCmd(j.ch, deg)}
                   />

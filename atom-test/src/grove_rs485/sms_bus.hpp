@@ -59,6 +59,8 @@ const char* smsLastTxHex();
 
 bool smsPing(SmsReply* reply);
 bool smsRead(uint8_t addr, uint8_t len, SmsReply* reply);
+// timeoutMs を短くすると、いない ID を待って 20 Hz が遅れない。いる個体は数 ms で返る。
+bool smsReadFor(uint8_t addr, uint8_t len, SmsReply* reply, uint32_t timeoutMs);
 bool smsWrite(uint8_t addr, const uint8_t* data, uint8_t dataLen, SmsReply* reply);
 bool smsWrite8(uint8_t addr, uint8_t value, SmsReply* reply);
 bool smsWrite16(uint8_t addr, uint16_t valueLe, SmsReply* reply);

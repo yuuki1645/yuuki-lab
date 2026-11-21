@@ -733,7 +733,11 @@
 }
 
 .m5-jrow--sm105 .m5-bar--cmd {
-  cursor: default;
+  cursor: ew-resize;
+}
+
+.m5-jrow--sm105 .m5-bar--cmd.m5-bar--off {
+  cursor: not-allowed;
 }
 
 .m5-jrow__left {

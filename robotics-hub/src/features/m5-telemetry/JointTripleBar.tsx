@@ -142,7 +142,8 @@ export function JointTripleBar({
 
   const [drag, setDrag] = useState<number | null>(null);
   const shownCmd = drag ?? cmdVal;
-  const lockCmd = disabled || serialView;
+  // SM105BL も、ロックと未接続のとき以外はつまみを動かせる。
+  const lockCmd = disabled;
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -165,11 +166,15 @@ export function JointTripleBar({
       const r = el.getBoundingClientRect();
       if (r.width <= 0) return;
       const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-      const deg = clampServo(angleMin + t * (angleMax - angleMin));
+      const raw = angleMin + t * (angleMax - angleMin);
+      // RDS は 100〜170°。SM105BL は真下 0° を含む、関節ごとの窓。
+      const deg = serialView
+        ? Math.round(Math.min(angleMax, Math.max(angleMin, raw)) * 2) / 2
+        : clampServo(raw);
       setDrag(deg);
       onCommand(deg);
     },
-    [angleMin, angleMax, onCommand]
+    [angleMin, angleMax, onCommand, serialView]
   );
 
   // iOS は CSS だけでは長押しメニューが残ることがある
@@ -215,7 +220,7 @@ export function JointTripleBar({
             {/* 見出しの ch は論理関節。RDS は PWM の出力先、SM105BL は RS485 の ID */}
             <p
               className="m5-jrow__route"
-              title={serialView ? "RS485 のサーボ ID。表示だけのフィードバックです。" : "PWM の出力先。上の ch は論理関節番号です。"}
+              title={serialView ? "RS485 のサーボ ID。ドラッグすると目標角を書きます。基準は真下 0° です。" : "PWM の出力先。上の ch は論理関節番号です。"}
             >
               {routeLabel}
             </p>
@@ -225,7 +230,7 @@ export function JointTripleBar({
             <BarRow label="指令" value={fmtCmd(shownCmd)} color={LEG_BAR.cmd}>
             <div
               ref={trackRef}
-              className={"m5-bar m5-bar--cmd" + (!serialView && disabled && !policyOwned ? " m5-bar--off" : "")}
+              className={"m5-bar m5-bar--cmd" + (lockCmd && !policyOwned ? " m5-bar--off" : "")}
               onContextMenu={(e) => e.preventDefault()}
               onPointerDown={(e) => {
                 if (lockCmd || shownCmd == null) return;

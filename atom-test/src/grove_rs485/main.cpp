@@ -19,10 +19,13 @@
  *   hello / ping / info / id N / stream HZ / watch 0|1 / hb
  *   apply LIMIT SPEED ACC / arm LIMIT SPEED ACC / damp LIMIT
  *   move COUNTS / torque 0
+ *   goal ID COUNTS / goal off
  * hb は CoreS3 が 50 ms ごとに足す生存確認で、返事は出さない。
  * 行が 200 ms 来なければ、出力中ならトルクを切る。
  * 20 Hz の監視は stream 20（今選んでいる ID だけ）。
- * watch 1 は腰の本線用。ID 1〜4 を 50 ms ごとに読み、トルクは入れない。
+ * watch 1 は腰の本線用。ID 1〜4 を 50 ms ごとに読む。
+ * goal は watch のまま 1 台の目標角を書く。最初の 1 回だけ速度とトルク制限を入れる。
+ * goal off は書いた台のトルクを切る。0 カウントへは回さない。
  *   1 右ひざ、2 右かかとピッチ、3 左ひざ、4 左かかとピッチ。
  * いない ID は 20 ms 待たず、500 ms に 1 回だけ短いタイムアウトで探る。
  * フィードバックはアドレス 40 から 31 バイト。
@@ -70,6 +73,12 @@ static bool gWatchOk[kWatchCount];
 static uint8_t gWatchMiss[kWatchCount];
 static uint32_t gWatchRetryAt[kWatchCount];
 static uint8_t gWatchProbe = 0;
+// goal でトルクを入れた ID。切断時は台ごとに切る。
+static bool gWatchHold[kWatchCount];
+// 試験画面の初期値。速度 0 は最高速になるので使わない。
+static constexpr int kGoalLimit = 200;
+static constexpr int kGoalSpeed = 40;
+static constexpr int kGoalAcc = 10;
 
 // Grove が本線。USB はモニタ用で、ホストがいないときは捨てる。
 static void emitRaw(const char* text, size_t n) {
@@ -438,6 +447,62 @@ static void cmdTorqueOff(const char* reason) {
     emitf("@ok cmd=torque value=0 reason=%s st=%u\n", reason, reply.status);
 }
 
+static int watchIndex(int id) {
+    if (id < 0) {
+        return -1;
+    }
+    for (int i = 0; i < kWatchCount; ++i) {
+        if (kWatchIds[i] == (uint8_t)id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// 腰からの目標角。arm の単体フラグは使わない。4 台を同時に保持できる。
+static void cmdGoal(int id, int counts) {
+    const int index = watchIndex(id);
+    if (index < 0 || !rangeOk(counts, 0, 4095)) {
+        printErr("goal", "bad_arg");
+        return;
+    }
+    smsSetId((uint8_t)id);
+    // 速度を先に書く。目標の書き込みがトルクをオンにする。
+    if (!gWatchHold[index] && !stageMotion("goal", kGoalLimit, kGoalSpeed, kGoalAcc)) {
+        return;
+    }
+    SmsReply reply;
+    const uint16_t raw = smsEncodeSigned15(counts);
+    if (!smsWrite16(kRegGoal, raw, &reply)) {
+        printErr("goal", "timeout");
+        return;
+    }
+    gWatchHold[index] = true;
+    emitf("@ok cmd=goal id=%d pos=%d raw=%u st=%u\n", id, counts, raw, reply.status);
+}
+
+// 0 カウントへは戻さない。保持している台のトルクだけ切る。
+static void cmdGoalOff() {
+    bool any = false;
+    for (int i = 0; i < kWatchCount; ++i) {
+        if (!gWatchHold[i]) {
+            continue;
+        }
+        any = true;
+        smsSetId(kWatchIds[i]);
+        SmsReply reply;
+        if (!smsWrite8(kRegTorque, kTorqueOff, &reply)) {
+            printErr("goal", "timeout");
+            continue;
+        }
+        gWatchHold[i] = false;
+        emitf("@ok cmd=goal value=0 id=%u st=%u\n", kWatchIds[i], reply.status);
+    }
+    if (!any) {
+        emit("@ok cmd=goal value=0\n");
+    }
+}
+
 static void cmdMove(int counts) {
     if (!gOutputOn) {
         printErr("move", "torque_off");
@@ -521,6 +586,10 @@ static void handleLine(char* line) {
         cmdArm(a, b, c);
     } else if (sscanf(line, "damp %d", &a) == 1) {
         cmdDamp(a);
+    } else if (strcmp(line, "goal off") == 0) {
+        cmdGoalOff();
+    } else if (sscanf(line, "goal %d %d", &a, &b) == 2) {
+        cmdGoal(a, b);
     } else if (sscanf(line, "move %d", &a) == 1) {
         cmdMove(a);
     } else if (strncmp(line, "torque", 6) == 0) {
@@ -570,7 +639,13 @@ static void pollLink() {
 }
 
 static void pollHostTimeout() {
-    if (!gOutputOn) {
+    bool held = gOutputOn;
+    for (int i = 0; i < kWatchCount; ++i) {
+        if (gWatchHold[i]) {
+            held = true;
+        }
+    }
+    if (!held) {
         return;
     }
     const uint32_t now = millis();
@@ -582,7 +657,21 @@ static void pollHostTimeout() {
         return;
     }
     gNextOffMs = now + 50;
-    cmdTorqueOff("timeout");
+    for (int i = 0; i < kWatchCount; ++i) {
+        if (!gWatchHold[i]) {
+            continue;
+        }
+        smsSetId(kWatchIds[i]);
+        SmsReply reply;
+        if (!smsWrite8(kRegTorque, kTorqueOff, &reply)) {
+            continue;
+        }
+        gWatchHold[i] = false;
+        emitf("@ok cmd=goal value=0 id=%u reason=timeout st=%u\n", kWatchIds[i], reply.status);
+    }
+    if (gOutputOn) {
+        cmdTorqueOff("timeout");
+    }
 }
 
 void setup() {

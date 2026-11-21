@@ -180,8 +180,8 @@ static void applySmsTelemetry(Snapshot& snap) {
             snap.corr_deg[joint] = NAN;
             continue;
         }
-        // cmd は NaN にしない。JSON に NaN が混ざると画面側の受信が落ちる。
-        snap.cmd_deg[joint] = sample.cmd_deg;
+        // 指令は gCmd のまま。サーボの goal が 0 カウントだと、真下なのに -180° と出る。
+        // 補正だけフィードバックの現在角にする。
         snap.corr_deg[joint] = sample.pos_deg;
         snap.as_ok[joint] = 1;
         snap.volt[joint] = sample.volt_v;
@@ -197,6 +197,20 @@ static float clampMove(float deg) {
     }
     if (deg > kMoveMaxDeg) {
         return kMoveMaxDeg;
+    }
+    return deg;
+}
+
+/** SM105BL の可動。ひざは後ろへ 150°、かかとはつま先上げを正として ±60°。 */
+static float clampSms(int joint, float deg) {
+    const bool knee = joint == kAxisKnee || joint == kAxesPerLeg + kAxisKnee;
+    const float lo = knee ? -30.0f : -60.0f;
+    const float hi = knee ? 150.0f : 60.0f;
+    if (deg < lo) {
+        return lo;
+    }
+    if (deg > hi) {
+        return hi;
     }
     return deg;
 }
@@ -570,7 +584,10 @@ static void setMode(WorkMode mode) {
         gOutMask = static_cast<uint16_t>((1u << kCoreJoints) - 1u);
         gElectricalMask = 0;
         for (int i = 0; i < kCoreJoints; ++i) {
-            gCmd[i] = kHoldDeg;
+            // SM105BL は操作中の角度を残す。RDS の 135° を書くと基準がずれる。
+            if (!isSmsJoint(i)) {
+                gCmd[i] = kHoldDeg;
+            }
         }
     } else {
         gOutMask = 0;
@@ -593,8 +610,10 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
         case kUsbCmdHold:
             gElectricalMask = 0;
             for (int i = 0; i < kCoreJoints; ++i) {
-                gCmd[i] = kHoldDeg;
+                // 表示の基準は 0°。ここから 0° へは動かさず、トルクだけ切る。
+                gCmd[i] = isSmsJoint(i) ? 0.0f : kHoldDeg;
             }
+            smsLinkRelease();
             sendMode();
             break;
         case kUsbCmdMode:
@@ -625,7 +644,12 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             if (len >= sizeof(UsbCmdJoint)) {
                 UsbCmdJoint c{};
                 memcpy(&c, payload, sizeof(c));
-                if (c.ch < kCoreJoints) {
+                if (c.ch < kCoreJoints && isSmsJoint(c.ch)) {
+                    // RDS の 40〜230° へ寄せると、真下 0° が 40° になる。
+                    gCmd[c.ch] = clampSms(c.ch, c.deg);
+                    gElectricalMask = static_cast<uint16_t>(gElectricalMask & ~(1u << c.ch));
+                    smsLinkGoal(smsIdForJoint(c.ch), gCmd[c.ch]);
+                } else if (c.ch < kCoreJoints) {
                     gCmd[c.ch] = clampMove(c.deg);
                     if (type == kUsbCmdJointElec) {
                         // 校正掃引。マップと同じ電気角を、脚の変換を通さずパルスにする。
@@ -935,7 +959,8 @@ void setup() {
     delay(200);
 
     for (int i = 0; i < kCoreJoints; ++i) {
-        gCmd[i] = kHoldDeg;
+        // SM105BL は真下 0°。RDS51150 の保持は 135°。
+        gCmd[i] = isSmsJoint(i) ? 0.0f : kHoldDeg;
     }
     gMapRx.joint = -1;
     loadProfile();

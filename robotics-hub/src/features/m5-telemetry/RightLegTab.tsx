@@ -11,6 +11,7 @@ import {
   LEG_PLOT_ITEMS,
   LEG_ROWS,
   SERVO_NEUTRAL_DEG,
+  SM105_NEUTRAL_DEG,
   isSm105Channel,
   legJoint,
   sm105AngleWindow,
@@ -125,13 +126,50 @@ export function RightLegTab({
     setBarOn((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // ドラッグ直後はテレメトリの 0° が残る。届いた角度で消す。
+  const [sm105Pending, setSm105Pending] = useState<Record<number, number>>({});
+  const sm105PendingAt = useRef<Record<number, number>>({});
+
+  const rememberSm105 = (ch: number, deg: number) => {
+    sm105PendingAt.current[ch] = Date.now();
+    setSm105Pending((prev) => ({ ...prev, [ch]: deg }));
+  };
+
   const setCmd = (ch: number, deg: number) => {
-    if (!canCmd || cmdLocked || isSm105Channel(ch)) return;
+    if (!canCmd || cmdLocked) return;
+    if (isSm105Channel(ch)) {
+      // PWM ON は要らない。目標角を書いたときだけトルクが入る。
+      rememberSm105(ch, deg);
+      send({ op: "joint", ch, deg });
+      bumpIdle();
+      return;
+    }
     // PWM はバーでは入れない。明示の PWM ON が必要
     if (!at(control?.out, ch)) return;
     send({ op: "joint", ch, deg });
     bumpIdle();
   };
+
+  useEffect(() => {
+    const now = Date.now();
+    setSm105Pending((prev) => {
+      let next = prev;
+      for (const key of Object.keys(prev)) {
+        const ch = Number(key);
+        const telem = at(frame?.cmd, ch);
+        const want = prev[ch];
+        if (typeof telem !== "number") continue;
+        const age = now - (sm105PendingAt.current[ch] ?? now);
+        const matched = Math.abs(telem - want) <= 0.75;
+        // 全停止は指令を 0° に戻す。届かない角度を掴み続けない。
+        if (matched || age > 500) {
+          if (next === prev) next = { ...prev };
+          delete next[ch];
+        }
+      }
+      return next;
+    });
+  }, [frame]);
 
   // 実機の片脚は右だけ。CoreS3（cmd が 10 本）と Isaac は両脚。
   const bothLegs = (frame?.cmd?.length ?? 0) >= 10;
@@ -161,13 +199,30 @@ export function RightLegTab({
    * 操作ロックはバーの誤タッチ用なので、この明示ボタンはロック中でも押せる。
    * PWM が OFF の軸は橋が角度だけ覚え、サーボは動かさない。ON の軸はそのまま 135° へ出る。
    */
+  const sm105Receiving = (ch: number) => {
+    const corr = at(frame?.corr, ch);
+    const raw = at(frame?.raw, ch);
+    return (
+      typeof corr === "number" &&
+      Number.isFinite(corr) &&
+      (raw == null || !Number.isFinite(raw)) &&
+      at(frame?.mag, ch) === 255
+    );
+  };
+
   const homeAllCmd = () => {
     if (!canCmd) return;
     (["left", "right"] as const).forEach((side) => {
       LEG_ROWS.forEach((_, row) => {
         const ch = legJoint(side, row).ch;
-        // 135° は RDS51150 の中立。SM105BL の真下は 0° で、ここからは指令しない。
-        if (isSm105Channel(ch) || !jointLive(side, row)) return;
+        if (isSm105Channel(ch)) {
+          // 受信している台だけ。真下 0° が中立で、未接続の ID には出さない。
+          if (!sm105Receiving(ch)) return;
+          rememberSm105(ch, SM105_NEUTRAL_DEG);
+          send({ op: "joint", ch, deg: SM105_NEUTRAL_DEG });
+          return;
+        }
+        if (!jointLive(side, row)) return;
         send({ op: "joint", ch, deg: SERVO_NEUTRAL_DEG });
       });
     });
@@ -193,7 +248,7 @@ export function RightLegTab({
             ? "手動の踵操作です。指令は逆運動学の目標角、補正（シミュ）はシミュレータの関節角です。バーはドラッグできません。電圧・電流は未計測です。"
             : policyOwned
             ? "歩行再生です。指令は方策の目標角、補正（シミュ）は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
-            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。RDS51150 の指令バーはつまみを掴んでドラッグ。ライブ指令は 100〜170°。ひざピッチとかかとピッチは SM105BL で、真下を 0° とした指令と実際角を表示するだけです。生角とズレは出さず、ドラッグも PWM も送りません。"}
+            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。RDS51150 は PWM ON のあと、つまみを 100〜170° でドラッグします。SM105BL は真下 0° が基準です。ロックを外すと、受信中のカードをドラッグしたときだけトルクが入ります。生角とズレは出ません。"}
         </p>
         {remoteOwned ? null : (
         <>
@@ -256,10 +311,10 @@ export function RightLegTab({
           type="button"
           className="m5__btn"
           disabled={!canCmd || !anyLive}
-          title="接続中の全部の指令角を 135° にします。PWM OFF の関節は記憶だけ更新し、次に ON にしたとき 135° から動きます。"
+          title="RDS51150 は 135°、受信中の SM105BL は真下 0° へ動かします。SM105BL はここでトルクが入ります。"
           onClick={homeAllCmd}
         >
-          全指令を 135°
+          中立へ
         </button>
         </>
         )}
@@ -384,7 +439,7 @@ export function RightLegTab({
                     cmd={
                       sm105
                         ? sm105Live
-                          ? at(frame?.cmd, j.ch)
+                          ? (sm105Pending[j.ch] ?? at(frame?.cmd, j.ch))
                           : null
                         : remoteOwned
                           ? at(frame?.cmd, j.ch)
@@ -414,7 +469,11 @@ export function RightLegTab({
                     policyOwned={!sm105 && remoteOwned && live}
                     corrLabel={corrLabel}
                     serial={serial}
-                    disabled={sm105 || remoteOwned || !live || !canCmd || cmdLocked || !pwmOn}
+                    disabled={
+                      sm105
+                        ? remoteOwned || !live || !canCmd || cmdLocked
+                        : remoteOwned || !live || !canCmd || cmdLocked || !pwmOn
+                    }
                     onSelect={() => setSelected(j.id)}
                     onCommand={(deg) => setCmd(j.ch, deg)}
                   />

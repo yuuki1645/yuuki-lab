@@ -371,7 +371,7 @@ export default function M5TelemetryPage() {
                     <Metric title="電流" color={M5_COLORS.amp} text={fmt(at(frame?.amp, j), "A")} />
                     <Metric title="電力" color={M5_COLORS.watt} text={fmt(at(frame?.watt, j), "W")} />
                   </div>
-                  <label className="m5__check" title={isSm105Channel(j) ? "SM105BL は表示だけです。PWM は出しません。" : undefined}>
+                  <label className="m5__check" title={isSm105Channel(j) ? "SM105BL は PWM を出しません。角度は脚のカードから、真下 0° を基準に操作します。" : undefined}>
                     <input
                       type="checkbox"
                       checked={isSm105Channel(j) ? false : Boolean(at(control?.out, j))}

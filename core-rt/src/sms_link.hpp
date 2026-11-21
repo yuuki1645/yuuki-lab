@@ -5,7 +5,8 @@
  *
  * ATOM は atom-test の grove-rs485。`watch 1` で ID 1〜4 を 20 Hz で返す。
  *   1 右ひざピッチ、2 右かかとピッチ、3 左ひざピッチ、4 左かかとピッチ。
- * この側はトルクも目標位置も書かない。表示のためのフィードバックだけ。
+ * フィードバックは表示用。目標角は `smsLinkGoal` が来たときだけ書く。
+ * 未指令のあいだはトルクを入れない。全停止は `smsLinkRelease` で脱力する。
  * 角度は試験画面と同じで、カウント 2048 を真下 0° とする。
  * カウントが増える向きは、左右ともひざは後ろへ折れる正、かかとはつま先が上がる正。
  */
@@ -36,3 +37,12 @@ void smsLinkPoll();
  * 行が 250 ms 途切れたら fresh は false（ATOM 抜け）。
  */
 bool smsLinkRead(uint8_t id, SmsSample* out);
+
+/**
+ * ID 1〜4 の目標角を 1 本だけ積む。度は真下 0°。
+ * 同じ角度の繰り返しは、ATOM 側へは変化したときだけ出る。
+ */
+void smsLinkGoal(uint8_t id, float deg);
+
+/** 指令済みの SM105BL のトルクを切る。0° へは動かさない。 */
+void smsLinkRelease();

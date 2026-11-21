@@ -6,6 +6,7 @@
 #include "sms_link.hpp"
 
 #include <Arduino.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +44,11 @@ static size_t gLineLen = 0;
 static bool gDiscard = false;
 static uint32_t gNextHbMs = 0;
 static uint32_t gNextWatchMs = 0;
+// 次の poll で 1 本だけ出す。ドラッグ中は最新の角度で上書きする。
+// USB 受信と制御周期が別タスクなので、フラグは volatile。
+static volatile bool gGoalDirty[kSlotCount];
+static volatile int gGoalCounts[kSlotCount];
+static volatile bool gRelease = false;
 
 static int slotIndex(uint8_t id) {
     if (id < 1 || id > kSlotCount) {
@@ -83,12 +89,13 @@ static bool tokenInt(const char* line, const char* key, long* out) {
     return true;
 }
 
-static void sendLine(const char* line) {
+static bool sendLine(const char* line) {
     const size_t n = strlen(line);
     if (gLink.availableForWrite() < static_cast<int>(n)) {
-        return;
+        return false;
     }
     gLink.write(reinterpret_cast<const uint8_t*>(line), n);
+    return true;
 }
 
 static void takeSm(const char* line) {
@@ -172,7 +179,10 @@ void smsLinkBegin() {
         gSlot[i].volt_v = 0.0f;
         gSlot[i].amp_a = 0.0f;
         gSlot[i].ms = 0;
+        gGoalDirty[i] = false;
+        gGoalCounts[i] = kZeroCount;
     }
+    gRelease = false;
     gLink.setRxBufferSize(1024);
     gLink.setTxBufferSize(256);
     gLink.begin(kLinkBaud, SERIAL_8N1, kLinkRxPin, kLinkTxPin);
@@ -180,8 +190,54 @@ void smsLinkBegin() {
     gNextWatchMs = millis();
 }
 
+void smsLinkGoal(uint8_t id, float deg) {
+    const int index = slotIndex(id);
+    if (index < 0) {
+        return;
+    }
+    // 2048 が真下 0°。画面の可動域なら 0〜4095 に収まる。
+    const float counts = static_cast<float>(kZeroCount) + deg * (kCountsPerRev / 360.0f);
+    int rounded = (int)lroundf(counts);
+    if (rounded < 0) {
+        rounded = 0;
+    }
+    if (rounded > 4095) {
+        rounded = 4095;
+    }
+    // 停止より新しいドラッグを優先する。
+    gRelease = false;
+    gGoalCounts[index] = rounded;
+    gGoalDirty[index] = true;
+}
+
+void smsLinkRelease() {
+    gRelease = true;
+    for (int i = 0; i < kSlotCount; ++i) {
+        gGoalDirty[i] = false;
+    }
+}
+
 void smsLinkPoll() {
     pollRx();
+    // 目標は 1 周期に 1 本。4 台まとめて書くと、読み取りの 20 Hz が止まる。
+    if (gRelease) {
+        if (sendLine("goal off\n")) {
+            gRelease = false;
+        }
+    } else {
+        for (int i = 0; i < kSlotCount; ++i) {
+            if (!gGoalDirty[i]) {
+                continue;
+            }
+            char line[40];
+            const int counts = gGoalCounts[i];
+            snprintf(line, sizeof(line), "goal %u %d\n", gSlot[i].id, counts);
+            if (sendLine(line)) {
+                gGoalDirty[i] = false;
+            }
+            break;
+        }
+    }
     const uint32_t now = millis();
     // 起動が遅い ATOM にも届くよう、watch は 1 秒ごとに繰り返す。中身は同じ。
     if (static_cast<int32_t>(now - gNextWatchMs) >= 0) {

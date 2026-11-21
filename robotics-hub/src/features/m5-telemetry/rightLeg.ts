@@ -4,6 +4,8 @@
 export const SERVO_MIN_DEG = 100;
 export const SERVO_MAX_DEG = 170;
 export const SERVO_NEUTRAL_DEG = 135;
+/** SM105BL の真下。RDS の 135° とは別の基準。 */
+export const SM105_NEUTRAL_DEG = 0;
 
 export const LEG_BAR = {
   cmd: "#f7c948",

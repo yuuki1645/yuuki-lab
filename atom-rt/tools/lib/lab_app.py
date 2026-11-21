@@ -116,6 +116,15 @@ from .m5_hub_bridge import (
 from . import experiment_log
 from .m5_record_store import M5RecordStore
 
+# ひざ・かかとピッチ。真下 0°。RDS の 100〜170° と PWM ON は使わない。
+_SM105_CH = {2, 3, 7, 8}
+
+
+def _clamp_sm105_deg(ch: int, deg: float) -> float:
+    """画面と同じ可動。ひざは -30〜150°、かかとピッチは -60〜60°。"""
+    lo, hi = (-30.0, 150.0) if ch in (2, 7) else (-60.0, 60.0)
+    return max(lo, min(hi, float(deg)))
+
 
 def _live_joint_updates(msg: dict) -> dict[int, tuple[float, bool]]:
     """m5/cmd の joint / joints を、チャンネルごとの角度にする。
@@ -184,6 +193,9 @@ class LabApp(tk.Tk):
         self._evt_seq = 0
         self._plot_port: str | None = None
         self._last_cmd_t = [0.0] * JOINTS
+        # ドラッグ末尾の角度を、0.08 秒の間隔で落とさない。
+        self._sm105_want: dict[int, tuple[AtomSession, float]] = {}
+        self._sm105_job: dict[int, str] = {}
         self._last_out_reassert = 0.0
         self._last_plot_seq: tuple | None = None
         self._rand_until = [0.0] * JOINTS
@@ -948,6 +960,9 @@ class LabApp(tk.Tk):
                 self._scan_job = None
         elif op == "out":
             j = int(msg.get("ch", 0))
+            if j in _SM105_CH:
+                # PWM 端子は外してある。ここで指令を出すと、意図せずトルクが入る。
+                return
             n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
             if JOINTS <= j < n_joint:
                 # Tk のチェックは 8 軸のまま。左脚はマスクだけ更新してボードへ送る。
@@ -1126,6 +1141,43 @@ class LabApp(tk.Tk):
         """
         return clamp_cal_deg(deg) if wide else copctrl.clamp_cmd(deg)
 
+    def _queue_sm105(self, s: AtomSession, j: int, deg: float) -> None:
+        """SM105BL の目標角。PWM の出力ビットが無くても USB へ出す。"""
+        deg = _clamp_sm105_deg(j, deg)
+        if 0 <= j < len(self.cmd_vars):
+            self._syncing = True
+            try:
+                self.cmd_vars[j].set(round(deg, 1))
+            finally:
+                self._syncing = False
+        else:
+            s.extra_cmd[j] = deg
+        prev = self._sm105_job.pop(j, None)
+        if prev is not None:
+            try:
+                self.after_cancel(prev)
+            except tk.TclError:
+                pass
+        self._sm105_want[j] = (s, deg)
+        self._arm_sm105(j)
+
+    def _arm_sm105(self, j: int) -> None:
+        item = self._sm105_want.get(j)
+        if item is None:
+            return
+        s, deg = item
+        while len(self._last_cmd_t) <= j:
+            self._last_cmd_t.append(0.0)
+        wait = 0.08 - (time.time() - self._last_cmd_t[j])
+        if wait > 0.001:
+            # 間隔が空いてから、その時点の最新角度を 1 回だけ出す。
+            self._sm105_job[j] = self.after(int(wait * 1000) + 5, lambda ch=j: self._arm_sm105(ch))
+            return
+        self._sm105_want.pop(j, None)
+        self._sm105_job.pop(j, None)
+        self._last_cmd_t[j] = time.time()
+        s.send(proto.cmd_joint(j, deg))
+
     def _apply_live_joint_cmd(self, s: AtomSession, j: int, deg: float, wide: bool) -> None:
         """1 軸の最新指令を画面と USB へ反映する。Tk スレッドで呼ぶ。
 
@@ -1133,6 +1185,9 @@ class LabApp(tk.Tk):
         送り直すので、ここで落とした 1 回も次の最新値で届く。
         """
         if self._pc_cal is not None:
+            return
+        if j in _SM105_CH:
+            self._queue_sm105(s, j, float(deg))
             return
         n_joint = max(JOINTS, int(getattr(s, "joint_count", JOINTS) or JOINTS))
         if JOINTS <= j < n_joint:
@@ -2457,6 +2512,8 @@ class LabApp(tk.Tk):
         for i in range(JOINTS):
             if i >= len(self.rand_vars) or not self.rand_vars[i].get():
                 continue
+            if i in _SM105_CH:
+                continue
             if not self.out_vars[i].get():
                 continue
             if i < len(s.routes) and not s.routes[i].enabled:
@@ -2498,6 +2555,17 @@ class LabApp(tk.Tk):
             v.set(False)
         for v in self.rand_vars:
             v.set(False)
+        # 画面の基準も 0° に戻す。サーボは脱力するだけで、0° へは回さない。
+        self._syncing = True
+        try:
+            for ch in _SM105_CH:
+                if 0 <= ch < len(self.cmd_vars):
+                    self.cmd_vars[ch].set(0.0)
+            for sess in self.sessions.values():
+                for ch in _SM105_CH:
+                    sess.extra_cmd[ch] = 0.0
+        finally:
+            self._syncing = False
 
     def _probe(self) -> None:
         if self._pc_locked():

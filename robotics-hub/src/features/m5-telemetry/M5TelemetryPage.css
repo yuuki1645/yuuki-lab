@@ -513,6 +513,12 @@
   cursor: pointer;
 }
 
+.m5__table-row--sm105 td:first-child,
+.m5__servo--sm105 {
+  color: #5eead4;
+  font-weight: 700;
+}
+
 .m5__table-row--off td {
   opacity: 0.42;
 }

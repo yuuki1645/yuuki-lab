@@ -6,6 +6,7 @@
  */
 import { UiHelp } from "@/shared/components/UiHelp";
 import { fmtFootRoute, pwmRouteLabel } from "./m5Route";
+import { sm105ServoId } from "./rightLeg";
 import { type M5Cmd, type M5FootRoute, type M5Profile, type M5Route } from "./types";
 
 const JOINT_NAMES = [
@@ -27,6 +28,15 @@ function place(hub: number, ch: number, addr: number): string {
   if (!hub) return `直下 ${hex}`;
   const hubHex = `0x${(hub & 0xff).toString(16).toUpperCase().padStart(2, "0")}`;
   return `PaHub ${hubHex} CH${ch}  ${hex}`;
+}
+
+/** サーボ欄。ひざとかかとピッチは PWM 経路ではなく RS485 の ID を出す。 */
+function servoCell(index: number, route: M5Route): string {
+  const id = sm105ServoId(index);
+  if (id != null) {
+    return `SM105BL  RS485 ID ${id}`;
+  }
+  return pwmRouteLabel(route);
 }
 
 function footLine(label: string, foot: M5FootRoute | null | undefined) {
@@ -65,7 +75,7 @@ export function ProfilePanel({
         </button>
       </div>
       <p className="m5__meta">
-        各脚は起動時に見えた PaHub で、右用か左用かを選びます。PWM のオンとオフは脚タブのボタンです。
+        各脚は起動時に見えた PaHub で、右用か左用かを選びます。PWM のオンとオフは脚タブのボタンです。ひざとかかとピッチは両脚とも SM105BL で、サーボ欄は RS485 の ID です。
       </p>
       {routes.length === 0 ? (
         <p className="m5__meta">腰から配線表が届いていません。「腰から読み直す」を押してください。</p>
@@ -81,14 +91,17 @@ export function ProfilePanel({
               </tr>
             </thead>
             <tbody>
-              {routes.map((route: M5Route, i: number) => (
-                <tr key={i}>
-                  <td>{JOINT_NAMES[i] ?? String(i)}</td>
-                  <td>{place(route.enc_hub, route.enc_ch, route.enc_addr)}</td>
-                  <td>{pwmRouteLabel(route)}</td>
-                  <td>{place(route.ina_hub, route.ina_ch, route.ina_addr)}</td>
-                </tr>
-              ))}
+              {routes.map((route: M5Route, i: number) => {
+                const sm105 = sm105ServoId(i) != null;
+                return (
+                  <tr key={i} className={sm105 ? "m5__table-row--sm105" : undefined}>
+                    <td>{JOINT_NAMES[i] ?? String(i)}</td>
+                    <td>{place(route.enc_hub, route.enc_ch, route.enc_addr)}</td>
+                    <td className={sm105 ? "m5__servo--sm105" : undefined}>{servoCell(i, route)}</td>
+                    <td>{place(route.ina_hub, route.ina_ch, route.ina_addr)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

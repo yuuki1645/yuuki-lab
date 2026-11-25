@@ -30,7 +30,7 @@ def apply_robot_visualization_if_requested(env_cfg: Any, args_cli: argparse.Name
     changed = False
 
     if getattr(args_cli, "visualize_robots", False):
-        # Play 環境 (BipedPpoWalkEnvCfg_PLAY) と同じ clone 設定のみ変更する
+        # 全環境のメッシュを出すときだけ、複製をやめて個別にクローンする。
         env_cfg.scene.replicate_physics = False
         env_cfg.scene.clone_in_fabric = False
         changed = True

@@ -20,7 +20,7 @@
 
 | 一般論（本フォルダ） | 本線（Isaac） | 参照（MuJoCo exp_030） |
 |---------------------|---------------|------------------------|
-| reward-design | [タスク README（報酬節）](../../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md#報酬設計) | [reward.md](../../experiments/exp_030_biped_ppo_walk/reward.md) |
-| evaluation | [isaac_biped_ppo_walk](../../experiments/isaac_biped_ppo_walk/README.md) | [evaluation.md](../../experiments/exp_030_biped_ppo_walk/evaluation.md) |
-| parallel-rollout | Isaac `num_envs`（タスク README） | [training-parallel.md](../../experiments/exp_030_biped_ppo_walk/training-parallel.md) |
-| termination | タスク README（終了節） | [termination.md](../../experiments/exp_030_biped_ppo_walk/termination.md) |
+| reward-design | [biped_walk_env_cfg.py](../../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) | [reward.md](../../experiments/exp_030_biped_ppo_walk/reward.md) |
+| evaluation | [isaac-lab/README.md](../../../isaac-lab/README.md) | [evaluation.md](../../experiments/exp_030_biped_ppo_walk/evaluation.md) |
+| parallel-rollout | `BipedWalkEnvCfg` の `num_envs` | [training-parallel.md](../../experiments/exp_030_biped_ppo_walk/training-parallel.md) |
+| termination | `biped_walk_env_cfg.py` の `TerminationsCfg` | [termination.md](../../experiments/exp_030_biped_ppo_walk/termination.md) |

@@ -1,9 +1,9 @@
 # Copyright (c) 2022-2026, The Isaac Lab Project Developers.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""YouTube 向け: 16 並列 env で学習済み両脚 PPO ポリシーを長時間 MP4 録画する。
+"""YouTube 向け: 学習済み歩行方策を長時間 MP4 録画する。
 
-- 既定: 10 分・50 fps（step_dt=0.02）
+- 既定: 10 分。fps は環境の制御周期（sim.dt × decimation）から計算する
 - imageio でフレームを逐次ディスク書き込み（RecordVideo は全フレーム RAM 保持で OOM になる）
 - GUI + --enable_cameras が安定（headless は Replicator attach 失敗の可能性）
 """
@@ -32,13 +32,13 @@ parser.add_argument(
 parser.add_argument(
     "--output",
     type=str,
-    default="videos/youtube/biped_ppo_walk_16env_10min.mp4",
+    default="videos/youtube/biped_walk_10min.mp4",
     help="Output MP4 path.",
 )
 parser.add_argument(
     "--task",
     type=str,
-    default="YuukiLab-BipedPpoWalk-Direct-Play-v0",
+    default="YuukiLab-BipedWalk-Play-v0",
     help="Gym task id (Play env recommended for visualization).",
 )
 parser.add_argument("--seed", type=int, default=None, help="Environment / agent seed.")

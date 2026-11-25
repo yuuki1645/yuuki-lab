@@ -2,7 +2,7 @@
 
 [rl/](../README.md) の各トピックが、MuJoCo exp_030 の **どこに現れるか** を対応づけます。  
 > **現行の学習本線は [Isaac Lab](../../../isaac-lab/README.md)**。本ページは由来実装（参照）との対応表です。  
-> Isaac 側の入口: [isaac_biped_ppo_walk](../../experiments/isaac_biped_ppo_walk/README.md)
+> Isaac 側の入口: [isaac-lab/README.md](../../../isaac-lab/README.md)
 
 ## MDP の写像
 

@@ -81,7 +81,7 @@ export default function IsaacRlLogPage() {
       setExperiments(exps);
       setExperiment((prev) => {
         if (prev && exps.includes(prev)) return prev;
-        return exps.includes("biped_ppo_walk") ? "biped_ppo_walk" : exps[0] ?? "";
+        return exps.includes("yuuki_biped_walk") ? "yuuki_biped_walk" : exps[0] ?? "";
       });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));

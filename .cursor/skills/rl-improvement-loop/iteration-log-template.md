@@ -1,6 +1,6 @@
 # イテレーション記録テンプレート
 
-`docs/experiments/isaac_biped_ppo_walk/iterations.md`（または対象実験の反復ログ）に **1 イテレーション = 1 節** として追記する。
+ユーザーが反復ログの置き場を指定したとき、そのファイルに **1 イテレーション = 1 節** として追記する。現行タスクは `YuukiLab-BipedWalk-v0` で、仕様は `biped_walk_env_cfg.py` です。
 
 ---
 
@@ -10,11 +10,11 @@
 
 | 項目 | 値 |
 |------|-----|
-| 目的 | （例: 5 m 安定歩行、Success rate >= 80%） |
-| ベースライン run | `2026-06-25_19-19-36_v23_5m_antipivot` |
-| 今回 run | `2026-06-26_05-49-03_v24_5m_alternating` |
-| チェックポイント | `model_2400.pt` |
-| ブランチ | `exp/biped-walk-5m-stable` |
+| 目的 | （ユーザーが指定した達成条件） |
+| ベースライン run | `logs/rsl_rl/yuuki_biped_walk/` の run 名 |
+| 今回 run | （今回の run 名） |
+| チェックポイント | `model_XXXX.pt` |
+| ブランチ | （作業ブランチ） |
 
 ### 1. 前回結果の分析
 
@@ -22,11 +22,7 @@
 
 | 指標 | 前回値 | 所見 |
 |------|--------|------|
-| `episode_displacement_x` (mean) | 1.5 m | 5 m 手前でプラトー |
-| `single_support_ratio` | 0.42 | やや低い |
-| `alternating_landing_ratio` | 0.31 | 交互歩行不足 |
-| `mean_episode_length` | 420 step | 早期転倒多い |
-| Success rate >= 5 m (eval) | 8% | 目標 80% 未達 |
+| （W&B の報酬名） | （前回値） | （所見） |
 
 **観察（事実）**:
 - （ログ・eval から読み取れる事実のみ）
@@ -47,7 +43,7 @@
 
 | ファイル | 変更内容 | 根拠 |
 |----------|----------|------|
-| `biped_ppo_walk_env_cfg.py` | `enable_forward_vel=True`, 右ピボット遮断 | 前進速度報酬でプラトー突破を狙う |
+| `biped_walk_env_cfg.py` | 報酬項を 1 つだけ変える | その項がログで動くかを見る |
 
 ```diff
 # 必要なら主要 diff を短く引用
@@ -62,18 +58,14 @@
 - イテレーション: 600（resume from v23）
 - 所要時間: ~2 h
 
-**eval** (`eval_biped_walk.py --episodes 10`):
+**確認**（学習ログの報酬、必要なら `YuukiLab-BipedWalk-Play-v0` の再生）:
 
 | 指標 | 今回 | 前回比 |
 |------|------|--------|
-| Mean displacement +X | 2.8 m | +1.3 m |
-| Success rate >= 5 m | 22% | +14 pp |
-| Success rate >= 15 m | 0% | — |
-| single_support_ratio | 0.48 | +0.06 |
+| 追った報酬 | （ログの値） | （前回比） |
 
 **W&B ハイライト**:
 - `Train/mean_reward`: ...
-- `Metrics/mean_milestone_level`: ...
 
 ### 5. 判定
 
@@ -81,7 +73,7 @@
 |------|------|
 | スモーク Go/No-Go | Go |
 | 本番 Go/No-Go | Go（改善傾向だが目標未達） |
-| **目的達成** | **未達** — Success rate 22% < 80% |
+| **目的達成** | **未達** — （ユーザーの条件との差） |
 
 ### 6. 次イテレーション
 
@@ -98,9 +90,8 @@
 | 項目 | 値 |
 |------|-----|
 | 達成 run | |
-| Success rate >= 5 m | |
+| 達成条件 | |
 | 総イテレーション数 | |
-| 開始〜達成 | v22 → vNN |
 
 **有効だった変更の要約**:
 1. ...

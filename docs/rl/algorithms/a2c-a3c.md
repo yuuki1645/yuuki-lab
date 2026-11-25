@@ -18,7 +18,7 @@ PPO は「同じ rollout を clip 付きで複数 epoch 使う」点が異なり
 |------|------|------|
 | archive exp_001, exp_002 | A2C | アーカイブ（片脚 2 関節） |
 | exp_030（MuJoCo） | PPO | 参照（旧本線） |
-| Isaac Lab biped_ppo_walk | PPO（RSL-RL） | **本線** |
+| `YuukiLab-BipedWalk-v0` | PPO（RSL-RL） | **本線** |
 
 アーカイブ README: [exp_001](../../../mujoco-sim/mujoco_rl_sim/experiments/archive/exp_001_2joint_a2c/README.md)
 

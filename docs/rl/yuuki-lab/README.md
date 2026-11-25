@@ -6,16 +6,16 @@
 
 ```text
 docs/rl/              … 理論・algo・実務の一般論（学び直し・検品用）
-docs/experiments/     … 各実験の正本（本線: isaac_biped_ppo_walk）
-isaac-lab/            … 本線コード（学習・eval）
+docs/experiments/     … MuJoCo 実験の参照（exp_030）
+isaac-lab/            … 本線コード（YuukiLab-BipedWalk-v0）
 mujoco-sim/.../exp_*/ … 参照・レガシー（Hydra・報酬設計の由来）
 ```
 
 | 質問 | 見る場所 |
 |------|---------|
 | PPO の clip とは | [algorithms/ppo.md](../algorithms/ppo.md) |
-| **いま触る実験** | [isaac_biped_ppo_walk](../../experiments/isaac_biped_ppo_walk/README.md) |
-| Isaac の報酬・観測 | [Direct タスク README](../../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md) |
+| **いま触る実験** | [isaac-lab/README.md](../../../isaac-lab/README.md) |
+| Isaac の報酬・観測 | [biped_walk_env_cfg.py](../../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) |
 | exp_030 の forward_imu の式（背景） | [experiments/exp_030/reward.md](../../experiments/exp_030_biped_ppo_walk/reward.md) |
 | MuJoCo 由来の対応表 | [exp030-bridge.md](exp030-bridge.md) |
 
@@ -29,8 +29,8 @@ mujoco-sim/.../exp_*/ … 参照・レガシー（Hydra・報酬設計の由来�
 
 ## 本線実験へのリンク
 
-- [isaac_biped_ppo_walk（本線）](../../experiments/isaac_biped_ppo_walk/README.md)
-- [isaac-lab/README.md](../../../isaac-lab/README.md)
+- [isaac-lab/README.md（本線）](../../../isaac-lab/README.md)
+- [biped_walk_env_cfg.py](../../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py)
 - [トップ README](../../../README.md)
 
 ### 参照（旧 MuJoCo 本線）

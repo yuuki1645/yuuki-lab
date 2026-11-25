@@ -1,7 +1,7 @@
 # ドキュメント一覧
 
 実機の制御、強化学習、シミュレーション設計の参照資料です。  
-**RL 本線は [Isaac Lab](../isaac-lab/README.md)**（実験 docs: [experiments/isaac_biped_ppo_walk](experiments/isaac_biped_ppo_walk/README.md)）。  
+**RL 本線は [Isaac Lab](../isaac-lab/README.md)** の `YuukiLab-BipedWalk-v0` です。  
 **機体の制御の基本は [robot_control.md](robot_control.md)** です。
 
 | ファイル | 内容 |
@@ -9,7 +9,7 @@
 | [robot_control.md](robot_control.md) | **実機の制御**（CoreS3、両脚の ATOM S3R、CAN、サブ PC、タブレット） |
 | [heel_teleop.md](heel_teleop.md) | **ゲームパッドで踵を動かす**（Isaac の起動、Hub への出し方、実機の起動と操作） |
 | [rl/](rl/README.md) | **強化学習の汎用解説**（基礎・PPO 等・実務・学び直し） |
-| [experiments/](experiments/README.md) | **強化学習実験の詳細解説**（本線: Isaac / 参照: MuJoCo exp_030） |
+| [experiments/](experiments/README.md) | **強化学習実験の詳細解説**（参照: MuJoCo exp_030。Isaac の現行仕様は isaac-lab） |
 | [prometheus.md](prometheus.md) | **プロメテウス（レガシー）** — 自宅 LAN 分散強化学習（旧 `dispatch`） |
 | [../aws/README.md](../aws/README.md) | **AWS 並列学習（MuJoCo exp_030 向け・レガシー）** — `aws_launch.py`・EC2 Spot・S3 |
 | [robot_spec.md](robot_spec.md) | 実機ロボット（カゴ・サーボ・バッテリー等）の寸法・重量 |
@@ -24,7 +24,7 @@
 ## 使い方の目安
 
 1. **機体の制御を確認する** → [robot_control.md](robot_control.md)。パッドで踵を動かす手順は [heel_teleop.md](heel_teleop.md)。
-2. **いま学習を回す** → [../isaac-lab/README.md](../isaac-lab/README.md) と [experiments/isaac_biped_ppo_walk](experiments/isaac_biped_ppo_walk/README.md)。
+2. **いま学習を回す** → [../isaac-lab/README.md](../isaac-lab/README.md)。
 3. **強化学習の基礎・PPO の復習** → [rl/README.md](rl/README.md)（学び直しは [rl/yuuki-lab/sutton-barto-map.md](rl/yuuki-lab/sutton-barto-map.md) から）。
 4. **報酬設計**（「人間らしい膝曲げ」など）→ `human_joint_kinematics.md` の歩行時角度と、シミュレーションの符号・軸を `sim_human_comparison.md` で照合する。
 5. **質量・長さのチューニング** → `human_anthropometry.md` でオーダーを確認し、`robot_spec.md` / XML の `mass` を合わせる。

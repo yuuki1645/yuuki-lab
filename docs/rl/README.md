@@ -3,8 +3,8 @@
 歩行 RL で使う **強化学習の汎用解説** です。  
 数式は GitHub 向けに `$...$`（インライン）・`$$...$$`（ブロック）で記述しています。
 
-**現行の学習本線は Isaac Lab**（[experiments/isaac_biped_ppo_walk](../experiments/isaac_biped_ppo_walk/README.md)）。  
-本文の具体例の多くは由来となった MuJoCo [exp_030](../experiments/exp_030_biped_ppo_walk/README.md) を参照しています（参照・レガシー）。
+**現行の学習本線は Isaac Lab の `YuukiLab-BipedWalk-v0`**（[isaac-lab/README.md](../../isaac-lab/README.md)）。  
+本文の具体例の多くは由来となった MuJoCo [exp_030](../experiments/exp_030_biped_ppo_walk/README.md) を参照しています（参照であり、現行タスクの仕様ではありません）。
 
 実験固有の詳細（報酬係数・終了条件・ワークフロー）は [experiments/](../experiments/README.md) に、人体・実機の数値は [human_joint_kinematics.md](../human_joint_kinematics.md) 等に置きます。
 
@@ -12,8 +12,8 @@
 
 ```text
 docs/rl/           … 理論・アルゴリズム・実務の一般論（本フォルダ）
-docs/experiments/  … 各実験の正本（本線: isaac_biped_ppo_walk、参照: exp_030）
-コード（本線）     … isaac-lab/source/yuuki_isaac_lab/.../biped_ppo_walk/
+docs/experiments/  … MuJoCo 実験の参照（exp_030）。Isaac の現行仕様は isaac-lab
+コード（本線）     … isaac-lab/.../tasks/manager_based/biped_walk/
 コード（参照）     … mujoco-sim/mujoco_rl_sim/experiments/exp_030/...
 ```
 
@@ -24,8 +24,8 @@ docs/experiments/  … 各実験の正本（本線: isaac_biped_ppo_walk、参�
 1. [algorithms/ppo.md](algorithms/ppo.md) — いま使っている algo
 2. [practice/reward-design.md](practice/reward-design.md) — 報酬の考え方
 3. [practice/evaluation.md](practice/evaluation.md) — train と eval の分離
-4. [experiments/isaac_biped_ppo_walk/](../experiments/isaac_biped_ppo_walk/README.md) — **本線**の実験入口
-5. [isaac-lab Direct タスク README](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md) — 観測・報酬・実行手順
+4. [isaac-lab/README.md](../../isaac-lab/README.md) — **本線**の手順
+5. [biped_walk_env_cfg.py](../../isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) — 観測・報酬・終了
 6. （背景参照）[yuuki-lab/exp030-bridge.md](yuuki-lab/exp030-bridge.md) — 理論と MuJoCo 由来コードの対応
 
 ### ルート B: Sutton & Barto 学び直し
@@ -56,7 +56,7 @@ docs/experiments/  … 各実験の正本（本線: isaac_biped_ppo_walk、参�
 
 | リンク | 内容 |
 |--------|------|
-| [experiments/isaac_biped_ppo_walk](../experiments/isaac_biped_ppo_walk/README.md) | **本線**実験の詳細 |
+| [isaac-lab/README.md](../../isaac-lab/README.md) | **本線**の手順とタスク ID |
 | [experiments/exp_030](../experiments/exp_030_biped_ppo_walk/README.md) | MuJoCo 参照（旧本線） |
 | [control_timing_human_rl.md](../control_timing_human_rl.md) | 人体 Hz と RL step |
 | [aws/README.md](../../aws/README.md) | AWS 並列学習（MuJoCo exp_030 向け・レガシー） |

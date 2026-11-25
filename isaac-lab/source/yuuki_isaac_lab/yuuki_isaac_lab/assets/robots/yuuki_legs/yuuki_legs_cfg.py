@@ -1,7 +1,6 @@
 """カゴと両脚だけの歩行用アーティキュレーション。
 
-形状の正本は `robot_description/yuuki_biped.urdf`。ここにある古い
-`yuuki_biped`（バランス棒つき 12 関節）は使わない。USD は直立確認と同じ
+形状の正本は `robot_description/yuuki_biped.urdf`。USD は直立確認と同じ
 `.usd_float` にキャッシュし、カゴは地面へ固定しない。
 
 衝突は URDF の箱をそのまま使う。関節で直接つながった部品だけは PhysX が無視する。

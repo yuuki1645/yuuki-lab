@@ -14,16 +14,16 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 
 # 強化学習実験（本線・更新中）
 
-**本線は Isaac Lab** 上の **両脚・交互片脚歩行 PPO** です（`isaac-lab/`）。  
-MuJoCo の [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) から移植した系統で、報酬設計の背景参照は MuJoCo docs に残しています。日常の学習・評価・改善ループは **Isaac のみ** で行います。
+**本線は Isaac Lab** 上の **`YuukiLab-BipedWalk-v0`** です（`isaac-lab/`）。  
+仕様はタスクの `biped_walk_env_cfg.py` です。MuJoCo の [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk/) は以前の実験で、このタスクの仕様ではありません。
 
 | 項目 | 内容 |
 |------|------|
 | シミュレータ | Isaac Sim / [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) |
-| タスク | `YuukiLab-BipedPpoWalk-Direct-v0`（Manager-Based: `YuukiLab-BipedPpoWalk-v0`） |
+| タスク | `YuukiLab-BipedWalk-v0`（再生: `YuukiLab-BipedWalk-Play-v0`） |
 | アルゴリズム | PPO（RSL-RL） |
-| 採点 | `eval_biped_walk.py` の前進量・成功率（例: Success rate ≥ 5 m） |
-| チェックポイント | `isaac-lab/logs/rsl_rl/biped_ppo_walk/` |
+| ロボット | `yuuki_legs`（形状は `robot_description/yuuki_biped.urdf`） |
+| チェックポイント | `isaac-lab/logs/rsl_rl/yuuki_biped_walk/` |
 
 ### 導線（読む順・実行の入口）
 
@@ -31,8 +31,7 @@ MuJoCo の [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
 |------|--------|
 | **いま触るパッケージ** | [isaac-lab/](isaac-lab/) |
 | **最短手順（README 入口）** | [isaac-lab/README.md](isaac-lab/README.md) |
-| **実験ドキュメント（正本）** | [docs/experiments/isaac_biped_ppo_walk/](docs/experiments/isaac_biped_ppo_walk/README.md) — 目的・iterations・eval |
-| **タスク詳細（Direct）** | [biped_ppo_walk README](isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/direct/biped_ppo_walk/README.md) |
+| **タスク仕様** | [biped_walk_env_cfg.py](isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) |
 | **強化学習の学び直し・理論** | [docs/rl/](docs/rl/README.md) — MDP・PPO・報酬設計の一般論 |
 | **実験ドキュメント一覧** | [docs/experiments/](docs/experiments/README.md) |
 | **AI エージェント向け（改善ループ）** | [.cursor/skills/rl-improvement-loop/SKILL.md](.cursor/skills/rl-improvement-loop/SKILL.md) |
@@ -40,10 +39,8 @@ MuJoCo の [exp_030](mujoco-sim/mujoco_rl_sim/experiments/exp_030_biped_ppo_walk
 ```bash
 cd isaac-lab
 python -m pip install -e source/yuuki_isaac_lab
-# スモーク
-python scripts/rsl_rl/train.py --task YuukiLab-BipedPpoWalk-Direct-v0 --headless --num_envs 64 --max_iterations 5
-# 評価
-python scripts/eval_biped_walk.py --load_run <run_dir> --episodes 10 --num_envs 64
+python scripts/smoke_biped_walk.py
+python scripts/rsl_rl/train.py --task YuukiLab-BipedWalk-v0 --headless --num_envs 64 --max_iterations 5
 ```
 
 学習ログは **robotics-hub** の「Isaac 学習進捗」（`/isaac-rl-log`）からも参照できます。
@@ -163,7 +160,7 @@ ATOM と CoreS3 が共有する USB 契約と、サブ PC が USB-C を握る入
 | 項目 | 内容 |
 |------|------|
 | パッケージ | [isaac-lab/](isaac-lab/) |
-| タスク | `YuukiLab-BipedPpoWalk-Direct-v0` / `YuukiLab-BipedPpoWalk-v0` |
+| タスク | `YuukiLab-BipedWalk-v0` |
 | 詳細 | [isaac-lab/README.md](isaac-lab/README.md) |
 
 ## ■ mujoco-sim

@@ -23,19 +23,14 @@ flowchart TB
     YL[yuuki-lab/]
   end
 
-  subgraph isaac_exp [docs/experiments/isaac_biped_ppo_walk/]
-    ISAAC_R[README.md]
-    ISAAC_I[iterations.md]
+  subgraph isaac_code [isaac-lab 本線]
+    ISAAC_CFG[biped_walk_env_cfg.py]
+    ISAAC_TRAIN[scripts/rsl_rl/train.py]
   end
 
   subgraph exp030 [docs/experiments/exp_030/ 参照]
     E30R[reward.md]
     E30T[termination.md]
-  end
-
-  subgraph code_main [コード本線]
-    ISAAC_CFG[biped_ppo_walk_env_cfg.py]
-    ISAAC_TRAIN[scripts/rsl_rl/train.py]
   end
 
   subgraph code_ref [コード参照 MuJoCo]
@@ -51,16 +46,14 @@ flowchart TB
   RL --> ALGO
   RL --> PRAC
   RL --> YL
-  YL --> isaac_exp
+  YL --> isaac_code
   YL --> exp030
-  EXP --> ISAAC_R
   EXP --> E30R
-  ISAAC_R --> ISAAC_CFG
-  ISAAC_R --> ISAAC_TRAIN
+  ISAAC_CFG --> ISAAC_TRAIN
   E30R --> REWARD
   ALGO --> ISAAC_TRAIN
-  PRAC --> ISAAC_R
-  HUMAN --> ISAAC_R
+  PRAC --> ISAAC_CFG
+  HUMAN --> ISAAC_CFG
   TIMING --> PRAC
 ```
 
@@ -69,7 +62,7 @@ flowchart TB
 | パス | 役割 | 更新タイミング |
 |------|------|---------------|
 | `docs/rl/` | 汎用・学習用 | algo 理解を深めたとき |
-| `docs/experiments/isaac_biped_ppo_walk/` | **本線**実験正本 | 目的・iterations・eval を変えたとき |
+| `isaac-lab/` の `biped_walk` | **本線**の仕様と学習 | 報酬・終了・観測を変えたとき |
 | `docs/experiments/exp_030_*/` | MuJoCo 参照 | 背景の報酬・終了を読むとき |
 | `isaac-lab/` | 本線コード | 学習・報酬・終了を変えたとき |
 | `mujoco-sim/.../exp_*/README.md` | MuJoCo 入口 | レガシー手順変更時 |

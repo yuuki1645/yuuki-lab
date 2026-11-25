@@ -23,7 +23,7 @@ yuuki-lab で触れる・触った強化学習アルゴリズムの解説です�
 |------|--------------------------|------------------------|
 | PPO | RSL-RL + `agents/rsl_rl_ppo_cfg.py` | `rl/agent.py` |
 | 学習ループ | `scripts/rsl_rl/train.py` | `contract/session.py` |
-| 設定 | `biped_ppo_walk_env_cfg.py` 等 | `conf/ppo/default.yaml` |
+| 設定 | `biped_walk_env_cfg.py` | `conf/ppo/default.yaml` |
 
-本線の実験正本: [isaac_biped_ppo_walk](../../experiments/isaac_biped_ppo_walk/README.md)。  
+本線の手順: [isaac-lab/README.md](../../../isaac-lab/README.md)。  
 MuJoCo 由来の数値・ログキーは [experiments/exp_030](../../experiments/exp_030_biped_ppo_walk/README.md) を参照。

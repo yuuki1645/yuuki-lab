@@ -10,7 +10,7 @@ readme  = "README.md"
 title = "Yuuki Lab Isaac RL"
 author = "Yuuki Lab"
 maintainer = "Yuuki Lab"
-description = "Isaac Lab extension for yuuki-lab biped PPO walking (exp_030 port)"
+description = "Isaac Lab extension for YuukiLab-BipedWalk-v0"
 repository = "https://github.com/yuuki1645/yuuki-lab"
 keywords = ["extension", "isaaclab", "yuuki-lab", "biped", "rl"]
 

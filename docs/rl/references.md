@@ -29,7 +29,7 @@
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [experiments/isaac_biped_ppo_walk](../experiments/isaac_biped_ppo_walk/README.md) | **本線**実装・実験正本 |
+| [isaac-lab/README.md](../../isaac-lab/README.md) | **本線**の手順とタスク |
 | [experiments/exp_030](../experiments/exp_030_biped_ppo_walk/README.md) | MuJoCo 参照（旧本線） |
 | [control_timing_human_rl.md](../control_timing_human_rl.md) | 制御 Hz |
 | [human_joint_kinematics.md](../human_joint_kinematics.md) | 歩行の関節角度 |

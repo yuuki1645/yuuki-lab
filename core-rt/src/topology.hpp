@@ -10,9 +10,9 @@
  * 1行が PaHub の1チャンネル。アドレス（角度 0x36、電流 0x41、
  * すねのサーボ 0x25、足裏 0x28）は表に書かない。
  * 直下 0x26 の出力 0 が股ロール、1 が股ピッチ。
- * 出力 2 は右脚だけかかとロール。以前ここはひざだった。
+ * 出力 2 は左右ともかかとロール。以前ここはひざだった。
  * 両脚のひざとかかとピッチは SM105BL（RS485）なので、PWM の経路は空。
- * 左のかかとロールだけ、すね PaHub の先の 8Servos 0x25 出力 7。
+ * すねの 8Servos 0x25 には、かかとロールを出さない。
  *
  * 軸の番号は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。
  */
@@ -50,8 +50,8 @@ static constexpr uint8_t kSlotFoot = 4;
 
 /** 直下 0x26。0 股ロール、1 股ピッチ。添字 2 は fillLegRoutes がひざに使うが、直後に外す。 */
 static constexpr uint8_t kDirectServoOut[3] = {0, 1, 2};
-/** 右かかとロールが使う、直下 0x26 の出力。 */
-static constexpr uint8_t kRightAnkleRollOut = 2;
+/** 左右のかかとロールが使う、直下 0x26 の出力。ひざが退いた端子。 */
+static constexpr uint8_t kDirectAnkleRollOut = 2;
 
 struct HubSlot {
     uint8_t kind;
@@ -227,19 +227,25 @@ inline void clearServoRoute(JointRoute& joint) {
     joint.servo_ch = 0;
 }
 
+/** かかとロールを、すねの 0x25 ではなく直下 0x26 の出力 2 にする。 */
+inline void useDirectAnkleRoll(JointRoute& joint) {
+    joint.act_hub = 0;
+    joint.act_ch = -1;
+    joint.act_addr = kRootServoAddr;
+    joint.servo_ch = kDirectAnkleRollOut;
+}
+
 inline void fillRightLegRoutes(JointRoute* joint) {
     fillLegRoutes(joint, kHubRightThigh, kRightThigh, kHubRightShin, kRightShin);
-    // ひざが退いた直下 0x26 の出力 2 を、かかとロールに使う。すねの 0x25 出力 7 ではない。
-    joint[kAxisAnkleRoll].act_hub = 0;
-    joint[kAxisAnkleRoll].act_ch = -1;
-    joint[kAxisAnkleRoll].act_addr = kRootServoAddr;
-    joint[kAxisAnkleRoll].servo_ch = kRightAnkleRollOut;
+    useDirectAnkleRoll(joint[kAxisAnkleRoll]);
     clearServoRoute(joint[kAxisKnee]);
     clearServoRoute(joint[kAxisAnklePitch]);
 }
 
 inline void fillLeftLegRoutes(JointRoute* joint) {
     fillLegRoutes(joint, kHubLeftThigh, kLeftThigh, kHubLeftShin, kLeftShin);
+    // 左も右と同じ。すね 0x73 CH5 の 0x25 出力 7 には出さない。
+    useDirectAnkleRoll(joint[kAxisAnkleRoll]);
     clearServoRoute(joint[kAxisKnee]);
     clearServoRoute(joint[kAxisAnklePitch]);
 }

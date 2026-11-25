@@ -20,9 +20,14 @@
 static constexpr int kMountJoints = 10;
 static constexpr float kMountNeutralDeg = 135.0f;
 
-/** 論理軸 0〜9。1 の軸だけ、135° を中心に折り返す。 */
+/**
+ * 論理軸 0〜9。ビットが立っている軸は、135° を中心に折り返す。
+ * 0 右股ロール、1 右股ピッチ、2 右ひざ、3 右踵ピッチ、4 右踵ロール。
+ * 右股ピッチは増える向きが逆だったので折り返す。真下の電気角はバイアスのまま。
+ * 左股ピッチ（軸 6）は以前ここで折り返していた。その向きが逆だったので、戻した。
+ */
 static constexpr uint16_t kMountFlipMask =
-    (1u << 0) | (1u << 2) | (1u << 3) | (1u << 4) | (1u << 6);
+    (1u << 0) | (1u << 1) | (1u << 2) | (1u << 3) | (1u << 4);
 
 /**
  * 電気角 − 135°。0.1° 単位。
@@ -72,11 +77,12 @@ static inline float mountElectricalToIdeal(int channel, float electricalDeg) {
 
 static_assert(mountIdealToElectricalDeci(0, kMountNeutralDeci) == 1200, "右股ロールの真下は 120°");
 static_assert(mountIdealToElectricalDeci(1, kMountNeutralDeci) == 1320, "右股ピッチの真下は 132°");
+static_assert(mountIdealToElectricalDeci(1, 1450) == 1220, "右股ピッチは 135° を中心に折り返す");
 static_assert(mountIdealToElectricalDeci(2, kMountNeutralDeci) == 1400, "右ひざの真下は 140°");
 static_assert(mountIdealToElectricalDeci(3, kMountNeutralDeci) == 1330, "右踵ピッチの真下は 133°");
 static_assert(mountIdealToElectricalDeci(4, kMountNeutralDeci) == 1400, "右踵ロールの真下は 140°");
 static_assert(mountIdealToElectricalDeci(5, kMountNeutralDeci) == 1350, "左股ロールの真下は 135°");
-static_assert(mountIdealToElectricalDeci(6, 1450) == 1250, "左股ピッチは向きだけ折り返す");
+static_assert(mountIdealToElectricalDeci(6, 1450) == 1450, "左股ピッチは折り返さない");
 static_assert(mountIdealToElectricalDeci(8, kMountNeutralDeci) == 1340, "左踵ピッチの真下は 134°");
 static_assert(mountIdealToElectricalDeci(9, kMountNeutralDeci) == 1400, "左踵ロールの真下は 140°");
 static_assert(mountElectricalToIdealDeci(0, 1200) == kMountNeutralDeci, "右股ロールの補正角を真下へ戻す");

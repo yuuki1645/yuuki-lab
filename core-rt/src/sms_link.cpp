@@ -65,10 +65,18 @@ static int decodeBit15(unsigned raw) {
     return static_cast<int>(raw & 0x7FFFu);
 }
 
-// 2048 を 0° にする。正方向は取り付け済みなので、ここでは符号を反転しない。
-static float countsToDeg(unsigned raw) {
+/**
+ * 論理角の正が、カウントのどちらへ増えるか。
+ * ID 4（左かかとピッチ）だけ逆。指令とフィードバックの両方に掛ける。
+ */
+static int smsDirection(uint8_t id) {
+    return id == 4 ? -1 : 1;
+}
+
+// 2048 を 0° にする。符号は smsDirection。0° 自体は動かさない。
+static float countsToDeg(uint8_t id, unsigned raw) {
     const float counts = static_cast<float>(decodeBit15(raw) - kZeroCount);
-    return counts * (360.0f / kCountsPerRev);
+    return static_cast<float>(smsDirection(id)) * counts * (360.0f / kCountsPerRev);
 }
 
 static bool tokenInt(const char* line, const char* key, long* out) {
@@ -125,8 +133,9 @@ static void takeSm(const char* line) {
         return;
     }
     // 指令も現在角も同じゼロ。goal を 2048 引きしないと、真下で約 180° になる。
-    slot.cmd_deg = countsToDeg(static_cast<unsigned>(goal));
-    slot.pos_deg = countsToDeg(static_cast<unsigned>(pos));
+    const uint8_t servoId = slot.id;
+    slot.cmd_deg = countsToDeg(servoId, static_cast<unsigned>(goal));
+    slot.pos_deg = countsToDeg(servoId, static_cast<unsigned>(pos));
     // 試験画面の単位。volt は 0.1 V、curr は 6.5 mA。画面の電流は A。
     slot.volt_v = static_cast<float>(volt) / 10.0f;
     slot.amp_a = static_cast<float>(curr) * 6.5f / 1000.0f;
@@ -195,8 +204,9 @@ void smsLinkGoal(uint8_t id, float deg) {
     if (index < 0) {
         return;
     }
-    // 2048 が真下 0°。画面の可動域なら 0〜4095 に収まる。
-    const float counts = static_cast<float>(kZeroCount) + deg * (kCountsPerRev / 360.0f);
+    // 2048 が真下 0°。ID 4 は増減を逆にする。画面の可動域なら 0〜4095 に収まる。
+    const float counts = static_cast<float>(kZeroCount) +
+                         static_cast<float>(smsDirection(id)) * deg * (kCountsPerRev / 360.0f);
     int rounded = (int)lroundf(counts);
     if (rounded < 0) {
         rounded = 0;

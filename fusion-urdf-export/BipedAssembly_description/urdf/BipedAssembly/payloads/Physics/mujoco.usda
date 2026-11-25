@@ -1,0 +1,742 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "BipedAssembly"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmpj04ra5xk\\BipedAssembly.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_BipedAssembly_p_z9ak3_\\usdex_BipedAssembly\\BipedAssembly.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_BipedAssembly_p_z9ak3_\\temp_BipedAssembly\\BipedAssembly.usd
+
+
+Generated from Composed Stage of root layer Z:\\Projects\\yuuki-lab\\fusion-urdf-export\\BipedAssembly_description\\urdf\\BipedAssembly\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./physics.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "BipedAssembly"
+{
+    over "Physics"
+    {
+        def MjcActuator "LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01>
+        }
+
+        def MjcActuator "LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01_actuator"
+        {
+            uniform double mjc:forceRange:max = 100
+            uniform double mjc:forceRange:min = -100
+            custom rel mjc:target
+            prepend rel mjc:target = </BipedAssembly/Physics/LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01>
+        }
+
+        over "root_joint"
+        {
+        }
+
+        over "biped_fixed_01"
+        {
+        }
+
+        over "biped_fixed_02"
+        {
+        }
+
+        over "biped_fixed_03"
+        {
+        }
+
+        over "LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_05"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_05"
+        {
+        }
+
+        over "LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_04"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_04"
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_03"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_03"
+        {
+        }
+
+        over "LegAssembly_v28_1___18"
+        {
+        }
+
+        over "LegAssembly_v28_2___18"
+        {
+        }
+
+        over "LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01"
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_10"
+        {
+        }
+
+        over "LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_10"
+        {
+        }
+
+        over "LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_06"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_06"
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_07"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_07"
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_02"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_02"
+        {
+        }
+
+        over "LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01"
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_11"
+        {
+        }
+
+        over "LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_11"
+        {
+        }
+
+        over "LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_08"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_08"
+        {
+        }
+
+        over "LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "LegAssembly_v28_1__fixed_09"
+        {
+        }
+
+        over "LegAssembly_v28_2__fixed_09"
+        {
+        }
+    }
+
+    over "Geometry"
+    {
+        over "base_link"
+        {
+            over "DSSERVO_RDS51150_BodyOnly_rigid_01"
+            {
+                over "RDS51150Assembly_RDS51150OriginalOutputBracket"
+                {
+                    over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket"
+                    {
+                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_3"
+                        {
+                            over "LegAssembly_RDS51150LinkBracket"
+                            {
+                                over "LegLinkAssembly_rigid_01"
+                                {
+                                    over "SM105BLAssembly_SM105BLLinkBracket"
+                                    {
+                                        over "SM100_BL_ASM_159_ASM_rigid_01"
+                                        {
+                                            over "SM105BLAssembly_SM105BLOutputBracket"
+                                            {
+                                                over "LegAssembly_SM105BLLinkBracket"
+                                                {
+                                                    over "LegLinkAssembly_rigid_01_2"
+                                                    {
+                                                        over "SM105BLAssembly_SM105BLLinkBracket_2"
+                                                        {
+                                                            over "SM100_BL_ASM_159_ASM_rigid_01_2"
+                                                            {
+                                                                over "SM105BLAssembly_SM105BLOutputBracket_2"
+                                                                {
+                                                                    over "DSSERVO_RDS51150_BodyOnly_rigid_01_2"
+                                                                    {
+                                                                        over "RDS51150Assembly_RDS51150OriginalOutputBracket_2"
+                                                                        {
+                                                                            over "LegAssembly_FootPlate"
+                                                                            {
+                                                                                over "LegAssembly_FootPlate"
+                                                                                {
+                                                                                }
+
+                                                                                over "LegAssembly_FootPlate_collision"
+                                                                                {
+                                                                                }
+                                                                            }
+
+                                                                            over "RDS51150Assembly_RDS51150OriginalOutputBracket_2"
+                                                                            {
+                                                                            }
+
+                                                                            over "RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision"
+                                                                            {
+                                                                            }
+                                                                        }
+
+                                                                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_2"
+                                                                        {
+                                                                        }
+
+                                                                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision"
+                                                                        {
+                                                                        }
+                                                                    }
+
+                                                                    over "SM105BLAssembly_SM105BLOutputBracket_2"
+                                                                    {
+                                                                    }
+
+                                                                    over "SM105BLAssembly_SM105BLOutputBracket_2_collision"
+                                                                    {
+                                                                    }
+                                                                }
+
+                                                                over "SM100_BL_ASM_159_ASM_rigid_01_2"
+                                                                {
+                                                                }
+
+                                                                over "SM100_BL_ASM_159_ASM_rigid_01_2_collision"
+                                                                {
+                                                                }
+                                                            }
+
+                                                            over "LegAssembly_LiPo3S"
+                                                            {
+                                                                over "LegAssembly_LiPo3S"
+                                                                {
+                                                                }
+
+                                                                over "LegAssembly_LiPo3S_collision"
+                                                                {
+                                                                }
+                                                            }
+
+                                                            over "SM105BLAssembly_SM105BLLinkBracket_2"
+                                                            {
+                                                            }
+
+                                                            over "SM105BLAssembly_SM105BLLinkBracket_2_collision"
+                                                            {
+                                                            }
+                                                        }
+
+                                                        over "LegLinkAssembly_rigid_01_2"
+                                                        {
+                                                        }
+
+                                                        over "LegLinkAssembly_rigid_01_2_collision"
+                                                        {
+                                                        }
+                                                    }
+
+                                                    over "LegAssembly_SM105BLLinkBracket"
+                                                    {
+                                                    }
+
+                                                    over "LegAssembly_SM105BLLinkBracket_collision"
+                                                    {
+                                                    }
+                                                }
+
+                                                over "SM105BLAssembly_SM105BLOutputBracket"
+                                                {
+                                                }
+
+                                                over "SM105BLAssembly_SM105BLOutputBracket_collision"
+                                                {
+                                                }
+                                            }
+
+                                            over "SM100_BL_ASM_159_ASM_rigid_01"
+                                            {
+                                            }
+
+                                            over "SM100_BL_ASM_159_ASM_rigid_01_collision"
+                                            {
+                                            }
+                                        }
+
+                                        over "LegAssembly_LiPo3S_2"
+                                        {
+                                            over "LegAssembly_LiPo3S_2"
+                                            {
+                                            }
+
+                                            over "LegAssembly_LiPo3S_2_collision"
+                                            {
+                                            }
+                                        }
+
+                                        over "SM105BLAssembly_SM105BLLinkBracket"
+                                        {
+                                        }
+
+                                        over "SM105BLAssembly_SM105BLLinkBracket_collision"
+                                        {
+                                        }
+                                    }
+
+                                    over "LegLinkAssembly_rigid_01"
+                                    {
+                                    }
+
+                                    over "LegLinkAssembly_rigid_01_collision"
+                                    {
+                                    }
+                                }
+
+                                over "LegAssembly_RDS51150LinkBracket"
+                                {
+                                }
+
+                                over "LegAssembly_RDS51150LinkBracket_collision"
+                                {
+                                }
+                            }
+
+                            over "DSSERVO_RDS51150_BodyOnly_rigid_01_3"
+                            {
+                            }
+
+                            over "DSSERVO_RDS51150_BodyOnly_rigid_01_3_collision"
+                            {
+                            }
+                        }
+
+                        over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket"
+                        {
+                        }
+
+                        over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_collision"
+                        {
+                        }
+                    }
+
+                    over "RDS51150Assembly_RDS51150OriginalOutputBracket"
+                    {
+                    }
+
+                    over "RDS51150Assembly_RDS51150OriginalOutputBracket_collision"
+                    {
+                    }
+                }
+
+                over "DSSERVO_RDS51150_BodyOnly_rigid_01"
+                {
+                }
+
+                over "DSSERVO_RDS51150_BodyOnly_rigid_01_collision"
+                {
+                }
+            }
+
+            over "DSSERVO_RDS51150_BodyOnly_rigid_01_4"
+            {
+                over "RDS51150Assembly_RDS51150OriginalOutputBracket_3"
+                {
+                    over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"
+                    {
+                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_6"
+                        {
+                            over "LegAssembly_RDS51150LinkBracket_2"
+                            {
+                                over "LegLinkAssembly_rigid_01_3"
+                                {
+                                    over "SM105BLAssembly_SM105BLLinkBracket_3"
+                                    {
+                                        over "SM100_BL_ASM_159_ASM_rigid_01_3"
+                                        {
+                                            over "SM105BLAssembly_SM105BLOutputBracket_3"
+                                            {
+                                                over "LegAssembly_SM105BLLinkBracket_2"
+                                                {
+                                                    over "LegLinkAssembly_rigid_01_4"
+                                                    {
+                                                        over "SM105BLAssembly_SM105BLLinkBracket_4"
+                                                        {
+                                                            over "SM100_BL_ASM_159_ASM_rigid_01_4"
+                                                            {
+                                                                over "SM105BLAssembly_SM105BLOutputBracket_4"
+                                                                {
+                                                                    over "DSSERVO_RDS51150_BodyOnly_rigid_01_5"
+                                                                    {
+                                                                        over "RDS51150Assembly_RDS51150OriginalOutputBracket_4"
+                                                                        {
+                                                                            over "LegAssembly_FootPlate_2"
+                                                                            {
+                                                                                over "LegAssembly_FootPlate_2"
+                                                                                {
+                                                                                }
+
+                                                                                over "LegAssembly_FootPlate_2_collision"
+                                                                                {
+                                                                                }
+                                                                            }
+
+                                                                            over "RDS51150Assembly_RDS51150OriginalOutputBracket_4"
+                                                                            {
+                                                                            }
+
+                                                                            over "RDS51150Assembly_RDS51150OriginalOutputBracket_4_collision"
+                                                                            {
+                                                                            }
+                                                                        }
+
+                                                                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_5"
+                                                                        {
+                                                                        }
+
+                                                                        over "DSSERVO_RDS51150_BodyOnly_rigid_01_5_collision"
+                                                                        {
+                                                                        }
+                                                                    }
+
+                                                                    over "SM105BLAssembly_SM105BLOutputBracket_4"
+                                                                    {
+                                                                    }
+
+                                                                    over "SM105BLAssembly_SM105BLOutputBracket_4_collision"
+                                                                    {
+                                                                    }
+                                                                }
+
+                                                                over "SM100_BL_ASM_159_ASM_rigid_01_4"
+                                                                {
+                                                                }
+
+                                                                over "SM100_BL_ASM_159_ASM_rigid_01_4_collision"
+                                                                {
+                                                                }
+                                                            }
+
+                                                            over "LegAssembly_LiPo3S_3"
+                                                            {
+                                                                over "LegAssembly_LiPo3S_3"
+                                                                {
+                                                                }
+
+                                                                over "LegAssembly_LiPo3S_3_collision"
+                                                                {
+                                                                }
+                                                            }
+
+                                                            over "SM105BLAssembly_SM105BLLinkBracket_4"
+                                                            {
+                                                            }
+
+                                                            over "SM105BLAssembly_SM105BLLinkBracket_4_collision"
+                                                            {
+                                                            }
+                                                        }
+
+                                                        over "LegLinkAssembly_rigid_01_4"
+                                                        {
+                                                        }
+
+                                                        over "LegLinkAssembly_rigid_01_4_collision"
+                                                        {
+                                                        }
+                                                    }
+
+                                                    over "LegAssembly_SM105BLLinkBracket_2"
+                                                    {
+                                                    }
+
+                                                    over "LegAssembly_SM105BLLinkBracket_2_collision"
+                                                    {
+                                                    }
+                                                }
+
+                                                over "SM105BLAssembly_SM105BLOutputBracket_3"
+                                                {
+                                                }
+
+                                                over "SM105BLAssembly_SM105BLOutputBracket_3_collision"
+                                                {
+                                                }
+                                            }
+
+                                            over "SM100_BL_ASM_159_ASM_rigid_01_3"
+                                            {
+                                            }
+
+                                            over "SM100_BL_ASM_159_ASM_rigid_01_3_collision"
+                                            {
+                                            }
+                                        }
+
+                                        over "LegAssembly_LiPo3S_4"
+                                        {
+                                            over "LegAssembly_LiPo3S_4"
+                                            {
+                                            }
+
+                                            over "LegAssembly_LiPo3S_4_collision"
+                                            {
+                                            }
+                                        }
+
+                                        over "SM105BLAssembly_SM105BLLinkBracket_3"
+                                        {
+                                        }
+
+                                        over "SM105BLAssembly_SM105BLLinkBracket_3_collision"
+                                        {
+                                        }
+                                    }
+
+                                    over "LegLinkAssembly_rigid_01_3"
+                                    {
+                                    }
+
+                                    over "LegLinkAssembly_rigid_01_3_collision"
+                                    {
+                                    }
+                                }
+
+                                over "LegAssembly_RDS51150LinkBracket_2"
+                                {
+                                }
+
+                                over "LegAssembly_RDS51150LinkBracket_2_collision"
+                                {
+                                }
+                            }
+
+                            over "DSSERVO_RDS51150_BodyOnly_rigid_01_6"
+                            {
+                            }
+
+                            over "DSSERVO_RDS51150_BodyOnly_rigid_01_6_collision"
+                            {
+                            }
+                        }
+
+                        over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"
+                        {
+                        }
+
+                        over "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2_collision"
+                        {
+                        }
+                    }
+
+                    over "RDS51150Assembly_RDS51150OriginalOutputBracket_3"
+                    {
+                    }
+
+                    over "RDS51150Assembly_RDS51150OriginalOutputBracket_3_collision"
+                    {
+                    }
+                }
+
+                over "DSSERVO_RDS51150_BodyOnly_rigid_01_4"
+                {
+                }
+
+                over "DSSERVO_RDS51150_BodyOnly_rigid_01_4_collision"
+                {
+                }
+            }
+
+            over "PelvisBasket"
+            {
+                over "PelvisBasket"
+                {
+                }
+
+                over "PelvisBasket_collision"
+                {
+                }
+            }
+
+            over "base_link"
+            {
+            }
+
+            over "base_link_collision"
+            {
+            }
+        }
+    }
+
+    over "Materials"
+    {
+    }
+
+    over "VisualMaterials"
+    {
+    }
+}
+

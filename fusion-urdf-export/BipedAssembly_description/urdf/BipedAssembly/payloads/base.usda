@@ -1,0 +1,1246 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "BipedAssembly"
+    doc = """Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\tmpj04ra5xk\\BipedAssembly.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_BipedAssembly_p_z9ak3_\\usdex_BipedAssembly\\BipedAssembly.usdc
+
+
+Generated from Composed Stage of root layer C:\\Users\\yuukilab\\AppData\\Local\\Temp\\urdf_import_BipedAssembly_p_z9ak3_\\temp_BipedAssembly\\BipedAssembly.usd
+
+
+Generated from Composed Stage of root layer Z:\\Projects\\yuuki-lab\\fusion-urdf-export\\BipedAssembly_description\\urdf\\BipedAssembly\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./robot.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "BipedAssembly" (
+    prepend apiSchemas = ["GeomModelAPI"]
+    assetInfo = {
+        string name = "BipedAssembly"
+    }
+    kind = "component"
+)
+{
+    float3[] extentsHint = [(-0.065, -0.31475002, -0.8660002), (0.27860063, 0.06525004, 0.148), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (3.4028235e38, 3.4028235e38, 3.4028235e38), (-3.4028235e38, -3.4028235e38, -3.4028235e38), (-0.065, -0.31475002, -0.8660002), (0.27860063, 0.06525004, 0.148)]
+
+    def Scope "Materials"
+    {
+    }
+
+    def Scope "Geometry"
+    {
+        def Xform "base_link"
+        {
+            def Xform "base_link" (
+                instanceable = true
+                prepend references = @./instances.usda@</Instances/base_link>
+            )
+            {
+                quatd xformOp:orient = (0.7071068883, 0, 0, -0.7071066499)
+                double3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01"
+            {
+                quatf xformOp:orient = (0.4999999, -0.49999994, 0.50000006, 0.50000006)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0.0175, -0.02, -0.04)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket"
+                {
+                    quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0195, 0.0232, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                    def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket" (
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket>
+                    )
+                    {
+                        quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0.0195, 0.0232)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket"
+                    {
+                        quatf xformOp:orient = (0.7071069, 0, 0, 0.70710665)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.00755, -0.0895, 0.03075)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket" (
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_1>
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_3"
+                        {
+                            quatf xformOp:orient = (0.7071069, 0, 0, -0.70710665)
+                            float3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0.0195, 0.0232, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_3" (
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_1>
+                            )
+                            {
+                                quatd xformOp:orient = (0.7071068883, 0, 0, 0.7071066499)
+                                double3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0.0232, -0.0195, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+
+                            def Xform "LegAssembly_RDS51150LinkBracket"
+                            {
+                                quatf xformOp:orient = (1.2247452e-7, -1.2247449e-7, -0.70710665, 0.7071069)
+                                float3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0.0307, -0.0595, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                def Xform "LegAssembly_RDS51150LinkBracket" (
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/LegAssembly_RDS51150LinkBracket>
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Xform "LegLinkAssembly_rigid_01"
+                                {
+                                    quatf xformOp:orient = (-1.2247452e-7, 0.7071069, -1.2247449e-7, -0.70710665)
+                                    float3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (-0.0355, 0.02, 0.2065)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                    def Xform "LegLinkAssembly_rigid_01" (
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01>
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+
+                                    def Xform "SM105BLAssembly_SM105BLLinkBracket"
+                                    {
+                                        quatf xformOp:orient = (0.7071069, 0, 0.70710665, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (-0.0065, 0.02, -0.0355)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                        def Xform "SM105BLAssembly_SM105BLLinkBracket" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+
+                                        def Xform "SM100_BL_ASM_159_ASM_rigid_01"
+                                        {
+                                            quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0.022, 0, -0.02925)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "SM105BLAssembly_SM105BLOutputBracket"
+                                            {
+                                                quatf xformOp:orient = (1.2247452e-7, 0.7071069, 0.70710665, 1.2247449e-7)
+                                                float3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (-0.0155, -0.0031, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                def Xform "SM105BLAssembly_SM105BLOutputBracket" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, 0.7071066499, 0.7071068883)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+
+                                                def Xform "LegAssembly_SM105BLLinkBracket"
+                                                {
+                                                    quatf xformOp:orient = (-1.2247452e-7, 1.2247449e-7, -0.70710665, 0.7071069)
+                                                    float3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                    def Xform "LegAssembly_SM105BLLinkBracket" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_1>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+
+                                                    def Xform "LegLinkAssembly_rigid_01_2"
+                                                    {
+                                                        quatf xformOp:orient = (-1.2247452e-7, 0.7071069, -1.2247449e-7, -0.70710665)
+                                                        float3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (-0.0355, 0.02, 0.2065)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                        def Xform "LegLinkAssembly_rigid_01_2" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_1>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+
+                                                        def Xform "SM105BLAssembly_SM105BLLinkBracket_2"
+                                                        {
+                                                            quatf xformOp:orient = (0.7071069, 0, 0.70710665, 0)
+                                                            float3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (-0.0065, 0.02, -0.0355)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                            def Xform "SM105BLAssembly_SM105BLLinkBracket_2" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+
+                                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01_2"
+                                                            {
+                                                                quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0.022, 0, -0.02925)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "SM100_BL_ASM_159_ASM_rigid_01_2" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_1>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "SM105BLAssembly_SM105BLOutputBracket_2"
+                                                                {
+                                                                    quatf xformOp:orient = (1.2247452e-7, 0.7071069, 0.70710665, 1.2247449e-7)
+                                                                    float3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (-0.0155, -0.0031, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                    def Xform "SM105BLAssembly_SM105BLOutputBracket_2" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_1>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, -0.7071066499, -0.7071068883)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0.025, -0.032, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_2"
+                                                                    {
+                                                                        quatf xformOp:orient = (0.5000002, -0.5, 0.49999985, -0.5)
+                                                                        float3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0.0255, -0.072, -0.009)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_2" (
+                                                                            instanceable = true
+                                                                            prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2>
+                                                                        )
+                                                                        {
+                                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                                            double3 xformOp:scale = (1, 1, 1)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_2"
+                                                                        {
+                                                                            quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                                                            float3 xformOp:scale = (1, 1, 1)
+                                                                            double3 xformOp:translate = (0.0195, 0.0232, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                            def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_2" (
+                                                                                instanceable = true
+                                                                                prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2>
+                                                                            )
+                                                                            {
+                                                                                quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                                double3 xformOp:translate = (0, 0.0195, 0.0232)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                            }
+
+                                                                            def Xform "LegAssembly_FootPlate"
+                                                                            {
+                                                                                quatf xformOp:orient = (-1.2247452e-7, -1.2247449e-7, 0.70710665, 0.7071069)
+                                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                                double3 xformOp:translate = (0, -0.035, -0.01425)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                                def Xform "LegAssembly_FootPlate" (
+                                                                                    instanceable = true
+                                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_FootPlate>
+                                                                                )
+                                                                                {
+                                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                                }
+
+                                                                                def Xform "LegAssembly_FootPlate_collision" (
+                                                                                    instanceable = true
+                                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_FootPlate_collision>
+                                                                                )
+                                                                                {
+                                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                                }
+                                                                            }
+
+                                                                            def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision" (
+                                                                                instanceable = true
+                                                                                prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                                                                            )
+                                                                            {
+                                                                                quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                                                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                                double3 xformOp:translate = (0, 0.0195, 0.0232)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                            }
+                                                                        }
+
+                                                                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision" (
+                                                                            instanceable = true
+                                                                            prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                                                                        )
+                                                                        {
+                                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+                                                                    }
+
+                                                                    def Xform "SM105BLAssembly_SM105BLOutputBracket_2_collision" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_2_collision>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, -0.7071066499, -0.7071068883)
+                                                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                        double3 xformOp:translate = (0.025, -0.032, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+                                                                }
+
+                                                                def Xform "SM100_BL_ASM_159_ASM_rigid_01_2_collision" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_2_collision>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "LegAssembly_LiPo3S"
+                                                            {
+                                                                quatf xformOp:orient = (0.5000002, 0.5, 0.5, -0.49999985)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (-0.02, 0.012, 0.133)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "LegAssembly_LiPo3S" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "LegAssembly_LiPo3S_collision" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_collision>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "SM105BLAssembly_SM105BLLinkBracket_2_collision" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+                                                        }
+
+                                                        def Xform "LegLinkAssembly_rigid_01_2_collision" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_2_collision>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+                                                    }
+
+                                                    def Xform "LegAssembly_SM105BLLinkBracket_collision" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+                                                }
+
+                                                def Xform "SM105BLAssembly_SM105BLOutputBracket_collision" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_2_collision>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, 0.7071066499, 0.7071068883)
+                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+                                            }
+
+                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01_collision" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_2_collision>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "LegAssembly_LiPo3S_2"
+                                        {
+                                            quatf xformOp:orient = (0.5000002, -0.5, 0.5, 0.49999985)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0.02, -0.012, 0.133)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "LegAssembly_LiPo3S_2" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_1>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "LegAssembly_LiPo3S_2_collision" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_collision>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "SM105BLAssembly_SM105BLLinkBracket_collision" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+                                    }
+
+                                    def Xform "LegLinkAssembly_rigid_01_collision" (
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_2_collision>
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+                                }
+
+                                def Xform "LegAssembly_RDS51150LinkBracket_collision" (
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+                            }
+
+                            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_3_collision" (
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                            )
+                            {
+                                quatd xformOp:orient = (0.7071068883, 0, 0, 0.7071066499)
+                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                double3 xformOp:translate = (0.0232, -0.0195, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+                        }
+
+                        def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_collision" (
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+                    }
+
+                    def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_collision" (
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                    )
+                    {
+                        quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                        double3 xformOp:translate = (0, 0.0195, 0.0232)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+
+                def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_collision" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_4"
+            {
+                quatf xformOp:orient = (0.4999999, -0.49999994, 0.50000006, 0.50000006)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0.0175, -0.23, -0.04)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_4" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_3>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_3"
+                {
+                    quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0.0195, 0.0232, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                    def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_3" (
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_3>
+                    )
+                    {
+                        quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0.0195, 0.0232)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"
+                    {
+                        quatf xformOp:orient = (0.7071069, 0, 0, 0.70710665)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.00755, -0.0895, 0.03075)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2" (
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_4>
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+
+                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_6"
+                        {
+                            quatf xformOp:orient = (0.7071069, 0, 0, -0.70710665)
+                            float3 xformOp:scale = (1, 1, 1)
+                            double3 xformOp:translate = (0.0195, 0.0232, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_6" (
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_4>
+                            )
+                            {
+                                quatd xformOp:orient = (0.7071068883, 0, 0, 0.7071066499)
+                                double3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0.0232, -0.0195, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+
+                            def Xform "LegAssembly_RDS51150LinkBracket_2"
+                            {
+                                quatf xformOp:orient = (1.2247452e-7, -1.2247449e-7, -0.70710665, 0.7071069)
+                                float3 xformOp:scale = (1, 1, 1)
+                                double3 xformOp:translate = (0.0307, -0.0595, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                def Xform "LegAssembly_RDS51150LinkBracket_2" (
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/LegAssembly_RDS51150LinkBracket_1>
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+
+                                def Xform "LegLinkAssembly_rigid_01_3"
+                                {
+                                    quatf xformOp:orient = (-1.2247452e-7, 0.7071069, -1.2247449e-7, -0.70710665)
+                                    float3 xformOp:scale = (1, 1, 1)
+                                    double3 xformOp:translate = (-0.0355, 0.02, 0.2065)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                    def Xform "LegLinkAssembly_rigid_01_3" (
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_2>
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+
+                                    def Xform "SM105BLAssembly_SM105BLLinkBracket_3"
+                                    {
+                                        quatf xformOp:orient = (0.7071069, 0, 0.70710665, 0)
+                                        float3 xformOp:scale = (1, 1, 1)
+                                        double3 xformOp:translate = (-0.0065, 0.02, -0.0355)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                        def Xform "SM105BLAssembly_SM105BLLinkBracket_3" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_3>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+
+                                        def Xform "SM100_BL_ASM_159_ASM_rigid_01_3"
+                                        {
+                                            quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0.022, 0, -0.02925)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01_3" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_2>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "SM105BLAssembly_SM105BLOutputBracket_3"
+                                            {
+                                                quatf xformOp:orient = (1.2247452e-7, 0.7071069, 0.70710665, 1.2247449e-7)
+                                                float3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (-0.0155, -0.0031, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                def Xform "SM105BLAssembly_SM105BLOutputBracket_3" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_2>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, 0.7071066499, 0.7071068883)
+                                                    double3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+
+                                                def Xform "LegAssembly_SM105BLLinkBracket_2"
+                                                {
+                                                    quatf xformOp:orient = (-1.2247452e-7, 1.2247449e-7, -0.70710665, 0.7071069)
+                                                    float3 xformOp:scale = (1, 1, 1)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                    def Xform "LegAssembly_SM105BLLinkBracket_2" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_4>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+
+                                                    def Xform "LegLinkAssembly_rigid_01_4"
+                                                    {
+                                                        quatf xformOp:orient = (-1.2247452e-7, 0.7071069, -1.2247449e-7, -0.70710665)
+                                                        float3 xformOp:scale = (1, 1, 1)
+                                                        double3 xformOp:translate = (-0.0355, 0.02, 0.2065)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                        def Xform "LegLinkAssembly_rigid_01_4" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_3>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+
+                                                        def Xform "SM105BLAssembly_SM105BLLinkBracket_4"
+                                                        {
+                                                            quatf xformOp:orient = (0.7071069, 0, 0.70710665, 0)
+                                                            float3 xformOp:scale = (1, 1, 1)
+                                                            double3 xformOp:translate = (-0.0065, 0.02, -0.0355)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                            def Xform "SM105BLAssembly_SM105BLLinkBracket_4" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_5>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+
+                                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01_4"
+                                                            {
+                                                                quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (0.022, 0, -0.02925)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "SM100_BL_ASM_159_ASM_rigid_01_4" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_3>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "SM105BLAssembly_SM105BLOutputBracket_4"
+                                                                {
+                                                                    quatf xformOp:orient = (1.2247452e-7, 0.7071069, 0.70710665, 1.2247449e-7)
+                                                                    float3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (-0.0155, -0.0031, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                    def Xform "SM105BLAssembly_SM105BLOutputBracket_4" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_3>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, -0.7071066499, -0.7071068883)
+                                                                        double3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0.025, -0.032, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+
+                                                                    def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_5"
+                                                                    {
+                                                                        quatf xformOp:orient = (0.5000002, -0.5, 0.49999985, -0.5)
+                                                                        float3 xformOp:scale = (1, 1, 1)
+                                                                        double3 xformOp:translate = (0.0255, -0.072, -0.009)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_5" (
+                                                                            instanceable = true
+                                                                            prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_5>
+                                                                        )
+                                                                        {
+                                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                                            double3 xformOp:scale = (1, 1, 1)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+
+                                                                        def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_4"
+                                                                        {
+                                                                            quatf xformOp:orient = (0.5000002, 0.5, -0.5, 0.49999985)
+                                                                            float3 xformOp:scale = (1, 1, 1)
+                                                                            double3 xformOp:translate = (0.0195, 0.0232, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                            def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_4" (
+                                                                                instanceable = true
+                                                                                prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_5>
+                                                                            )
+                                                                            {
+                                                                                quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                                                                                double3 xformOp:scale = (1, 1, 1)
+                                                                                double3 xformOp:translate = (0, 0.0195, 0.0232)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                            }
+
+                                                                            def Xform "LegAssembly_FootPlate_2"
+                                                                            {
+                                                                                quatf xformOp:orient = (-1.2247452e-7, -1.2247449e-7, 0.70710665, 0.7071069)
+                                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                                double3 xformOp:translate = (0, -0.035, -0.01425)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                                def Xform "LegAssembly_FootPlate_2" (
+                                                                                    instanceable = true
+                                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_FootPlate_1>
+                                                                                )
+                                                                                {
+                                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                                }
+
+                                                                                def Xform "LegAssembly_FootPlate_2_collision" (
+                                                                                    instanceable = true
+                                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_FootPlate_collision>
+                                                                                )
+                                                                                {
+                                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                                }
+                                                                            }
+
+                                                                            def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_4_collision" (
+                                                                                instanceable = true
+                                                                                prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                                                                            )
+                                                                            {
+                                                                                quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                                                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                                double3 xformOp:translate = (0, 0.0195, 0.0232)
+                                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                            }
+                                                                        }
+
+                                                                        def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_5_collision" (
+                                                                            instanceable = true
+                                                                            prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                                                                        )
+                                                                        {
+                                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                            double3 xformOp:translate = (0, 0, 0)
+                                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                        }
+                                                                    }
+
+                                                                    def Xform "SM105BLAssembly_SM105BLOutputBracket_4_collision" (
+                                                                        instanceable = true
+                                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_2_collision>
+                                                                    )
+                                                                    {
+                                                                        quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, -0.7071066499, -0.7071068883)
+                                                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                        double3 xformOp:translate = (0.025, -0.032, 0)
+                                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                    }
+                                                                }
+
+                                                                def Xform "SM100_BL_ASM_159_ASM_rigid_01_4_collision" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_2_collision>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "LegAssembly_LiPo3S_3"
+                                                            {
+                                                                quatf xformOp:orient = (0.5000002, 0.5, 0.5, -0.49999985)
+                                                                float3 xformOp:scale = (1, 1, 1)
+                                                                double3 xformOp:translate = (-0.02, 0.012, 0.133)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                                                def Xform "LegAssembly_LiPo3S_3" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_2>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (1, 1, 1)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+
+                                                                def Xform "LegAssembly_LiPo3S_3_collision" (
+                                                                    instanceable = true
+                                                                    prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_collision>
+                                                                )
+                                                                {
+                                                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                    double3 xformOp:translate = (0, 0, 0)
+                                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                                }
+                                                            }
+
+                                                            def Xform "SM105BLAssembly_SM105BLLinkBracket_4_collision" (
+                                                                instanceable = true
+                                                                prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                                            )
+                                                            {
+                                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                                double3 xformOp:translate = (0, 0, 0)
+                                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                            }
+                                                        }
+
+                                                        def Xform "LegLinkAssembly_rigid_01_4_collision" (
+                                                            instanceable = true
+                                                            prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_4_collision>
+                                                        )
+                                                        {
+                                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                            double3 xformOp:translate = (0, 0, 0)
+                                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                        }
+                                                    }
+
+                                                    def Xform "LegAssembly_SM105BLLinkBracket_2_collision" (
+                                                        instanceable = true
+                                                        prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                                    )
+                                                    {
+                                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                        double3 xformOp:translate = (0, 0, 0)
+                                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                    }
+                                                }
+
+                                                def Xform "SM105BLAssembly_SM105BLOutputBracket_3_collision" (
+                                                    instanceable = true
+                                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLOutputBracket_2_collision>
+                                                )
+                                                {
+                                                    quatd xformOp:orient = (1.224745176e-7, 1.224744892e-7, 0.7071066499, 0.7071068883)
+                                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                    double3 xformOp:translate = (0.025, -0.032, 0)
+                                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                                }
+                                            }
+
+                                            def Xform "SM100_BL_ASM_159_ASM_rigid_01_3_collision" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/SM100_BL_ASM_159_ASM_rigid_01_2_collision>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "LegAssembly_LiPo3S_4"
+                                        {
+                                            quatf xformOp:orient = (0.5000002, -0.5, 0.5, 0.49999985)
+                                            float3 xformOp:scale = (1, 1, 1)
+                                            double3 xformOp:translate = (0.02, -0.012, 0.133)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                                            def Xform "LegAssembly_LiPo3S_4" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_3>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (1, 1, 1)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+
+                                            def Xform "LegAssembly_LiPo3S_4_collision" (
+                                                instanceable = true
+                                                prepend references = @./instances.usda@</Instances/LegAssembly_LiPo3S_collision>
+                                            )
+                                            {
+                                                quatd xformOp:orient = (1, 0, 0, 0)
+                                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                                double3 xformOp:translate = (0, 0, 0)
+                                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                            }
+                                        }
+
+                                        def Xform "SM105BLAssembly_SM105BLLinkBracket_3_collision" (
+                                            instanceable = true
+                                            prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                        )
+                                        {
+                                            quatd xformOp:orient = (1, 0, 0, 0)
+                                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                            double3 xformOp:translate = (0, 0, 0)
+                                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                        }
+                                    }
+
+                                    def Xform "LegLinkAssembly_rigid_01_3_collision" (
+                                        instanceable = true
+                                        prepend references = @./instances.usda@</Instances/LegLinkAssembly_rigid_01_2_collision>
+                                    )
+                                    {
+                                        quatd xformOp:orient = (1, 0, 0, 0)
+                                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                        double3 xformOp:translate = (0, 0, 0)
+                                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                    }
+                                }
+
+                                def Xform "LegAssembly_RDS51150LinkBracket_2_collision" (
+                                    instanceable = true
+                                    prepend references = @./instances.usda@</Instances/SM105BLAssembly_SM105BLLinkBracket_2_collision>
+                                )
+                                {
+                                    quatd xformOp:orient = (1, 0, 0, 0)
+                                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                    double3 xformOp:translate = (0, 0, 0)
+                                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                                }
+                            }
+
+                            def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_6_collision" (
+                                instanceable = true
+                                prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                            )
+                            {
+                                quatd xformOp:orient = (0.7071068883, 0, 0, 0.7071066499)
+                                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                                double3 xformOp:translate = (0.0232, -0.0195, 0)
+                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                            }
+                        }
+
+                        def Xform "RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2_collision" (
+                            instanceable = true
+                            prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                        )
+                        {
+                            quatd xformOp:orient = (1, 0, 0, 0)
+                            double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                            double3 xformOp:translate = (0, 0, 0)
+                            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                        }
+                    }
+
+                    def Xform "RDS51150Assembly_RDS51150OriginalOutputBracket_3_collision" (
+                        instanceable = true
+                        prepend references = @./instances.usda@</Instances/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision>
+                    )
+                    {
+                        quatd xformOp:orient = (0.5000001788, -0.5, 0.499999851, -0.5)
+                        double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                        double3 xformOp:translate = (0, 0.0195, 0.0232)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+
+                def Xform "DSSERVO_RDS51150_BodyOnly_rigid_01_4_collision" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "PelvisBasket"
+            {
+                quatf xformOp:orient = (0.7071069, 0, 0, -0.70710665)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.065, 0.015, 0.003)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Xform "PelvisBasket" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/PelvisBasket>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                def Xform "PelvisBasket_collision" (
+                    instanceable = true
+                    prepend references = @./instances.usda@</Instances/PelvisBasket_collision>
+                )
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Xform "base_link_collision" (
+                instanceable = true
+                prepend references = @./instances.usda@</Instances/base_link_collision>
+            )
+            {
+                quatd xformOp:orient = (0.7071068883, 0, 0, -0.7071066499)
+                double3 xformOp:scale = (0.009999999776, 0.009999999776, 0.009999999776)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+    }
+
+    def Scope "Physics"
+    {
+    }
+
+    def Scope "VisualMaterials"
+    {
+    }
+}
+

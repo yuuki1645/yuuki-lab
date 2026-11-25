@@ -1,0 +1,386 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="BipedAssembly">
+
+  <!-- Materials (shared across all assemblies) -->
+  <material name="material">
+    <color rgba="0.627 0.627 0.627 1.0"/>
+  </material>
+  <material name="Lipo">
+    <color rgba="0.910 0.678 0.137 1.0"/>
+  </material>
+
+  <!-- Assembly includes -->
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/SM100_BL_ASM_159_ASM.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/SM105BLAssembly.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/LegLinkAssembly.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/DSSERVO_RDS51150_BodyOnly.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/RDS51150Assembly_hip.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/RDS51150Assembly.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/LegAssembly.urdf.xacro"/>
+  <xacro:include filename="$(find BipedAssembly_description)/urdf/assemblies/BipedAssembly.urdf.xacro"/>
+
+  <!-- Instantiate assemblies -->
+  <xacro:SM100_BL_ASM_159_ASM prefix=""/>
+  <xacro:SM105BLAssembly prefix=""/>
+  <xacro:LegLinkAssembly prefix=""/>
+  <xacro:DSSERVO_RDS51150_BodyOnly prefix=""/>
+  <xacro:RDS51150Assembly_hip prefix=""/>
+  <xacro:RDS51150Assembly prefix=""/>
+  <xacro:LegAssembly prefix=""/>
+  <xacro:BipedAssembly prefix=""/>
+
+  <!-- Mount joints (cross-assembly connections) -->
+  <!-- These define how assemblies connect to each other. -->
+  <!-- When swapping a dummy assembly with a real part, -->
+  <!-- update the include + macro call above, and adjust -->
+  <!-- parent/child link names in the mount joint below. -->
+
+  <joint name="biped_fixed_01" type="fixed">
+    <parent link="base_link"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
+    <origin xyz="0.017500 -0.020000 -0.040000" rpy="1.570796 1.570796 -3.141593"/>
+  </joint>
+
+  <joint name="biped_fixed_02" type="fixed">
+    <parent link="base_link"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_4"/>
+    <origin xyz="0.017500 -0.230000 -0.040000" rpy="1.570796 1.570796 -3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_4"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_3"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_05" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket"/>
+    <child link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket"/>
+    <origin xyz="-0.007550 -0.089500 0.030750" rpy="0.000000 0.000000 1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_05" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_3"/>
+    <child link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"/>
+    <origin xyz="-0.007550 -0.089500 0.030750" rpy="0.000000 0.000000 1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01" type="continuous">
+    <parent link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_3"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01" type="continuous">
+    <parent link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_6"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_04" type="fixed">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_3"/>
+    <child link="LegAssembly_RDS51150LinkBracket"/>
+    <origin xyz="0.030700 -0.059500 0.000000" rpy="-1.570796 0.000000 -3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_04" type="fixed">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_6"/>
+    <child link="LegAssembly_RDS51150LinkBracket_2"/>
+    <origin xyz="0.030700 -0.059500 0.000000" rpy="-1.570796 0.000000 -3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_03" type="fixed">
+    <parent link="LegAssembly_RDS51150LinkBracket"/>
+    <child link="LegLinkAssembly_rigid_01"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_03" type="fixed">
+    <parent link="LegAssembly_RDS51150LinkBracket_2"/>
+    <child link="LegLinkAssembly_rigid_01_3"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1___18" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2___18" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_3"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_10" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <child link="LegAssembly_LiPo3S_2"/>
+    <origin xyz="0.020000 -0.012000 0.133000" rpy="-1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_3"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_10" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <child link="LegAssembly_LiPo3S_4"/>
+    <origin xyz="0.020000 -0.012000 0.133000" rpy="-1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_3"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_3"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_06" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket"/>
+    <child link="LegAssembly_SM105BLLinkBracket"/>
+    <origin xyz="0.025000 -0.032000 0.000000" rpy="-1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_06" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_3"/>
+    <child link="LegAssembly_SM105BLLinkBracket_2"/>
+    <origin xyz="0.025000 -0.032000 0.000000" rpy="-1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_07" type="fixed">
+    <parent link="LegAssembly_SM105BLLinkBracket"/>
+    <child link="LegLinkAssembly_rigid_01_2"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_07" type="fixed">
+    <parent link="LegAssembly_SM105BLLinkBracket_2"/>
+    <child link="LegLinkAssembly_rigid_01_4"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_02" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_2"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_02" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_4"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_2"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_11" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <child link="LegAssembly_LiPo3S"/>
+    <origin xyz="-0.020000 0.012000 0.133000" rpy="1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_4"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_11" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <child link="LegAssembly_LiPo3S_3"/>
+    <origin xyz="-0.020000 0.012000 0.133000" rpy="1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_2"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_2"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_4"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_4"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_08" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_2"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
+    <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_08" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_4"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_5"/>
+    <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_2"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_5"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_4"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_09" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_2"/>
+    <child link="LegAssembly_FootPlate"/>
+    <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_09" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_4"/>
+    <child link="LegAssembly_FootPlate_2"/>
+    <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <!-- ROS 2 control: generated generic system -->
+  <ros2_control name="BipedAssembly_system" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+      <param name="cmd_topic">sim/BipedAssembly_system/cmd</param>
+      <param name="state_topic">sim/BipedAssembly_system/state</param>
+    </hardware>
+
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+</robot>

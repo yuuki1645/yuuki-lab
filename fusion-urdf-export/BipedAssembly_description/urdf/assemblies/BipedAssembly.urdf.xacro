@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="BipedAssembly_macro">
+
+  <xacro:macro name="BipedAssembly" params="prefix">
+
+    <!-- Links -->
+    <link name="${prefix}base_link">
+      <inertial>
+        <origin xyz="0.025000 -0.125000 0.001500" rpy="0 0 0"/>
+        <mass value="0.294375"/>
+        <inertia ixx="1.533424e-03" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="6.154891e-05" iyz="0.000000e+00" izz="1.594531e-03"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/base_link.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/base_link_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}PelvisBasket">
+      <inertial>
+        <origin xyz="0.140000 0.090000 0.072500" rpy="0 0 0"/>
+        <mass value="57.367800"/>
+        <inertia ixx="2.554062e-01" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="4.753161e-01" iyz="0.000000e+00" izz="5.296960e-01"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/PelvisBasket.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/PelvisBasket_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Joints (internal to assembly) -->
+    <joint name="${prefix}biped_fixed_03" type="fixed">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}PelvisBasket"/>
+      <origin xyz="-0.065000 0.015000 0.003000" rpy="0.000000 0.000000 -1.570796"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

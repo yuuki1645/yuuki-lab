@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="LegLinkAssembly_macro">
+
+  <xacro:macro name="LegLinkAssembly" params="prefix">
+
+    <!-- Links -->
+    <link name="${prefix}LegLinkAssembly_rigid_01">
+      <inertial>
+        <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+        <mass value="0.373379"/>
+        <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}LegLinkAssembly_rigid_01_2">
+      <inertial>
+        <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+        <mass value="0.373379"/>
+        <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_2.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_2_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}LegLinkAssembly_rigid_01_3">
+      <inertial>
+        <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+        <mass value="0.373379"/>
+        <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_3.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_3_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}LegLinkAssembly_rigid_01_4">
+      <inertial>
+        <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+        <mass value="0.373379"/>
+        <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+                 iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_4.dae" scale="1 1 1"/>
+        </geometry>
+        <material name="material"/>
+      </visual>
+      <collision>
+        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <geometry>
+          <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_4_collision.stl" scale="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
+  </xacro:macro>
+
+</robot>

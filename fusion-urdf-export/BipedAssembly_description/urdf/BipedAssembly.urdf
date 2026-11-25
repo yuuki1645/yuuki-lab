@@ -1,0 +1,1246 @@
+<?xml version="1.0"?>
+<robot name="BipedAssembly">
+
+  <!-- Materials -->
+  <material name="material">
+    <color rgba="0.627 0.627 0.627 1.0"/>
+  </material>
+  <material name="Lipo">
+    <color rgba="0.910 0.678 0.137 1.0"/>
+  </material>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.025000 -0.125000 0.001500" rpy="0 0 0"/>
+      <mass value="0.294375"/>
+      <inertia ixx="1.533424e-03" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="6.154891e-05" iyz="0.000000e+00" izz="1.594531e-03"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/base_link.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/base_link_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01">
+    <inertial>
+      <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
+               iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01_4">
+    <inertial>
+      <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
+               iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="PelvisBasket">
+    <inertial>
+      <origin xyz="0.140000 0.090000 0.072500" rpy="0 0 0"/>
+      <mass value="57.367800"/>
+      <inertia ixx="2.554062e-01" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.753161e-01" iyz="0.000000e+00" izz="5.296960e-01"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/PelvisBasket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/BipedAssembly/PelvisBasket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_RDS51150OriginalOutputBracket">
+    <inertial>
+      <origin xyz="0.000000 -0.023737 0.030750" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.493226e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.191504e-05" iyz="0.000000e+00" izz="1.193388e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_RDS51150OriginalOutputBracket_3">
+    <inertial>
+      <origin xyz="0.000000 -0.023737 0.030750" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.493226e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.191504e-05" iyz="0.000000e+00" izz="1.193388e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_hip_RDS51150OriginalOutputBracket">
+    <inertial>
+      <origin xyz="0.043237 -0.007550 0.000000" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.191504e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.193388e-05" iyz="0.000000e+00" izz="4.493226e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly_hip/RDS51150Assembly_hip_RDS51150OriginalOutputBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly_hip/RDS51150Assembly_hip_RDS51150OriginalOutputBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2">
+    <inertial>
+      <origin xyz="0.043237 -0.007550 0.000000" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.191504e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.193388e-05" iyz="0.000000e+00" izz="4.493226e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly_hip/RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly_hip/RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01_3">
+    <inertial>
+      <origin xyz="0.027507 -0.023364 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="3.134242e-04" ixy="1.273417e-05" ixz="-3.362455e-08"
+               iyy="1.982365e-04" iyz="-3.021156e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01_6">
+    <inertial>
+      <origin xyz="0.027507 -0.023364 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="3.134242e-04" ixy="1.273417e-05" ixz="-3.362455e-08"
+               iyy="1.982365e-04" iyz="-3.021156e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_6.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_6_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_RDS51150LinkBracket">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010726" rpy="0 0 0"/>
+      <mass value="0.108821"/>
+      <inertia ixx="2.570863e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.799187e-05" iyz="0.000000e+00" izz="9.470498e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_RDS51150LinkBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_RDS51150LinkBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_RDS51150LinkBracket_2">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010726" rpy="0 0 0"/>
+      <mass value="0.108821"/>
+      <inertia ixx="2.570863e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.799187e-05" iyz="0.000000e+00" izz="9.470498e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_RDS51150LinkBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_RDS51150LinkBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegLinkAssembly_rigid_01">
+    <inertial>
+      <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+      <mass value="0.373379"/>
+      <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegLinkAssembly_rigid_01_3">
+    <inertial>
+      <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+      <mass value="0.373379"/>
+      <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLLinkBracket">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLLinkBracket_3">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM100_BL_ASM_159_ASM_rigid_01">
+    <inertial>
+      <origin xyz="-0.001981 0.015325 0.000054" rpy="0 0 0"/>
+      <mass value="0.256674"/>
+      <inertia ixx="8.980686e-05" ixy="5.957873e-06" ixz="-1.869252e-07"
+               iyy="1.056257e-04" iyz="-2.182164e-07" izz="1.419254e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_LiPo3S_2">
+    <inertial>
+      <origin xyz="0.065000 0.020000 0.012000" rpy="0 0 0"/>
+      <mass value="0.302016"/>
+      <inertia ixx="5.476557e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.398360e-04" iyz="0.000000e+00" izz="4.656080e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="Lipo"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM100_BL_ASM_159_ASM_rigid_01_3">
+    <inertial>
+      <origin xyz="-0.001981 0.015325 0.000054" rpy="0 0 0"/>
+      <mass value="0.256674"/>
+      <inertia ixx="8.980686e-05" ixy="5.957873e-06" ixz="-1.869252e-07"
+               iyy="1.056257e-04" iyz="-2.182164e-07" izz="1.419254e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_LiPo3S_4">
+    <inertial>
+      <origin xyz="0.065000 0.020000 0.012000" rpy="0 0 0"/>
+      <mass value="0.302016"/>
+      <inertia ixx="5.476557e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.398360e-04" iyz="0.000000e+00" izz="4.656080e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="Lipo"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLOutputBracket">
+    <inertial>
+      <origin xyz="0.025000 -0.021804 0.000000" rpy="0 0 0"/>
+      <mass value="0.089340"/>
+      <inertia ixx="1.988413e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="5.246619e-05" iyz="0.000000e+00" izz="5.274070e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 -3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 -3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLOutputBracket_3">
+    <inertial>
+      <origin xyz="0.025000 -0.021804 0.000000" rpy="0 0 0"/>
+      <mass value="0.089340"/>
+      <inertia ixx="1.988413e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="5.246619e-05" iyz="0.000000e+00" izz="5.274070e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 -3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 -3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_SM105BLLinkBracket">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_SM105BLLinkBracket.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_SM105BLLinkBracket_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_SM105BLLinkBracket_2">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_SM105BLLinkBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_SM105BLLinkBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegLinkAssembly_rigid_01_2">
+    <inertial>
+      <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+      <mass value="0.373379"/>
+      <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegLinkAssembly_rigid_01_4">
+    <inertial>
+      <origin xyz="0.100000 0.020000 -0.035500" rpy="0 0 0"/>
+      <mass value="0.373379"/>
+      <inertia ixx="5.614809e-04" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="1.743076e-03" iyz="0.000000e+00" izz="1.281685e-03"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegLinkAssembly/LegLinkAssembly_rigid_01_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLLinkBracket_2">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLLinkBracket_4">
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.010706" rpy="0 0 0"/>
+      <mass value="0.109054"/>
+      <inertia ixx="2.572846e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="9.803410e-05" iyz="0.000000e+00" izz="9.472711e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLLinkBracket_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM100_BL_ASM_159_ASM_rigid_01_2">
+    <inertial>
+      <origin xyz="-0.001981 0.015325 0.000054" rpy="0 0 0"/>
+      <mass value="0.256674"/>
+      <inertia ixx="8.980686e-05" ixy="5.957873e-06" ixz="-1.869252e-07"
+               iyy="1.056257e-04" iyz="-2.182164e-07" izz="1.419254e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_LiPo3S">
+    <inertial>
+      <origin xyz="0.065000 0.020000 0.012000" rpy="0 0 0"/>
+      <mass value="0.302016"/>
+      <inertia ixx="5.476557e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.398360e-04" iyz="0.000000e+00" izz="4.656080e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="Lipo"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM100_BL_ASM_159_ASM_rigid_01_4">
+    <inertial>
+      <origin xyz="-0.001981 0.015325 0.000054" rpy="0 0 0"/>
+      <mass value="0.256674"/>
+      <inertia ixx="8.980686e-05" ixy="5.957873e-06" ixz="-1.869252e-07"
+               iyy="1.056257e-04" iyz="-2.182164e-07" izz="1.419254e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM100_BL_ASM_159_ASM/SM100_BL_ASM_159_ASM_rigid_01_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_LiPo3S_3">
+    <inertial>
+      <origin xyz="0.065000 0.020000 0.012000" rpy="0 0 0"/>
+      <mass value="0.302016"/>
+      <inertia ixx="5.476557e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.398360e-04" iyz="0.000000e+00" izz="4.656080e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_3.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="Lipo"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_LiPo3S_3_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLOutputBracket_2">
+    <inertial>
+      <origin xyz="0.025000 -0.021804 0.000000" rpy="0 0 0"/>
+      <mass value="0.089340"/>
+      <inertia ixx="1.988413e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="5.246619e-05" iyz="0.000000e+00" izz="5.274070e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="SM105BLAssembly_SM105BLOutputBracket_4">
+    <inertial>
+      <origin xyz="0.025000 -0.021804 0.000000" rpy="0 0 0"/>
+      <mass value="0.089340"/>
+      <inertia ixx="1.988413e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="5.246619e-05" iyz="0.000000e+00" izz="5.274070e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.025000 -0.032000 0.000000" rpy="1.570796 0.000000 3.141593"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/SM105BLAssembly/SM105BLAssembly_SM105BLOutputBracket_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01_2">
+    <inertial>
+      <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
+               iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="DSSERVO_RDS51150_BodyOnly_rigid_01_5">
+    <inertial>
+      <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+      <mass value="0.646896"/>
+      <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
+               iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_5.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_5_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_RDS51150OriginalOutputBracket_2">
+    <inertial>
+      <origin xyz="0.000000 -0.023737 0.030750" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.493226e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.191504e-05" iyz="0.000000e+00" izz="1.193388e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="RDS51150Assembly_RDS51150OriginalOutputBracket_4">
+    <inertial>
+      <origin xyz="0.000000 -0.023737 0.030750" rpy="0 0 0"/>
+      <mass value="0.054917"/>
+      <inertia ixx="4.493226e-05" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="4.191504e-05" iyz="0.000000e+00" izz="1.193388e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_4.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/RDS51150Assembly_RDS51150OriginalOutputBracket_4_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_FootPlate">
+    <inertial>
+      <origin xyz="0.000000 0.150131 -0.001500" rpy="0 0 0"/>
+      <mass value="1.199552"/>
+      <inertia ixx="8.991635e-03" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="2.893261e-03" iyz="0.000000e+00" izz="1.188310e-02"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_FootPlate.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_FootPlate_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="LegAssembly_FootPlate_2">
+    <inertial>
+      <origin xyz="0.000000 0.150131 -0.001500" rpy="0 0 0"/>
+      <mass value="1.199552"/>
+      <inertia ixx="8.991635e-03" ixy="0.000000e+00" ixz="0.000000e+00"
+               iyy="2.893261e-03" iyz="0.000000e+00" izz="1.188310e-02"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_FootPlate_2.dae" scale="1 1 1"/>
+      </geometry>
+      <material name="material"/>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+      <geometry>
+        <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/LegAssembly_FootPlate_2_collision.stl" scale="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="biped_fixed_01" type="fixed">
+    <parent link="base_link"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
+    <origin xyz="0.017500 -0.020000 -0.040000" rpy="1.570796 1.570796 -3.141593"/>
+  </joint>
+
+  <joint name="biped_fixed_02" type="fixed">
+    <parent link="base_link"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_4"/>
+    <origin xyz="0.017500 -0.230000 -0.040000" rpy="1.570796 1.570796 -3.141593"/>
+  </joint>
+
+  <joint name="biped_fixed_03" type="fixed">
+    <parent link="base_link"/>
+    <child link="PelvisBasket"/>
+    <origin xyz="-0.065000 0.015000 0.003000" rpy="0.000000 0.000000 -1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_4"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_3"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_05" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket"/>
+    <child link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket"/>
+    <origin xyz="-0.007550 -0.089500 0.030750" rpy="0.000000 0.000000 1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_05" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_3"/>
+    <child link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"/>
+    <origin xyz="-0.007550 -0.089500 0.030750" rpy="0.000000 0.000000 1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01" type="continuous">
+    <parent link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_3"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01" type="continuous">
+    <parent link="RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_6"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="0.000000 0.000000 -1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_04" type="fixed">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_3"/>
+    <child link="LegAssembly_RDS51150LinkBracket"/>
+    <origin xyz="0.030700 -0.059500 0.000000" rpy="-1.570796 0.000000 -3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_04" type="fixed">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_6"/>
+    <child link="LegAssembly_RDS51150LinkBracket_2"/>
+    <origin xyz="0.030700 -0.059500 0.000000" rpy="-1.570796 0.000000 -3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_03" type="fixed">
+    <parent link="LegAssembly_RDS51150LinkBracket"/>
+    <child link="LegLinkAssembly_rigid_01"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_03" type="fixed">
+    <parent link="LegAssembly_RDS51150LinkBracket_2"/>
+    <child link="LegLinkAssembly_rigid_01_3"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1___18" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2___18" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_3"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_10" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket"/>
+    <child link="LegAssembly_LiPo3S_2"/>
+    <origin xyz="0.020000 -0.012000 0.133000" rpy="-1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_3"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_10" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_3"/>
+    <child link="LegAssembly_LiPo3S_4"/>
+    <origin xyz="0.020000 -0.012000 0.133000" rpy="-1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_3"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_3"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_06" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket"/>
+    <child link="LegAssembly_SM105BLLinkBracket"/>
+    <origin xyz="0.025000 -0.032000 0.000000" rpy="-1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_06" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_3"/>
+    <child link="LegAssembly_SM105BLLinkBracket_2"/>
+    <origin xyz="0.025000 -0.032000 0.000000" rpy="-1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_07" type="fixed">
+    <parent link="LegAssembly_SM105BLLinkBracket"/>
+    <child link="LegLinkAssembly_rigid_01_2"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_07" type="fixed">
+    <parent link="LegAssembly_SM105BLLinkBracket_2"/>
+    <child link="LegLinkAssembly_rigid_01_4"/>
+    <origin xyz="-0.035500 0.020000 0.206500" rpy="3.141593 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_02" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_2"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_02" type="fixed">
+    <parent link="LegLinkAssembly_rigid_01_4"/>
+    <child link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <origin xyz="-0.006500 0.020000 -0.035500" rpy="0.000000 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_2"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_11" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_2"/>
+    <child link="LegAssembly_LiPo3S"/>
+    <origin xyz="-0.020000 0.012000 0.133000" rpy="1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <child link="SM100_BL_ASM_159_ASM_rigid_01_4"/>
+    <origin xyz="0.022000 0.000000 -0.029250" rpy="1.570796 -1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_11" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLLinkBracket_4"/>
+    <child link="LegAssembly_LiPo3S_3"/>
+    <origin xyz="-0.020000 0.012000 0.133000" rpy="1.570796 1.570796 0.000000"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_2"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_2"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01" type="revolute">
+    <parent link="SM100_BL_ASM_159_ASM_rigid_01_4"/>
+    <child link="SM105BLAssembly_SM105BLOutputBracket_4"/>
+    <origin xyz="-0.015500 -0.003100 0.000000" rpy="-3.141593 0.000000 1.570796"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_08" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_2"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
+    <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_08" type="fixed">
+    <parent link="SM105BLAssembly_SM105BLOutputBracket_4"/>
+    <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_5"/>
+    <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_2"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01" type="revolute">
+    <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_5"/>
+    <child link="RDS51150Assembly_RDS51150OriginalOutputBracket_4"/>
+    <origin xyz="0.019500 0.023200 0.000000" rpy="1.570796 -1.570796 0.000000"/>
+    <axis xyz="0.000000 0.000000 1.000000"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_1__fixed_09" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_2"/>
+    <child link="LegAssembly_FootPlate"/>
+    <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <joint name="LegAssembly_v28_2__fixed_09" type="fixed">
+    <parent link="RDS51150Assembly_RDS51150OriginalOutputBracket_4"/>
+    <child link="LegAssembly_FootPlate_2"/>
+    <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+  </joint>
+
+  <!-- ROS 2 control: generated generic system -->
+  <ros2_control name="BipedAssembly_system" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+      <param name="cmd_topic">sim/BipedAssembly_system/cmd</param>
+      <param name="state_topic">sim/BipedAssembly_system/state</param>
+    </hardware>
+
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+</robot>

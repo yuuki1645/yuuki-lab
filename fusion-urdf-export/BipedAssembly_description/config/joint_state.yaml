@@ -1,0 +1,29 @@
+# Joint configuration for joint_state_publisher_gui
+
+joint_state_publisher:
+  ros__parameters:
+    # Joint names and default positions
+    zeros:
+      LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01: 0.0
+      LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01: 0.0
+      LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01: 0.0
+      LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01: 0.0
+      LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01: 0.0
+      LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01: 0.0
+      LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01: 0.0
+      LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01: 0.0
+      LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01: 0.0
+      LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01: 0.0
+
+    # Joints to publish
+    source_list:
+      - LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01
+      - LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01
+      - LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01
+      - LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01
+      - LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01
+      - LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01
+      - LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01
+      - LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01
+      - LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01
+      - LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01

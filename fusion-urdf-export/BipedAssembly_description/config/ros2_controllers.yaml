@@ -1,0 +1,29 @@
+# Generated ros2_control controllers
+# Publishes joint states on: /joint_states
+# Command topics use: /<controller_name>/commands
+/**:
+  controller_manager:
+    ros__parameters:
+      update_rate: 100
+
+      joint_state_broadcaster:
+        type: joint_state_broadcaster/JointStateBroadcaster
+      position_controller:
+        type: forward_command_controller/ForwardCommandController
+      velocity_controller:
+        type: forward_command_controller/ForwardCommandController
+
+  joint_state_broadcaster:
+    ros__parameters: {}
+
+  # Command topic: /position_controller/commands
+  position_controller:
+    ros__parameters:
+      joints: [LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01, LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01, LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01, LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01, LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01, LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01, LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01, LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01, LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01, LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01]
+      interface_name: position
+
+  # Command topic: /velocity_controller/commands
+  velocity_controller:
+    ros__parameters:
+      joints: [LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01, LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01, LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01, LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01, LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01, LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01, LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01, LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01, LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01, LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01]
+      interface_name: velocity

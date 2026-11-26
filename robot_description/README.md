@@ -112,7 +112,7 @@ C:\isaacsim\python.bat Z:\Projects\yuuki-lab\robot_description\isaac_hub_play.py
 
 ## Isaac Lab や sim-to-real で使うとき
 
-歩行の学習タスクは `YuukiLab-BipedWalk-v0` です。アセットは `isaac-lab` 拡張の `assets/robots/yuuki_legs` から、この URDF をカゴ固定なしで読みます。変換結果は `.usd_float` です。Hub 再生の `.usd_cache` はカゴ固定なので、学習には使いません。
+歩行の学習タスクは `YuukiLab-BipedWalk-v0` です。読む URDF は Fusion の `BipedAssembly.urdf` です。この箱モデルは、手動の踵操作がまだ使います。学習用の USD は `fusion-urdf-export/.usd_walk` で、カゴは固定しません。Hub 再生のキャッシュはカゴ固定なので、学習には使いません。
 
 conda の `env_isaaclab` は使いません。Isaac Lab 3 から起動します。
 

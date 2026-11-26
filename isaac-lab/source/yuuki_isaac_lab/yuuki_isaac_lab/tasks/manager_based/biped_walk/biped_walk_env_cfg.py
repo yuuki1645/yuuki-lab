@@ -21,7 +21,7 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab_physx.sensors import ContactSensorCfg
 from isaaclab.utils.configclass import configclass
 
-from yuuki_isaac_lab.assets.robots.yuuki_legs import YUUKI_LEGS_CFG
+from yuuki_isaac_lab.assets.robots.yuuki_legs import FUSION_LEGS_CFG
 
 from . import mdp
 
@@ -46,10 +46,10 @@ class BipedWalkSceneCfg(InteractiveSceneCfg):
         ),
         visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.32, 0.32, 0.32)),
     )
-    robot = YUUKI_LEGS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot = FUSION_LEGS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # 足リンクだけを見る。床で絞った力と接触位置を、四隅の分配に使う。
     # prim_path の最後の節は名前の正規表現になる。ロボット全体を渡して、
-    # 観測側で left_foot / right_foot に絞る。
+    # 観測側で L_FOOT / R_FOOT に絞る。足裏中心のリンクは無いので、足リンク自身を平面にする。
     contact_forces = ContactSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/.*",
         # 平らな床の衝突面。このプリムで絞らないと、圧力中心が取れない。
@@ -117,12 +117,12 @@ class ObservationsCfg:
             params={
                 "sensor_cfg": SceneEntityCfg(
                     "contact_forces",
-                    body_names=["left_foot", "right_foot"],
+                    body_names=["L_FOOT", "R_FOOT"],
                     preserve_order=True,
                 ),
                 "sole_cfg": SceneEntityCfg(
                     "robot",
-                    body_names=["left_sole", "right_sole"],
+                    body_names=["L_FOOT", "R_FOOT"],
                     preserve_order=True,
                 ),
             },
@@ -174,12 +174,12 @@ class RewardsCfg:
         params={
             "sensor_cfg": SceneEntityCfg(
                 "contact_forces",
-                body_names=["left_foot", "right_foot"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             ),
             "sole_cfg": SceneEntityCfg(
                 "robot",
-                body_names=["left_sole", "right_sole"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             ),
             "command_name": "base_velocity",
@@ -191,12 +191,12 @@ class RewardsCfg:
         params={
             "sensor_cfg": SceneEntityCfg(
                 "contact_forces",
-                body_names=["left_foot", "right_foot"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             ),
             "sole_cfg": SceneEntityCfg(
                 "robot",
-                body_names=["left_sole", "right_sole"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             ),
             "command_name": "base_velocity",
@@ -209,7 +209,7 @@ class RewardsCfg:
             # 左、右の順。報酬は左の左右位置から右を引く。
             "asset_cfg": SceneEntityCfg(
                 "robot",
-                body_names=["left_foot", "right_foot"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             )
         },

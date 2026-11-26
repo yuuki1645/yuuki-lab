@@ -39,64 +39,45 @@ def _report(lines: list[str]) -> None:
     print(text, flush=True)
 
 
-def _nearest_link(prim) -> str | None:
-    """いちばん近い胴体リンク。すねの子である足首は、すねに数えない。"""
-    names = {"left_thigh", "left_shin", "right_thigh", "right_shin", "left_foot", "right_foot"}
+def _link_named(prim, link_name: str) -> bool:
+    """この prim かその親が、指定したリンク名か。"""
     current = prim
     while current.IsValid():
-        if current.GetName() in names:
-            return current.GetName()
+        if current.GetName() == link_name:
+            return True
         current = current.GetParent()
-    return None
+    return False
 
 
-def _check_self_collision(env) -> str:
-    """関節の隣以外は当たる。足裏板から反対の板やすねを除外していないこと。"""
+def _check_fusion_import(env) -> str:
+    """自己衝突は切れていること。左右の足に衝突形状があること。
+
+    股のホーンと骨盤が重なるので、自己衝突を入れると立ち始めに跳ねる。
+    """
     from pxr import Usd, UsdPhysics
 
     robot = env.sim.stage.GetPrimAtPath("/World/envs/env_0/Robot")
-    left = None
-    right = None
-    right_shin = None
     self_on = False
-    foot_servo_off = 0
+    feet: set[str] = set()
     # 環境はインスタンスなので、通常の走査ではカゴの中まで入らない。
     for prim in Usd.PrimRange(robot, Usd.TraverseInstanceProxies()):
         schemas = set(prim.GetAppliedSchemas())
         is_root = "PhysicsArticulationRootAPI" in schemas or "NewtonArticulationRootAPI" in schemas
         if is_root:
-            # Isaac Sim 6 の URDF 取り込みは newton:selfCollisionEnabled を書く。
-            # 古い PhysX 属性が残っている変換結果も、どちらかが真なら有効と見る。
             for name in ("newton:selfCollisionEnabled", "physxArticulation:enabledSelfCollisions"):
                 attr = prim.GetAttribute(name)
                 if attr and attr.HasValue() and bool(attr.Get()):
                     self_on = True
         if not prim.HasAPI(UsdPhysics.CollisionAPI):
             continue
-        blob = f"{prim.GetName()} {prim.GetDisplayName() or ''}"
-        if "foot_servo" in blob:
-            # 属性が無いときは有効。明示的に False のときだけ、切れていると数える。
-            enabled = UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr()
-            if enabled and enabled.Get() is False:
-                foot_servo_off += 1
-        if "left" in blob and "foot_plate" in blob:
-            left = prim
-        elif "right" in blob and "foot_plate" in blob:
-            right = prim
-        elif right_shin is None and _nearest_link(prim) == "right_shin":
-            right_shin = prim
-    if left is None or right is None or right_shin is None:
-        raise RuntimeError("足裏板、またはすねの衝突形状が見つかりません")
-    if not self_on:
-        raise RuntimeError("自己衝突が有効になっていません")
-    if foot_servo_off:
-        raise RuntimeError(f"足サーボの衝突が {foot_servo_off} 個切れています")
-    blocked: set[str] = set()
-    if left.HasAPI(UsdPhysics.FilteredPairsAPI):
-        blocked = {str(path) for path in UsdPhysics.FilteredPairsAPI(left).GetFilteredPairsRel().GetTargets()}
-    if str(right.GetPath()) in blocked or str(right_shin.GetPath()) in blocked:
-        raise RuntimeError(f"反対の板やすねが、左の板から除外されています: {sorted(blocked)[:8]}")
-    return f"self_collision {self_on} filtered {len(blocked)}"
+        for link_name in ("L_FOOT", "R_FOOT"):
+            if _link_named(prim, link_name):
+                feet.add(link_name)
+    if self_on:
+        raise RuntimeError("自己衝突が有効です。股のホーンが骨盤に当たって跳ねます")
+    if feet != {"L_FOOT", "R_FOOT"}:
+        raise RuntimeError(f"足の衝突形状が見つかりません: {sorted(feet)}")
+    return "self_collision off feet ok"
 
 
 def main() -> int:
@@ -104,7 +85,7 @@ def main() -> int:
     cfg = BipedWalkEnvCfg()
     cfg.scene.num_envs = args_cli.num_envs
     env = ManagerBasedRLEnv(cfg=cfg)
-    lines.append(_check_self_collision(env))
+    lines.append(_check_fusion_import(env))
     obs, _ = env.reset()
     from isaaclab.managers import SceneEntityCfg
 
@@ -117,7 +98,7 @@ def main() -> int:
         track_forward_progress,
     )
 
-    foot_cfg = SceneEntityCfg("robot", body_names=["left_foot", "right_foot"], preserve_order=True)
+    foot_cfg = SceneEntityCfg("robot", body_names=["L_FOOT", "R_FOOT"], preserve_order=True)
     foot_cfg.resolve(env.scene)
     gap_m = feet_lateral_gap_m(env, foot_cfg)
     apart = feet_apart(env, foot_cfg)
@@ -170,9 +151,9 @@ def main() -> int:
     lines.append(f"settled feet_gap_m {settled_gap:.3f} root_z {settled_z:.3f} forward_m {forward_m:.3f}")
     # 足首の戻しが逆だと板が傾いて倒れ、間隔も板幅以下に寄る。
     # 関節 0 のまま数歩では、前へはほとんど進まない。
-    from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import SOLE_BELOW_ORIGIN_M
+    from yuuki_isaac_lab.assets.robots.yuuki_legs.fusion_size import SOLE_BELOW_ORIGIN_M
 
-    # 足サーボで立つと、カゴ底が足裏高さより板厚ぶん高くなる。板で立っていれば 0.640 m 付近。
+    # ベースリンクの原点が、足裏から測った高さ付近にあれば立っている。
     if (
         settled_gap <= PLATE_WIDTH_Y_M
         or abs(settled_z - SOLE_BELOW_ORIGIN_M) > 0.03

@@ -175,12 +175,12 @@ class HubPlayLink:
         if self._sensor_cfg is None or self._sole_cfg is None:
             sensor_cfg = SceneEntityCfg(
                 "contact_forces",
-                body_names=["left_foot", "right_foot"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             )
             sole_cfg = SceneEntityCfg(
                 "robot",
-                body_names=["left_sole", "right_sole"],
+                body_names=["L_FOOT", "R_FOOT"],
                 preserve_order=True,
             )
             sensor_cfg.resolve(env.scene)

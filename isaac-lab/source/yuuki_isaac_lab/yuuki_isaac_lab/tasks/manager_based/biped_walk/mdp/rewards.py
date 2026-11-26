@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from isaaclab.assets import Articulation
     from isaaclab.envs import ManagerBasedRLEnv
 
-from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import (
+from yuuki_isaac_lab.assets.robots.yuuki_legs.fusion_size import (
     HIP_SEPARATION_M,
     LEG_LENGTH_HIP_TO_ANKLE_M,
     PLATE_WIDTH_Y_M,
@@ -29,14 +29,13 @@ from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import (
 from .feet import PLATE_HALF_X_M, stance_load_kg
 from .phase import phase_angle
 
-# 左右の股軸間隔、足裏の幅、股から足首までの長さは yaml から読む。
-# 足裏までの高さを変えても、開脚角の脚長は股ロール軸から足首ロール軸までなので変わらない。
-# 実機は、板が触れないところまで開いて安定してから歩き始める。学習の初期姿勢もそこにする。
+# 左右の股軸間隔と足裏の幅は、Fusion のゼロ姿勢から測った値。
+# 股の間隔が 0.210 m、板幅が 0.170 m なので、関節 0 で内側は既に約 4 cm 空く。
+# 開脚角は 0 になる。箱モデルのように、初期姿勢でロールを足す必要はない。
 INNER_CLEARANCE_M = 0.04
 # 中心間隔。板幅に、実機で残している内側すき間を足す。
 TARGET_FEET_GAP_M = PLATE_WIDTH_Y_M + INNER_CLEARANCE_M
-# 片足を (0.21-0.18)/2 m だけ外へ出す角度。正の股ロールは左右とも開く（右の軸は -X）。
-# 足首ロールは逆符号にして、板を床と平行に戻す。
+# 正の股ロールは左右とも開く。間隔が目標より狭いときだけ、この角度で開く。
 OPEN_STANCE_ROLL_RAD = math.asin(
     (TARGET_FEET_GAP_M - HIP_SEPARATION_M) / (2.0 * LEG_LENGTH_HIP_TO_ANKLE_M)
 )

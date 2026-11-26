@@ -1,14 +1,15 @@
-"""カゴと両脚だけの歩行用アーティキュレーション。
+"""カゴと両脚のアーティキュレーション。
 
-形状の正本は `robot_description/yuuki_biped.urdf`。USD は直立確認と同じ
-`.usd_float` にキャッシュし、カゴは地面へ固定しない。
+歩行の学習は Fusion の BipedAssembly.urdf を読む。箱の yuuki_biped.urdf は、
+手動の踵操作がまだ逆運動学を箱の寸法で解いているので、こちらに残す。
 
-衝突は URDF の箱をそのまま使う。関節で直接つながった部品だけは PhysX が無視する。
-それ以外（左右の脚、足裏と反対のすね、自分のすねと足裏）は当たる。
+Fusion の USD は、再生用の固定カゴキャッシュとも、箱の .usd_float とも別にする。
+カゴは地面へ固定しない。自己衝突は切る。股のホーンと骨盤が重なって跳ねるため。
 """
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from isaaclab.actuators import ImplicitActuatorCfg
@@ -16,8 +17,21 @@ from isaaclab.assets import ArticulationCfg
 from isaaclab.sim.converters import UrdfConverterCfg
 from isaaclab.sim.spawners.from_files import UrdfFileCfg
 
-from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import SOLE_BELOW_ORIGIN_M
-from yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.rewards import OPEN_STANCE_ROLL_RAD
+from yuuki_isaac_lab.assets.robots.yuuki_legs.fusion_size import (
+    SOLE_BELOW_ORIGIN_M as FUSION_SOLE_BELOW_ORIGIN_M,
+)
+from yuuki_isaac_lab.assets.robots.yuuki_legs.model_size import (
+    HIP_SEPARATION_M,
+    LEG_LENGTH_HIP_TO_ANKLE_M,
+    PLATE_WIDTH_Y_M,
+    SOLE_BELOW_ORIGIN_M,
+)
+
+# 箱モデルだけ。板の内側 4 cm を空ける股ロール。歩行報酬の開脚角とは別。
+_BOX_INNER_CLEARANCE_M = 0.04
+_BOX_OPEN_STANCE_ROLL_RAD = math.asin(
+    (PLATE_WIDTH_Y_M + _BOX_INNER_CLEARANCE_M - HIP_SEPARATION_M) / (2.0 * LEG_LENGTH_HIP_TO_ANKLE_M)
+)
 
 # リポジトリ直下の robot_description。yuuki_legs → robots → assets →
 # パッケージ → 拡張 → source → isaac-lab → リポジトリ。
@@ -171,10 +185,10 @@ YUUKI_LEGS_CFG = ArticulationCfg(
         # 「.*」と併用すると同じ関節が二度一致して初期化に失敗する。
         joint_pos={
             ".*_pitch": 0.0,
-            "left_hip_roll": OPEN_STANCE_ROLL_RAD,
-            "right_hip_roll": OPEN_STANCE_ROLL_RAD,
-            "left_ankle_roll": -OPEN_STANCE_ROLL_RAD,
-            "right_ankle_roll": -OPEN_STANCE_ROLL_RAD,
+            "left_hip_roll": _BOX_OPEN_STANCE_ROLL_RAD,
+            "right_hip_roll": _BOX_OPEN_STANCE_ROLL_RAD,
+            "left_ankle_roll": -_BOX_OPEN_STANCE_ROLL_RAD,
+            "right_ankle_roll": -_BOX_OPEN_STANCE_ROLL_RAD,
         },
     ),
     actuators={
@@ -183,6 +197,85 @@ YUUKI_LEGS_CFG = ArticulationCfg(
             stiffness=JOINT_STIFFNESS,
             damping=JOINT_DAMPING,
             effort_limit_sim=EFFORT_LIMIT_NM,
+        ),
+    },
+)
+
+
+def _spawn_fusion_biped(prim_path: str, cfg: UrdfFileCfg, translation=None, orientation=None, **kwargs):
+    """Fusion の URDF を置き、足までの接触報告だけを付ける。
+
+    自己衝突は付けない。股のホーンと骨盤のメッシュが重なって、立ち始めに跳ねる。
+    再生スクリプトと同じ判断。接触報告は足がカゴの子でも読めるように、剛体すべてへ付ける。
+    """
+    from isaaclab.sim.spawners.from_files.from_files import spawn_from_urdf
+
+    prim = spawn_from_urdf(prim_path, cfg, translation=translation, orientation=orientation, **kwargs)
+    _enable_nested_contact_report(prim_path)
+    return prim
+
+
+# 1 cm 上から落として、Fusion の足裏を床に乗せる。
+_FUSION_SPAWN_CLEARANCE_M = 0.01
+# RDS51150。12 V の堵転 165 kg·cm と、無負荷 0.21 秒/60°。
+_RDS_EFFORT_NM = 16.2
+_RDS_VELOCITY_RAD_S = 5.0
+# SM105BL。定格 50 kg·cm。堵転 150 kg·cm を歩きの上限にしない。無負荷 0.167 秒/60°。
+_SM105_EFFORT_NM = 4.9
+_SM105_VELOCITY_RAD_S = 6.3
+
+_FUSION_DESCRIPTION = _REPO_ROOT / "fusion-urdf-export" / "BipedAssembly_description"
+_FUSION_URDF = _FUSION_DESCRIPTION / "urdf" / "BipedAssembly.urdf"
+# 再生の .usd_fusion_hub はカゴ固定。学習用は浮いたベースで別にキャッシュする。
+_FUSION_USD_DIR = _REPO_ROOT / "fusion-urdf-export" / ".usd_walk"
+
+FUSION_LEGS_CFG = ArticulationCfg(
+    prim_path="{ENV_REGEX_NS}/Robot",
+    spawn=UrdfFileCfg(
+        func=_spawn_fusion_biped,
+        asset_path=str(_FUSION_URDF),
+        usd_dir=str(_FUSION_USD_DIR),
+        # package://BipedAssembly_description/meshes/... を、書き出しディレクトリで解く。
+        ros_package_paths=[
+            {"name": "BipedAssembly_description", "path": str(_FUSION_DESCRIPTION)},
+        ],
+        fix_base=False,
+        # 足リンクを親へ吸収しない。接触は L_FOOT / R_FOOT を名指しで読む。
+        merge_fixed_joints=False,
+        # URDF に衝突 STL がある。見た目の DAE から作ると、重なったホーンまで床に当たる。
+        collision_from_visuals=False,
+        activate_contact_sensors=True,
+        self_collision=False,
+        joint_drive=UrdfConverterCfg.JointDriveCfg(
+            drive_type="force",
+            target_type="position",
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(
+                stiffness=JOINT_STIFFNESS,
+                damping=JOINT_DAMPING,
+            ),
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, FUSION_SOLE_BELOW_ORIGIN_M + _FUSION_SPAWN_CLEARANCE_M),
+        # 関節 0 が直立。股の間隔が既に板幅 + 4 cm なので、ロールは開かない。
+        joint_pos={".*": 0.0},
+    ),
+    actuators={
+        # 股ロール、股ピッチ、かかとロール。URDF の effort 100 / velocity 1 は使わない。
+        "rds51150": ImplicitActuatorCfg(
+            joint_names_expr=[".*_hip_roll", ".*_hip_pitch", ".*_ankle_roll"],
+            stiffness=JOINT_STIFFNESS,
+            damping=JOINT_DAMPING,
+            effort_limit_sim=_RDS_EFFORT_NM,
+            velocity_limit_sim=_RDS_VELOCITY_RAD_S,
+        ),
+        # ひざ、かかとピッチ。
+        "sm105bl": ImplicitActuatorCfg(
+            joint_names_expr=[".*_knee_pitch", ".*_ankle_pitch"],
+            stiffness=JOINT_STIFFNESS,
+            damping=JOINT_DAMPING,
+            effort_limit_sim=_SM105_EFFORT_NM,
+            velocity_limit_sim=_SM105_VELOCITY_RAD_S,
         ),
     },
 )

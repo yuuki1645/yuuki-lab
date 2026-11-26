@@ -3,7 +3,7 @@
 [yuuki-lab](https://github.com/yuuki1645/yuuki-lab) 内の **Isaac Lab 拡張**です。  
 **リポジトリの強化学習本線**は、カゴと両脚の Manager-Based 歩行 `YuukiLab-BipedWalk-v0` だけです。
 
-仕様の正本は [biped_walk_env_cfg.py](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) です。ロボットは [yuuki_legs](source/yuuki_isaac_lab/yuuki_isaac_lab/assets/robots/yuuki_legs/yuuki_legs_cfg.py) で、形状は `robot_description/yuuki_biped.urdf` を読みます。
+仕様の正本は [biped_walk_env_cfg.py](source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) です。ロボットは [yuuki_legs](source/yuuki_isaac_lab/yuuki_isaac_lab/assets/robots/yuuki_legs/yuuki_legs_cfg.py) の `FUSION_LEGS_CFG` で、形状は Fusion の `BipedAssembly.urdf` を読みます。カゴは地面に固定しません。
 
 改善ループ（AI）: [.cursor/skills/rl-improvement-loop/SKILL.md](../.cursor/skills/rl-improvement-loop/SKILL.md)
 

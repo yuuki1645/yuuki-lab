@@ -24,9 +24,13 @@ from .sole_corners import corner_newtons
 GRAVITY_MPS2 = 9.81
 DF9_MAX_KG = 2.0
 DEADZONE_KG = 0.02
-# 足板 0.300 m × 0.170 m の半寸。今回の URDF 変更では板の寸法は変えていない。
+# 足板 0.300 m × 0.170 m の半寸。Fusion の衝突メッシュも、この寸法だった。
+# 前が x、左が y。リンク原点ではなく、板の中心を 0 にする。
 PLATE_HALF_X_M = 0.150
 PLATE_HALF_Y_M = 0.085
+# L_FOOT と R_FOOT は同じ向き。+X が左、+Y が下、+Z が後ろ。
+# 板の中心は原点から下へ 38 mm、後ろへ 136 mm。ゼロ姿勢の衝突メッシュから測った。
+_PLATE_CENTER_LINK_M = (0.0, 0.038, -0.13575)
 
 
 def foot_corner_kg(
@@ -93,9 +97,14 @@ def _sole_load(
     origin = sole_pos.reshape(flat, 3).unsqueeze(1).expand(flat, count_filter, 3).reshape(-1, 3)
     force_local = math_utils.quat_apply_inverse(quat, force_w.reshape(-1, 3))
     point_local = math_utils.quat_apply_inverse(quat, point_w.reshape(-1, 3) - origin)
-    # 足裏の +z が上。床が板を押す成分だけを圧縮とする。
-    normal = force_local[:, 2].clamp(min=0.0).reshape(count_env, count_foot, count_filter)
-    xy = point_local[:, 0:2].reshape(count_env, count_foot, count_filter, 2)
+    # リンクの +Y は下なので、床が板を押す上向きは -Y。
+    # 板の座標は、前が x（リンクの -Z）、左が y（リンクの +X）。
+    center_x = _PLATE_CENTER_LINK_M[0]
+    center_z = _PLATE_CENTER_LINK_M[2]
+    normal = (-force_local[:, 1]).clamp(min=0.0).reshape(count_env, count_foot, count_filter)
+    forward = (center_z - point_local[:, 2]).reshape(count_env, count_foot, count_filter)
+    left = (point_local[:, 0] - center_x).reshape(count_env, count_foot, count_filter)
+    xy = torch.stack((forward, left), dim=-1)
     total = normal.sum(dim=-1)
     weight = normal.unsqueeze(-1)
     cop = (xy * weight).sum(dim=2) / total.clamp(min=1.0e-6).unsqueeze(-1)

@@ -1,0 +1,66 @@
+--- git commit ---
+ffff603eafc6b74264a5261cc0183d6a65390d78
+
+
+--- git status ---
+Not currently on any branch.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   scripts/reinforcement_learning/rsl_rl/play.py
+	modified:   scripts/reinforcement_learning/rsl_rl/play_rsl_rl.py
+	modified:   scripts/reinforcement_learning/rsl_rl/train.py
+	modified:   scripts/reinforcement_learning/rsl_rl/train_rsl_rl.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/scripts/reinforcement_learning/rsl_rl/play.py b/scripts/reinforcement_learning/rsl_rl/play.py
+index a033e2d7..16f650bd 100644
+--- a/scripts/reinforcement_learning/rsl_rl/play.py
++++ b/scripts/reinforcement_learning/rsl_rl/play.py
+@@ -55,6 +55,7 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
+ import cli_args  # isort: skip
+ 
+ # PLACEHOLDER: Extension template (do not remove this comment)
++import yuuki_isaac_lab.tasks  # noqa: F401
+ with contextlib.suppress(ImportError):
+     import isaaclab_tasks_experimental  # noqa: F401
+ 
+diff --git a/scripts/reinforcement_learning/rsl_rl/play_rsl_rl.py b/scripts/reinforcement_learning/rsl_rl/play_rsl_rl.py
+index ce728107..80bebd4d 100644
+--- a/scripts/reinforcement_learning/rsl_rl/play_rsl_rl.py
++++ b/scripts/reinforcement_learning/rsl_rl/play_rsl_rl.py
+@@ -44,6 +44,7 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
+ import cli_args  # isort: skip
+ 
+ # PLACEHOLDER: Extension template (do not remove this comment)
++import yuuki_isaac_lab.tasks  # noqa: F401
+ with contextlib.suppress(ImportError):
+     import isaaclab_tasks_experimental  # noqa: F401
+ 
+diff --git a/scripts/reinforcement_learning/rsl_rl/train.py b/scripts/reinforcement_learning/rsl_rl/train.py
+index 3ea4449f..e154c949 100644
+--- a/scripts/reinforcement_learning/rsl_rl/train.py
++++ b/scripts/reinforcement_learning/rsl_rl/train.py
+@@ -53,6 +53,7 @@ import cli_args  # isort: skip
+ logger = logging.getLogger(__name__)
+ 
+ # PLACEHOLDER: Extension template (do not remove this comment)
++import yuuki_isaac_lab.tasks  # noqa: F401
+ with contextlib.suppress(ImportError):
+     import isaaclab_tasks_experimental  # noqa: F401
+ 
+diff --git a/scripts/reinforcement_learning/rsl_rl/train_rsl_rl.py b/scripts/reinforcement_learning/rsl_rl/train_rsl_rl.py
+index 78d39119..b9aba704 100644
+--- a/scripts/reinforcement_learning/rsl_rl/train_rsl_rl.py
++++ b/scripts/reinforcement_learning/rsl_rl/train_rsl_rl.py
+@@ -41,6 +41,7 @@ RL_ROOT = Path(__file__).resolve().parents[1]
+ CLI_ARGS = import_local_module("isaaclab_rsl_rl_cli_args", RL_ROOT / "rsl_rl" / "cli_args.py")
+ 
+ # PLACEHOLDER: Extension template (do not remove this comment)
++import yuuki_isaac_lab.tasks  # noqa: F401
+ with contextlib.suppress(ImportError):
+     import isaaclab_tasks_experimental  # noqa: F401
+ 

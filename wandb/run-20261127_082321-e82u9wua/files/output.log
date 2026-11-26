@@ -1,0 +1,180 @@
+Storing git diff for 'IsaacLab-3' in: Z:\Projects\yuuki-lab\logs\rsl_rl\yuuki_biped_walk\2026-11-27_08-23-08_fusion_smoke\git\IsaacLab-3.diff
+Storing git diff for 'yuuki-lab' in: Z:\Projects\yuuki-lab\logs\rsl_rl\yuuki_biped_walk\2026-11-27_08-23-08_fusion_smoke\git\yuuki-lab.diff
+[34m[1mwandb[0m: [33mWARNING[0m Linked 1 file into the W&B run directory (hardlinks); call wandb.save again to sync new files.
+[34m[1mwandb[0m: [33mWARNING[0m Linked 1 file into the W&B run directory (hardlinks); call wandb.save again to sync new files.
+################################################################################
+[1m                             Learning iteration 0/5                             [0m
+
+                               Run name: fusion_smoke
+                            Total steps: 1536
+                       Steps per second: 253
+                        Collection time: 5.161s
+                          Learning time: 0.891s
+                        Mean value loss: 1.3079
+                    Mean surrogate loss: -0.0140
+                      Mean entropy loss: 14.1766
+                            Mean reward: -0.49
+                    Mean episode length: 20.71
+                        Mean action std: 1.00
+                 Episode_Reward/upright: 0.0283
+           Episode_Reward/track_forward: 0.0045
+           Episode_Reward/slide_and_yaw: -0.0123
+                  Episode_Reward/stance: 0.0026
+             Episode_Reward/heel_to_toe: 0.0024
+              Episode_Reward/feet_apart: 0.0028
+             Episode_Reward/stand_still: -0.0254
+              Episode_Reward/swing_knee: 0.0066
+             Episode_Reward/action_rate: -0.0056
+                   Metrics/success_rate: 0.5000
+     Metrics/base_velocity/error_vel_xy: 0.3147
+    Metrics/base_velocity/error_vel_yaw: 0.4731
+Metrics/base_velocity/forward_distance_m: -0.0787
+           Episode_Termination/time_out: 0.0299
+             Episode_Termination/fallen: 0.0000
+             Episode_Termination/tilted: 0.0286
+--------------------------------------------------------------------------------
+                         Iteration time: 6.05s
+                           Time elapsed: 00:00:06
+                                    ETA: 00:00:24
+[34m[1mwandb[0m: [33mWARNING[0m Linked 1 file into the W&B run directory (hardlinks); call wandb.save again to sync new files.
+
+################################################################################
+[1m                             Learning iteration 1/5                             [0m
+
+                               Run name: fusion_smoke
+                            Total steps: 3072
+                       Steps per second: 295
+                        Collection time: 4.635s
+                          Learning time: 0.558s
+                        Mean value loss: 1.2663
+                    Mean surrogate loss: -0.0293
+                      Mean entropy loss: 14.1714
+                            Mean reward: -2.05
+                    Mean episode length: 27.10
+                        Mean action std: 1.00
+                 Episode_Reward/upright: 0.0934
+           Episode_Reward/track_forward: 0.0097
+           Episode_Reward/slide_and_yaw: -0.0527
+                  Episode_Reward/stance: 0.0052
+             Episode_Reward/heel_to_toe: 0.0052
+              Episode_Reward/feet_apart: -0.0192
+             Episode_Reward/stand_still: -0.3427
+              Episode_Reward/swing_knee: 0.0116
+             Episode_Reward/action_rate: -0.0195
+                   Metrics/success_rate: 0.0000
+     Metrics/base_velocity/error_vel_xy: 0.6152
+    Metrics/base_velocity/error_vel_yaw: 0.6956
+Metrics/base_velocity/forward_distance_m: -0.3392
+           Episode_Termination/time_out: 0.0703
+             Episode_Termination/fallen: 0.0000
+             Episode_Termination/tilted: 0.6712
+--------------------------------------------------------------------------------
+                         Iteration time: 5.19s
+                           Time elapsed: 00:00:11
+                                    ETA: 00:00:16
+
+################################################################################
+[1m                             Learning iteration 2/5                             [0m
+
+                               Run name: fusion_smoke
+                            Total steps: 4608
+                       Steps per second: 286
+                        Collection time: 4.787s
+                          Learning time: 0.566s
+                        Mean value loss: 0.6904
+                    Mean surrogate loss: -0.0242
+                      Mean entropy loss: 14.1669
+                            Mean reward: -2.17
+                    Mean episode length: 30.43
+                        Mean action std: 1.00
+                 Episode_Reward/upright: 0.0986
+           Episode_Reward/track_forward: 0.0102
+           Episode_Reward/slide_and_yaw: -0.0555
+                  Episode_Reward/stance: -0.0045
+             Episode_Reward/heel_to_toe: 0.0083
+              Episode_Reward/feet_apart: -0.0024
+             Episode_Reward/stand_still: -0.1876
+              Episode_Reward/swing_knee: 0.0174
+             Episode_Reward/action_rate: -0.0210
+                   Metrics/success_rate: 0.0000
+     Metrics/base_velocity/error_vel_xy: 0.6905
+    Metrics/base_velocity/error_vel_yaw: 0.7077
+Metrics/base_velocity/forward_distance_m: -0.3133
+           Episode_Termination/time_out: 0.0078
+             Episode_Termination/fallen: 0.0000
+             Episode_Termination/tilted: 0.9622
+--------------------------------------------------------------------------------
+                         Iteration time: 5.35s
+                           Time elapsed: 00:00:16
+                                    ETA: 00:00:11
+
+################################################################################
+[1m                             Learning iteration 3/5                             [0m
+
+                               Run name: fusion_smoke
+                            Total steps: 6144
+                       Steps per second: 299
+                        Collection time: 4.593s
+                          Learning time: 0.541s
+                        Mean value loss: 0.6825
+                    Mean surrogate loss: -0.0293
+                      Mean entropy loss: 14.1676
+                            Mean reward: -1.41
+                    Mean episode length: 30.15
+                        Mean action std: 1.00
+                 Episode_Reward/upright: 0.0974
+           Episode_Reward/track_forward: 0.0092
+           Episode_Reward/slide_and_yaw: -0.0541
+                  Episode_Reward/stance: -0.0044
+             Episode_Reward/heel_to_toe: 0.0056
+              Episode_Reward/feet_apart: 0.0234
+             Episode_Reward/stand_still: -0.3258
+              Episode_Reward/swing_knee: 0.0131
+             Episode_Reward/action_rate: -0.0200
+                   Metrics/success_rate: 0.0000
+     Metrics/base_velocity/error_vel_xy: 0.7221
+    Metrics/base_velocity/error_vel_yaw: 0.7084
+Metrics/base_velocity/forward_distance_m: -0.4016
+           Episode_Termination/time_out: 0.0000
+             Episode_Termination/fallen: 0.0000
+             Episode_Termination/tilted: 1.0000
+--------------------------------------------------------------------------------
+                         Iteration time: 5.13s
+                           Time elapsed: 00:00:21
+                                    ETA: 00:00:05
+
+################################################################################
+[1m                             Learning iteration 4/5                             [0m
+
+                               Run name: fusion_smoke
+                            Total steps: 7680
+                       Steps per second: 277
+                        Collection time: 4.931s
+                          Learning time: 0.595s
+                        Mean value loss: 1.1193
+                    Mean surrogate loss: -0.0230
+                      Mean entropy loss: 14.1740
+                            Mean reward: -1.28
+                    Mean episode length: 29.27
+                        Mean action std: 1.00
+                 Episode_Reward/upright: 0.0911
+           Episode_Reward/track_forward: 0.0105
+           Episode_Reward/slide_and_yaw: -0.0475
+                  Episode_Reward/stance: -0.0024
+             Episode_Reward/heel_to_toe: 0.0077
+              Episode_Reward/feet_apart: 0.0012
+             Episode_Reward/stand_still: -0.1875
+              Episode_Reward/swing_knee: 0.0161
+             Episode_Reward/action_rate: -0.0199
+                   Metrics/success_rate: 0.0000
+     Metrics/base_velocity/error_vel_xy: 0.7340
+    Metrics/base_velocity/error_vel_yaw: 0.6673
+Metrics/base_velocity/forward_distance_m: -0.3326
+           Episode_Termination/time_out: 0.0000
+             Episode_Termination/fallen: 0.0000
+             Episode_Termination/tilted: 1.0000
+--------------------------------------------------------------------------------
+                         Iteration time: 5.53s
+                           Time elapsed: 00:00:27
+                                    ETA: 00:00:00
+[34m[1mwandb[0m: [33mWARNING[0m Linked 1 file into the W&B run directory (hardlinks); call wandb.save again to sync new files.

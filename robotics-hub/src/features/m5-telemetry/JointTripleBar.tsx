@@ -270,9 +270,21 @@ export function JointTripleBar({
                 className="m5-bar__fill m5-bar__fill--hatch-cmd"
                 style={{ width: shownCmd != null ? `${pct(shownCmd, viewMin, viewMax)}%` : "0%" }}
               />
-              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
+              <AngleScale
+                viewMin={viewMin}
+                viewMax={viewMax}
+                neutral={motion.neutral}
+                limitMin={angleMin}
+                limitMax={angleMax}
+              />
               {shownCmd != null ? (
-                <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd, viewMin, viewMax)}%` }} />
+                <b
+                  className={
+                    "m5-bar__thumb" +
+                    (shownCmd < angleMin || shownCmd > angleMax ? " m5-bar__thumb--danger" : "")
+                  }
+                  style={{ left: `${pct(shownCmd, viewMin, viewMax)}%` }}
+                />
               ) : null}
             </div>
           </BarRow>
@@ -301,7 +313,13 @@ export function JointTripleBar({
                   }}
                 />
               ) : null}
-              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
+              <AngleScale
+                viewMin={viewMin}
+                viewMax={viewMax}
+                neutral={motion.neutral}
+                limitMin={angleMin}
+                limitMax={angleMax}
+              />
             </div>
           </BarRow>
             ) : null}
@@ -313,7 +331,13 @@ export function JointTripleBar({
                 className="m5-bar__fill m5-bar__fill--hatch-corr"
                 style={{ width: corrVal != null ? `${pct(corrVal, viewMin, viewMax)}%` : "0%" }}
               />
-              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
+              <AngleScale
+                viewMin={viewMin}
+                viewMax={viewMax}
+                neutral={motion.neutral}
+                limitMin={angleMin}
+                limitMax={angleMax}
+              />
             </div>
           </BarRow>
             ) : null}
@@ -456,20 +480,39 @@ function PlotLiveReadout({
 }
 
 /**
- * 10° ごとの点線と、中立の赤い細線。
- * 点線は軸ごとに間隔が変わる。可動範囲が広い関節ほど、同じバー幅で 10° が狭く見える。
+ * 可動範囲の外側 20° を危険域として塗り、端に実線を引く。
+ * その上に 10° の点線と、中立の赤線を載せる。
+ * 点線の間隔は軸ごとに変わる。可動範囲が広い関節ほど、同じバー幅で 10° が狭く見える。
  */
 function AngleScale({
   viewMin,
   viewMax,
   neutral,
+  limitMin,
+  limitMax,
 }: {
   viewMin: number;
   viewMax: number;
   neutral: number;
+  limitMin: number;
+  limitMax: number;
 }) {
+  const limitLeft = pct(limitMin, viewMin, viewMax);
+  const limitRight = pct(limitMax, viewMin, viewMax);
   return (
     <>
+      <span
+        className="m5-bar__danger"
+        style={{ left: 0, width: `${limitLeft}%` }}
+        title="可動範囲の外側"
+      />
+      <span
+        className="m5-bar__danger"
+        style={{ left: `${limitRight}%`, width: `${Math.max(0, 100 - limitRight)}%` }}
+        title="可動範囲の外側"
+      />
+      <span className="m5-bar__limit" style={{ left: `${limitLeft}%` }} title="可動下限" />
+      <span className="m5-bar__limit" style={{ left: `${limitRight}%` }} title="可動上限" />
       {decadeTicks(viewMin, viewMax).map((deg) => (
         <span
           key={deg}

@@ -1025,6 +1025,34 @@
   top: 0;
   left: 0;
   bottom: 0;
+  z-index: 0;
+}
+
+/* 可動範囲の外側 20°。指令の塗りより手前に置き、正常域と分ける。 */
+.m5-bar__danger {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    -55deg,
+    rgba(255, 71, 87, 0.62) 0 3px,
+    rgba(70, 12, 20, 0.78) 3px 7px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 正常に動かせる範囲の端。点線の 10° とは別に、実線で示す。 */
+.m5-bar__limit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #ff9aa6;
+  box-shadow: 0 0 0 1px rgba(40, 0, 6, 0.65);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .m5-bar__fill--hatch-cmd {
@@ -1070,7 +1098,14 @@
   background: #fff6d2;
   border-radius: 1px;
   pointer-events: none;
-  z-index: 3;
+  z-index: 5;
+}
+
+/* 指令が可動範囲の外、つまり両端の 20° に入ったとき。 */
+.m5-bar__thumb--danger,
+.m5-bar--cmd .m5-bar__thumb--danger {
+  background: #ff4757;
+  box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.75);
 }
 
 /* 10° ごとの点線。軸ごとにバー幅に対する間隔が変わる。 */
@@ -1086,10 +1121,10 @@
     transparent 2px 4px
   );
   pointer-events: none;
-  z-index: 1;
+  z-index: 3;
 }
 
-/* 中立。RDS は 135°、SM105BL は 0°。点線より前に出す。 */
+/* 中立。RDS は 135°、SM105BL は 0°。可動端の実線より前に出す。 */
 .m5-bar__neutral {
   position: absolute;
   top: 0;
@@ -1098,13 +1133,18 @@
   margin-left: -1px;
   background: #ff4757;
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
 }
 
 .m5-bar--cmd:not(.m5-bar--off) .m5-bar__thumb {
   width: 10px;
   margin-left: -5px;
   box-shadow: 0 0 0 2px rgba(247, 201, 72, 0.45);
+}
+
+.m5-bar--cmd:not(.m5-bar--off) .m5-bar__thumb--danger {
+  background: #ff4757;
+  box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.75);
 }
 
 .m5-jrow__plot {

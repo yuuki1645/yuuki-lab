@@ -6,7 +6,7 @@
 
 | Property | Value |
 |----------|-------|
-| Total mass | 9.320 kg |
+| Total mass | 9.498 kg |
 | Links | 12 |
 | Joints | 11 (10 movable) |
 | Assemblies | 11 |
@@ -34,7 +34,7 @@ base_link [BAKE]
               └─ left_knee_pitch [revolute]
                 L_SHIN [BAKE]
                   └─ left_ankle_pitch [revolute]
-                    DSSERVO_RDS51150_BodyOnly_rigid_01 [BAKE]
+                    L_ANKLE [BAKE]
                       └─ left_ankle_roll [revolute]
                         L_FOOT [BAKE]
       └─ right_hip_roll [revolute]
@@ -44,7 +44,7 @@ base_link [BAKE]
               └─ right_knee_pitch [revolute]
                 R_SHIN [BAKE]
                   └─ right_ankle_pitch [revolute]
-                    DSSERVO_RDS51150_BodyOnly_rigid_01_2 [BAKE]
+                    R_ANKLE [BAKE]
                       └─ right_ankle_roll [revolute]
                         R_FOOT [BAKE]
 ```
@@ -53,13 +53,13 @@ base_link [BAKE]
 
 | Link | Mass (kg) | Material | Collision | Bodies |
 |------|-----------|----------|-----------|--------|
-| `DSSERVO_RDS51150_BodyOnly_rigid_01` | 0.6469 | material | box | 1 |
-| `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | 0.6469 | material | box | 1 |
+| `L_ANKLE` | 0.7362 | material | box | 1 |
 | `L_FOOT` | 0.4675 | material | box | 1 |
 | `L_HIP` | 0.1098 | material | cylinder | 1 |
 | `L_SHIN` | 0.9946 | Lipo | box | 1 |
 | `L_THIGH` | 1.5519 | Lipo | box | 1 |
 | `PELVIS` | 1.6771 | ABS | box | 1 |
+| `R_ANKLE` | 0.7362 | material | box | 1 |
 | `R_FOOT` | 0.4675 | material | box | 1 |
 | `R_HIP` | 0.1098 | material | cylinder | 1 |
 | `R_SHIN` | 0.9946 | Lipo | box | 1 |
@@ -71,14 +71,14 @@ base_link [BAKE]
 | Joint | Type | Parent → Child | Axis | Limits |
 |-------|------|---------------|------|--------|
 | `biped_fixed_01` | fixed | `base_link` → `PELVIS` | (0,0,1) | — |
-| `left_ankle_pitch` | revolute | `L_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01` | (0,-1,0) | [-40.0°, 40.0°] |
-| `left_ankle_roll` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01` → `L_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
-| `left_hip_pitch` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `left_ankle_pitch` | revolute | `L_SHIN` → `L_ANKLE` | (0,0,1) | [-40.0°, 40.0°] |
+| `left_ankle_roll` | revolute | `L_ANKLE` → `L_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `left_hip_pitch` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-40.0°, 40.0°] |
 | `left_hip_roll` | revolute | `PELVIS` → `L_HIP` | (0,0,1) | [-40.0°, 40.0°] |
 | `left_knee_pitch` | revolute | `L_THIGH` → `L_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_ankle_pitch` | revolute | `R_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | (0,-1,0) | [-40.0°, 40.0°] |
-| `right_ankle_roll` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_hip_pitch` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `right_ankle_pitch` | revolute | `R_SHIN` → `R_ANKLE` | (0,0,1) | [-40.0°, 40.0°] |
+| `right_ankle_roll` | revolute | `R_ANKLE` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `right_hip_pitch` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-40.0°, 40.0°] |
 | `right_hip_roll` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-40.0°, 40.0°] |
 | `right_knee_pitch` | revolute | `R_THIGH` → `R_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
 
@@ -96,8 +96,8 @@ base_link [BAKE]
 
 ### DSSERVO_RDS51150_BodyOnly
 
-- **Links**: DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2
-- **Total mass**: 1.294 kg
+- **Links**: L_ANKLE, R_ANKLE
+- **Total mass**: 1.472 kg
 
 ### FEETECH_SM105BL
 

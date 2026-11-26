@@ -17,8 +17,8 @@ Convention: URDF RPY (XYZ extrinsic / ZYX intrinsic).
 | $L_{5}$ | R_THIGH |
 | $L_{6}$ | L_SHIN |
 | $L_{7}$ | R_SHIN |
-| $L_{8}$ | DSSERVO_RDS51150_BodyOnly_rigid_01 |
-| $L_{9}$ | DSSERVO_RDS51150_BodyOnly_rigid_01_2 |
+| $L_{8}$ | L_ANKLE |
+| $L_{9}$ | R_ANKLE |
 | $L_{10}$ | L_FOOT |
 | $L_{11}$ | R_FOOT |
 
@@ -52,7 +52,7 @@ L0: base_link
         |           +-- [revolute] left_knee_pitch (q5)
         |               L6: L_SHIN
         |                 +-- [revolute] left_ankle_pitch (q7)
-        |                     L8: DSSERVO_RDS51150_BodyOnly_rigid_01
+        |                     L8: L_ANKLE
         |                       +-- [revolute] left_ankle_roll (q9)
         |                           L10: L_FOOT
         +-- [revolute] right_hip_roll (q2)
@@ -62,7 +62,7 @@ L0: base_link
                     +-- [revolute] right_knee_pitch (q6)
                         L7: R_SHIN
                           +-- [revolute] right_ankle_pitch (q8)
-                              L9: DSSERVO_RDS51150_BodyOnly_rigid_01_2
+                              L9: R_ANKLE
                                 +-- [revolute] right_ankle_roll (q10)
                                     L11: R_FOOT
 ```
@@ -165,7 +165,7 @@ $L_{2}$ **L_HIP** -> $L_{4}$ **L_THIGH** (revolute)
 - **origin xyz**: (-0.03075, -0.07, 0.03075) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.610865, 0.610865] rad ([-35deg, 35deg])
+- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
@@ -188,7 +188,7 @@ $L_{3}$ **R_HIP** -> $L_{5}$ **R_THIGH** (revolute)
 - **origin xyz**: (-0.03075, -0.07, 0.03075) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.610865, 0.610865] rad ([-35deg, 35deg])
+- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
@@ -251,32 +251,21 @@ $$
 
 ## left_ankle_pitch
 
-$L_{6}$ **L_SHIN** -> $L_{8}$ **DSSERVO_RDS51150_BodyOnly_rigid_01** (revolute)
+$L_{6}$ **L_SHIN** -> $L_{8}$ **L_ANKLE** (revolute)
   Variable: $q_{7}$
 
 - **origin xyz**: (-0.0001, -0.28975, 0) m
-- **origin rpy**: (-1.570796, 0, -1.570796) rad
-- **axis**: (0, -1, 0)
+- **origin rpy**: (0, 0, 0) rad
+- **axis**: (0, 0, 1)
 - **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
-$T^{6}_{8}(q_{7}) = T_{fixed} \cdot R_{axis}(q_{7})$ where:
-
 $$
-T_{fixed} = \begin{bmatrix}
-0 & 0 & 1 & -0.0001 \\
--1 & 0 & 0 & -0.28975 \\
-0 & -1 & 0 & 0 \\
-0 & 0 & 0 & 1 \\
-\end{bmatrix}
-$$
-
-$$
-R_{axis}(q_{7}) = \begin{bmatrix}
-c_{7} & 0 & -s_{7} & 0 \\
-0 & 1 & 0 & 0 \\
-s_{7} & 0 & c_{7} & 0 \\
+T^{6}_{8}(q_{7}) = \begin{bmatrix}
+c_{7} & -s_{7} & 0 & -0.0001 \\
+s_{7} & c_{7} & 0 & -0.28975 \\
+0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 1 \\
 \end{bmatrix}
 $$
@@ -285,32 +274,21 @@ $$
 
 ## right_ankle_pitch
 
-$L_{7}$ **R_SHIN** -> $L_{9}$ **DSSERVO_RDS51150_BodyOnly_rigid_01_2** (revolute)
+$L_{7}$ **R_SHIN** -> $L_{9}$ **R_ANKLE** (revolute)
   Variable: $q_{8}$
 
 - **origin xyz**: (-0.0001, -0.28975, 0) m
-- **origin rpy**: (-1.570796, 0, -1.570796) rad
-- **axis**: (0, -1, 0)
+- **origin rpy**: (0, 0, 0) rad
+- **axis**: (0, 0, 1)
 - **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
-$T^{7}_{9}(q_{8}) = T_{fixed} \cdot R_{axis}(q_{8})$ where:
-
 $$
-T_{fixed} = \begin{bmatrix}
-0 & 0 & 1 & -0.0001 \\
--1 & 0 & 0 & -0.28975 \\
-0 & -1 & 0 & 0 \\
-0 & 0 & 0 & 1 \\
-\end{bmatrix}
-$$
-
-$$
-R_{axis}(q_{8}) = \begin{bmatrix}
-c_{8} & 0 & -s_{8} & 0 \\
-0 & 1 & 0 & 0 \\
-s_{8} & 0 & c_{8} & 0 \\
+T^{7}_{9}(q_{8}) = \begin{bmatrix}
+c_{8} & -s_{8} & 0 & -0.0001 \\
+s_{8} & c_{8} & 0 & -0.28975 \\
+0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 1 \\
 \end{bmatrix}
 $$
@@ -319,32 +297,21 @@ $$
 
 ## left_ankle_roll
 
-$L_{8}$ **DSSERVO_RDS51150_BodyOnly_rigid_01** -> $L_{10}$ **L_FOOT** (revolute)
+$L_{8}$ **L_ANKLE** -> $L_{10}$ **L_FOOT** (revolute)
   Variable: $q_{9}$
 
-- **origin xyz**: (0.0915, 0.0322, 0.0255) m
-- **origin rpy**: (1.570796, -1.570796, 0) rad
+- **origin xyz**: (0.0255, -0.0915, -0.0322) m
+- **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
 - **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
-$T^{8}_{10}(q_{9}) = T_{fixed} \cdot R_{axis}(q_{9})$ where:
-
 $$
-T_{fixed} = \begin{bmatrix}
-0 & -1 & 0 & 0.0915 \\
-0 & 0 & -1 & 0.0322 \\
-1 & 0 & 0 & 0.0255 \\
-0 & 0 & 0 & 1 \\
-\end{bmatrix}
-$$
-
-$$
-R_{axis}(q_{9}) = \begin{bmatrix}
-c_{9} & -s_{9} & 0 & 0 \\
-s_{9} & c_{9} & 0 & 0 \\
-0 & 0 & 1 & 0 \\
+T^{8}_{10}(q_{9}) = \begin{bmatrix}
+c_{9} & -s_{9} & 0 & 0.0255 \\
+s_{9} & c_{9} & 0 & -0.0915 \\
+0 & 0 & 1 & -0.0322 \\
 0 & 0 & 0 & 1 \\
 \end{bmatrix}
 $$
@@ -353,32 +320,21 @@ $$
 
 ## right_ankle_roll
 
-$L_{9}$ **DSSERVO_RDS51150_BodyOnly_rigid_01_2** -> $L_{11}$ **R_FOOT** (revolute)
+$L_{9}$ **R_ANKLE** -> $L_{11}$ **R_FOOT** (revolute)
   Variable: $q_{10}$
 
-- **origin xyz**: (0.0915, 0.0322, 0.0255) m
-- **origin rpy**: (1.570796, -1.570796, 0) rad
+- **origin xyz**: (0.0255, -0.0915, -0.0322) m
+- **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
 - **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
 
 ### Local Transform
 
-$T^{9}_{11}(q_{10}) = T_{fixed} \cdot R_{axis}(q_{10})$ where:
-
 $$
-T_{fixed} = \begin{bmatrix}
-0 & -1 & 0 & 0.0915 \\
-0 & 0 & -1 & 0.0322 \\
-1 & 0 & 0 & 0.0255 \\
-0 & 0 & 0 & 1 \\
-\end{bmatrix}
-$$
-
-$$
-R_{axis}(q_{10}) = \begin{bmatrix}
-c_{10} & -s_{10} & 0 & 0 \\
-s_{10} & c_{10} & 0 & 0 \\
-0 & 0 & 1 & 0 \\
+T^{9}_{11}(q_{10}) = \begin{bmatrix}
+c_{10} & -s_{10} & 0 & 0.0255 \\
+s_{10} & c_{10} & 0 & -0.0915 \\
+0 & 0 & 1 & -0.0322 \\
 0 & 0 & 0 & 1 \\
 \end{bmatrix}
 $$
@@ -401,9 +357,9 @@ $$T^{0}_{6} = T^{0}_{1} \cdot T^{1}_{2}(q_{1}) \cdot T^{2}_{4}(q_{3}) \cdot T^{4
 
 $$T^{0}_{7} = T^{0}_{1} \cdot T^{1}_{3}(q_{2}) \cdot T^{3}_{5}(q_{4}) \cdot T^{5}_{7}(q_{6})\quad (L_0 \to L_{7}: \text{R_SHIN})$$
 
-$$T^{0}_{8} = T^{0}_{1} \cdot T^{1}_{2}(q_{1}) \cdot T^{2}_{4}(q_{3}) \cdot T^{4}_{6}(q_{5}) \cdot T^{6}_{8}(q_{7})\quad (L_0 \to L_{8}: \text{DSSERVO_RDS51150_BodyOnly_rigid_01})$$
+$$T^{0}_{8} = T^{0}_{1} \cdot T^{1}_{2}(q_{1}) \cdot T^{2}_{4}(q_{3}) \cdot T^{4}_{6}(q_{5}) \cdot T^{6}_{8}(q_{7})\quad (L_0 \to L_{8}: \text{L_ANKLE})$$
 
-$$T^{0}_{9} = T^{0}_{1} \cdot T^{1}_{3}(q_{2}) \cdot T^{3}_{5}(q_{4}) \cdot T^{5}_{7}(q_{6}) \cdot T^{7}_{9}(q_{8})\quad (L_0 \to L_{9}: \text{DSSERVO_RDS51150_BodyOnly_rigid_01_2})$$
+$$T^{0}_{9} = T^{0}_{1} \cdot T^{1}_{3}(q_{2}) \cdot T^{3}_{5}(q_{4}) \cdot T^{5}_{7}(q_{6}) \cdot T^{7}_{9}(q_{8})\quad (L_0 \to L_{9}: \text{R_ANKLE})$$
 
 $$T^{0}_{10} = T^{0}_{1} \cdot T^{1}_{2}(q_{1}) \cdot T^{2}_{4}(q_{3}) \cdot T^{4}_{6}(q_{5}) \cdot T^{6}_{8}(q_{7}) \cdot T^{8}_{10}(q_{9})\quad (L_0 \to L_{10}: \text{L_FOOT})$$
 

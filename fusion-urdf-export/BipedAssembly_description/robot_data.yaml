@@ -5,7 +5,7 @@ metadata:
   design_name: BipedAssembly
   package_name: BipedAssembly_description
   exporter_version: '3.1.2'
-  total_mass_kg: 9.3197
+  total_mass_kg: 9.4984
   link_count: 12
   joint_count: 11
   root_link: base_link
@@ -18,8 +18,8 @@ assemblies:
     links: [base_link, PELVIS]
     total_mass_kg: 1.7784
   DSSERVO_RDS51150_BodyOnly:
-    links: [DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2]
-    total_mass_kg: 1.2938
+    links: [L_ANKLE, R_ANKLE]
+    total_mass_kg: 1.4725
   FEETECH_SM105BL:
     links: []
     total_mass_kg: 0.0000
@@ -46,54 +46,32 @@ assemblies:
     total_mass_kg: 0.0000
 
 links:
-  DSSERVO_RDS51150_BodyOnly_rigid_01:
+  L_ANKLE:
     assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [0.068136, 0.004693, 0.025503]
+    mass_kg: 0.736236
+    volume_m3: 0.00009379
+    bbox_size_m: [0.111500, 0.063200, 0.056000]
+    com_local_m: [0.025442, -0.062514, -0.004123]
     inertia_at_com:
-      ixx: 1.982365e-04
-      ixy: -1.273417e-05
-      ixz: -3.021156e-08
-      iyy: 3.134242e-04
-      iyz: 3.362455e-08
-      izz: 4.155581e-04
+      ixx: 6.056808e-04
+      ixy: 1.860988e-06
+      ixz: 1.517987e-07
+      iyy: 2.524511e-04
+      iyz: -2.980108e-05
+      izz: 5.346947e-04
     material: 'material'
     color_rgba: [0.769, 0.208, 0.153, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.072000, 0.009000, 0.025500]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, 0.000000]
-    rigid_group: rigid_01
+    bake_offset_m: [0.025500, -0.072000, -0.009000]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    frame_rule: auto
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    rigid_group: L_ANKLE
     is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  DSSERVO_RDS51150_BodyOnly_rigid_01_2:
-    assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [0.068136, 0.004693, 0.025503]
-    inertia_at_com:
-      ixx: 1.982365e-04
-      ixy: -1.273417e-05
-      ixz: -3.021156e-08
-      iyy: 3.134242e-04
-      iyz: 3.362455e-08
-      izz: 4.155581e-04
-    material: 'material'
-    color_rgba: [0.769, 0.208, 0.153, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.072000, 0.009000, 0.025500]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, 0.000000]
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
+    merged_from: [SM105BLOutputBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
   L_FOOT:
     assembly: LegAssembly
     mass_kg: 0.467502
@@ -220,6 +198,32 @@ links:
     rigid_group: PELVIS
     is_merged: true
     merged_from: [PelvisBasket, RDS51150OriginalOppositeBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
+  R_ANKLE:
+    assembly: DSSERVO_RDS51150_BodyOnly
+    mass_kg: 0.736236
+    volume_m3: 0.00009379
+    bbox_size_m: [0.111500, 0.063200, 0.056000]
+    com_local_m: [0.025442, -0.062514, -0.004123]
+    inertia_at_com:
+      ixx: 6.056808e-04
+      ixy: 1.860988e-06
+      ixz: 1.517987e-07
+      iyy: 2.524511e-04
+      iyz: -2.980108e-05
+      izz: 5.346947e-04
+    material: 'material'
+    color_rgba: [0.769, 0.208, 0.153, 1.0]
+    body_count: 1
+    is_empty: false
+    collision_source: primitive
+    collision_shape: box
+    bake_offset_m: [0.025500, -0.072000, -0.009000]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    frame_rule: auto
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    rigid_group: R_ANKLE
+    is_merged: true
+    merged_from: [SM105BLOutputBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
   R_FOOT:
     assembly: LegAssembly
     mass_kg: 0.467502
@@ -361,10 +365,10 @@ joints:
   left_ankle_pitch:
     type: revolute
     parent: L_SHIN
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01
+    child: L_ANKLE
     origin_xyz_m: [-0.000100, -0.289750, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    axis: [0.0000, -1.0000, 0.0000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
     limits:
@@ -374,10 +378,10 @@ joints:
       velocity: 1.00
   left_ankle_roll:
     type: revolute
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01
+    parent: L_ANKLE
     child: L_FOOT
-    origin_xyz_m: [0.091500, 0.032200, 0.025500]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
+    origin_xyz_m: [0.025500, -0.091500, -0.032200]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -396,8 +400,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.610865
-      upper: 0.610865
+      lower: -0.698132
+      upper: 0.698132
       effort: 100.0
       velocity: 1.00
   left_hip_roll:
@@ -431,10 +435,10 @@ joints:
   right_ankle_pitch:
     type: revolute
     parent: R_SHIN
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01_2
+    child: R_ANKLE
     origin_xyz_m: [-0.000100, -0.289750, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    axis: [0.0000, -1.0000, 0.0000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
     limits:
@@ -444,10 +448,10 @@ joints:
       velocity: 1.00
   right_ankle_roll:
     type: revolute
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01_2
+    parent: R_ANKLE
     child: R_FOOT
-    origin_xyz_m: [0.091500, 0.032200, 0.025500]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
+    origin_xyz_m: [0.025500, -0.091500, -0.032200]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -466,8 +470,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.610865
-      upper: 0.610865
+      lower: -0.698132
+      upper: 0.698132
       effort: 100.0
       velocity: 1.00
   right_hip_roll:
@@ -500,7 +504,7 @@ joints:
       velocity: 1.00
 
 closing_joints:
-  - name: LegAssembly_v31_1__fixed_06
+  - name: LegAssembly_v33_1__fixed_06
     source: auto_detected
     type: fixed
     parent: L_SHIN
@@ -508,7 +512,7 @@ closing_joints:
     origin_xyz_m: [0.005100, 0.177750, -0.012000]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
-  - name: LegAssembly_v31_1__fixed_07
+  - name: LegAssembly_v33_1__fixed_07
     source: auto_detected
     type: fixed
     parent: L_THIGH
@@ -516,7 +520,7 @@ closing_joints:
     origin_xyz_m: [0.050600, -0.429250, 0.012000]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
-  - name: LegAssembly_v31_2__fixed_06
+  - name: LegAssembly_v33_2__fixed_06
     source: auto_detected
     type: fixed
     parent: R_SHIN
@@ -524,7 +528,7 @@ closing_joints:
     origin_xyz_m: [0.005100, 0.177750, -0.012000]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
-  - name: LegAssembly_v31_2__fixed_07
+  - name: LegAssembly_v33_2__fixed_07
     source: auto_detected
     type: fixed
     parent: R_THIGH

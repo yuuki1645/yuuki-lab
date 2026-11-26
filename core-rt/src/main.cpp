@@ -9,7 +9,7 @@
  *
  * 作業モード:
  *   Lab（起動時）  PWM は、出した軸だけ。
- *   Robot         10 軸を理想角 135°（真下）で保持。向きとズレは脚が吸収する。
+ *   Robot         RDS は 135°、SM105BL は 0° で保持。向きは docs/joint_angles.md。
  *
  * 校正マップは論理軸 0〜9 に結び、64 KB の NVS に残す。
  * USB は ver 15。番号の正本は link/include/usb_frame.hpp。
@@ -191,6 +191,7 @@ static void applySmsTelemetry(Snapshot& snap) {
     }
 }
 
+/** RDS51150 の電気的な範囲。画面の 100〜170° とは別。意味は docs/joint_angles.md。 */
 static float clampMove(float deg) {
     if (deg < kMoveMinDeg) {
         return kMoveMinDeg;
@@ -201,7 +202,10 @@ static float clampMove(float deg) {
     return deg;
 }
 
-/** SM105BL の可動。ひざは後ろへ 150°、かかとはつま先上げを正として ±60°。 */
+/**
+ * SM105BL の可動。ひざは後ろへ 150°、かかとはつま先上げを正として ±60°。
+ * 股ピッチを含むプラスの向きは docs/joint_angles.md。
+ */
 static float clampSms(int joint, float deg) {
     const bool knee = joint == kAxisKnee || joint == kAxesPerLeg + kAxisKnee;
     const float lo = knee ? -30.0f : -60.0f;

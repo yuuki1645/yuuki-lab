@@ -1,4 +1,8 @@
-/** 右脚 5 軸。順は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。 */
+/**
+ * 右脚 5 軸。順は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。
+ * 中立とプラスの向きの正本は docs/joint_angles.md。
+ * ここの 100〜170° は実験中に狭めた画面の窓で、ファームの 40〜230° とは別。
+ */
 
 /** 実験中のライブ PWM 上限。ファームは 40〜230 のまま、PC / Hub だけ狭める */
 export const SERVO_MIN_DEG = 100;
@@ -132,6 +136,7 @@ export function sm105ServoId(ch: number): number | null {
 /**
  * バーと右グラフの角度窓。届いた数値は範囲外でもそのまま表示する。
  * ひざは後ろへ折れる向きが正。かかとはつま先を上げる向きが正。真下は 0°。
+ * 股ピッチのプラスは脚を前へ出す向き。文章の正本は docs/joint_angles.md。
  */
 export function sm105AngleWindow(ch: number): { min: number; max: number } | null {
   if (ch === 2 || ch === 7) {

@@ -2,10 +2,12 @@
 
 実機の制御、強化学習、シミュレーション設計の参照資料です。  
 **RL 本線は [Isaac Lab](../isaac-lab/README.md)** の `YuukiLab-BipedWalk-v0` です。  
-**機体の制御の基本は [robot_control.md](robot_control.md)** です。
+**機体の制御の基本は [robot_control.md](robot_control.md)** です。  
+**関節角の正本は [joint_angles.md](joint_angles.md)** です。
 
 | ファイル | 内容 |
 |---------|------|
+| [joint_angles.md](joint_angles.md) | **関節角の正本**（中立、プラスの向き、実機の窓と仮の範囲） |
 | [robot_control.md](robot_control.md) | **実機の制御**（CoreS3、両脚の ATOM S3R、CAN、サブ PC、タブレット） |
 | [heel_teleop.md](heel_teleop.md) | **ゲームパッドで踵を動かす**（Isaac の起動、Hub への出し方、実機の起動と操作） |
 | [rl/](rl/README.md) | **強化学習の汎用解説**（基礎・PPO 等・実務・学び直し） |
@@ -23,12 +25,13 @@
 
 ## 使い方の目安
 
-1. **機体の制御を確認する** → [robot_control.md](robot_control.md)。パッドで踵を動かす手順は [heel_teleop.md](heel_teleop.md)。
-2. **いま学習を回す** → [../isaac-lab/README.md](../isaac-lab/README.md)。
-3. **強化学習の基礎・PPO の復習** → [rl/README.md](rl/README.md)（学び直しは [rl/yuuki-lab/sutton-barto-map.md](rl/yuuki-lab/sutton-barto-map.md) から）。
-4. **報酬設計**（「人間らしい膝曲げ」など）→ `human_joint_kinematics.md` の歩行時角度と、シミュレーションの符号・軸を `sim_human_comparison.md` で照合する。
-5. **質量・長さのチューニング** → `human_anthropometry.md` でオーダーを確認し、`robot_spec.md` / XML の `mass` を合わせる。
-6. **アクチュエータ飽和** → `human_joint_torque.md` の歩行ピークと `forcerange`（例: ±14.7 N·m）を比較する。
-7. **制御周期・環境 step の Hz** → `control_timing_human_rl.md` で人体のフィードバック周波数と RL の推奨帯（50〜100 Hz 等）を確認する。
+1. **関節の中立とプラスの向き** → [joint_angles.md](joint_angles.md)。
+2. **機体の制御を確認する** → [robot_control.md](robot_control.md)。パッドで踵を動かす手順は [heel_teleop.md](heel_teleop.md)。
+3. **いま学習を回す** → [../isaac-lab/README.md](../isaac-lab/README.md)。
+4. **強化学習の基礎・PPO の復習** → [rl/README.md](rl/README.md)（学び直しは [rl/yuuki-lab/sutton-barto-map.md](rl/yuuki-lab/sutton-barto-map.md) から）。
+5. **報酬設計**（「人間らしい膝曲げ」など）→ `human_joint_kinematics.md` の歩行時角度と、シミュレーションの符号・軸を `sim_human_comparison.md` で照合する。実機のプラスの向きは [joint_angles.md](joint_angles.md)。
+6. **質量・長さのチューニング** → `human_anthropometry.md` でオーダーを確認し、`robot_spec.md` / XML の `mass` を合わせる。
+7. **アクチュエータ飽和** → `human_joint_torque.md` の歩行ピークと `forcerange`（例: ±14.7 N·m）を比較する。
+8. **制御周期・環境 step の Hz** → `control_timing_human_rl.md` で人体のフィードバック周波数と RL の推奨帯（50〜100 Hz 等）を確認する。
 
-数値は文献上の**典型値・代表例**です。個人差・速度・地面条件で大きく変わります。
+人間の寸法・トルク・歩行角度は文献上の**典型値・代表例**です。個人差・速度・地面条件で大きく変わります。関節角の中立とプラスの向きは [joint_angles.md](joint_angles.md) が実機の規定です。

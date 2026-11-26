@@ -2,6 +2,9 @@
 
 Isaac 同梱 Python からも、Hub 用の橋からも import する。
 flask や Isaac のモジュールは import しない。
+
+中立、プラスの向き、実機の窓の文章は docs/joint_angles.md。
+ここが持つのは 135° と 0°、チャンネル順、度とラジアンの変換だけ。
 """
 
 from __future__ import annotations

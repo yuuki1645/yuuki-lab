@@ -1,6 +1,6 @@
 # 実機の制御
 
-機体に載っている制御の基本です。寸法と重量は [robot_spec.md](robot_spec.md) です。机上で ATOM を USB 直結する手順は [現場手帳](../atom-rt/docs/field-manual/README.md)（`rt-usb`、USB ver 14）です。
+機体に載っている制御の基本です。寸法と重量は [robot_spec.md](robot_spec.md)、関節角の中立とプラスの向きは [joint_angles.md](joint_angles.md) です。机上で ATOM を USB 直結する手順は [現場手帳](../atom-rt/docs/field-manual/README.md)（`rt-usb`、USB ver 14）です。
 
 ## 役割
 

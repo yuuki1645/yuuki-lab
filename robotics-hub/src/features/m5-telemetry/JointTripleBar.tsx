@@ -61,7 +61,7 @@ function pct(v: number, min: number, max: number): number {
   return Math.min(100, Math.max(0, t * 100));
 }
 
-/** 表示範囲に入る 10° 刻み。中立が 10° の倍数でも、赤い中立線とは別に残す。 */
+/** 表示範囲に入る 10° 刻み。中立が 10° の倍数でも、緑の中立線とは別に残す。 */
 function decadeTicks(min: number, max: number): number[] {
   const ticks: number[] = [];
   const first = Math.ceil((min - 1e-6) / 10) * 10;
@@ -288,7 +288,13 @@ export function JointTripleBar({
                 />
               ) : null}
             </div>
-            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
+            <DangerRails
+              viewMin={viewMin}
+              viewMax={viewMax}
+              limitMin={angleMin}
+              limitMax={angleMax}
+              neutral={motion.neutral}
+            />
             </div>
           </BarRow>
             ) : null}
@@ -325,7 +331,13 @@ export function JointTripleBar({
                 limitMax={angleMax}
               />
             </div>
-            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
+            <DangerRails
+              viewMin={viewMin}
+              viewMax={viewMax}
+              limitMin={angleMin}
+              limitMax={angleMax}
+              neutral={motion.neutral}
+            />
             </div>
           </BarRow>
             ) : null}
@@ -346,7 +358,13 @@ export function JointTripleBar({
                 limitMax={angleMax}
               />
             </div>
-            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
+            <DangerRails
+              viewMin={viewMin}
+              viewMax={viewMax}
+              limitMin={angleMin}
+              limitMax={angleMax}
+              neutral={motion.neutral}
+            />
             </div>
           </BarRow>
             ) : null}
@@ -491,18 +509,21 @@ function PlotLiveReadout({
 /**
  * 可動範囲の外側 20° を、バーの直下にある細い赤線で示す。
  * 左端から下限までと、上限から右端まで。正常に動かせる区間には線を引かない。
- * バー本体は角丸のまま残すため、線はトラックの外（m5-barhost）に置く。
+ * 同じ高さの中立位置に緑丸を置く。RDS は 135°、SM105BL は 0°。
+ * バー本体は角丸のまま残すため、線と丸はトラックの外（m5-barhost）に置く。
  */
 function DangerRails({
   viewMin,
   viewMax,
   limitMin,
   limitMax,
+  neutral,
 }: {
   viewMin: number;
   viewMax: number;
   limitMin: number;
   limitMax: number;
+  neutral: number;
 }) {
   const limitLeft = pct(limitMin, viewMin, viewMax);
   const limitRight = pct(limitMax, viewMin, viewMax);
@@ -518,12 +539,17 @@ function DangerRails({
         style={{ left: `${limitRight}%`, width: `${Math.max(0, 100 - limitRight)}%` }}
         title="可動範囲の外側"
       />
+      <span
+        className="m5-bar__neutral-dot"
+        style={{ left: `${pct(neutral, viewMin, viewMax)}%` }}
+        title="中立"
+      />
     </>
   );
 }
 
 /**
- * 可動範囲の端を実線で示し、その上に 10° の点線と中立の赤線を載せる。
+ * 可動範囲の端を実線で示し、その上に 10° の点線と中立の緑線を載せる。
  * 外側 20° の危険域はバーの中には塗らず、DangerRails がバーの直下に赤線で示す。
  * 点線の間隔は軸ごとに変わる。可動範囲が広い関節ほど、同じバー幅で 10° が狭く見える。
  */

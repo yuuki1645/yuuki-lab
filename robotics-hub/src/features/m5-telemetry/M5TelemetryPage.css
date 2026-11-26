@@ -1134,9 +1134,25 @@
   bottom: 0;
   width: 2px;
   margin-left: -1px;
-  background: #ff4757;
+  background: #3ee07f;
+  box-shadow: 0 0 0 1px rgba(0, 40, 16, 0.45);
   pointer-events: none;
   z-index: 4;
+}
+
+/* 中立の緑丸。直下の赤線（上 2px・高さ 3px）の中央に置く。 */
+.m5-bar__neutral-dot {
+  position: absolute;
+  top: calc(100% + 3.5px);
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: #3ee07f;
+  box-shadow: 0 0 0 1px rgba(8, 16, 12, 0.9);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .m5-bar--cmd:not(.m5-bar--off) .m5-bar__thumb {

@@ -19,11 +19,11 @@
   # Command topic: /position_controller/commands
   position_controller:
     ros__parameters:
-      joints: [LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01, LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01, LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01, LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01, LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01, LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01, LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01, LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01, LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01, LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01]
+      joints: [left_ankle_pitch, left_ankle_roll, left_hip_pitch, left_hip_roll, left_knee_pitch, right_ankle_pitch, right_ankle_roll, right_hip_pitch, right_hip_roll, right_knee_pitch]
       interface_name: position
 
   # Command topic: /velocity_controller/commands
   velocity_controller:
     ros__parameters:
-      joints: [LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01, LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01, LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01, LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01, LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01, LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01, LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01, LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01, LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01, LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01]
+      joints: [left_ankle_pitch, left_ankle_roll, left_hip_pitch, left_hip_roll, left_knee_pitch, right_ankle_pitch, right_ankle_roll, right_hip_pitch, right_hip_roll, right_knee_pitch]
       interface_name: velocity

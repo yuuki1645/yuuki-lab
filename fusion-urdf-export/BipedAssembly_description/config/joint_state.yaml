@@ -4,26 +4,26 @@ joint_state_publisher:
   ros__parameters:
     # Joint names and default positions
     zeros:
-      LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01: 0.0
-      LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01: 0.0
-      LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01: 0.0
-      LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01: 0.0
-      LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01: 0.0
-      LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01: 0.0
-      LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01: 0.0
-      LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01: 0.0
-      LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01: 0.0
-      LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01: 0.0
+      left_ankle_pitch: 0.0
+      left_ankle_roll: 0.0
+      left_hip_pitch: 0.0
+      left_hip_roll: 0.0
+      left_knee_pitch: 0.0
+      right_ankle_pitch: 0.0
+      right_ankle_roll: 0.0
+      right_hip_pitch: 0.0
+      right_hip_roll: 0.0
+      right_knee_pitch: 0.0
 
     # Joints to publish
     source_list:
-      - LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01
-      - LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01
-      - LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01
-      - LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01
-      - LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01
-      - LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01
-      - LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01
-      - LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01
-      - LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01
-      - LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01
+      - left_ankle_pitch
+      - left_ankle_roll
+      - left_hip_pitch
+      - left_hip_roll
+      - left_knee_pitch
+      - right_ankle_pitch
+      - right_ankle_roll
+      - right_hip_pitch
+      - right_hip_roll
+      - right_knee_pitch

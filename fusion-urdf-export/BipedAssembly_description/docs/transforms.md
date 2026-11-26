@@ -26,16 +26,16 @@ Convention: URDF RPY (XYZ extrinsic / ZYX intrinsic).
 
 | Variable | Joint | Type | From | To |
 |----------|-------|------|------|----|
-| $q_{1}$ | LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01 | revolute (rad) | $L_{1}$ | $L_{2}$ |
-| $q_{2}$ | LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01 | revolute (rad) | $L_{1}$ | $L_{3}$ |
-| $q_{3}$ | LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01 | revolute (rad) | $L_{2}$ | $L_{4}$ |
-| $q_{4}$ | LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01 | revolute (rad) | $L_{3}$ | $L_{5}$ |
-| $q_{5}$ | LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01 | revolute (rad) | $L_{4}$ | $L_{6}$ |
-| $q_{6}$ | LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01 | revolute (rad) | $L_{5}$ | $L_{7}$ |
-| $q_{7}$ | LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01 | revolute (rad) | $L_{6}$ | $L_{8}$ |
-| $q_{8}$ | LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01 | revolute (rad) | $L_{7}$ | $L_{9}$ |
-| $q_{9}$ | LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01 | revolute (rad) | $L_{8}$ | $L_{10}$ |
-| $q_{10}$ | LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01 | revolute (rad) | $L_{9}$ | $L_{11}$ |
+| $q_{1}$ | left_hip_roll | revolute (rad) | $L_{1}$ | $L_{2}$ |
+| $q_{2}$ | right_hip_roll | revolute (rad) | $L_{1}$ | $L_{3}$ |
+| $q_{3}$ | left_hip_pitch | revolute (rad) | $L_{2}$ | $L_{4}$ |
+| $q_{4}$ | right_hip_pitch | revolute (rad) | $L_{3}$ | $L_{5}$ |
+| $q_{5}$ | left_knee_pitch | revolute (rad) | $L_{4}$ | $L_{6}$ |
+| $q_{6}$ | right_knee_pitch | revolute (rad) | $L_{5}$ | $L_{7}$ |
+| $q_{7}$ | left_ankle_pitch | revolute (rad) | $L_{6}$ | $L_{8}$ |
+| $q_{8}$ | right_ankle_pitch | revolute (rad) | $L_{7}$ | $L_{9}$ |
+| $q_{9}$ | left_ankle_roll | revolute (rad) | $L_{8}$ | $L_{10}$ |
+| $q_{10}$ | right_ankle_roll | revolute (rad) | $L_{9}$ | $L_{11}$ |
 
 Shorthand: $c_i = \cos(q_i)$, $s_i = \sin(q_i)$
 
@@ -45,25 +45,25 @@ Shorthand: $c_i = \cos(q_i)$, $s_i = \sin(q_i)$
 L0: base_link
   +-- [fixed] biped_fixed_01
       L1: PELVIS
-        |-- [revolute] LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01 (q1)
+        |-- [revolute] left_hip_roll (q1)
         |   L2: L_HIP
-        |     +-- [revolute] LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01 (q3)
+        |     +-- [revolute] left_hip_pitch (q3)
         |         L4: L_THIGH
-        |           +-- [revolute] LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01 (q5)
+        |           +-- [revolute] left_knee_pitch (q5)
         |               L6: L_SHIN
-        |                 +-- [revolute] LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01 (q7)
+        |                 +-- [revolute] left_ankle_pitch (q7)
         |                     L8: DSSERVO_RDS51150_BodyOnly_rigid_01
-        |                       +-- [revolute] LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01 (q9)
+        |                       +-- [revolute] left_ankle_roll (q9)
         |                           L10: L_FOOT
-        +-- [revolute] LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01 (q2)
+        +-- [revolute] right_hip_roll (q2)
             L3: R_HIP
-              +-- [revolute] LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01 (q4)
+              +-- [revolute] right_hip_pitch (q4)
                   L5: R_THIGH
-                    +-- [revolute] LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01 (q6)
+                    +-- [revolute] right_knee_pitch (q6)
                         L7: R_SHIN
-                          +-- [revolute] LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01 (q8)
+                          +-- [revolute] right_ankle_pitch (q8)
                               L9: DSSERVO_RDS51150_BodyOnly_rigid_01_2
-                                +-- [revolute] LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01 (q10)
+                                +-- [revolute] right_ankle_roll (q10)
                                     L11: R_FOOT
 ```
 
@@ -89,7 +89,7 @@ $$
 
 ---
 
-## LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01
+## left_hip_roll
 
 $L_{1}$ **PELVIS** -> $L_{2}$ **L_HIP** (revolute)
   Variable: $q_{1}$
@@ -123,7 +123,7 @@ $$
 
 ---
 
-## LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01
+## right_hip_roll
 
 $L_{1}$ **PELVIS** -> $L_{3}$ **R_HIP** (revolute)
   Variable: $q_{2}$
@@ -157,7 +157,7 @@ $$
 
 ---
 
-## LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01
+## left_hip_pitch
 
 $L_{2}$ **L_HIP** -> $L_{4}$ **L_THIGH** (revolute)
   Variable: $q_{3}$
@@ -180,7 +180,7 @@ $$
 
 ---
 
-## LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01
+## right_hip_pitch
 
 $L_{3}$ **R_HIP** -> $L_{5}$ **R_THIGH** (revolute)
   Variable: $q_{4}$
@@ -203,7 +203,7 @@ $$
 
 ---
 
-## LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01
+## left_knee_pitch
 
 $L_{4}$ **L_THIGH** -> $L_{6}$ **L_SHIN** (revolute)
   Variable: $q_{5}$
@@ -226,7 +226,7 @@ $$
 
 ---
 
-## LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01
+## right_knee_pitch
 
 $L_{5}$ **R_THIGH** -> $L_{7}$ **R_SHIN** (revolute)
   Variable: $q_{6}$
@@ -249,7 +249,7 @@ $$
 
 ---
 
-## LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01
+## left_ankle_pitch
 
 $L_{6}$ **L_SHIN** -> $L_{8}$ **DSSERVO_RDS51150_BodyOnly_rigid_01** (revolute)
   Variable: $q_{7}$
@@ -283,7 +283,7 @@ $$
 
 ---
 
-## LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01
+## right_ankle_pitch
 
 $L_{7}$ **R_SHIN** -> $L_{9}$ **DSSERVO_RDS51150_BodyOnly_rigid_01_2** (revolute)
   Variable: $q_{8}$
@@ -317,7 +317,7 @@ $$
 
 ---
 
-## LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01
+## left_ankle_roll
 
 $L_{8}$ **DSSERVO_RDS51150_BodyOnly_rigid_01** -> $L_{10}$ **L_FOOT** (revolute)
   Variable: $q_{9}$
@@ -351,7 +351,7 @@ $$
 
 ---
 
-## LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01
+## right_ankle_roll
 
 $L_{9}$ **DSSERVO_RDS51150_BodyOnly_rigid_01_2** -> $L_{11}$ **R_FOOT** (revolute)
   Variable: $q_{10}$

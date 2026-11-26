@@ -27,25 +27,25 @@
 base_link [BAKE]
   └─ biped_fixed_01 [fixed]
     PELVIS
-      └─ LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01 [revolute]
+      └─ left_hip_roll [revolute]
         L_HIP [BAKE]
-          └─ LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01 [revolute]
+          └─ left_hip_pitch [revolute]
             L_THIGH [BAKE]
-              └─ LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01 [revolute]
+              └─ left_knee_pitch [revolute]
                 L_SHIN [BAKE]
-                  └─ LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01 [revolute]
+                  └─ left_ankle_pitch [revolute]
                     DSSERVO_RDS51150_BodyOnly_rigid_01 [BAKE]
-                      └─ LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01 [revolute]
+                      └─ left_ankle_roll [revolute]
                         L_FOOT [BAKE]
-      └─ LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01 [revolute]
+      └─ right_hip_roll [revolute]
         R_HIP [BAKE]
-          └─ LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01 [revolute]
+          └─ right_hip_pitch [revolute]
             R_THIGH [BAKE]
-              └─ LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01 [revolute]
+              └─ right_knee_pitch [revolute]
                 R_SHIN [BAKE]
-                  └─ LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01 [revolute]
+                  └─ right_ankle_pitch [revolute]
                     DSSERVO_RDS51150_BodyOnly_rigid_01_2 [BAKE]
-                      └─ LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01 [revolute]
+                      └─ right_ankle_roll [revolute]
                         R_FOOT [BAKE]
 ```
 
@@ -70,17 +70,17 @@ base_link [BAKE]
 
 | Joint | Type | Parent → Child | Axis | Limits |
 |-------|------|---------------|------|--------|
-| `LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
-| `LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01` | revolute | `PELVIS` → `L_HIP` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01` → `L_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01` | revolute | `L_THIGH` → `L_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01` | revolute | `L_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01` | (0,-1,0) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
-| `LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01` | revolute | `R_THIGH` → `R_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01` | revolute | `R_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | (0,-1,0) | [-40.0°, 40.0°] |
 | `biped_fixed_01` | fixed | `base_link` → `PELVIS` | (0,0,1) | — |
+| `left_ankle_pitch` | revolute | `L_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01` | (0,-1,0) | [-40.0°, 40.0°] |
+| `left_ankle_roll` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01` → `L_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `left_hip_pitch` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `left_hip_roll` | revolute | `PELVIS` → `L_HIP` | (0,0,1) | [-40.0°, 40.0°] |
+| `left_knee_pitch` | revolute | `L_THIGH` → `L_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
+| `right_ankle_pitch` | revolute | `R_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | (0,-1,0) | [-40.0°, 40.0°] |
+| `right_ankle_roll` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `right_hip_pitch` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `right_hip_roll` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-40.0°, 40.0°] |
+| `right_knee_pitch` | revolute | `R_THIGH` → `R_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
 
 ## Assembly Breakdown
 

@@ -30,7 +30,7 @@
   <!-- update the include + macro call above, and adjust -->
   <!-- parent/child link names in the mount joint below. -->
 
-  <joint name="LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01" type="revolute">
+  <joint name="left_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="L_HIP"/>
     <origin xyz="0.035000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
@@ -38,7 +38,7 @@
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01" type="revolute">
+  <joint name="right_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="R_HIP"/>
     <origin xyz="0.245000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
@@ -46,7 +46,7 @@
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01" type="revolute">
+  <joint name="left_hip_pitch" type="revolute">
     <parent link="L_HIP"/>
     <child link="L_THIGH"/>
     <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
@@ -54,7 +54,7 @@
     <limit lower="-0.610865" upper="0.610865" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01" type="revolute">
+  <joint name="right_hip_pitch" type="revolute">
     <parent link="R_HIP"/>
     <child link="R_THIGH"/>
     <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
@@ -62,7 +62,7 @@
     <limit lower="-0.610865" upper="0.610865" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01" type="revolute">
+  <joint name="left_ankle_pitch" type="revolute">
     <parent link="L_SHIN"/>
     <child link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
     <origin xyz="-0.000100 -0.289750 0.000000" rpy="-1.570796 0.000000 -1.570796"/>
@@ -70,7 +70,7 @@
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01" type="revolute">
+  <joint name="right_ankle_pitch" type="revolute">
     <parent link="R_SHIN"/>
     <child link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
     <origin xyz="-0.000100 -0.289750 0.000000" rpy="-1.570796 0.000000 -1.570796"/>
@@ -78,7 +78,7 @@
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01" type="revolute">
+  <joint name="left_ankle_roll" type="revolute">
     <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01"/>
     <child link="L_FOOT"/>
     <origin xyz="0.091500 0.032200 0.025500" rpy="1.570796 -1.570796 0.000000"/>
@@ -86,7 +86,7 @@
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <joint name="LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01" type="revolute">
+  <joint name="right_ankle_roll" type="revolute">
     <parent link="DSSERVO_RDS51150_BodyOnly_rigid_01_2"/>
     <child link="R_FOOT"/>
     <origin xyz="0.091500 0.032200 0.025500" rpy="1.570796 -1.570796 0.000000"/>
@@ -102,7 +102,7 @@
       <param name="state_topic">sim/BipedAssembly_system/state</param>
     </hardware>
 
-    <joint name="LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01">
+    <joint name="left_ankle_pitch">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -111,7 +111,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01">
+    <joint name="left_ankle_roll">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -120,7 +120,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01">
+    <joint name="left_hip_pitch">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -129,7 +129,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01">
+    <joint name="left_hip_roll">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -138,7 +138,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01">
+    <joint name="right_ankle_pitch">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -147,7 +147,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01">
+    <joint name="right_ankle_roll">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -156,7 +156,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01">
+    <joint name="right_hip_pitch">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -165,7 +165,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01">
+    <joint name="right_hip_roll">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">

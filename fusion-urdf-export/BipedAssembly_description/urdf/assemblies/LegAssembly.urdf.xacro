@@ -137,7 +137,7 @@
     </link>
 
     <!-- Joints (internal to assembly) -->
-    <joint name="${prefix}LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <joint name="${prefix}left_knee_pitch" type="revolute">
       <parent link="${prefix}L_THIGH"/>
       <child link="${prefix}L_SHIN"/>
       <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
@@ -145,7 +145,7 @@
       <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
     </joint>
 
-    <joint name="${prefix}LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01" type="revolute">
+    <joint name="${prefix}right_knee_pitch" type="revolute">
       <parent link="${prefix}R_THIGH"/>
       <child link="${prefix}R_SHIN"/>
       <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
@@ -161,7 +161,7 @@
         <param name="state_topic">sim/LegAssembly_system/state</param>
       </hardware>
 
-      <joint name="${prefix}LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01">
+      <joint name="${prefix}left_knee_pitch">
         <command_interface name="position"/>
         <command_interface name="velocity"/>
         <state_interface name="position">
@@ -170,7 +170,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01">
+      <joint name="${prefix}right_knee_pitch">
         <command_interface name="position"/>
         <command_interface name="velocity"/>
         <state_interface name="position">

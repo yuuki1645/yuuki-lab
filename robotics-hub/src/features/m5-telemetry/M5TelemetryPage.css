@@ -1070,6 +1070,35 @@
   background: #fff6d2;
   border-radius: 1px;
   pointer-events: none;
+  z-index: 3;
+}
+
+/* 10° ごとの点線。軸ごとにバー幅に対する間隔が変わる。 */
+.m5-bar__tick {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  margin-left: -0.5px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.72) 0 2px,
+    transparent 2px 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 中立。RDS は 135°、SM105BL は 0°。点線より前に出す。 */
+.m5-bar__neutral {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #ff4757;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .m5-bar--cmd:not(.m5-bar--off) .m5-bar__thumb {

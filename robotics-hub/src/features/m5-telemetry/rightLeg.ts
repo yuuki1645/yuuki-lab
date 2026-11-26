@@ -1,10 +1,12 @@
 /**
  * 右脚 5 軸。順は股ロール、股ピッチ、ひざ、かかとピッチ、かかとロール。
- * 中立とプラスの向きの正本は docs/joint_angles.md。
- * ここの 100〜170° は実験中に狭めた画面の窓で、ファームの 40〜230° とは別。
+ * 中立とプラスの向き、人間の可動範囲の正本は docs/joint_angles.md。
  */
 
-/** 実験中のライブ PWM 上限。ファームは 40〜230 のまま、PC / Hub だけ狭める */
+/**
+ * 以前の画面窓。脚カードのバーはもう使わない。
+ * ファームの RDS は 40〜230° のまま。机上ラボは別の範囲を持つ。
+ */
 export const SERVO_MIN_DEG = 100;
 export const SERVO_MAX_DEG = 170;
 export const SERVO_NEUTRAL_DEG = 135;
@@ -134,16 +136,46 @@ export function sm105ServoId(ch: number): number | null {
 }
 
 /**
- * バーと右グラフの角度窓。届いた数値は範囲外でもそのまま表示する。
- * ひざは後ろへ折れる向きが正。かかとはつま先を上げる向きが正。真下は 0°。
- * 股ピッチのプラスは脚を前へ出す向き。文章の正本は docs/joint_angles.md。
+ * 人間の可動範囲。画面の度。直立は RDS が 135°、SM105BL が 0°。
+ * 股ロールは外側 +45° / 内側 −20°。股ピッチは前 +110° / 後ろ −30°。
+ * ひざは後ろへ 130° までで、前へは曲げない。かかとピッチはつま先上げ +20°、
+ * 蹴る向き −90°。かかとロールは内側が下がる +20°、上がる −30°。
+ * 文章の正本は docs/joint_angles.md。
+ */
+export const HUMAN_JOINT_LIMITS: Record<RightLegJointId, { min: number; max: number }> = {
+  hipRoll: { min: 115, max: 180 },
+  hipPitch: { min: 105, max: 245 },
+  kneePitch: { min: 0, max: 130 },
+  anklePitch: { min: -90, max: 20 },
+  ankleRoll: { min: 105, max: 155 },
+};
+
+/** バーの描画だけ、可動範囲の外側へこの角度だけ広げる。指令はこの中へ出さない。 */
+export const BAR_PAD_DEG = 20;
+
+export type JointAngleWindow = { min: number; max: number; neutral: number };
+
+/** 論理関節 0〜9 の人間の可動範囲と中立。左右は同じ行で同じ範囲。 */
+export function jointAngleWindow(ch: number): JointAngleWindow {
+  const row = ((ch % LEG_ROWS.length) + LEG_ROWS.length) % LEG_ROWS.length;
+  const id = LEG_ROWS[row].id;
+  const limits = HUMAN_JOINT_LIMITS[id];
+  const neutral = id === "kneePitch" || id === "anklePitch" ? SM105_NEUTRAL_DEG : SERVO_NEUTRAL_DEG;
+  return { min: limits.min, max: limits.max, neutral };
+}
+
+/** 指令・補正バーの左右端。可動範囲の両側に BAR_PAD_DEG を足した表示範囲。 */
+export function barViewWindow(ch: number): { min: number; max: number } {
+  const motion = jointAngleWindow(ch);
+  return { min: motion.min - BAR_PAD_DEG, max: motion.max + BAR_PAD_DEG };
+}
+
+/**
+ * SM105BL のバー窓。届いた数値は範囲外でもそのまま表示する。
+ * 範囲は jointAngleWindow と同じ人間の可動。
  */
 export function sm105AngleWindow(ch: number): { min: number; max: number } | null {
-  if (ch === 2 || ch === 7) {
-    return { min: -30, max: 150 };
-  }
-  if (ch === 3 || ch === 8) {
-    return { min: -60, max: 60 };
-  }
-  return null;
+  if (!isSm105Channel(ch)) return null;
+  const motion = jointAngleWindow(ch);
+  return { min: motion.min, max: motion.max };
 }

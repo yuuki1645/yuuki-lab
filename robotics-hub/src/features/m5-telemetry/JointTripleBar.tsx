@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkline, type SparkSeries } from "./Sparkline";
 import {
+  BAR_PAD_DEG,
   LEG_BAR,
   LEG_PLOT_ITEMS,
-  SERVO_MAX_DEG,
-  SERVO_MIN_DEG,
+  jointAngleWindow,
   type LegBarVisibility,
   type LegPlotKey,
   type LegPlotVisibility,
@@ -50,14 +50,23 @@ type Props = {
 /** つまみからの許容距離（px）。トラックの空き部分をタップしても指令しない */
 const THUMB_HIT_PX = 28;
 
-function clampServo(v: number): number {
-  return Math.round(Math.min(SERVO_MAX_DEG, Math.max(SERVO_MIN_DEG, v)) * 2) / 2;
+/** 指令は人間の可動範囲で止め、0.5° に揃える。表示用の余白までは出さない。 */
+function clampMotion(v: number, min: number, max: number): number {
+  return Math.round(Math.min(max, Math.max(min, v)) * 2) / 2;
 }
 
-function pct(v: number, min = SERVO_MIN_DEG, max = SERVO_MAX_DEG): number {
+function pct(v: number, min: number, max: number): number {
   if (max <= min) return 0;
   const t = (v - min) / (max - min);
   return Math.min(100, Math.max(0, t * 100));
+}
+
+/** 表示範囲に入る 10° 刻み。中立が 10° の倍数でも、赤い中立線とは別に残す。 */
+function decadeTicks(min: number, max: number): number[] {
+  const ticks: number[] = [];
+  const first = Math.ceil((min - 1e-6) / 10) * 10;
+  for (let deg = first; deg <= max + 1e-6; deg += 10) ticks.push(deg);
+  return ticks;
 }
 
 /** 生角バー。エンコーダは 0〜360° なので、指令バーの 100〜170° とは別スケール */
@@ -130,11 +139,15 @@ export function JointTripleBar({
   onCommand,
 }: Props) {
   const serialView = serial != null;
-  const angleMin = serial?.min ?? SERVO_MIN_DEG;
-  const angleMax = serial?.max ?? SERVO_MAX_DEG;
+  // ドラッグの端は人間の可動。バーの左右は、その外側 20° まで描く。
+  const motion = jointAngleWindow(joint.ch);
+  const angleMin = motion.min;
+  const angleMax = motion.max;
+  const viewMin = motion.min - BAR_PAD_DEG;
+  const viewMax = motion.max + BAR_PAD_DEG;
   // RDS は指令が欠けると中立を仮に出す。SM105BL はフィードバックが無いとき仮の角度を出さない。
   const hasCmd = typeof cmd === "number" && Number.isFinite(cmd);
-  const cmdVal = hasCmd ? cmd : serialView ? null : SERVO_MIN_DEG + (SERVO_MAX_DEG - SERVO_MIN_DEG) / 2;
+  const cmdVal = hasCmd ? cmd : serialView ? null : motion.neutral;
   const corrVal = typeof corr === "number" && Number.isFinite(corr) ? corr : null;
   const rawVal = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
   const err = corrVal != null && cmdVal != null ? corrVal - cmdVal : null;
@@ -153,10 +166,10 @@ export function JointTripleBar({
       if (!el) return null;
       const r = el.getBoundingClientRect();
       if (r.width <= 0) return null;
-      const t = (deg - angleMin) / (angleMax - angleMin);
+      const t = (deg - viewMin) / (viewMax - viewMin);
       return r.left + Math.min(1, Math.max(0, t)) * r.width;
     },
-    [angleMin, angleMax]
+    [viewMin, viewMax]
   );
 
   const applyX = useCallback(
@@ -166,15 +179,13 @@ export function JointTripleBar({
       const r = el.getBoundingClientRect();
       if (r.width <= 0) return;
       const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-      const raw = angleMin + t * (angleMax - angleMin);
-      // RDS は 100〜170°。SM105BL は真下 0° を含む、関節ごとの窓。
-      const deg = serialView
-        ? Math.round(Math.min(angleMax, Math.max(angleMin, raw)) * 2) / 2
-        : clampServo(raw);
+      // ポインタは表示範囲（余白込み）から読み、指令は可動範囲で止める。
+      const raw = viewMin + t * (viewMax - viewMin);
+      const deg = clampMotion(raw, angleMin, angleMax);
       setDrag(deg);
       onCommand(deg);
     },
-    [angleMin, angleMax, onCommand, serialView]
+    [angleMin, angleMax, onCommand, viewMin, viewMax]
   );
 
   // iOS は CSS だけでは長押しメニューが残ることがある
@@ -257,10 +268,11 @@ export function JointTripleBar({
             >
               <i
                 className="m5-bar__fill m5-bar__fill--hatch-cmd"
-                style={{ width: shownCmd != null ? `${pct(shownCmd, angleMin, angleMax)}%` : "0%" }}
+                style={{ width: shownCmd != null ? `${pct(shownCmd, viewMin, viewMax)}%` : "0%" }}
               />
+              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
               {shownCmd != null ? (
-                <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd, angleMin, angleMax)}%` }} />
+                <b className="m5-bar__thumb" style={{ left: `${pct(shownCmd, viewMin, viewMax)}%` }} />
               ) : null}
             </div>
           </BarRow>
@@ -284,11 +296,12 @@ export function JointTripleBar({
                 <i
                   className="m5-bar__fill m5-bar__fill--err"
                   style={{
-                    left: `${Math.min(pct(shownCmd ?? angleMin, angleMin, angleMax), pct(corrVal, angleMin, angleMax))}%`,
-                    width: `${Math.max(0.8, Math.abs(pct(corrVal, angleMin, angleMax) - pct(shownCmd ?? angleMin, angleMin, angleMax)))}%`,
+                    left: `${Math.min(pct(shownCmd ?? motion.neutral, viewMin, viewMax), pct(corrVal, viewMin, viewMax))}%`,
+                    width: `${Math.max(0.8, Math.abs(pct(corrVal, viewMin, viewMax) - pct(shownCmd ?? motion.neutral, viewMin, viewMax)))}%`,
                   }}
                 />
               ) : null}
+              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
             </div>
           </BarRow>
             ) : null}
@@ -298,8 +311,9 @@ export function JointTripleBar({
             <div className="m5-bar">
               <i
                 className="m5-bar__fill m5-bar__fill--hatch-corr"
-                style={{ width: corrVal != null ? `${pct(corrVal, angleMin, angleMax)}%` : "0%" }}
+                style={{ width: corrVal != null ? `${pct(corrVal, viewMin, viewMax)}%` : "0%" }}
               />
+              <AngleScale viewMin={viewMin} viewMax={viewMax} neutral={motion.neutral} />
             </div>
           </BarRow>
             ) : null}
@@ -438,6 +452,37 @@ function PlotLiveReadout({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * 10° ごとの点線と、中立の赤い細線。
+ * 点線は軸ごとに間隔が変わる。可動範囲が広い関節ほど、同じバー幅で 10° が狭く見える。
+ */
+function AngleScale({
+  viewMin,
+  viewMax,
+  neutral,
+}: {
+  viewMin: number;
+  viewMax: number;
+  neutral: number;
+}) {
+  return (
+    <>
+      {decadeTicks(viewMin, viewMax).map((deg) => (
+        <span
+          key={deg}
+          className="m5-bar__tick"
+          style={{ left: `${pct(deg, viewMin, viewMax)}%` }}
+        />
+      ))}
+      <span
+        className="m5-bar__neutral"
+        style={{ left: `${pct(neutral, viewMin, viewMax)}%` }}
+        title="中立"
+      />
+    </>
   );
 }
 

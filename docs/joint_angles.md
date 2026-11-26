@@ -10,15 +10,17 @@
 
 チャンネルは両脚とも上から股ロール、股ピッチ、ひざ、かかとピッチ、かかとロールです。右が 0〜4、左が 5〜9 です。
 
-| 関節 | 右 / 左 | URDF | サーボ | 中立 | 実機が受け付ける範囲 | 画面の範囲 | 中立よりプラス |
+| 関節 | 右 / 左 | URDF | サーボ | 中立 | 実機が受け付ける範囲 | 画面でドラッグできる範囲 | 中立よりプラス |
 |---|---|---|---|---|---|---|---|
-| 股ロール | 0 / 5 | `right_hip_roll` `left_hip_roll` | RDS51150 | 135° | 40〜230° | 100〜170° | 脚を外側へ開く |
-| 股ピッチ | 1 / 6 | `right_hip_pitch` `left_hip_pitch` | RDS51150 | 135° | 40〜230° | 100〜170° | 脚を前へ出す |
-| ひざ | 2 / 7 | `right_knee_pitch` `left_knee_pitch` | SM105BL ID 1 / 3 | 0° | −30〜150° | 同じ | 後ろへ曲げる |
-| かかとピッチ | 3 / 8 | `right_ankle_pitch` `left_ankle_pitch` | SM105BL ID 2 / 4 | 0° | ±60° | 同じ | つま先を上げる |
-| かかとロール | 4 / 9 | `right_ankle_roll` `left_ankle_roll` | RDS51150 | 135° | 40〜230° | 100〜170° | 内側が下がる |
+| 股ロール | 0 / 5 | `right_hip_roll` `left_hip_roll` | RDS51150 | 135° | 40〜230° | 115〜180° | 脚を外側へ開く |
+| 股ピッチ | 1 / 6 | `right_hip_pitch` `left_hip_pitch` | RDS51150 | 135° | 40〜230° | 105〜245° | 脚を前へ出す |
+| ひざ | 2 / 7 | `right_knee_pitch` `left_knee_pitch` | SM105BL ID 1 / 3 | 0° | −30〜150° | 0〜130° | 後ろへ曲げる |
+| かかとピッチ | 3 / 8 | `right_ankle_pitch` `left_ankle_pitch` | SM105BL ID 2 / 4 | 0° | ±60° | −90〜+20° | つま先を上げる |
+| かかとロール | 4 / 9 | `right_ankle_roll` `left_ankle_roll` | RDS51150 | 135° | 40〜230° | 105〜155° | 内側が下がる |
 
 股ピッチのプラスは、いまの Robotics Hub と Isaac Sim で脚が前へ出る向きです。箱モデルの「ピッチのプラスは後ろ」は、この表には使いません。
+
+画面の横バーは、ドラッグできる範囲の両側に 20° ずつ足して描きます。赤い細線が中立、点線が 10° です。指令はその範囲の外へは出ません。股ピッチの前 110° は画面では 245° ですが、ファームは RDS51150 を 230° で止めます。
 
 ## 数値を持っているコード
 
@@ -28,7 +30,7 @@
 |---|---|
 | 135° と 0°、チャンネル順、度とラジアン | `robot_description/hub_link.py` |
 | RDS の 40〜230°、SM105 の −30〜150° と ±60° | `core-rt/src/main.cpp` の `clampMove` と `clampSms` |
-| 画面の RDS 100〜170° | `robotics-hub/src/features/m5-telemetry/rightLeg.ts` の `SERVO_MIN_DEG` / `SERVO_MAX_DEG` |
+| 画面でドラッグできる人間の可動範囲 | `robotics-hub/src/features/m5-telemetry/rightLeg.ts` の `jointAngleWindow` |
 | 左かかとピッチだけ、サーボのカウントが増える向きが逆 | `core-rt/src/sms_link.cpp` の `smsDirection`。画面に届く前に、プラスをつま先上げへ揃える |
 | 左股ロール、両ひざ、左かかとロールの URDF 軸を反転 | `fusion2URDF/core/yuuki_joint_names.py` の `_SERVO_NEGATIVE_Z`。左右で上の表と同じプラスになる |
 

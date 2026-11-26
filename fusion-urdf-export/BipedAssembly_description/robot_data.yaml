@@ -372,8 +372,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -1.570796
+      upper: 0.349066
       effort: 100.0
       velocity: 1.00
   left_ankle_roll:
@@ -386,8 +386,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.523599
+      upper: 0.349066
       effort: 100.0
       velocity: 1.00
   left_hip_pitch:
@@ -400,8 +400,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.523599
+      upper: 1.919862
       effort: 100.0
       velocity: 1.00
   left_hip_roll:
@@ -414,8 +414,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.349066
+      upper: 0.785398
       effort: 100.0
       velocity: 1.00
   left_knee_pitch:
@@ -428,8 +428,8 @@ joints:
     is_mount: false
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: 0.000000
+      upper: 2.268928
       effort: 100.0
       velocity: 1.00
   right_ankle_pitch:
@@ -442,8 +442,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -1.570796
+      upper: 0.349066
       effort: 100.0
       velocity: 1.00
   right_ankle_roll:
@@ -456,8 +456,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.523599
+      upper: 0.349066
       effort: 100.0
       velocity: 1.00
   right_hip_pitch:
@@ -470,8 +470,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.523599
+      upper: 1.919862
       effort: 100.0
       velocity: 1.00
   right_hip_roll:
@@ -484,8 +484,8 @@ joints:
     is_mount: true
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: -0.349066
+      upper: 0.785398
       effort: 100.0
       velocity: 1.00
   right_knee_pitch:
@@ -498,8 +498,8 @@ joints:
     is_mount: false
     passive: false
     limits:
-      lower: -0.698132
-      upper: 0.698132
+      lower: 0.000000
+      upper: 2.268928
       effort: 100.0
       velocity: 1.00
 

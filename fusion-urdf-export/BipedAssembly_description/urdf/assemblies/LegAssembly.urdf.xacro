@@ -142,7 +142,7 @@
       <child link="${prefix}L_SHIN"/>
       <origin xyz="0.000000 -0.317250 -0.005600" rpy="0.000000 0.000000 0.000000"/>
       <axis xyz="0.000000 0.000000 -1.000000"/>
-      <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+      <limit lower="0.000000" upper="2.268928" effort="100.0" velocity="1.00"/>
     </joint>
 
     <joint name="${prefix}right_knee_pitch" type="revolute">
@@ -150,7 +150,7 @@
       <child link="${prefix}R_SHIN"/>
       <origin xyz="0.000000 -0.317250 -0.005600" rpy="0.000000 0.000000 0.000000"/>
       <axis xyz="0.000000 0.000000 -1.000000"/>
-      <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+      <limit lower="0.000000" upper="2.268928" effort="100.0" velocity="1.00"/>
     </joint>
 
     <!-- ROS 2 control: generated generic system -->

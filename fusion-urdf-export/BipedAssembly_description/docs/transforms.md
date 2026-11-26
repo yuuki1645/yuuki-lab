@@ -97,7 +97,7 @@ $L_{1}$ **PELVIS** -> $L_{2}$ **L_HIP** (revolute)
 - **origin xyz**: (0.035, 0.0593, -0.0625) m
 - **origin rpy**: (-1.570796, 0, -3.141593) rad
 - **axis**: (0, 0, -1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.349066, 0.785398] rad ([-20deg, 45deg])
 
 ### Local Transform
 
@@ -131,7 +131,7 @@ $L_{1}$ **PELVIS** -> $L_{3}$ **R_HIP** (revolute)
 - **origin xyz**: (0.245, 0.0593, -0.0625) m
 - **origin rpy**: (-1.570796, 0, -3.141593) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.349066, 0.785398] rad ([-20deg, 45deg])
 
 ### Local Transform
 
@@ -165,7 +165,7 @@ $L_{2}$ **L_HIP** -> $L_{4}$ **L_THIGH** (revolute)
 - **origin xyz**: (-0.03075, 0.07, -0.03075) m
 - **origin rpy**: (-3.141593, 1.570796, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.523599, 1.919862] rad ([-30deg, 110deg])
 
 ### Local Transform
 
@@ -199,7 +199,7 @@ $L_{3}$ **R_HIP** -> $L_{5}$ **R_THIGH** (revolute)
 - **origin xyz**: (-0.03075, 0.07, -0.03075) m
 - **origin rpy**: (-3.141593, 1.570796, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.523599, 1.919862] rad ([-30deg, 110deg])
 
 ### Local Transform
 
@@ -233,7 +233,7 @@ $L_{4}$ **L_THIGH** -> $L_{6}$ **L_SHIN** (revolute)
 - **origin xyz**: (0, -0.31725, -0.0056) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, -1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [0, 2.268928] rad ([0deg, 130deg])
 
 ### Local Transform
 
@@ -256,7 +256,7 @@ $L_{5}$ **R_THIGH** -> $L_{7}$ **R_SHIN** (revolute)
 - **origin xyz**: (0, -0.31725, -0.0056) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, -1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [0, 2.268928] rad ([0deg, 130deg])
 
 ### Local Transform
 
@@ -279,7 +279,7 @@ $L_{6}$ **L_SHIN** -> $L_{8}$ **L_ANKLE** (revolute)
 - **origin xyz**: (0, -0.28975, 0.0001) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-1.570796, 0.349066] rad ([-90deg, 20deg])
 
 ### Local Transform
 
@@ -302,7 +302,7 @@ $L_{7}$ **R_SHIN** -> $L_{9}$ **R_ANKLE** (revolute)
 - **origin xyz**: (0, -0.28975, 0.0001) m
 - **origin rpy**: (0, 0, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-1.570796, 0.349066] rad ([-90deg, 20deg])
 
 ### Local Transform
 
@@ -325,7 +325,7 @@ $L_{8}$ **L_ANKLE** -> $L_{10}$ **L_FOOT** (revolute)
 - **origin xyz**: (-0.0322, -0.0915, -0.0255) m
 - **origin rpy**: (3.141593, 1.570796, 0) rad
 - **axis**: (0, 0, -1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.523599, 0.349066] rad ([-30deg, 20deg])
 
 ### Local Transform
 
@@ -359,7 +359,7 @@ $L_{9}$ **R_ANKLE** -> $L_{11}$ **R_FOOT** (revolute)
 - **origin xyz**: (-0.0322, -0.0915, -0.0255) m
 - **origin rpy**: (3.141593, 1.570796, 0) rad
 - **axis**: (0, 0, 1)
-- **limits**: [-0.698132, 0.698132] rad ([-40deg, 40deg])
+- **limits**: [-0.523599, 0.349066] rad ([-30deg, 20deg])
 
 ### Local Transform
 

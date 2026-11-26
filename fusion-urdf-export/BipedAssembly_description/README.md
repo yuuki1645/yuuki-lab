@@ -71,16 +71,16 @@ base_link [BAKE]
 | Joint | Type | Parent → Child | Axis | Limits |
 |-------|------|---------------|------|--------|
 | `biped_fixed_01` | fixed | `base_link` → `PELVIS` | (0,0,1) | — |
-| `left_ankle_pitch` | revolute | `L_SHIN` → `L_ANKLE` | (0,0,1) | [-40.0°, 40.0°] |
-| `left_ankle_roll` | revolute | `L_ANKLE` → `L_FOOT` | (0,0,-1) | [-40.0°, 40.0°] |
-| `left_hip_pitch` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-40.0°, 40.0°] |
-| `left_hip_roll` | revolute | `PELVIS` → `L_HIP` | (0,0,-1) | [-40.0°, 40.0°] |
-| `left_knee_pitch` | revolute | `L_THIGH` → `L_SHIN` | (0,0,-1) | [-40.0°, 40.0°] |
-| `right_ankle_pitch` | revolute | `R_SHIN` → `R_ANKLE` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_ankle_roll` | revolute | `R_ANKLE` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_hip_pitch` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_hip_roll` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-40.0°, 40.0°] |
-| `right_knee_pitch` | revolute | `R_THIGH` → `R_SHIN` | (0,0,-1) | [-40.0°, 40.0°] |
+| `left_ankle_pitch` | revolute | `L_SHIN` → `L_ANKLE` | (0,0,1) | [-90.0°, 20.0°] |
+| `left_ankle_roll` | revolute | `L_ANKLE` → `L_FOOT` | (0,0,-1) | [-30.0°, 20.0°] |
+| `left_hip_pitch` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-30.0°, 110.0°] |
+| `left_hip_roll` | revolute | `PELVIS` → `L_HIP` | (0,0,-1) | [-20.0°, 45.0°] |
+| `left_knee_pitch` | revolute | `L_THIGH` → `L_SHIN` | (0,0,-1) | [0.0°, 130.0°] |
+| `right_ankle_pitch` | revolute | `R_SHIN` → `R_ANKLE` | (0,0,1) | [-90.0°, 20.0°] |
+| `right_ankle_roll` | revolute | `R_ANKLE` → `R_FOOT` | (0,0,1) | [-30.0°, 20.0°] |
+| `right_hip_pitch` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-30.0°, 110.0°] |
+| `right_hip_roll` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-20.0°, 45.0°] |
+| `right_knee_pitch` | revolute | `R_THIGH` → `R_SHIN` | (0,0,-1) | [0.0°, 130.0°] |
 
 ## Assembly Breakdown
 

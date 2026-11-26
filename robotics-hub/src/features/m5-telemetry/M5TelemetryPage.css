@@ -967,7 +967,8 @@
   flex-direction: column;
   justify-content: center;
   flex: 1 1 auto;
-  gap: 0.28rem;
+  /* バー直下の危険域の赤線（3px + 余白）が次の行に重ならないようにする */
+  gap: 0.55rem;
   min-width: 0;
 }
 
@@ -992,6 +993,12 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* 角度バーと、その直下にはみ出す危険域の赤線をまとめる */
+.m5-barhost {
+  position: relative;
+  min-width: 0;
 }
 
 .m5-bar {
@@ -1028,18 +1035,14 @@
   z-index: 0;
 }
 
-/* 可動範囲の外側 20°。指令の塗りより手前に置き、正常域と分ける。 */
+/* 可動範囲の外側 20°。バーの中は塗らず、直下に数ピクセルの赤線だけ引く。 */
 .m5-bar__danger {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    -55deg,
-    rgba(255, 71, 87, 0.62) 0 3px,
-    rgba(70, 12, 20, 0.78) 3px 7px
-  );
+  top: calc(100% + 2px);
+  height: 3px;
+  background: #ff4757;
+  border-radius: 1px;
   pointer-events: none;
-  z-index: 1;
 }
 
 /* 正常に動かせる範囲の端。点線の 10° とは別に、実線で示す。 */

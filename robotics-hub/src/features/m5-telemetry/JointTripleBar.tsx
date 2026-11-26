@@ -239,6 +239,7 @@ export function JointTripleBar({
           <div className="m5-jrow__bars">
             {barOn.cmd ? (
             <BarRow label="指令" value={fmtCmd(shownCmd)} color={LEG_BAR.cmd}>
+            <div className="m5-barhost">
             <div
               ref={trackRef}
               className={"m5-bar m5-bar--cmd" + (lockCmd && !policyOwned ? " m5-bar--off" : "")}
@@ -287,6 +288,8 @@ export function JointTripleBar({
                 />
               ) : null}
             </div>
+            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
+            </div>
           </BarRow>
             ) : null}
 
@@ -303,6 +306,7 @@ export function JointTripleBar({
 
             {!serialView && barOn.err ? (
           <BarRow label="ズレ" value={fmtSigned(err)} color={LEG_BAR.err}>
+            <div className="m5-barhost">
             <div className="m5-bar m5-bar--err">
               {corrVal != null ? (
                 <i
@@ -321,11 +325,14 @@ export function JointTripleBar({
                 limitMax={angleMax}
               />
             </div>
+            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
+            </div>
           </BarRow>
             ) : null}
 
             {barOn.corr ? (
           <BarRow label={corrLabel} value={serialView ? fmtSigned(corrVal) : fmtDeg(corrVal)} color={LEG_BAR.corr}>
+            <div className="m5-barhost">
             <div className="m5-bar">
               <i
                 className="m5-bar__fill m5-bar__fill--hatch-corr"
@@ -338,6 +345,8 @@ export function JointTripleBar({
                 limitMin={angleMin}
                 limitMax={angleMax}
               />
+            </div>
+            <DangerRails viewMin={viewMin} viewMax={viewMax} limitMin={angleMin} limitMax={angleMax} />
             </div>
           </BarRow>
             ) : null}
@@ -480,8 +489,42 @@ function PlotLiveReadout({
 }
 
 /**
- * 可動範囲の外側 20° を危険域として塗り、端に実線を引く。
- * その上に 10° の点線と、中立の赤線を載せる。
+ * 可動範囲の外側 20° を、バーの直下にある細い赤線で示す。
+ * 左端から下限までと、上限から右端まで。正常に動かせる区間には線を引かない。
+ * バー本体は角丸のまま残すため、線はトラックの外（m5-barhost）に置く。
+ */
+function DangerRails({
+  viewMin,
+  viewMax,
+  limitMin,
+  limitMax,
+}: {
+  viewMin: number;
+  viewMax: number;
+  limitMin: number;
+  limitMax: number;
+}) {
+  const limitLeft = pct(limitMin, viewMin, viewMax);
+  const limitRight = pct(limitMax, viewMin, viewMax);
+  return (
+    <>
+      <span
+        className="m5-bar__danger"
+        style={{ left: 0, width: `${Math.max(0, limitLeft)}%` }}
+        title="可動範囲の外側"
+      />
+      <span
+        className="m5-bar__danger"
+        style={{ left: `${limitRight}%`, width: `${Math.max(0, 100 - limitRight)}%` }}
+        title="可動範囲の外側"
+      />
+    </>
+  );
+}
+
+/**
+ * 可動範囲の端を実線で示し、その上に 10° の点線と中立の赤線を載せる。
+ * 外側 20° の危険域はバーの中には塗らず、DangerRails がバーの直下に赤線で示す。
  * 点線の間隔は軸ごとに変わる。可動範囲が広い関節ほど、同じバー幅で 10° が狭く見える。
  */
 function AngleScale({
@@ -501,16 +544,6 @@ function AngleScale({
   const limitRight = pct(limitMax, viewMin, viewMax);
   return (
     <>
-      <span
-        className="m5-bar__danger"
-        style={{ left: 0, width: `${limitLeft}%` }}
-        title="可動範囲の外側"
-      />
-      <span
-        className="m5-bar__danger"
-        style={{ left: `${limitRight}%`, width: `${Math.max(0, 100 - limitRight)}%` }}
-        title="可動範囲の外側"
-      />
       <span className="m5-bar__limit" style={{ left: `${limitLeft}%` }} title="可動下限" />
       <span className="m5-bar__limit" style={{ left: `${limitRight}%` }} title="可動上限" />
       {decadeTicks(viewMin, viewMax).map((deg) => (

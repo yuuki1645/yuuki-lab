@@ -13,6 +13,9 @@ Isaac とは 127.0.0.1:8796 の TCP で JSON を 1 行ずつやり取りする�
 手動の踵操作は cmd_rad と ``drive: "heel"`` を送る。スティックは付けない。
 画面の「補正」はどちらも今の関節角で、Isaac 接続中は「補正（シミュ）」と出る。
 バーで関節を動かす isaac_hub_play は、今までどおり cmd_rad も stick も付けない。
+RDS は 135° が直立、ひざとかかとピッチ（SM105BL）は真下 0° が直立。
+シミュに実機の安全保護は要らないので、操作ロックは画面側で外し、
+PWM は橋が常に ON のまま目標を出す。
 
 起動（Hub 用の Python。flask-socketio が入っているもの）:
     python robot_description/isaac_hub_bridge.py
@@ -42,10 +45,11 @@ from hub_link import (
     ISAAC_TCP_HOST,
     ISAAC_TCP_PORT,
     JOINT_COUNT,
-    NEUTRAL_DEG,
-    deg_to_rad,
+    is_sm105,
+    joint_deg_to_rad,
     joint_names,
-    rad_to_deg,
+    joint_rad_to_deg,
+    neutral_deg,
 )
 
 LOG = logging.getLogger("isaac_hub_bridge")
@@ -91,7 +95,10 @@ def _hello(drive: str | None, has_stick: bool) -> str:
         return "手動の踵操作。指令は目標角、補正（シミュ）は今の関節角。電圧・電流は未計測。"
     if drive == "walk" or has_stick:
         return "歩行再生。指令は方策の目標角、補正（シミュ）は今の関節角。電圧・電流は未計測。"
-    return "電圧・電流は未計測。135° が直立です。"
+    return (
+        "シミュです。操作は常に解除、PWM は常に ON。"
+        "RDS は 135°、ひざとかかとピッチは真下 0° が直立です。電圧・電流は未計測。"
+    )
 
 
 def _as_stick(value: Any) -> dict | None:
@@ -123,9 +130,10 @@ class Bridge:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        # 画面の指令。PWM が OFF の関節は Isaac へ目標を出さない。
-        self.cmd_deg = [NEUTRAL_DEG] * JOINT_COUNT
-        self.out = [False] * JOINT_COUNT
+        # 画面の指令。直立は関節ごと（RDS 135°、SM105BL は 0°）。
+        # シミュはサーボを焼かないので、出力は最初から ON。OFF には戻さない。
+        self.cmd_deg = [neutral_deg(ch) for ch in range(JOINT_COUNT)]
+        self.out = [True] * JOINT_COUNT
         # Isaac から届いた関節角（rad）。未接続のあいだは None。
         self.meas_rad: list[float | None] = [None] * JOINT_COUNT
         # 右足は実機と同じ frame.foot。左足は実機に基板が無いので、Isaac のときだけ入る。
@@ -185,17 +193,17 @@ class Bridge:
         with self._lock:
             if op == "joint":
                 ch = int(payload.get("ch", -1))
-                deg = float(payload.get("deg", NEUTRAL_DEG))
                 if 0 <= ch < JOINT_COUNT:
+                    # 欠測の初期値も、その関節の直立にする。RDS の 135° をひざに載せない。
+                    deg = float(payload.get("deg", neutral_deg(ch)))
                     self.cmd_deg[ch] = deg
             elif op == "out":
-                ch = int(payload.get("ch", -1))
-                if 0 <= ch < JOINT_COUNT:
-                    self.out[ch] = bool(payload.get("on"))
+                # 画面の PWM OFF は受け取っても切らない。シミュは常時 ON。
+                self.out = [True] * JOINT_COUNT
             elif op == "hold":
-                # 全停止。目標は直立に戻し、出力を切る。
-                self.cmd_deg = [NEUTRAL_DEG] * JOINT_COUNT
-                self.out = [False] * JOINT_COUNT
+                # 全停止は直立へ戻すだけ。出力は切らない。
+                self.cmd_deg = [neutral_deg(ch) for ch in range(JOINT_COUNT)]
+                self.out = [True] * JOINT_COUNT
             else:
                 # スキャンや NVS など実機専用の操作。Isaac では何もしない。
                 return
@@ -231,10 +239,11 @@ class Bridge:
             self._isaac_send(targets)
 
     def _targets_locked(self) -> dict:
-        """PWM ON の関節だけ目標ラジアンを載せる。OFF は null（その場で保持）。"""
-        rad: list[float | None] = []
-        for deg, enabled in zip(self.cmd_deg, self.out):
-            rad.append(deg_to_rad(deg) if enabled else None)
+        """全関節の目標ラジアン。シミュは PWM で止めない。
+
+        SM105BL は度をそのままラジアンにする。RDS だけ 135° を 0 rad にする。
+        """
+        rad = [joint_deg_to_rad(ch, deg) for ch, deg in enumerate(self.cmd_deg)]
         return {"op": "targets", "names": joint_names(), "rad": rad}
 
     def _control_locked(self) -> dict:
@@ -252,20 +261,44 @@ class Bridge:
         }
 
     def _frame_locked(self) -> dict:
+        # 実機の SM105BL は、応答がある軸だけ raw を空、mag を 255 にする。
+        # 画面はこの形でないと「未接続」のまま、ひざとかかとピッチをドラッグできない。
         corr: list[float | None] = []
-        for rad in self.meas_rad:
-            corr.append(None if rad is None else rad_to_deg(rad))
+        raw: list[float | None] = []
+        unwrap: list[float | None] = []
+        mag: list[int] = []
+        agc: list[int] = []
+        for ch, rad in enumerate(self.meas_rad):
+            if rad is None:
+                corr.append(None)
+                raw.append(None)
+                unwrap.append(None)
+                mag.append(0)
+                agc.append(0)
+                continue
+            deg = joint_rad_to_deg(ch, float(rad))
+            corr.append(deg)
+            if is_sm105(ch):
+                raw.append(None)
+                unwrap.append(None)
+                mag.append(255)
+                agc.append(255)
+            else:
+                raw.append(deg)
+                unwrap.append(deg)
+                mag.append(0)
+                agc.append(0)
         # 歩行再生では「指令」を方策の目標角にする。バーの cmd_deg は関節へ返すが、
         # 歩行側はそれを読まない。バー操作の再生は、今までどおりスライダーの度を出す。
         if self.policy_cmd_rad is not None:
-            cmd = [None if rad is None else rad_to_deg(rad) for rad in self.policy_cmd_rad]
-            mask = (1 << JOINT_COUNT) - 1
+            cmd = [
+                None if rad is None else joint_rad_to_deg(ch, rad)
+                for ch, rad in enumerate(self.policy_cmd_rad)
+            ]
         else:
             cmd = list(self.cmd_deg)
-            mask = 0
-            for i, on in enumerate(self.out):
-                if on:
-                    mask |= 1 << i
+        # シミュは全軸 ON。画面の PWM 表示と再生時の out_mask を揃える。
+        mask = (1 << JOINT_COUNT) - 1
         # 電圧・電流はシミュに無い。null のまま画面側が非アクティブ表示にする。
         empty: list[float | None] = [None] * JOINT_COUNT
         frame = {
@@ -277,12 +310,12 @@ class Bridge:
             "jitter_us": 0,
             "overrun": False,
             "cmd": cmd,
-            "raw": list(corr),
-            "unwrap": list(corr),
+            "raw": raw,
+            "unwrap": unwrap,
             "corr": corr,
             "as_ok": [v is not None for v in corr],
-            "mag": [0] * JOINT_COUNT,
-            "agc": [0] * JOINT_COUNT,
+            "mag": mag,
+            "agc": agc,
             "volt": list(empty),
             "amp": list(empty),
             "watt": list(empty),

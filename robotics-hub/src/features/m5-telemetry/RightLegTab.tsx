@@ -65,7 +65,8 @@ function at<T>(xs: T[] | undefined, i: number): T | undefined {
 
 /**
  * 左右 5 行の操作画面。左列が左脚、右列が右脚。
- * 指令バーは操作ロック解除かつ PWM ON かつ、その関節が接続されているときだけ動く。
+ * 実機の指令バーは、操作ロック解除かつ PWM ON かつ、その関節が接続されているときだけ動く。
+ * Isaac はサーボを焼かないので、ロックせず PWM も常時 ON のままドラッグできる。
  */
 export function RightLegTab({
   canCmd,
@@ -83,7 +84,9 @@ export function RightLegTab({
   const [plotOn, setPlotOn] = useState(LEG_PLOT_DEFAULT);
   const [barOn, setBarOn] = useState(LEG_BAR_DEFAULT);
   const [sweepOpen, setSweepOpen] = useState(loadSweepOpen);
-  const [cmdLocked, setCmdLocked] = useState(true);
+  // シミュは最初から解除。実機だけ、起動時ロックと無操作での再ロックを使う。
+  const simDrive = source === "isaac";
+  const [cmdLocked, setCmdLocked] = useState(!simDrive);
   const idleTimer = useRef<number | null>(null);
 
   const clearIdle = () => {
@@ -94,6 +97,7 @@ export function RightLegTab({
   };
 
   const bumpIdle = () => {
+    if (source === "isaac") return;
     clearIdle();
     idleTimer.current = window.setTimeout(() => setCmdLocked(true), CMD_IDLE_LOCK_MS);
   };
@@ -112,11 +116,17 @@ export function RightLegTab({
   useEffect(() => () => clearIdle(), []);
 
   useEffect(() => {
+    // 切断で実機はロックに戻す。シミュは接続の有無でロックしない。
+    if (source === "isaac") {
+      setCmdLocked(false);
+      clearIdle();
+      return;
+    }
     if (!canCmd) {
       setCmdLocked(true);
       clearIdle();
     }
-  }, [canCmd]);
+  }, [canCmd, source]);
 
   const togglePlot = (key: LegPlotKey) => {
     setPlotOn((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -136,16 +146,17 @@ export function RightLegTab({
   };
 
   const setCmd = (ch: number, deg: number) => {
-    if (!canCmd || cmdLocked) return;
+    // シミュは操作ロックも PWM ゲートも掛けない。
+    if (!canCmd || (source !== "isaac" && cmdLocked)) return;
     if (isSm105Channel(ch)) {
-      // PWM ON は要らない。目標角を書いたときだけトルクが入る。
+      // 実機は PWM ON が要らない。目標角を書いたときだけトルクが入る。
       rememberSm105(ch, deg);
       send({ op: "joint", ch, deg });
       bumpIdle();
       return;
     }
-    // PWM はバーでは入れない。明示の PWM ON が必要
-    if (!at(control?.out, ch)) return;
+    // 実機の PWM はバーでは入れない。明示の PWM ON が必要。シミュは橋が常時 ON。
+    if (source !== "isaac" && !at(control?.out, ch)) return;
     send({ op: "joint", ch, deg });
     bumpIdle();
   };
@@ -248,9 +259,25 @@ export function RightLegTab({
             ? "手動の踵操作です。指令は逆運動学の目標角、補正（シミュ）はシミュレータの関節角です。バーはドラッグできません。電圧・電流は未計測です。"
             : policyOwned
             ? "歩行再生です。指令は方策の目標角、補正（シミュ）は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
-            : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。RDS51150 は PWM ON のあと、つまみを 100〜170° でドラッグします。SM105BL は真下 0° が基準です。ロックを外すと、受信中のカードをドラッグしたときだけトルクが入ります。生角とズレは出ません。"}
+            : simDrive
+              ? "シミュです。操作ロックは掛けず、PWM は常に ON です。RDS51150 は 100〜170°、SM105BL（ひざ・かかとピッチ）は真下 0° を基準にドラッグします。生角とズレは出ません。"
+              : "左列が左脚、右列が右脚です。同じ関節が同じ高さに並びます。RDS51150 は PWM ON のあと、つまみを 100〜170° でドラッグします。SM105BL は真下 0° が基準です。ロックを外すと、受信中のカードをドラッグしたときだけトルクが入ります。生角とズレは出ません。"}
         </p>
-        {remoteOwned ? null : (
+        {remoteOwned ? null : simDrive ? (
+        <>
+        <span className="m5-leg__lock-badge m5-leg__lock-badge--off">指令バー操作可</span>
+        <span className="m5-leg__lock-badge m5-leg__lock-badge--off">PWM ON</span>
+        <button
+          type="button"
+          className="m5__btn"
+          disabled={!canCmd || !anyLive}
+          title="RDS51150 は 135°、SM105BL は真下 0° へ戻します。シミュの出力は切らずに追従します。"
+          onClick={homeAllCmd}
+        >
+          中立へ
+        </button>
+        </>
+        ) : (
         <>
         <div className="m5-leg__lock" role="group" aria-label="指令バー操作ロック">
           <span
@@ -470,9 +497,10 @@ export function RightLegTab({
                     corrLabel={corrLabel}
                     serial={serial}
                     disabled={
+                      // シミュはロックも PWM OFF も理由にしない。方策と未接続だけ止める。
                       sm105
-                        ? remoteOwned || !live || !canCmd || cmdLocked
-                        : remoteOwned || !live || !canCmd || cmdLocked || !pwmOn
+                        ? remoteOwned || !live || !canCmd || (!simDrive && cmdLocked)
+                        : remoteOwned || !live || !canCmd || (!simDrive && (cmdLocked || !pwmOn))
                     }
                     onSelect={() => setSelected(j.id)}
                     onCommand={(deg) => setCmd(j.ch, deg)}

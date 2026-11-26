@@ -142,7 +142,8 @@
       <child link="${prefix}L_SHIN"/>
       <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
       <axis xyz="0.000000 0.000000 1.000000"/>
-      <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+      <!-- SM105BL。真下 0 rad が直立。画面の窓は -30〜150°。 -->
+      <limit lower="-0.523599" upper="2.617994" effort="100.0" velocity="1.00"/>
     </joint>
 
     <joint name="${prefix}right_knee_pitch" type="revolute">
@@ -150,7 +151,8 @@
       <child link="${prefix}R_SHIN"/>
       <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
       <axis xyz="0.000000 0.000000 1.000000"/>
-      <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
+      <!-- SM105BL。真下 0 rad が直立。画面の窓は -30〜150°。 -->
+      <limit lower="-0.523599" upper="2.617994" effort="100.0" velocity="1.00"/>
     </joint>
 
     <!-- ROS 2 control: generated generic system -->

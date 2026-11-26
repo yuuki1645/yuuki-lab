@@ -6,9 +6,9 @@
 
 | Property | Value |
 |----------|-------|
-| Total mass | 69.230 kg |
-| Links | 40 |
-| Joints | 39 (10 movable) |
+| Total mass | 9.320 kg |
+| Links | 12 |
+| Joints | 11 (10 movable) |
 | Assemblies | 11 |
 | Root link | `base_link` |
 
@@ -26,83 +26,27 @@
 ```
 base_link [BAKE]
   └─ biped_fixed_01 [fixed]
-    DSSERVO_RDS51150_BodyOnly_rigid_01
-      └─ LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01 [revolute]
-        RDS51150Assembly_RDS51150OriginalOutputBracket [BAKE]
-          └─ LegAssembly_v28_1__fixed_05 [fixed]
-            RDS51150Assembly_hip_RDS51150OriginalOutputBracket
-              └─ LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01 [continuous]
-                DSSERVO_RDS51150_BodyOnly_rigid_01_3 [BAKE]
-                  └─ LegAssembly_v28_1__fixed_04 [fixed]
-                    LegAssembly_RDS51150LinkBracket
-                      └─ LegAssembly_v28_1__fixed_03 [fixed]
-                        LegLinkAssembly_rigid_01
-                          └─ LegAssembly_v28_1___18 [fixed]
-                            SM105BLAssembly_SM105BLLinkBracket
-                              └─ LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01 [fixed]
-                                SM100_BL_ASM_159_ASM_rigid_01
-                                  └─ LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01 [revolute]
-                                    SM105BLAssembly_SM105BLOutputBracket [BAKE]
-                                      └─ LegAssembly_v28_1__fixed_06 [fixed]
-                                        LegAssembly_SM105BLLinkBracket
-                                          └─ LegAssembly_v28_1__fixed_07 [fixed]
-                                            LegLinkAssembly_rigid_01_2
-                                              └─ LegAssembly_v28_1__fixed_02 [fixed]
-                                                SM105BLAssembly_SM105BLLinkBracket_2
-                                                  └─ LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01 [fixed]
-                                                    SM100_BL_ASM_159_ASM_rigid_01_2
-                                                      └─ LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01 [revolute]
-                                                        SM105BLAssembly_SM105BLOutputBracket_2 [BAKE]
-                                                          └─ LegAssembly_v28_1__fixed_08 [fixed]
-                                                            DSSERVO_RDS51150_BodyOnly_rigid_01_2
-                                                              └─ LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01 [revolute]
-                                                                RDS51150Assembly_RDS51150OriginalOutputBracket_2 [BAKE]
-                                                                  └─ LegAssembly_v28_1__fixed_09 [fixed]
-                                                                    LegAssembly_FootPlate
-                                                  └─ LegAssembly_v28_1__fixed_11 [fixed]
-                                                    LegAssembly_LiPo3S
-                              └─ LegAssembly_v28_1__fixed_10 [fixed]
-                                LegAssembly_LiPo3S_2
-  └─ biped_fixed_02 [fixed]
-    DSSERVO_RDS51150_BodyOnly_rigid_01_4
-      └─ LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01 [revolute]
-        RDS51150Assembly_RDS51150OriginalOutputBracket_3 [BAKE]
-          └─ LegAssembly_v28_2__fixed_05 [fixed]
-            RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2
-              └─ LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01 [continuous]
-                DSSERVO_RDS51150_BodyOnly_rigid_01_6 [BAKE]
-                  └─ LegAssembly_v28_2__fixed_04 [fixed]
-                    LegAssembly_RDS51150LinkBracket_2
-                      └─ LegAssembly_v28_2__fixed_03 [fixed]
-                        LegLinkAssembly_rigid_01_3
-                          └─ LegAssembly_v28_2___18 [fixed]
-                            SM105BLAssembly_SM105BLLinkBracket_3
-                              └─ LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01 [fixed]
-                                SM100_BL_ASM_159_ASM_rigid_01_3
-                                  └─ LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01 [revolute]
-                                    SM105BLAssembly_SM105BLOutputBracket_3 [BAKE]
-                                      └─ LegAssembly_v28_2__fixed_06 [fixed]
-                                        LegAssembly_SM105BLLinkBracket_2
-                                          └─ LegAssembly_v28_2__fixed_07 [fixed]
-                                            LegLinkAssembly_rigid_01_4
-                                              └─ LegAssembly_v28_2__fixed_02 [fixed]
-                                                SM105BLAssembly_SM105BLLinkBracket_4
-                                                  └─ LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01 [fixed]
-                                                    SM100_BL_ASM_159_ASM_rigid_01_4
-                                                      └─ LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01 [revolute]
-                                                        SM105BLAssembly_SM105BLOutputBracket_4 [BAKE]
-                                                          └─ LegAssembly_v28_2__fixed_08 [fixed]
-                                                            DSSERVO_RDS51150_BodyOnly_rigid_01_5
-                                                              └─ LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01 [revolute]
-                                                                RDS51150Assembly_RDS51150OriginalOutputBracket_4 [BAKE]
-                                                                  └─ LegAssembly_v28_2__fixed_09 [fixed]
-                                                                    LegAssembly_FootPlate_2
-                                                  └─ LegAssembly_v28_2__fixed_11 [fixed]
-                                                    LegAssembly_LiPo3S_3
-                              └─ LegAssembly_v28_2__fixed_10 [fixed]
-                                LegAssembly_LiPo3S_4
-  └─ biped_fixed_03 [fixed]
-    PelvisBasket
+    PELVIS
+      └─ LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01 [revolute]
+        L_HIP [BAKE]
+          └─ LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01 [revolute]
+            L_THIGH [BAKE]
+              └─ LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01 [revolute]
+                L_SHIN [BAKE]
+                  └─ LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01 [revolute]
+                    DSSERVO_RDS51150_BodyOnly_rigid_01 [BAKE]
+                      └─ LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01 [revolute]
+                        L_FOOT [BAKE]
+      └─ LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01 [revolute]
+        R_HIP [BAKE]
+          └─ LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01 [revolute]
+            R_THIGH [BAKE]
+              └─ LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01 [revolute]
+                R_SHIN [BAKE]
+                  └─ LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01 [revolute]
+                    DSSERVO_RDS51150_BodyOnly_rigid_01_2 [BAKE]
+                      └─ LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01 [revolute]
+                        R_FOOT [BAKE]
 ```
 
 ## Link Properties
@@ -111,88 +55,32 @@ base_link [BAKE]
 |------|-----------|----------|-----------|--------|
 | `DSSERVO_RDS51150_BodyOnly_rigid_01` | 0.6469 | material | box | 1 |
 | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | 0.6469 | material | box | 1 |
-| `DSSERVO_RDS51150_BodyOnly_rigid_01_3` | 0.6469 | material | box | 1 |
-| `DSSERVO_RDS51150_BodyOnly_rigid_01_4` | 0.6469 | material | box | 1 |
-| `DSSERVO_RDS51150_BodyOnly_rigid_01_5` | 0.6469 | material | box | 1 |
-| `DSSERVO_RDS51150_BodyOnly_rigid_01_6` | 0.6469 | material | box | 1 |
-| `LegAssembly_FootPlate` | 1.1996 | material | box | 1 |
-| `LegAssembly_FootPlate_2` | 1.1996 | material | box | 1 |
-| `LegAssembly_LiPo3S` | 0.3020 | Lipo | box | 1 |
-| `LegAssembly_LiPo3S_2` | 0.3020 | Lipo | box | 1 |
-| `LegAssembly_LiPo3S_3` | 0.3020 | Lipo | box | 1 |
-| `LegAssembly_LiPo3S_4` | 0.3020 | Lipo | box | 1 |
-| `LegAssembly_RDS51150LinkBracket` | 0.1088 | material | box | 1 |
-| `LegAssembly_RDS51150LinkBracket_2` | 0.1088 | material | box | 1 |
-| `LegAssembly_SM105BLLinkBracket` | 0.1091 | material | box | 1 |
-| `LegAssembly_SM105BLLinkBracket_2` | 0.1091 | material | box | 1 |
-| `LegLinkAssembly_rigid_01` | 0.3734 | material | cylinder | 1 |
-| `LegLinkAssembly_rigid_01_2` | 0.3734 | material | cylinder | 1 |
-| `LegLinkAssembly_rigid_01_3` | 0.3734 | material | cylinder | 1 |
-| `LegLinkAssembly_rigid_01_4` | 0.3734 | material | cylinder | 1 |
-| `PelvisBasket` | 57.3678 | material | box | 1 |
-| `RDS51150Assembly_RDS51150OriginalOutputBracket` | 0.0549 | material | box | 1 |
-| `RDS51150Assembly_RDS51150OriginalOutputBracket_2` | 0.0549 | material | box | 1 |
-| `RDS51150Assembly_RDS51150OriginalOutputBracket_3` | 0.0549 | material | box | 1 |
-| `RDS51150Assembly_RDS51150OriginalOutputBracket_4` | 0.0549 | material | box | 1 |
-| `RDS51150Assembly_hip_RDS51150OriginalOutputBracket` | 0.0549 | material | box | 1 |
-| `RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2` | 0.0549 | material | box | 1 |
-| `SM100_BL_ASM_159_ASM_rigid_01` | 0.2567 | material | box | 1 |
-| `SM100_BL_ASM_159_ASM_rigid_01_2` | 0.2567 | material | box | 1 |
-| `SM100_BL_ASM_159_ASM_rigid_01_3` | 0.2567 | material | box | 1 |
-| `SM100_BL_ASM_159_ASM_rigid_01_4` | 0.2567 | material | box | 1 |
-| `SM105BLAssembly_SM105BLLinkBracket` | 0.1091 | material | box | 1 |
-| `SM105BLAssembly_SM105BLLinkBracket_2` | 0.1091 | material | box | 1 |
-| `SM105BLAssembly_SM105BLLinkBracket_3` | 0.1091 | material | box | 1 |
-| `SM105BLAssembly_SM105BLLinkBracket_4` | 0.1091 | material | box | 1 |
-| `SM105BLAssembly_SM105BLOutputBracket` | 0.0893 | material | box | 1 |
-| `SM105BLAssembly_SM105BLOutputBracket_2` | 0.0893 | material | box | 1 |
-| `SM105BLAssembly_SM105BLOutputBracket_3` | 0.0893 | material | box | 1 |
-| `SM105BLAssembly_SM105BLOutputBracket_4` | 0.0893 | material | box | 1 |
-| `base_link` | 0.2944 | material | box | 1 |
+| `L_FOOT` | 0.4675 | material | box | 1 |
+| `L_HIP` | 0.1098 | material | cylinder | 1 |
+| `L_SHIN` | 0.9946 | Lipo | box | 1 |
+| `L_THIGH` | 1.5519 | Lipo | box | 1 |
+| `PELVIS` | 1.6771 | ABS | box | 1 |
+| `R_FOOT` | 0.4675 | material | box | 1 |
+| `R_HIP` | 0.1098 | material | cylinder | 1 |
+| `R_SHIN` | 0.9946 | Lipo | box | 1 |
+| `R_THIGH` | 1.5519 | Lipo | box | 1 |
+| `base_link` | 0.1013 | material | box | 1 |
 
 ## Joint Properties
 
 | Joint | Type | Parent → Child | Axis | Limits |
 |-------|------|---------------|------|--------|
-| `LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01` | continuous | `RDS51150Assembly_hip_RDS51150OriginalOutputBracket` → `DSSERVO_RDS51150_BodyOnly_rigid_01_3` | (0,0,1) | — |
-| `LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01` → `RDS51150Assembly_RDS51150OriginalOutputBracket` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` → `RDS51150Assembly_RDS51150OriginalOutputBracket_2` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01` | fixed | `SM105BLAssembly_SM105BLLinkBracket` → `SM100_BL_ASM_159_ASM_rigid_01` | (0,0,1) | — |
-| `LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01` | revolute | `SM100_BL_ASM_159_ASM_rigid_01` → `SM105BLAssembly_SM105BLOutputBracket` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01` | fixed | `SM105BLAssembly_SM105BLLinkBracket_2` → `SM100_BL_ASM_159_ASM_rigid_01_2` | (0,0,1) | — |
-| `LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01` | revolute | `SM100_BL_ASM_159_ASM_rigid_01_2` → `SM105BLAssembly_SM105BLOutputBracket_2` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_1___18` | fixed | `LegLinkAssembly_rigid_01` → `SM105BLAssembly_SM105BLLinkBracket` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_02` | fixed | `LegLinkAssembly_rigid_01_2` → `SM105BLAssembly_SM105BLLinkBracket_2` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_03` | fixed | `LegAssembly_RDS51150LinkBracket` → `LegLinkAssembly_rigid_01` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_04` | fixed | `DSSERVO_RDS51150_BodyOnly_rigid_01_3` → `LegAssembly_RDS51150LinkBracket` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_05` | fixed | `RDS51150Assembly_RDS51150OriginalOutputBracket` → `RDS51150Assembly_hip_RDS51150OriginalOutputBracket` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_06` | fixed | `SM105BLAssembly_SM105BLOutputBracket` → `LegAssembly_SM105BLLinkBracket` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_07` | fixed | `LegAssembly_SM105BLLinkBracket` → `LegLinkAssembly_rigid_01_2` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_08` | fixed | `SM105BLAssembly_SM105BLOutputBracket_2` → `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_09` | fixed | `RDS51150Assembly_RDS51150OriginalOutputBracket_2` → `LegAssembly_FootPlate` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_10` | fixed | `SM105BLAssembly_SM105BLLinkBracket` → `LegAssembly_LiPo3S_2` | (0,0,1) | — |
-| `LegAssembly_v28_1__fixed_11` | fixed | `SM105BLAssembly_SM105BLLinkBracket_2` → `LegAssembly_LiPo3S` | (0,0,1) | — |
-| `LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01` | continuous | `RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2` → `DSSERVO_RDS51150_BodyOnly_rigid_01_6` | (0,0,1) | — |
-| `LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_4` → `RDS51150Assembly_RDS51150OriginalOutputBracket_3` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_5` → `RDS51150Assembly_RDS51150OriginalOutputBracket_4` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01` | fixed | `SM105BLAssembly_SM105BLLinkBracket_3` → `SM100_BL_ASM_159_ASM_rigid_01_3` | (0,0,1) | — |
-| `LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01` | revolute | `SM100_BL_ASM_159_ASM_rigid_01_3` → `SM105BLAssembly_SM105BLOutputBracket_3` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01` | fixed | `SM105BLAssembly_SM105BLLinkBracket_4` → `SM100_BL_ASM_159_ASM_rigid_01_4` | (0,0,1) | — |
-| `LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01` | revolute | `SM100_BL_ASM_159_ASM_rigid_01_4` → `SM105BLAssembly_SM105BLOutputBracket_4` | (0,0,1) | [-40.0°, 40.0°] |
-| `LegAssembly_v28_2___18` | fixed | `LegLinkAssembly_rigid_01_3` → `SM105BLAssembly_SM105BLLinkBracket_3` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_02` | fixed | `LegLinkAssembly_rigid_01_4` → `SM105BLAssembly_SM105BLLinkBracket_4` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_03` | fixed | `LegAssembly_RDS51150LinkBracket_2` → `LegLinkAssembly_rigid_01_3` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_04` | fixed | `DSSERVO_RDS51150_BodyOnly_rigid_01_6` → `LegAssembly_RDS51150LinkBracket_2` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_05` | fixed | `RDS51150Assembly_RDS51150OriginalOutputBracket_3` → `RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_06` | fixed | `SM105BLAssembly_SM105BLOutputBracket_3` → `LegAssembly_SM105BLLinkBracket_2` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_07` | fixed | `LegAssembly_SM105BLLinkBracket_2` → `LegLinkAssembly_rigid_01_4` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_08` | fixed | `SM105BLAssembly_SM105BLOutputBracket_4` → `DSSERVO_RDS51150_BodyOnly_rigid_01_5` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_09` | fixed | `RDS51150Assembly_RDS51150OriginalOutputBracket_4` → `LegAssembly_FootPlate_2` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_10` | fixed | `SM105BLAssembly_SM105BLLinkBracket_3` → `LegAssembly_LiPo3S_4` | (0,0,1) | — |
-| `LegAssembly_v28_2__fixed_11` | fixed | `SM105BLAssembly_SM105BLLinkBracket_4` → `LegAssembly_LiPo3S_3` | (0,0,1) | — |
-| `biped_fixed_01` | fixed | `base_link` → `DSSERVO_RDS51150_BodyOnly_rigid_01` | (0,0,1) | — |
-| `biped_fixed_02` | fixed | `base_link` → `DSSERVO_RDS51150_BodyOnly_rigid_01_4` | (0,0,1) | — |
-| `biped_fixed_03` | fixed | `base_link` → `PelvisBasket` | (0,0,1) | — |
+| `LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01` | revolute | `L_HIP` → `L_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01` | revolute | `PELVIS` → `L_HIP` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01` → `L_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01` | revolute | `L_THIGH` → `L_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01` | revolute | `L_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01` | (0,-1,0) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01` | revolute | `R_HIP` → `R_THIGH` | (0,0,1) | [-35.0°, 35.0°] |
+| `LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01` | revolute | `PELVIS` → `R_HIP` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01` | revolute | `DSSERVO_RDS51150_BodyOnly_rigid_01_2` → `R_FOOT` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01` | revolute | `R_THIGH` → `R_SHIN` | (0,0,1) | [-40.0°, 40.0°] |
+| `LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01` | revolute | `R_SHIN` → `DSSERVO_RDS51150_BodyOnly_rigid_01_2` | (0,-1,0) | [-40.0°, 40.0°] |
+| `biped_fixed_01` | fixed | `base_link` → `PELVIS` | (0,0,1) | — |
 
 ## Assembly Breakdown
 
@@ -203,13 +91,13 @@ base_link [BAKE]
 
 ### BipedAssembly
 
-- **Links**: base_link, PelvisBasket
-- **Total mass**: 57.662 kg
+- **Links**: base_link, PELVIS
+- **Total mass**: 1.778 kg
 
 ### DSSERVO_RDS51150_BodyOnly
 
-- **Links**: DSSERVO_RDS51150_BodyOnly_rigid_01_3, DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2, DSSERVO_RDS51150_BodyOnly_rigid_01_6, DSSERVO_RDS51150_BodyOnly_rigid_01_4, DSSERVO_RDS51150_BodyOnly_rigid_01_5
-- **Total mass**: 3.881 kg
+- **Links**: DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2
+- **Total mass**: 1.294 kg
 
 ### FEETECH_SM105BL
 
@@ -218,13 +106,13 @@ base_link [BAKE]
 
 ### LegAssembly
 
-- **Links**: LegAssembly_RDS51150LinkBracket, LegAssembly_SM105BLLinkBracket, LegAssembly_FootPlate, LegAssembly_LiPo3S, LegAssembly_LiPo3S_2, LegAssembly_RDS51150LinkBracket_2, LegAssembly_SM105BLLinkBracket_2, LegAssembly_FootPlate_2, LegAssembly_LiPo3S_3, LegAssembly_LiPo3S_4
-- **Total mass**: 4.043 kg
+- **Links**: L_FOOT, L_SHIN, L_THIGH, R_FOOT, R_SHIN, R_THIGH
+- **Total mass**: 6.028 kg
 
 ### LegLinkAssembly
 
-- **Links**: LegLinkAssembly_rigid_01, LegLinkAssembly_rigid_01_2, LegLinkAssembly_rigid_01_3, LegLinkAssembly_rigid_01_4
-- **Total mass**: 1.494 kg
+- **Links**: 
+- **Total mass**: 0.000 kg
 
 ### OUTGEAR_ASM_5_ASM
 
@@ -233,23 +121,23 @@ base_link [BAKE]
 
 ### RDS51150Assembly
 
-- **Links**: RDS51150Assembly_RDS51150OriginalOutputBracket, RDS51150Assembly_RDS51150OriginalOutputBracket_2, RDS51150Assembly_RDS51150OriginalOutputBracket_3, RDS51150Assembly_RDS51150OriginalOutputBracket_4
+- **Links**: L_HIP, R_HIP
 - **Total mass**: 0.220 kg
 
 ### RDS51150Assembly_hip
 
-- **Links**: RDS51150Assembly_hip_RDS51150OriginalOutputBracket, RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2
-- **Total mass**: 0.110 kg
+- **Links**: 
+- **Total mass**: 0.000 kg
 
 ### SM100_BL_ASM_159_ASM
 
-- **Links**: SM100_BL_ASM_159_ASM_rigid_01, SM100_BL_ASM_159_ASM_rigid_01_2, SM100_BL_ASM_159_ASM_rigid_01_3, SM100_BL_ASM_159_ASM_rigid_01_4
-- **Total mass**: 1.027 kg
+- **Links**: 
+- **Total mass**: 0.000 kg
 
 ### SM105BLAssembly
 
-- **Links**: SM105BLAssembly_SM105BLLinkBracket, SM105BLAssembly_SM105BLOutputBracket, SM105BLAssembly_SM105BLLinkBracket_2, SM105BLAssembly_SM105BLOutputBracket_2, SM105BLAssembly_SM105BLLinkBracket_3, SM105BLAssembly_SM105BLOutputBracket_3, SM105BLAssembly_SM105BLLinkBracket_4, SM105BLAssembly_SM105BLOutputBracket_4
-- **Total mass**: 0.794 kg
+- **Links**: 
+- **Total mass**: 0.000 kg
 
 ## Quick Start (ROS 2)
 

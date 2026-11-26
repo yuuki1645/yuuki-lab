@@ -5,9 +5,9 @@ metadata:
   design_name: BipedAssembly
   package_name: BipedAssembly_description
   exporter_version: '3.1.2'
-  total_mass_kg: 69.2298
-  link_count: 40
-  joint_count: 39
+  total_mass_kg: 9.3197
+  link_count: 12
+  joint_count: 11
   root_link: base_link
 
 assemblies:
@@ -15,35 +15,35 @@ assemblies:
     links: []
     total_mass_kg: 0.0000
   BipedAssembly:
-    links: [base_link, PelvisBasket]
-    total_mass_kg: 57.6622
+    links: [base_link, PELVIS]
+    total_mass_kg: 1.7784
   DSSERVO_RDS51150_BodyOnly:
-    links: [DSSERVO_RDS51150_BodyOnly_rigid_01_3, DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2, DSSERVO_RDS51150_BodyOnly_rigid_01_6, DSSERVO_RDS51150_BodyOnly_rigid_01_4, DSSERVO_RDS51150_BodyOnly_rigid_01_5]
-    total_mass_kg: 3.8814
+    links: [DSSERVO_RDS51150_BodyOnly_rigid_01, DSSERVO_RDS51150_BodyOnly_rigid_01_2]
+    total_mass_kg: 1.2938
   FEETECH_SM105BL:
     links: []
     total_mass_kg: 0.0000
   LegAssembly:
-    links: [LegAssembly_RDS51150LinkBracket, LegAssembly_SM105BLLinkBracket, LegAssembly_FootPlate, LegAssembly_LiPo3S, LegAssembly_LiPo3S_2, LegAssembly_RDS51150LinkBracket_2, LegAssembly_SM105BLLinkBracket_2, LegAssembly_FootPlate_2, LegAssembly_LiPo3S_3, LegAssembly_LiPo3S_4]
-    total_mass_kg: 4.0429
+    links: [L_FOOT, L_SHIN, L_THIGH, R_FOOT, R_SHIN, R_THIGH]
+    total_mass_kg: 6.0279
   LegLinkAssembly:
-    links: [LegLinkAssembly_rigid_01, LegLinkAssembly_rigid_01_2, LegLinkAssembly_rigid_01_3, LegLinkAssembly_rigid_01_4]
-    total_mass_kg: 1.4935
+    links: []
+    total_mass_kg: 0.0000
   OUTGEAR_ASM_5_ASM:
     links: []
     total_mass_kg: 0.0000
   RDS51150Assembly:
-    links: [RDS51150Assembly_RDS51150OriginalOutputBracket, RDS51150Assembly_RDS51150OriginalOutputBracket_2, RDS51150Assembly_RDS51150OriginalOutputBracket_3, RDS51150Assembly_RDS51150OriginalOutputBracket_4]
+    links: [L_HIP, R_HIP]
     total_mass_kg: 0.2197
   RDS51150Assembly_hip:
-    links: [RDS51150Assembly_hip_RDS51150OriginalOutputBracket, RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2]
-    total_mass_kg: 0.1098
+    links: []
+    total_mass_kg: 0.0000
   SM100_BL_ASM_159_ASM:
-    links: [SM100_BL_ASM_159_ASM_rigid_01, SM100_BL_ASM_159_ASM_rigid_01_2, SM100_BL_ASM_159_ASM_rigid_01_3, SM100_BL_ASM_159_ASM_rigid_01_4]
-    total_mass_kg: 1.0267
+    links: []
+    total_mass_kg: 0.0000
   SM105BLAssembly:
-    links: [SM105BLAssembly_SM105BLLinkBracket, SM105BLAssembly_SM105BLOutputBracket, SM105BLAssembly_SM105BLLinkBracket_2, SM105BLAssembly_SM105BLOutputBracket_2, SM105BLAssembly_SM105BLLinkBracket_3, SM105BLAssembly_SM105BLOutputBracket_3, SM105BLAssembly_SM105BLLinkBracket_4, SM105BLAssembly_SM105BLOutputBracket_4]
-    total_mass_kg: 0.7936
+    links: []
+    total_mass_kg: 0.0000
 
 links:
   DSSERVO_RDS51150_BodyOnly_rigid_01:
@@ -51,7 +51,7 @@ links:
     mass_kg: 0.646896
     volume_m3: 0.00008241
     bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [-0.003864, -0.004307, 0.000003]
+    com_local_m: [0.068136, 0.004693, 0.025503]
     inertia_at_com:
       ixx: 1.982365e-04
       ixy: -1.273417e-05
@@ -65,6 +65,8 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: box
+    bake_offset_m: [0.072000, 0.009000, 0.025500]
+    mesh_origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     rigid_group: rigid_01
     is_merged: true
     merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
@@ -73,7 +75,7 @@ links:
     mass_kg: 0.646896
     volume_m3: 0.00008241
     bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [-0.003864, -0.004307, 0.000003]
+    com_local_m: [0.068136, 0.004693, 0.025503]
     inertia_at_com:
       ixx: 1.982365e-04
       ixy: -1.273417e-05
@@ -87,803 +89,256 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: box
+    bake_offset_m: [0.072000, 0.009000, 0.025500]
+    mesh_origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     rigid_group: rigid_01
     is_merged: true
     merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  DSSERVO_RDS51150_BodyOnly_rigid_01_3:
-    assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [0.027507, -0.023364, 0.000003]
+  L_FOOT:
+    assembly: LegAssembly
+    mass_kg: 0.467502
+    volume_m3: 0.00015980
+    bbox_size_m: [0.170000, 0.300000, 0.043000]
+    com_local_m: [0.000000, -0.035001, 0.123531]
     inertia_at_com:
-      ixx: 3.134242e-04
-      ixy: 1.273417e-05
-      ixz: -3.362455e-08
-      iyy: 1.982365e-04
-      iyz: -3.021156e-08
-      izz: 4.155581e-04
+      ixx: 3.681167e-03
+      ixy: 0.000000e+00
+      ixz: 0.000000e+00
+      iyy: 4.664771e-03
+      iyz: 6.503062e-05
+      izz: 1.014963e-03
     material: 'material'
-    color_rgba: [0.769, 0.208, 0.153, 1.0]
+    color_rgba: [0.961, 0.961, 0.965, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.023200, -0.019500, 0.000000]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, 1.570796]
+    bake_offset_m: [0.000000, -0.035000, -0.014250]
+    mesh_origin_rpy_rad: [1.570796, 0.000000, 3.141593]
     frame_rule: auto
-    frame_rebase_rpy_rad: [0.000000, 0.000000, -1.570796]
-    rigid_group: rigid_01
+    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
+    rigid_group: L_FOOT
     is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  DSSERVO_RDS51150_BodyOnly_rigid_01_4:
-    assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [-0.003864, -0.004307, 0.000003]
+    merged_from: [FootPlate, RDS51150OriginalOutputBracket]
+  L_HIP:
+    assembly: RDS51150Assembly
+    mass_kg: 0.109835
+    volume_m3: 0.00001399
+    bbox_size_m: [0.080000, 0.065500, 0.065500]
+    com_local_m: [0.000000, -0.035000, 0.030750]
     inertia_at_com:
-      ixx: 1.982365e-04
-      ixy: -1.273417e-05
-      ixz: -3.021156e-08
-      iyy: 3.134242e-04
-      iyz: 3.362455e-08
-      izz: 4.155581e-04
+      ixx: 7.079885e-05
+      ixy: 0.000000e+00
+      ixz: 0.000000e+00
+      iyy: 8.383007e-05
+      iyz: 0.000000e+00
+      izz: 7.079885e-05
     material: 'material'
-    color_rgba: [0.769, 0.208, 0.153, 1.0]
+    color_rgba: [0.627, 0.627, 0.627, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  DSSERVO_RDS51150_BodyOnly_rigid_01_5:
-    assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [-0.003864, -0.004307, 0.000003]
-    inertia_at_com:
-      ixx: 1.982365e-04
-      ixy: -1.273417e-05
-      ixz: -3.021156e-08
-      iyy: 3.134242e-04
-      iyz: 3.362455e-08
-      izz: 4.155581e-04
-    material: 'material'
-    color_rgba: [0.769, 0.208, 0.153, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  DSSERVO_RDS51150_BodyOnly_rigid_01_6:
-    assembly: DSSERVO_RDS51150_BodyOnly
-    mass_kg: 0.646896
-    volume_m3: 0.00008241
-    bbox_size_m: [0.074500, 0.063200, 0.030000]
-    com_local_m: [0.027507, -0.023364, 0.000003]
-    inertia_at_com:
-      ixx: 3.134242e-04
-      ixy: 1.273417e-05
-      ixz: -3.362455e-08
-      iyy: 1.982365e-04
-      iyz: -3.021156e-08
-      izz: 4.155581e-04
-    material: 'material'
-    color_rgba: [0.769, 0.208, 0.153, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.023200, -0.019500, 0.000000]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, 1.570796]
+    collision_shape: cylinder
+    bake_offset_m: [0.000000, 0.019500, 0.023200]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [0.000000, 0.000000, -1.570796]
-    rigid_group: rigid_01
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    rigid_group: L_HIP
     is_merged: true
-    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket]
-  LegAssembly_FootPlate:
+    merged_from: [RDS51150OriginalOutputBracket, RDS51150OriginalOutputBracket]
+  L_SHIN:
     assembly: LegAssembly
-    mass_kg: 1.199552
-    volume_m3: 0.00015281
-    bbox_size_m: [0.170000, 0.300000, 0.003000]
-    com_local_m: [0.000000, 0.150131, -0.001500]
+    mass_kg: 0.994562
+    volume_m3: 0.00024423
+    bbox_size_m: [0.308500, 0.077000, 0.040000]
+    com_local_m: [0.023277, -0.175254, -0.000014]
     inertia_at_com:
-      ixx: 8.991635e-03
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 2.893261e-03
-      iyz: 0.000000e+00
-      izz: 1.188310e-02
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_FootPlate_2:
-    assembly: LegAssembly
-    mass_kg: 1.199552
-    volume_m3: 0.00015281
-    bbox_size_m: [0.170000, 0.300000, 0.003000]
-    com_local_m: [0.000000, 0.150131, -0.001500]
-    inertia_at_com:
-      ixx: 8.991635e-03
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 2.893261e-03
-      iyz: 0.000000e+00
-      izz: 1.188310e-02
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_LiPo3S:
-    assembly: LegAssembly
-    mass_kg: 0.302016
-    volume_m3: 0.00012480
-    bbox_size_m: [0.130000, 0.040000, 0.024000]
-    com_local_m: [0.065000, 0.020000, 0.012000]
-    inertia_at_com:
-      ixx: 5.476557e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.398360e-04
-      iyz: 0.000000e+00
-      izz: 4.656080e-04
+      ixx: 8.248975e-03
+      ixy: -1.670398e-04
+      ixz: 1.500070e-07
+      iyy: 5.880984e-04
+      iyz: -1.203907e-06
+      izz: 8.655693e-03
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-  LegAssembly_LiPo3S_2:
+    bake_offset_m: [0.045000, -0.112000, 0.012000]
+    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    frame_rule: auto
+    frame_rebase_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    rigid_group: L_SHIN
+    is_merged: true
+    merged_from: [SM105BLOutputBracket, SM105BLLinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
+  L_THIGH:
     assembly: LegAssembly
-    mass_kg: 0.302016
-    volume_m3: 0.00012480
-    bbox_size_m: [0.130000, 0.040000, 0.024000]
-    com_local_m: [0.065000, 0.020000, 0.012000]
+    mass_kg: 1.551884
+    volume_m3: 0.00031522
+    bbox_size_m: [0.346000, 0.077000, 0.040000]
+    com_local_m: [0.028265, -0.136831, -0.000007]
     inertia_at_com:
-      ixx: 5.476557e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.398360e-04
-      iyz: 0.000000e+00
-      izz: 4.656080e-04
+      ixx: 2.050752e-02
+      ixy: -3.290826e-05
+      ixz: 1.278451e-07
+      iyy: 7.341916e-04
+      iyz: -2.389683e-06
+      izz: 2.098384e-02
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-  LegAssembly_LiPo3S_3:
-    assembly: LegAssembly
-    mass_kg: 0.302016
-    volume_m3: 0.00012480
-    bbox_size_m: [0.130000, 0.040000, 0.024000]
-    com_local_m: [0.065000, 0.020000, 0.012000]
-    inertia_at_com:
-      ixx: 5.476557e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.398360e-04
-      iyz: 0.000000e+00
-      izz: 4.656080e-04
-    material: 'Lipo'
-    color_rgba: [0.910, 0.678, 0.137, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_LiPo3S_4:
-    assembly: LegAssembly
-    mass_kg: 0.302016
-    volume_m3: 0.00012480
-    bbox_size_m: [0.130000, 0.040000, 0.024000]
-    com_local_m: [0.065000, 0.020000, 0.012000]
-    inertia_at_com:
-      ixx: 5.476557e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.398360e-04
-      iyz: 0.000000e+00
-      izz: 4.656080e-04
-    material: 'Lipo'
-    color_rgba: [0.910, 0.678, 0.137, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_RDS51150LinkBracket:
-    assembly: LegAssembly
-    mass_kg: 0.108821
-    volume_m3: 0.00001386
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010726]
-    inertia_at_com:
-      ixx: 2.570863e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.799187e-05
-      iyz: 0.000000e+00
-      izz: 9.470498e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_RDS51150LinkBracket_2:
-    assembly: LegAssembly
-    mass_kg: 0.108821
-    volume_m3: 0.00001386
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010726]
-    inertia_at_com:
-      ixx: 2.570863e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.799187e-05
-      iyz: 0.000000e+00
-      izz: 9.470498e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_SM105BLLinkBracket:
-    assembly: LegAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegAssembly_SM105BLLinkBracket_2:
-    assembly: LegAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  LegLinkAssembly_rigid_01:
-    assembly: LegLinkAssembly
-    mass_kg: 0.373379
-    volume_m3: 0.00004756
-    bbox_size_m: [0.200000, 0.040000, 0.077000]
-    com_local_m: [0.100000, 0.020000, -0.035500]
-    inertia_at_com:
-      ixx: 5.614809e-04
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.743076e-03
-      iyz: 0.000000e+00
-      izz: 1.281685e-03
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: cylinder
-    rigid_group: rigid_01
+    bake_offset_m: [0.010700, -0.139500, -0.012000]
+    mesh_origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    frame_rule: auto
+    frame_rebase_rpy_rad: [0.000000, 0.000000, 1.570796]
+    rigid_group: L_THIGH
     is_merged: true
-    merged_from: [LinkFrame, LinkFrame]
-  LegLinkAssembly_rigid_01_2:
-    assembly: LegLinkAssembly
-    mass_kg: 0.373379
-    volume_m3: 0.00004756
-    bbox_size_m: [0.200000, 0.040000, 0.077000]
-    com_local_m: [0.100000, 0.020000, -0.035500]
-    inertia_at_com:
-      ixx: 5.614809e-04
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.743076e-03
-      iyz: 0.000000e+00
-      izz: 1.281685e-03
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: cylinder
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [LinkFrame, LinkFrame]
-  LegLinkAssembly_rigid_01_3:
-    assembly: LegLinkAssembly
-    mass_kg: 0.373379
-    volume_m3: 0.00004756
-    bbox_size_m: [0.200000, 0.040000, 0.077000]
-    com_local_m: [0.100000, 0.020000, -0.035500]
-    inertia_at_com:
-      ixx: 5.614809e-04
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.743076e-03
-      iyz: 0.000000e+00
-      izz: 1.281685e-03
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: cylinder
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [LinkFrame, LinkFrame]
-  LegLinkAssembly_rigid_01_4:
-    assembly: LegLinkAssembly
-    mass_kg: 0.373379
-    volume_m3: 0.00004756
-    bbox_size_m: [0.200000, 0.040000, 0.077000]
-    com_local_m: [0.100000, 0.020000, -0.035500]
-    inertia_at_com:
-      ixx: 5.614809e-04
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.743076e-03
-      iyz: 0.000000e+00
-      izz: 1.281685e-03
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: cylinder
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [LinkFrame, LinkFrame]
-  PelvisBasket:
+    merged_from: [LinkFrame, LinkFrame, LiPo3S, RDS51150LinkBracket, RDS51150OriginalOppositeBracket, SM105BLLinkBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
+  PELVIS:
     assembly: BipedAssembly
-    mass_kg: 57.367800
-    volume_m3: 0.00730800
-    bbox_size_m: [0.280000, 0.180000, 0.145000]
-    com_local_m: [0.140000, 0.090000, 0.072500]
+    mass_kg: 1.677122
+    volume_m3: 0.00052645
+    bbox_size_m: [0.280000, 0.180000, 0.222500]
+    com_local_m: [0.139997, 0.087537, -0.018010]
     inertia_at_com:
-      ixx: 2.554062e-01
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.753161e-01
-      iyz: 0.000000e+00
-      izz: 5.296960e-01
-    material: 'material'
+      ixx: 6.145379e-03
+      ixy: 6.406489e-08
+      ixz: -1.526088e-07
+      iyy: 2.216246e-02
+      iyz: -1.127276e-04
+      izz: 2.044135e-02
+    material: 'ABS'
     color_rgba: [0.965, 0.965, 0.953, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-  RDS51150Assembly_RDS51150OriginalOutputBracket:
-    assembly: RDS51150Assembly
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.000000, -0.023737, 0.030750]
-    inertia_at_com:
-      ixx: 4.493226e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.191504e-05
-      iyz: 0.000000e+00
-      izz: 1.193388e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
-  RDS51150Assembly_RDS51150OriginalOutputBracket_2:
-    assembly: RDS51150Assembly
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.000000, -0.023737, 0.030750]
-    inertia_at_com:
-      ixx: 4.493226e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.191504e-05
-      iyz: 0.000000e+00
-      izz: 1.193388e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
-  RDS51150Assembly_RDS51150OriginalOutputBracket_3:
-    assembly: RDS51150Assembly
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.000000, -0.023737, 0.030750]
-    inertia_at_com:
-      ixx: 4.493226e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.191504e-05
-      iyz: 0.000000e+00
-      izz: 1.193388e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
-  RDS51150Assembly_RDS51150OriginalOutputBracket_4:
-    assembly: RDS51150Assembly
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.000000, -0.023737, 0.030750]
-    inertia_at_com:
-      ixx: 4.493226e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 4.191504e-05
-      iyz: 0.000000e+00
-      izz: 1.193388e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
-  RDS51150Assembly_hip_RDS51150OriginalOutputBracket:
-    assembly: RDS51150Assembly_hip
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.043237, -0.007550, 0.000000]
-    inertia_at_com:
-      ixx: 4.191504e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.193388e-05
-      iyz: 0.000000e+00
-      izz: 4.493226e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2:
-    assembly: RDS51150Assembly_hip
-    mass_kg: 0.054917
-    volume_m3: 0.00000700
-    bbox_size_m: [0.040000, 0.065500, 0.030000]
-    com_local_m: [0.043237, -0.007550, 0.000000]
-    inertia_at_com:
-      ixx: 4.191504e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 1.193388e-05
-      iyz: 0.000000e+00
-      izz: 4.493226e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  SM100_BL_ASM_159_ASM_rigid_01:
-    assembly: SM100_BL_ASM_159_ASM
-    mass_kg: 0.256674
-    volume_m3: 0.00003270
-    bbox_size_m: [0.058500, 0.056897, 0.033500]
-    com_local_m: [-0.001981, 0.015325, 0.000054]
-    inertia_at_com:
-      ixx: 8.980686e-05
-      ixy: 5.957873e-06
-      ixz: -1.869252e-07
-      iyy: 1.056257e-04
-      iyz: -2.182164e-07
-      izz: 1.419254e-04
-    material: 'material'
-    color_rgba: [0.337, 0.310, 0.310, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
+    rigid_group: PELVIS
     is_merged: true
-    merged_from: [WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
-  SM100_BL_ASM_159_ASM_rigid_01_2:
-    assembly: SM100_BL_ASM_159_ASM
-    mass_kg: 0.256674
-    volume_m3: 0.00003270
-    bbox_size_m: [0.058500, 0.056897, 0.033500]
-    com_local_m: [-0.001981, 0.015325, 0.000054]
+    merged_from: [PelvisBasket, RDS51150OriginalOppositeBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
+  R_FOOT:
+    assembly: LegAssembly
+    mass_kg: 0.467502
+    volume_m3: 0.00015980
+    bbox_size_m: [0.170000, 0.300000, 0.043000]
+    com_local_m: [0.000000, -0.035001, 0.123531]
     inertia_at_com:
-      ixx: 8.980686e-05
-      ixy: 5.957873e-06
-      ixz: -1.869252e-07
-      iyy: 1.056257e-04
-      iyz: -2.182164e-07
-      izz: 1.419254e-04
-    material: 'material'
-    color_rgba: [0.337, 0.310, 0.310, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
-  SM100_BL_ASM_159_ASM_rigid_01_3:
-    assembly: SM100_BL_ASM_159_ASM
-    mass_kg: 0.256674
-    volume_m3: 0.00003270
-    bbox_size_m: [0.058500, 0.056897, 0.033500]
-    com_local_m: [-0.001981, 0.015325, 0.000054]
-    inertia_at_com:
-      ixx: 8.980686e-05
-      ixy: 5.957873e-06
-      ixz: -1.869252e-07
-      iyy: 1.056257e-04
-      iyz: -2.182164e-07
-      izz: 1.419254e-04
-    material: 'material'
-    color_rgba: [0.337, 0.310, 0.310, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
-  SM100_BL_ASM_159_ASM_rigid_01_4:
-    assembly: SM100_BL_ASM_159_ASM
-    mass_kg: 0.256674
-    volume_m3: 0.00003270
-    bbox_size_m: [0.058500, 0.056897, 0.033500]
-    com_local_m: [-0.001981, 0.015325, 0.000054]
-    inertia_at_com:
-      ixx: 8.980686e-05
-      ixy: 5.957873e-06
-      ixz: -1.869252e-07
-      iyy: 1.056257e-04
-      iyz: -2.182164e-07
-      izz: 1.419254e-04
-    material: 'material'
-    color_rgba: [0.337, 0.310, 0.310, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    rigid_group: rigid_01
-    is_merged: true
-    merged_from: [WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
-  SM105BLAssembly_SM105BLLinkBracket:
-    assembly: SM105BLAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
+      ixx: 3.681167e-03
       ixy: 0.000000e+00
       ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
+      iyy: 4.664771e-03
+      iyz: 6.503062e-05
+      izz: 1.014963e-03
     material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
+    color_rgba: [0.961, 0.961, 0.965, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-  SM105BLAssembly_SM105BLLinkBracket_2:
-    assembly: SM105BLAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  SM105BLAssembly_SM105BLLinkBracket_3:
-    assembly: SM105BLAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  SM105BLAssembly_SM105BLLinkBracket_4:
-    assembly: SM105BLAssembly
-    mass_kg: 0.109054
-    volume_m3: 0.00001389
-    bbox_size_m: [0.071000, 0.035000, 0.037000]
-    com_local_m: [0.000000, 0.000000, 0.010706]
-    inertia_at_com:
-      ixx: 2.572846e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 9.803410e-05
-      iyz: 0.000000e+00
-      izz: 9.472711e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-  SM105BLAssembly_SM105BLOutputBracket:
-    assembly: SM105BLAssembly
-    mass_kg: 0.089340
-    volume_m3: 0.00001138
-    bbox_size_m: [0.056000, 0.035000, 0.037000]
-    com_local_m: [0.025000, -0.021804, 0.000000]
-    inertia_at_com:
-      ixx: 1.988413e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 5.246619e-05
-      iyz: 0.000000e+00
-      izz: 5.274070e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.025000, -0.032000, 0.000000]
-    mesh_origin_rpy_rad: [1.570796, 0.000000, -3.141593]
-    frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
-  SM105BLAssembly_SM105BLOutputBracket_2:
-    assembly: SM105BLAssembly
-    mass_kg: 0.089340
-    volume_m3: 0.00001138
-    bbox_size_m: [0.056000, 0.035000, 0.037000]
-    com_local_m: [0.025000, -0.021804, 0.000000]
-    inertia_at_com:
-      ixx: 1.988413e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 5.246619e-05
-      iyz: 0.000000e+00
-      izz: 5.274070e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
-    body_count: 1
-    is_empty: false
-    collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.025000, -0.032000, 0.000000]
+    bake_offset_m: [0.000000, -0.035000, -0.014250]
     mesh_origin_rpy_rad: [1.570796, 0.000000, 3.141593]
     frame_rule: auto
     frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
-  SM105BLAssembly_SM105BLOutputBracket_3:
-    assembly: SM105BLAssembly
-    mass_kg: 0.089340
-    volume_m3: 0.00001138
-    bbox_size_m: [0.056000, 0.035000, 0.037000]
-    com_local_m: [0.025000, -0.021804, 0.000000]
+    rigid_group: R_FOOT
+    is_merged: true
+    merged_from: [RDS51150OriginalOutputBracket, FootPlate]
+  R_HIP:
+    assembly: RDS51150Assembly
+    mass_kg: 0.109835
+    volume_m3: 0.00001399
+    bbox_size_m: [0.080000, 0.065500, 0.065500]
+    com_local_m: [0.000000, -0.035000, 0.030750]
     inertia_at_com:
-      ixx: 1.988413e-05
+      ixx: 7.079885e-05
       ixy: 0.000000e+00
       ixz: 0.000000e+00
-      iyy: 5.246619e-05
+      iyy: 8.383007e-05
       iyz: 0.000000e+00
-      izz: 5.274070e-05
+      izz: 7.079885e-05
     material: 'material'
     color_rgba: [0.627, 0.627, 0.627, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
-    collision_shape: box
-    bake_offset_m: [0.025000, -0.032000, 0.000000]
-    mesh_origin_rpy_rad: [1.570796, 0.000000, -3.141593]
+    collision_shape: cylinder
+    bake_offset_m: [0.000000, 0.019500, 0.023200]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
-  SM105BLAssembly_SM105BLOutputBracket_4:
-    assembly: SM105BLAssembly
-    mass_kg: 0.089340
-    volume_m3: 0.00001138
-    bbox_size_m: [0.056000, 0.035000, 0.037000]
-    com_local_m: [0.025000, -0.021804, 0.000000]
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    rigid_group: R_HIP
+    is_merged: true
+    merged_from: [RDS51150OriginalOutputBracket, RDS51150OriginalOutputBracket]
+  R_SHIN:
+    assembly: LegAssembly
+    mass_kg: 0.994562
+    volume_m3: 0.00024423
+    bbox_size_m: [0.308500, 0.077000, 0.040000]
+    com_local_m: [0.023277, -0.175254, -0.000014]
     inertia_at_com:
-      ixx: 1.988413e-05
-      ixy: 0.000000e+00
-      ixz: 0.000000e+00
-      iyy: 5.246619e-05
-      iyz: 0.000000e+00
-      izz: 5.274070e-05
-    material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
+      ixx: 8.248975e-03
+      ixy: -1.670398e-04
+      ixz: 1.500070e-07
+      iyy: 5.880984e-04
+      iyz: -1.203907e-06
+      izz: 8.655693e-03
+    material: 'Lipo'
+    color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.025000, -0.032000, 0.000000]
-    mesh_origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    bake_offset_m: [0.045000, -0.112000, 0.012000]
+    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
+    frame_rebase_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    rigid_group: R_SHIN
+    is_merged: true
+    merged_from: [SM105BLOutputBracket, SM105BLLinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
+  R_THIGH:
+    assembly: LegAssembly
+    mass_kg: 1.551884
+    volume_m3: 0.00031522
+    bbox_size_m: [0.346000, 0.077000, 0.040000]
+    com_local_m: [0.028265, -0.136831, -0.000007]
+    inertia_at_com:
+      ixx: 2.050752e-02
+      ixy: -3.290826e-05
+      ixz: 1.278451e-07
+      iyy: 7.341916e-04
+      iyz: -2.389683e-06
+      izz: 2.098384e-02
+    material: 'Lipo'
+    color_rgba: [0.910, 0.678, 0.137, 1.0]
+    body_count: 1
+    is_empty: false
+    collision_source: primitive
+    collision_shape: box
+    bake_offset_m: [0.010700, -0.139500, -0.012000]
+    mesh_origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    frame_rule: auto
+    frame_rebase_rpy_rad: [0.000000, 0.000000, 1.570796]
+    rigid_group: R_THIGH
+    is_merged: true
+    merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket, RDS51150LinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
   base_link:
     assembly: BipedAssembly
-    mass_kg: 0.294375
+    mass_kg: 0.101250
     volume_m3: 0.00003750
     bbox_size_m: [0.250000, 0.050000, 0.003000]
     com_local_m: [0.025000, -0.125000, 0.001500]
     inertia_at_com:
-      ixx: 1.533424e-03
+      ixx: 5.274197e-04
       ixy: 0.000000e+00
       ixz: 0.000000e+00
-      iyy: 6.154891e-05
+      iyy: 2.116969e-05
       iyz: 0.000000e+00
-      izz: 1.594531e-03
+      izz: 5.484375e-04
     material: 'material'
-    color_rgba: [0.627, 0.627, 0.627, 1.0]
+    color_rgba: [0.961, 0.961, 0.965, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
@@ -894,20 +349,39 @@ links:
     frame_rebase_rpy_rad: [0.000000, 0.000000, 1.570796]
 
 joints:
-  LegAssembly_v28_1__RDS51150Assembly_hip_v2_1__rot_01:
-    type: continuous
-    parent: RDS51150Assembly_hip_RDS51150OriginalOutputBracket
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01_3
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
-    origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+  LegAssembly_v31_1__RDS51150Assembly_hip_v3_1__rot_01:
+    type: revolute
+    parent: L_HIP
+    child: L_THIGH
+    origin_xyz_m: [-0.030750, -0.070000, 0.030750]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
-  LegAssembly_v28_1__RDS51150Assembly_v14_2__rot_01:
+    limits:
+      lower: -0.610865
+      upper: 0.610865
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_1__RDS51150Assembly_v14_2__rot_01:
+    type: revolute
+    parent: PELVIS
+    child: L_HIP
+    origin_xyz_m: [0.035000, 0.059300, -0.062500]
+    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    axis: [0.0000, 0.0000, 1.0000]
+    is_mount: true
+    passive: false
+    limits:
+      lower: -0.698132
+      upper: 0.698132
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_1__RDS51150Assembly_v14_3__rot_01:
     type: revolute
     parent: DSSERVO_RDS51150_BodyOnly_rigid_01
-    child: RDS51150Assembly_RDS51150OriginalOutputBracket
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
+    child: L_FOOT
+    origin_xyz_m: [0.091500, 0.032200, 0.025500]
     origin_rpy_rad: [1.570796, -1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
@@ -917,11 +391,67 @@ joints:
       upper: 0.698132
       effort: 100.0
       velocity: 1.00
-  LegAssembly_v28_1__RDS51150Assembly_v14_3__rot_01:
+  LegAssembly_v31_1__SM105BLAssembly_v19_1__rot_01:
+    type: revolute
+    parent: L_THIGH
+    child: L_SHIN
+    origin_xyz_m: [0.005600, -0.317250, 0.000000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+    is_mount: false
+    passive: false
+    limits:
+      lower: -0.698132
+      upper: 0.698132
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_1__SM105BLAssembly_v19_2__rot_01:
+    type: revolute
+    parent: L_SHIN
+    child: DSSERVO_RDS51150_BodyOnly_rigid_01
+    origin_xyz_m: [-0.000100, -0.289750, 0.000000]
+    origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    axis: [0.0000, -1.0000, 0.0000]
+    is_mount: true
+    passive: false
+    limits:
+      lower: -0.698132
+      upper: 0.698132
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_2__RDS51150Assembly_hip_v3_1__rot_01:
+    type: revolute
+    parent: R_HIP
+    child: R_THIGH
+    origin_xyz_m: [-0.030750, -0.070000, 0.030750]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+    is_mount: true
+    passive: false
+    limits:
+      lower: -0.610865
+      upper: 0.610865
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_2__RDS51150Assembly_v14_2__rot_01:
+    type: revolute
+    parent: PELVIS
+    child: R_HIP
+    origin_xyz_m: [0.245000, 0.059300, -0.062500]
+    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    axis: [0.0000, 0.0000, 1.0000]
+    is_mount: true
+    passive: false
+    limits:
+      lower: -0.698132
+      upper: 0.698132
+      effort: 100.0
+      velocity: 1.00
+  LegAssembly_v31_2__RDS51150Assembly_v14_3__rot_01:
     type: revolute
     parent: DSSERVO_RDS51150_BodyOnly_rigid_01_2
-    child: RDS51150Assembly_RDS51150OriginalOutputBracket_2
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
+    child: R_FOOT
+    origin_xyz_m: [0.091500, 0.032200, 0.025500]
     origin_rpy_rad: [1.570796, -1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
@@ -931,167 +461,27 @@ joints:
       upper: 0.698132
       effort: 100.0
       velocity: 1.00
-  LegAssembly_v28_1__SM105BLAssembly_v19_1__fixed_01:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket
-    child: SM100_BL_ASM_159_ASM_rigid_01
-    origin_xyz_m: [0.022000, 0.000000, -0.029250]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__SM105BLAssembly_v19_1__rot_01:
+  LegAssembly_v31_2__SM105BLAssembly_v19_1__rot_01:
     type: revolute
-    parent: SM100_BL_ASM_159_ASM_rigid_01
-    child: SM105BLAssembly_SM105BLOutputBracket
-    origin_xyz_m: [-0.015500, -0.003100, 0.000000]
-    origin_rpy_rad: [-3.141593, 0.000000, 1.570796]
+    parent: R_THIGH
+    child: R_SHIN
+    origin_xyz_m: [0.005600, -0.317250, 0.000000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
+    is_mount: false
     passive: false
     limits:
       lower: -0.698132
       upper: 0.698132
       effort: 100.0
       velocity: 1.00
-  LegAssembly_v28_1__SM105BLAssembly_v19_2__fixed_01:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_2
-    child: SM100_BL_ASM_159_ASM_rigid_01_2
-    origin_xyz_m: [0.022000, 0.000000, -0.029250]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__SM105BLAssembly_v19_2__rot_01:
+  LegAssembly_v31_2__SM105BLAssembly_v19_2__rot_01:
     type: revolute
-    parent: SM100_BL_ASM_159_ASM_rigid_01_2
-    child: SM105BLAssembly_SM105BLOutputBracket_2
-    origin_xyz_m: [-0.015500, -0.003100, 0.000000]
-    origin_rpy_rad: [-3.141593, 0.000000, 1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-    limits:
-      lower: -0.698132
-      upper: 0.698132
-      effort: 100.0
-      velocity: 1.00
-  LegAssembly_v28_1___18:
-    type: fixed
-    parent: LegLinkAssembly_rigid_01
-    child: SM105BLAssembly_SM105BLLinkBracket
-    origin_xyz_m: [-0.006500, 0.020000, -0.035500]
-    origin_rpy_rad: [0.000000, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_02:
-    type: fixed
-    parent: LegLinkAssembly_rigid_01_2
-    child: SM105BLAssembly_SM105BLLinkBracket_2
-    origin_xyz_m: [-0.006500, 0.020000, -0.035500]
-    origin_rpy_rad: [0.000000, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_03:
-    type: fixed
-    parent: LegAssembly_RDS51150LinkBracket
-    child: LegLinkAssembly_rigid_01
-    origin_xyz_m: [-0.035500, 0.020000, 0.206500]
-    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_04:
-    type: fixed
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01_3
-    child: LegAssembly_RDS51150LinkBracket
-    origin_xyz_m: [0.030700, -0.059500, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_05:
-    type: fixed
-    parent: RDS51150Assembly_RDS51150OriginalOutputBracket
-    child: RDS51150Assembly_hip_RDS51150OriginalOutputBracket
-    origin_xyz_m: [-0.007550, -0.089500, 0.030750]
-    origin_rpy_rad: [0.000000, 0.000000, 1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_06:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLOutputBracket
-    child: LegAssembly_SM105BLLinkBracket
-    origin_xyz_m: [0.025000, -0.032000, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, 3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_07:
-    type: fixed
-    parent: LegAssembly_SM105BLLinkBracket
-    child: LegLinkAssembly_rigid_01_2
-    origin_xyz_m: [-0.035500, 0.020000, 0.206500]
-    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_08:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLOutputBracket_2
+    parent: R_SHIN
     child: DSSERVO_RDS51150_BodyOnly_rigid_01_2
-    origin_xyz_m: [0.025500, -0.072000, -0.009000]
+    origin_xyz_m: [-0.000100, -0.289750, 0.000000]
     origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_09:
-    type: fixed
-    parent: RDS51150Assembly_RDS51150OriginalOutputBracket_2
-    child: LegAssembly_FootPlate
-    origin_xyz_m: [0.000000, -0.035000, -0.014250]
-    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_10:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket
-    child: LegAssembly_LiPo3S_2
-    origin_xyz_m: [0.020000, -0.012000, 0.133000]
-    origin_rpy_rad: [-1.570796, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_1__fixed_11:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_2
-    child: LegAssembly_LiPo3S
-    origin_xyz_m: [-0.020000, 0.012000, 0.133000]
-    origin_rpy_rad: [1.570796, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__RDS51150Assembly_hip_v2_1__rot_01:
-    type: continuous
-    parent: RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01_6
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
-    origin_rpy_rad: [0.000000, 0.000000, -1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__RDS51150Assembly_v14_2__rot_01:
-    type: revolute
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01_4
-    child: RDS51150Assembly_RDS51150OriginalOutputBracket_3
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
+    axis: [0.0000, -1.0000, 0.0000]
     is_mount: true
     passive: false
     limits:
@@ -1099,192 +489,63 @@ joints:
       upper: 0.698132
       effort: 100.0
       velocity: 1.00
-  LegAssembly_v28_2__RDS51150Assembly_v14_3__rot_01:
-    type: revolute
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01_5
-    child: RDS51150Assembly_RDS51150OriginalOutputBracket_4
-    origin_xyz_m: [0.019500, 0.023200, 0.000000]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-    limits:
-      lower: -0.698132
-      upper: 0.698132
-      effort: 100.0
-      velocity: 1.00
-  LegAssembly_v28_2__SM105BLAssembly_v19_1__fixed_01:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_3
-    child: SM100_BL_ASM_159_ASM_rigid_01_3
-    origin_xyz_m: [0.022000, 0.000000, -0.029250]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__SM105BLAssembly_v19_1__rot_01:
-    type: revolute
-    parent: SM100_BL_ASM_159_ASM_rigid_01_3
-    child: SM105BLAssembly_SM105BLOutputBracket_3
-    origin_xyz_m: [-0.015500, -0.003100, 0.000000]
-    origin_rpy_rad: [-3.141593, 0.000000, 1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-    limits:
-      lower: -0.698132
-      upper: 0.698132
-      effort: 100.0
-      velocity: 1.00
-  LegAssembly_v28_2__SM105BLAssembly_v19_2__fixed_01:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_4
-    child: SM100_BL_ASM_159_ASM_rigid_01_4
-    origin_xyz_m: [0.022000, 0.000000, -0.029250]
-    origin_rpy_rad: [1.570796, -1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__SM105BLAssembly_v19_2__rot_01:
-    type: revolute
-    parent: SM100_BL_ASM_159_ASM_rigid_01_4
-    child: SM105BLAssembly_SM105BLOutputBracket_4
-    origin_xyz_m: [-0.015500, -0.003100, 0.000000]
-    origin_rpy_rad: [-3.141593, 0.000000, 1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-    limits:
-      lower: -0.698132
-      upper: 0.698132
-      effort: 100.0
-      velocity: 1.00
-  LegAssembly_v28_2___18:
-    type: fixed
-    parent: LegLinkAssembly_rigid_01_3
-    child: SM105BLAssembly_SM105BLLinkBracket_3
-    origin_xyz_m: [-0.006500, 0.020000, -0.035500]
-    origin_rpy_rad: [0.000000, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_02:
-    type: fixed
-    parent: LegLinkAssembly_rigid_01_4
-    child: SM105BLAssembly_SM105BLLinkBracket_4
-    origin_xyz_m: [-0.006500, 0.020000, -0.035500]
-    origin_rpy_rad: [0.000000, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_03:
-    type: fixed
-    parent: LegAssembly_RDS51150LinkBracket_2
-    child: LegLinkAssembly_rigid_01_3
-    origin_xyz_m: [-0.035500, 0.020000, 0.206500]
-    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_04:
-    type: fixed
-    parent: DSSERVO_RDS51150_BodyOnly_rigid_01_6
-    child: LegAssembly_RDS51150LinkBracket_2
-    origin_xyz_m: [0.030700, -0.059500, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_05:
-    type: fixed
-    parent: RDS51150Assembly_RDS51150OriginalOutputBracket_3
-    child: RDS51150Assembly_hip_RDS51150OriginalOutputBracket_2
-    origin_xyz_m: [-0.007550, -0.089500, 0.030750]
-    origin_rpy_rad: [0.000000, 0.000000, 1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_06:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLOutputBracket_3
-    child: LegAssembly_SM105BLLinkBracket_2
-    origin_xyz_m: [0.025000, -0.032000, 0.000000]
-    origin_rpy_rad: [-1.570796, 0.000000, 3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_07:
-    type: fixed
-    parent: LegAssembly_SM105BLLinkBracket_2
-    child: LegLinkAssembly_rigid_01_4
-    origin_xyz_m: [-0.035500, 0.020000, 0.206500]
-    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_08:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLOutputBracket_4
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01_5
-    origin_xyz_m: [0.025500, -0.072000, -0.009000]
-    origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_09:
-    type: fixed
-    parent: RDS51150Assembly_RDS51150OriginalOutputBracket_4
-    child: LegAssembly_FootPlate_2
-    origin_xyz_m: [0.000000, -0.035000, -0.014250]
-    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_10:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_3
-    child: LegAssembly_LiPo3S_4
-    origin_xyz_m: [0.020000, -0.012000, 0.133000]
-    origin_rpy_rad: [-1.570796, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  LegAssembly_v28_2__fixed_11:
-    type: fixed
-    parent: SM105BLAssembly_SM105BLLinkBracket_4
-    child: LegAssembly_LiPo3S_3
-    origin_xyz_m: [-0.020000, 0.012000, 0.133000]
-    origin_rpy_rad: [1.570796, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
   biped_fixed_01:
     type: fixed
     parent: base_link
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01
-    origin_xyz_m: [0.017500, -0.020000, -0.040000]
-    origin_rpy_rad: [1.570796, 1.570796, -3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  biped_fixed_02:
-    type: fixed
-    parent: base_link
-    child: DSSERVO_RDS51150_BodyOnly_rigid_01_4
-    origin_xyz_m: [0.017500, -0.230000, -0.040000]
-    origin_rpy_rad: [1.570796, 1.570796, -3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
-    is_mount: true
-    passive: false
-  biped_fixed_03:
-    type: fixed
-    parent: base_link
-    child: PelvisBasket
+    child: PELVIS
     origin_xyz_m: [-0.065000, 0.015000, 0.003000]
     origin_rpy_rad: [0.000000, 0.000000, -1.570796]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: false
     passive: false
 
-closing_joints: []
+closing_joints:
+  - name: LegAssembly_v31_1__fixed_06
+    source: auto_detected
+    type: fixed
+    parent: L_SHIN
+    child: L_THIGH
+    origin_xyz_m: [0.005100, 0.177750, -0.012000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+  - name: LegAssembly_v31_1__fixed_07
+    source: auto_detected
+    type: fixed
+    parent: L_THIGH
+    child: L_SHIN
+    origin_xyz_m: [0.050600, -0.429250, 0.012000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+  - name: LegAssembly_v31_2__fixed_06
+    source: auto_detected
+    type: fixed
+    parent: R_SHIN
+    child: R_THIGH
+    origin_xyz_m: [0.005100, 0.177750, -0.012000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+  - name: LegAssembly_v31_2__fixed_07
+    source: auto_detected
+    type: fixed
+    parent: R_THIGH
+    child: R_SHIN
+    origin_xyz_m: [0.050600, -0.429250, 0.012000]
+    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    axis: [0.0000, 0.0000, 1.0000]
+  - name: biped_fixed_02
+    source: auto_detected
+    type: fixed
+    parent: base_link
+    child: PELVIS
+    origin_xyz_m: [-0.065000, 0.015000, 0.003000]
+    origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    axis: [0.0000, 0.0000, 1.0000]
+  - name: biped_fixed_03
+    source: auto_detected
+    type: fixed
+    parent: base_link
+    child: PELVIS
+    origin_xyz_m: [-0.065000, 0.015000, 0.003000]
+    origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    axis: [0.0000, 0.0000, 1.0000]
 

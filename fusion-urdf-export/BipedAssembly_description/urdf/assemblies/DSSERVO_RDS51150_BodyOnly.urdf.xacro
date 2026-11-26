@@ -4,44 +4,22 @@
   <xacro:macro name="DSSERVO_RDS51150_BodyOnly" params="prefix">
 
     <!-- Links -->
-    <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01_3">
-      <inertial>
-        <origin xyz="0.027507 -0.023364 0.000003" rpy="0 0 0"/>
-        <mass value="0.646896"/>
-        <inertia ixx="3.134242e-04" ixy="1.273417e-05" ixz="-3.362455e-08"
-                 iyy="1.982365e-04" iyz="-3.021156e-08" izz="4.155581e-04"/>
-      </inertial>
-      <visual>
-        <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_3.dae" scale="1 1 1"/>
-        </geometry>
-        <material name="material"/>
-      </visual>
-      <collision>
-        <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_3_collision.stl" scale="0.01 0.01 0.01"/>
-        </geometry>
-      </collision>
-    </link>
-
     <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01">
       <inertial>
-        <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+        <origin xyz="0.068136 0.004693 0.025503" rpy="0 0 0"/>
         <mass value="0.646896"/>
         <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
                  iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
       </inertial>
       <visual>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <origin xyz="0.072000 0.009000 0.025500" rpy="0.000000 0.000000 0.000000"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01.dae" scale="1 1 1"/>
         </geometry>
         <material name="material"/>
       </visual>
       <collision>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <origin xyz="0.072000 0.009000 0.025500" rpy="0.000000 0.000000 0.000000"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_collision.stl" scale="0.01 0.01 0.01"/>
         </geometry>
@@ -50,88 +28,22 @@
 
     <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01_2">
       <inertial>
-        <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
+        <origin xyz="0.068136 0.004693 0.025503" rpy="0 0 0"/>
         <mass value="0.646896"/>
         <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
                  iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
       </inertial>
       <visual>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <origin xyz="0.072000 0.009000 0.025500" rpy="0.000000 0.000000 0.000000"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_2.dae" scale="1 1 1"/>
         </geometry>
         <material name="material"/>
       </visual>
       <collision>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
+        <origin xyz="0.072000 0.009000 0.025500" rpy="0.000000 0.000000 0.000000"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_2_collision.stl" scale="0.01 0.01 0.01"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01_6">
-      <inertial>
-        <origin xyz="0.027507 -0.023364 0.000003" rpy="0 0 0"/>
-        <mass value="0.646896"/>
-        <inertia ixx="3.134242e-04" ixy="1.273417e-05" ixz="-3.362455e-08"
-                 iyy="1.982365e-04" iyz="-3.021156e-08" izz="4.155581e-04"/>
-      </inertial>
-      <visual>
-        <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_6.dae" scale="1 1 1"/>
-        </geometry>
-        <material name="material"/>
-      </visual>
-      <collision>
-        <origin xyz="0.023200 -0.019500 0.000000" rpy="0.000000 0.000000 1.570796"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_6_collision.stl" scale="0.01 0.01 0.01"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01_4">
-      <inertial>
-        <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
-        <mass value="0.646896"/>
-        <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
-                 iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
-      </inertial>
-      <visual>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_4.dae" scale="1 1 1"/>
-        </geometry>
-        <material name="material"/>
-      </visual>
-      <collision>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_4_collision.stl" scale="0.01 0.01 0.01"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <link name="${prefix}DSSERVO_RDS51150_BodyOnly_rigid_01_5">
-      <inertial>
-        <origin xyz="-0.003864 -0.004307 0.000003" rpy="0 0 0"/>
-        <mass value="0.646896"/>
-        <inertia ixx="1.982365e-04" ixy="-1.273417e-05" ixz="-3.021156e-08"
-                 iyy="3.134242e-04" iyz="3.362455e-08" izz="4.155581e-04"/>
-      </inertial>
-      <visual>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_5.dae" scale="1 1 1"/>
-        </geometry>
-        <material name="material"/>
-      </visual>
-      <collision>
-        <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 0.000000 0.000000"/>
-        <geometry>
-          <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/DSSERVO_RDS51150_BodyOnly_rigid_01_5_collision.stl" scale="0.01 0.01 0.01"/>
         </geometry>
       </collision>
     </link>

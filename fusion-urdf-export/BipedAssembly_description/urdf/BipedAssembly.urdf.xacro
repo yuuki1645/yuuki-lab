@@ -33,7 +33,7 @@
   <joint name="left_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="L_HIP"/>
-    <origin xyz="0.035000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
+    <origin xyz="0.035000 0.059300 -0.062500" rpy="-1.570796 0.000000 -3.141593"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -41,7 +41,7 @@
   <joint name="right_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="R_HIP"/>
-    <origin xyz="0.245000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
+    <origin xyz="0.245000 0.059300 -0.062500" rpy="-1.570796 0.000000 -3.141593"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -49,7 +49,7 @@
   <joint name="left_hip_pitch" type="revolute">
     <parent link="L_HIP"/>
     <child link="L_THIGH"/>
-    <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.030750 0.070000 -0.030750" rpy="-3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -57,33 +57,31 @@
   <joint name="right_hip_pitch" type="revolute">
     <parent link="R_HIP"/>
     <child link="R_THIGH"/>
-    <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.030750 0.070000 -0.030750" rpy="-3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は ±60°。 -->
   <joint name="left_ankle_pitch" type="revolute">
     <parent link="L_SHIN"/>
     <child link="L_ANKLE"/>
-    <origin xyz="-0.000100 -0.289750 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.289750 0.000100" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-1.047198" upper="1.047198" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は ±60°。 -->
   <joint name="right_ankle_pitch" type="revolute">
     <parent link="R_SHIN"/>
     <child link="R_ANKLE"/>
-    <origin xyz="-0.000100 -0.289750 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.289750 0.000100" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-1.047198" upper="1.047198" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
   <joint name="left_ankle_roll" type="revolute">
     <parent link="L_ANKLE"/>
     <child link="L_FOOT"/>
-    <origin xyz="0.025500 -0.091500 -0.032200" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.032200 -0.091500 -0.025500" rpy="3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -91,7 +89,7 @@
   <joint name="right_ankle_roll" type="revolute">
     <parent link="R_ANKLE"/>
     <child link="R_FOOT"/>
-    <origin xyz="0.025500 -0.091500 -0.032200" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.032200 -0.091500 -0.025500" rpy="3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>

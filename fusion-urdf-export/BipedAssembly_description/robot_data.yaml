@@ -51,24 +51,24 @@ links:
     mass_kg: 0.736236
     volume_m3: 0.00009379
     bbox_size_m: [0.111500, 0.063200, 0.056000]
-    com_local_m: [0.025442, -0.062514, -0.004123]
+    com_local_m: [-0.004123, -0.062514, -0.025442]
     inertia_at_com:
-      ixx: 6.056808e-04
-      ixy: 1.860988e-06
-      ixz: 1.517987e-07
+      ixx: 5.346947e-04
+      ixy: -2.980108e-05
+      ixz: -1.517987e-07
       iyy: 2.524511e-04
-      iyz: -2.980108e-05
-      izz: 5.346947e-04
+      iyz: -1.860988e-06
+      izz: 6.056808e-04
     material: 'material'
     color_rgba: [0.769, 0.208, 0.153, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.025500, -0.072000, -0.009000]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    bake_offset_m: [-0.009000, -0.072000, -0.025500]
+    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    frame_rebase_rpy_rad: [3.141593, 0.000000, -1.570796]
     rigid_group: L_ANKLE
     is_merged: true
     merged_from: [SM105BLOutputBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
@@ -77,7 +77,7 @@ links:
     mass_kg: 0.467502
     volume_m3: 0.00015980
     bbox_size_m: [0.170000, 0.300000, 0.043000]
-    com_local_m: [0.000000, -0.035001, 0.123531]
+    com_local_m: [0.000000, 0.035001, -0.123531]
     inertia_at_com:
       ixx: 3.681167e-03
       ixy: 0.000000e+00
@@ -91,10 +91,10 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.000000, -0.035000, -0.014250]
-    mesh_origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    bake_offset_m: [0.000000, 0.035000, 0.014250]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
+    frame_rebase_rpy_rad: [-1.570796, 0.000000, 3.141593]
     rigid_group: L_FOOT
     is_merged: true
     merged_from: [FootPlate, RDS51150OriginalOutputBracket]
@@ -103,7 +103,7 @@ links:
     mass_kg: 0.109835
     volume_m3: 0.00001399
     bbox_size_m: [0.080000, 0.065500, 0.065500]
-    com_local_m: [0.000000, -0.035000, 0.030750]
+    com_local_m: [0.000000, 0.035000, -0.030750]
     inertia_at_com:
       ixx: 7.079885e-05
       ixy: 0.000000e+00
@@ -117,10 +117,10 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: cylinder
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    bake_offset_m: [0.000000, -0.019500, -0.023200]
+    mesh_origin_rpy_rad: [1.570796, 0.000000, 1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    frame_rebase_rpy_rad: [-1.570796, -1.570796, 0.000000]
     rigid_group: L_HIP
     is_merged: true
     merged_from: [RDS51150OriginalOutputBracket, RDS51150OriginalOutputBracket]
@@ -129,24 +129,24 @@ links:
     mass_kg: 0.994562
     volume_m3: 0.00024423
     bbox_size_m: [0.308500, 0.077000, 0.040000]
-    com_local_m: [0.023277, -0.175254, -0.000014]
+    com_local_m: [-0.000014, -0.175254, -0.023277]
     inertia_at_com:
-      ixx: 8.248975e-03
-      ixy: -1.670398e-04
-      ixz: 1.500070e-07
+      ixx: 8.655693e-03
+      ixy: -1.203907e-06
+      ixz: -1.500070e-07
       iyy: 5.880984e-04
-      iyz: -1.203907e-06
-      izz: 8.655693e-03
+      iyz: 1.670398e-04
+      izz: 8.248975e-03
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.045000, -0.112000, 0.012000]
-    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    bake_offset_m: [0.012000, -0.112000, -0.045000]
+    mesh_origin_rpy_rad: [1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    frame_rebase_rpy_rad: [-1.570796, 1.570796, 0.000000]
     rigid_group: L_SHIN
     is_merged: true
     merged_from: [SM105BLOutputBracket, SM105BLLinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
@@ -155,24 +155,24 @@ links:
     mass_kg: 1.551884
     volume_m3: 0.00031522
     bbox_size_m: [0.346000, 0.077000, 0.040000]
-    com_local_m: [0.028265, -0.136831, -0.000007]
+    com_local_m: [-0.000007, -0.136831, -0.028265]
     inertia_at_com:
-      ixx: 2.050752e-02
-      ixy: -3.290826e-05
-      ixz: 1.278451e-07
+      ixx: 2.098384e-02
+      ixy: -2.389683e-06
+      ixz: -1.278451e-07
       iyy: 7.341916e-04
-      iyz: -2.389683e-06
-      izz: 2.098384e-02
+      iyz: 3.290826e-05
+      izz: 2.050752e-02
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.010700, -0.139500, -0.012000]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    bake_offset_m: [-0.012000, -0.139500, -0.010700]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [0.000000, 0.000000, 1.570796]
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
     rigid_group: L_THIGH
     is_merged: true
     merged_from: [LinkFrame, LinkFrame, LiPo3S, RDS51150LinkBracket, RDS51150OriginalOppositeBracket, SM105BLLinkBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
@@ -203,24 +203,24 @@ links:
     mass_kg: 0.736236
     volume_m3: 0.00009379
     bbox_size_m: [0.111500, 0.063200, 0.056000]
-    com_local_m: [0.025442, -0.062514, -0.004123]
+    com_local_m: [-0.004123, -0.062514, -0.025442]
     inertia_at_com:
-      ixx: 6.056808e-04
-      ixy: 1.860988e-06
-      ixz: 1.517987e-07
+      ixx: 5.346947e-04
+      ixy: -2.980108e-05
+      ixz: -1.517987e-07
       iyy: 2.524511e-04
-      iyz: -2.980108e-05
-      izz: 5.346947e-04
+      iyz: -1.860988e-06
+      izz: 6.056808e-04
     material: 'material'
     color_rgba: [0.769, 0.208, 0.153, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.025500, -0.072000, -0.009000]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    bake_offset_m: [-0.009000, -0.072000, -0.025500]
+    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    frame_rebase_rpy_rad: [3.141593, 0.000000, -1.570796]
     rigid_group: R_ANKLE
     is_merged: true
     merged_from: [SM105BLOutputBracket, RDS51150OriginalOppositeBracket, MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1]
@@ -229,7 +229,7 @@ links:
     mass_kg: 0.467502
     volume_m3: 0.00015980
     bbox_size_m: [0.170000, 0.300000, 0.043000]
-    com_local_m: [0.000000, -0.035001, 0.123531]
+    com_local_m: [0.000000, 0.035001, -0.123531]
     inertia_at_com:
       ixx: 3.681167e-03
       ixy: 0.000000e+00
@@ -243,10 +243,10 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.000000, -0.035000, -0.014250]
-    mesh_origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    bake_offset_m: [0.000000, 0.035000, 0.014250]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, 0.000000, -3.141593]
+    frame_rebase_rpy_rad: [-1.570796, 0.000000, 3.141593]
     rigid_group: R_FOOT
     is_merged: true
     merged_from: [RDS51150OriginalOutputBracket, FootPlate]
@@ -255,7 +255,7 @@ links:
     mass_kg: 0.109835
     volume_m3: 0.00001399
     bbox_size_m: [0.080000, 0.065500, 0.065500]
-    com_local_m: [0.000000, -0.035000, 0.030750]
+    com_local_m: [0.000000, 0.035000, -0.030750]
     inertia_at_com:
       ixx: 7.079885e-05
       ixy: 0.000000e+00
@@ -269,10 +269,10 @@ links:
     is_empty: false
     collision_source: primitive
     collision_shape: cylinder
-    bake_offset_m: [0.000000, 0.019500, 0.023200]
-    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
+    bake_offset_m: [0.000000, -0.019500, -0.023200]
+    mesh_origin_rpy_rad: [1.570796, 0.000000, 1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
+    frame_rebase_rpy_rad: [-1.570796, -1.570796, 0.000000]
     rigid_group: R_HIP
     is_merged: true
     merged_from: [RDS51150OriginalOutputBracket, RDS51150OriginalOutputBracket]
@@ -281,24 +281,24 @@ links:
     mass_kg: 0.994562
     volume_m3: 0.00024423
     bbox_size_m: [0.308500, 0.077000, 0.040000]
-    com_local_m: [0.023277, -0.175254, -0.000014]
+    com_local_m: [-0.000014, -0.175254, -0.023277]
     inertia_at_com:
-      ixx: 8.248975e-03
-      ixy: -1.670398e-04
-      ixz: 1.500070e-07
+      ixx: 8.655693e-03
+      ixy: -1.203907e-06
+      ixz: -1.500070e-07
       iyy: 5.880984e-04
-      iyz: -1.203907e-06
-      izz: 8.655693e-03
+      iyz: 1.670398e-04
+      izz: 8.248975e-03
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.045000, -0.112000, 0.012000]
-    mesh_origin_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    bake_offset_m: [0.012000, -0.112000, -0.045000]
+    mesh_origin_rpy_rad: [1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [-3.141593, 0.000000, -1.570796]
+    frame_rebase_rpy_rad: [-1.570796, 1.570796, 0.000000]
     rigid_group: R_SHIN
     is_merged: true
     merged_from: [SM105BLOutputBracket, SM105BLLinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
@@ -307,24 +307,24 @@ links:
     mass_kg: 1.551884
     volume_m3: 0.00031522
     bbox_size_m: [0.346000, 0.077000, 0.040000]
-    com_local_m: [0.028265, -0.136831, -0.000007]
+    com_local_m: [-0.000007, -0.136831, -0.028265]
     inertia_at_com:
-      ixx: 2.050752e-02
-      ixy: -3.290826e-05
-      ixz: 1.278451e-07
+      ixx: 2.098384e-02
+      ixy: -2.389683e-06
+      ixz: -1.278451e-07
       iyy: 7.341916e-04
-      iyz: -2.389683e-06
-      izz: 2.098384e-02
+      iyz: 3.290826e-05
+      izz: 2.050752e-02
     material: 'Lipo'
     color_rgba: [0.910, 0.678, 0.137, 1.0]
     body_count: 1
     is_empty: false
     collision_source: primitive
     collision_shape: box
-    bake_offset_m: [0.010700, -0.139500, -0.012000]
-    mesh_origin_rpy_rad: [0.000000, 0.000000, -1.570796]
+    bake_offset_m: [-0.012000, -0.139500, -0.010700]
+    mesh_origin_rpy_rad: [-1.570796, 0.000000, -1.570796]
     frame_rule: auto
-    frame_rebase_rpy_rad: [0.000000, 0.000000, 1.570796]
+    frame_rebase_rpy_rad: [1.570796, -1.570796, 0.000000]
     rigid_group: R_THIGH
     is_merged: true
     merged_from: [MOTOR-280_17:1, GM_7:1, SG_99:1, ZK_77:1, DG_63:1, LVKE-6530_26:1, BEISHIZHOUCHENG-6-13-5_1:1, DDP-1_32:1, DDP-CD_17:1, RDS51150OriginalOppositeBracket, RDS51150LinkBracket, LinkFrame, LinkFrame, LiPo3S, SM105BLLinkBracket, WJ-WK00-0429-MIDDLECASE_178:1, WJ-WK00-0428-TOBCABINET_111:1, WJ-WK00-0430-BOTTOMCASE_58:1, MF106ZZ_1:1, WJ-DP00-0011_2:1, WJ-FDP0-0005-DANPAN-20181204_1:1, M25-12SCREW_1:1, OUTPUTGEAR_15:1, TJC25020-4P_1:1, TJC25020-4P_1:2, WJ-DP00-0010_2:1, M20X8_6:1, LUOSI-M3-6_1_1:1, M25-12SCREW_1:2, M25-12SCREW_1:3, M25-12SCREW_1:4, M25-12SCREW_1:5, M25-12SCREW_1:6, M25-12SCREW_1:7, M25-12SCREW_1:8, M25-12SCREW_1:9]
@@ -366,7 +366,7 @@ joints:
     type: revolute
     parent: L_SHIN
     child: L_ANKLE
-    origin_xyz_m: [-0.000100, -0.289750, 0.000000]
+    origin_xyz_m: [0.000000, -0.289750, 0.000100]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
@@ -380,8 +380,8 @@ joints:
     type: revolute
     parent: L_ANKLE
     child: L_FOOT
-    origin_xyz_m: [0.025500, -0.091500, -0.032200]
-    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    origin_xyz_m: [-0.032200, -0.091500, -0.025500]
+    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -394,8 +394,8 @@ joints:
     type: revolute
     parent: L_HIP
     child: L_THIGH
-    origin_xyz_m: [-0.030750, -0.070000, 0.030750]
-    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    origin_xyz_m: [-0.030750, 0.070000, -0.030750]
+    origin_rpy_rad: [-3.141593, 1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -409,7 +409,7 @@ joints:
     parent: PELVIS
     child: L_HIP
     origin_xyz_m: [0.035000, 0.059300, -0.062500]
-    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -422,7 +422,7 @@ joints:
     type: revolute
     parent: L_THIGH
     child: L_SHIN
-    origin_xyz_m: [0.005600, -0.317250, 0.000000]
+    origin_xyz_m: [0.000000, -0.317250, -0.005600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: false
@@ -436,7 +436,7 @@ joints:
     type: revolute
     parent: R_SHIN
     child: R_ANKLE
-    origin_xyz_m: [-0.000100, -0.289750, 0.000000]
+    origin_xyz_m: [0.000000, -0.289750, 0.000100]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
@@ -450,8 +450,8 @@ joints:
     type: revolute
     parent: R_ANKLE
     child: R_FOOT
-    origin_xyz_m: [0.025500, -0.091500, -0.032200]
-    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    origin_xyz_m: [-0.032200, -0.091500, -0.025500]
+    origin_rpy_rad: [3.141593, 1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -464,8 +464,8 @@ joints:
     type: revolute
     parent: R_HIP
     child: R_THIGH
-    origin_xyz_m: [-0.030750, -0.070000, 0.030750]
-    origin_rpy_rad: [0.000000, 0.000000, 0.000000]
+    origin_xyz_m: [-0.030750, 0.070000, -0.030750]
+    origin_rpy_rad: [-3.141593, 1.570796, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -479,7 +479,7 @@ joints:
     parent: PELVIS
     child: R_HIP
     origin_xyz_m: [0.245000, 0.059300, -0.062500]
-    origin_rpy_rad: [1.570796, 0.000000, 3.141593]
+    origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: true
     passive: false
@@ -492,7 +492,7 @@ joints:
     type: revolute
     parent: R_THIGH
     child: R_SHIN
-    origin_xyz_m: [0.005600, -0.317250, 0.000000]
+    origin_xyz_m: [0.000000, -0.317250, -0.005600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
     is_mount: false
@@ -509,7 +509,7 @@ closing_joints:
     type: fixed
     parent: L_SHIN
     child: L_THIGH
-    origin_xyz_m: [0.005100, 0.177750, -0.012000]
+    origin_xyz_m: [-0.012000, 0.177750, -0.005100]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
   - name: LegAssembly_v33_1__fixed_07
@@ -517,7 +517,7 @@ closing_joints:
     type: fixed
     parent: L_THIGH
     child: L_SHIN
-    origin_xyz_m: [0.050600, -0.429250, 0.012000]
+    origin_xyz_m: [0.012000, -0.429250, -0.050600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
   - name: LegAssembly_v33_2__fixed_06
@@ -525,7 +525,7 @@ closing_joints:
     type: fixed
     parent: R_SHIN
     child: R_THIGH
-    origin_xyz_m: [0.005100, 0.177750, -0.012000]
+    origin_xyz_m: [-0.012000, 0.177750, -0.005100]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
   - name: LegAssembly_v33_2__fixed_07
@@ -533,7 +533,7 @@ closing_joints:
     type: fixed
     parent: R_THIGH
     child: R_SHIN
-    origin_xyz_m: [0.050600, -0.429250, 0.012000]
+    origin_xyz_m: [0.012000, -0.429250, -0.050600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
     axis: [0.0000, 0.0000, 1.0000]
   - name: biped_fixed_02

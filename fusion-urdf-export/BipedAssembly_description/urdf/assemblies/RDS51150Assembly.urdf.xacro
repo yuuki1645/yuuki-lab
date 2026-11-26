@@ -6,20 +6,20 @@
     <!-- Links -->
     <link name="${prefix}L_HIP">
       <inertial>
-        <origin xyz="0.000000 -0.035000 0.030750" rpy="0 0 0"/>
+        <origin xyz="0.000000 0.035000 -0.030750" rpy="0 0 0"/>
         <mass value="0.109835"/>
         <inertia ixx="7.079885e-05" ixy="0.000000e+00" ixz="0.000000e+00"
                  iyy="8.383007e-05" iyz="0.000000e+00" izz="7.079885e-05"/>
       </inertial>
       <visual>
-        <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+        <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/L_HIP.dae" scale="1 1 1"/>
         </geometry>
         <material name="material"/>
       </visual>
       <collision>
-        <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+        <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/L_HIP_collision.stl" scale="0.01 0.01 0.01"/>
         </geometry>
@@ -28,20 +28,20 @@
 
     <link name="${prefix}R_HIP">
       <inertial>
-        <origin xyz="0.000000 -0.035000 0.030750" rpy="0 0 0"/>
+        <origin xyz="0.000000 0.035000 -0.030750" rpy="0 0 0"/>
         <mass value="0.109835"/>
         <inertia ixx="7.079885e-05" ixy="0.000000e+00" ixz="0.000000e+00"
                  iyy="8.383007e-05" iyz="0.000000e+00" izz="7.079885e-05"/>
       </inertial>
       <visual>
-        <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+        <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/R_HIP.dae" scale="1 1 1"/>
         </geometry>
         <material name="material"/>
       </visual>
       <collision>
-        <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+        <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
         <geometry>
           <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/R_HIP_collision.stl" scale="0.01 0.01 0.01"/>
         </geometry>

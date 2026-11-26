@@ -58,20 +58,20 @@
 
   <link name="L_HIP">
     <inertial>
-      <origin xyz="0.000000 -0.035000 0.030750" rpy="0 0 0"/>
+      <origin xyz="0.000000 0.035000 -0.030750" rpy="0 0 0"/>
       <mass value="0.109835"/>
       <inertia ixx="7.079885e-05" ixy="0.000000e+00" ixz="0.000000e+00"
                iyy="8.383007e-05" iyz="0.000000e+00" izz="7.079885e-05"/>
     </inertial>
     <visual>
-      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/L_HIP.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/L_HIP_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -80,20 +80,20 @@
 
   <link name="R_HIP">
     <inertial>
-      <origin xyz="0.000000 -0.035000 0.030750" rpy="0 0 0"/>
+      <origin xyz="0.000000 0.035000 -0.030750" rpy="0 0 0"/>
       <mass value="0.109835"/>
       <inertia ixx="7.079885e-05" ixy="0.000000e+00" ixz="0.000000e+00"
                iyy="8.383007e-05" iyz="0.000000e+00" izz="7.079885e-05"/>
     </inertial>
     <visual>
-      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/R_HIP.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.000000 0.019500 0.023200" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="0.000000 -0.019500 -0.023200" rpy="1.570796 0.000000 1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/RDS51150Assembly/R_HIP_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -102,20 +102,20 @@
 
   <link name="L_THIGH">
     <inertial>
-      <origin xyz="0.028265 -0.136831 -0.000007" rpy="0 0 0"/>
+      <origin xyz="-0.000007 -0.136831 -0.028265" rpy="0 0 0"/>
       <mass value="1.551884"/>
-      <inertia ixx="2.050752e-02" ixy="-3.290826e-05" ixz="1.278451e-07"
-               iyy="7.341916e-04" iyz="-2.389683e-06" izz="2.098384e-02"/>
+      <inertia ixx="2.098384e-02" ixy="-2.389683e-06" ixz="-1.278451e-07"
+               iyy="7.341916e-04" iyz="3.290826e-05" izz="2.050752e-02"/>
     </inertial>
     <visual>
-      <origin xyz="0.010700 -0.139500 -0.012000" rpy="0.000000 0.000000 -1.570796"/>
+      <origin xyz="-0.012000 -0.139500 -0.010700" rpy="-1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_THIGH.dae" scale="1 1 1"/>
       </geometry>
       <material name="Lipo"/>
     </visual>
     <collision>
-      <origin xyz="0.010700 -0.139500 -0.012000" rpy="0.000000 0.000000 -1.570796"/>
+      <origin xyz="-0.012000 -0.139500 -0.010700" rpy="-1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_THIGH_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -124,20 +124,20 @@
 
   <link name="R_THIGH">
     <inertial>
-      <origin xyz="0.028265 -0.136831 -0.000007" rpy="0 0 0"/>
+      <origin xyz="-0.000007 -0.136831 -0.028265" rpy="0 0 0"/>
       <mass value="1.551884"/>
-      <inertia ixx="2.050752e-02" ixy="-3.290826e-05" ixz="1.278451e-07"
-               iyy="7.341916e-04" iyz="-2.389683e-06" izz="2.098384e-02"/>
+      <inertia ixx="2.098384e-02" ixy="-2.389683e-06" ixz="-1.278451e-07"
+               iyy="7.341916e-04" iyz="3.290826e-05" izz="2.050752e-02"/>
     </inertial>
     <visual>
-      <origin xyz="0.010700 -0.139500 -0.012000" rpy="0.000000 0.000000 -1.570796"/>
+      <origin xyz="-0.012000 -0.139500 -0.010700" rpy="-1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_THIGH.dae" scale="1 1 1"/>
       </geometry>
       <material name="Lipo"/>
     </visual>
     <collision>
-      <origin xyz="0.010700 -0.139500 -0.012000" rpy="0.000000 0.000000 -1.570796"/>
+      <origin xyz="-0.012000 -0.139500 -0.010700" rpy="-1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_THIGH_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -146,20 +146,20 @@
 
   <link name="L_SHIN">
     <inertial>
-      <origin xyz="0.023277 -0.175254 -0.000014" rpy="0 0 0"/>
+      <origin xyz="-0.000014 -0.175254 -0.023277" rpy="0 0 0"/>
       <mass value="0.994562"/>
-      <inertia ixx="8.248975e-03" ixy="-1.670398e-04" ixz="1.500070e-07"
-               iyy="5.880984e-04" iyz="-1.203907e-06" izz="8.655693e-03"/>
+      <inertia ixx="8.655693e-03" ixy="-1.203907e-06" ixz="-1.500070e-07"
+               iyy="5.880984e-04" iyz="1.670398e-04" izz="8.248975e-03"/>
     </inertial>
     <visual>
-      <origin xyz="0.045000 -0.112000 0.012000" rpy="-3.141593 0.000000 -1.570796"/>
+      <origin xyz="0.012000 -0.112000 -0.045000" rpy="1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_SHIN.dae" scale="1 1 1"/>
       </geometry>
       <material name="Lipo"/>
     </visual>
     <collision>
-      <origin xyz="0.045000 -0.112000 0.012000" rpy="-3.141593 0.000000 -1.570796"/>
+      <origin xyz="0.012000 -0.112000 -0.045000" rpy="1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_SHIN_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -168,20 +168,20 @@
 
   <link name="R_SHIN">
     <inertial>
-      <origin xyz="0.023277 -0.175254 -0.000014" rpy="0 0 0"/>
+      <origin xyz="-0.000014 -0.175254 -0.023277" rpy="0 0 0"/>
       <mass value="0.994562"/>
-      <inertia ixx="8.248975e-03" ixy="-1.670398e-04" ixz="1.500070e-07"
-               iyy="5.880984e-04" iyz="-1.203907e-06" izz="8.655693e-03"/>
+      <inertia ixx="8.655693e-03" ixy="-1.203907e-06" ixz="-1.500070e-07"
+               iyy="5.880984e-04" iyz="1.670398e-04" izz="8.248975e-03"/>
     </inertial>
     <visual>
-      <origin xyz="0.045000 -0.112000 0.012000" rpy="-3.141593 0.000000 -1.570796"/>
+      <origin xyz="0.012000 -0.112000 -0.045000" rpy="1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_SHIN.dae" scale="1 1 1"/>
       </geometry>
       <material name="Lipo"/>
     </visual>
     <collision>
-      <origin xyz="0.045000 -0.112000 0.012000" rpy="-3.141593 0.000000 -1.570796"/>
+      <origin xyz="0.012000 -0.112000 -0.045000" rpy="1.570796 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_SHIN_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -190,20 +190,20 @@
 
   <link name="L_ANKLE">
     <inertial>
-      <origin xyz="0.025442 -0.062514 -0.004123" rpy="0 0 0"/>
+      <origin xyz="-0.004123 -0.062514 -0.025442" rpy="0 0 0"/>
       <mass value="0.736236"/>
-      <inertia ixx="6.056808e-04" ixy="1.860988e-06" ixz="1.517987e-07"
-               iyy="2.524511e-04" iyz="-2.980108e-05" izz="5.346947e-04"/>
+      <inertia ixx="5.346947e-04" ixy="-2.980108e-05" ixz="-1.517987e-07"
+               iyy="2.524511e-04" iyz="-1.860988e-06" izz="6.056808e-04"/>
     </inertial>
     <visual>
-      <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="-0.009000 -0.072000 -0.025500" rpy="-3.141593 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/L_ANKLE.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="-0.009000 -0.072000 -0.025500" rpy="-3.141593 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/L_ANKLE_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -212,20 +212,20 @@
 
   <link name="R_ANKLE">
     <inertial>
-      <origin xyz="0.025442 -0.062514 -0.004123" rpy="0 0 0"/>
+      <origin xyz="-0.004123 -0.062514 -0.025442" rpy="0 0 0"/>
       <mass value="0.736236"/>
-      <inertia ixx="6.056808e-04" ixy="1.860988e-06" ixz="1.517987e-07"
-               iyy="2.524511e-04" iyz="-2.980108e-05" izz="5.346947e-04"/>
+      <inertia ixx="5.346947e-04" ixy="-2.980108e-05" ixz="-1.517987e-07"
+               iyy="2.524511e-04" iyz="-1.860988e-06" izz="6.056808e-04"/>
     </inertial>
     <visual>
-      <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="-0.009000 -0.072000 -0.025500" rpy="-3.141593 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/R_ANKLE.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.025500 -0.072000 -0.009000" rpy="-1.570796 0.000000 -1.570796"/>
+      <origin xyz="-0.009000 -0.072000 -0.025500" rpy="-3.141593 0.000000 -1.570796"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/DSSERVO_RDS51150_BodyOnly/R_ANKLE_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -234,20 +234,20 @@
 
   <link name="L_FOOT">
     <inertial>
-      <origin xyz="0.000000 -0.035001 0.123531" rpy="0 0 0"/>
+      <origin xyz="0.000000 0.035001 -0.123531" rpy="0 0 0"/>
       <mass value="0.467502"/>
       <inertia ixx="3.681167e-03" ixy="0.000000e+00" ixz="0.000000e+00"
                iyy="4.664771e-03" iyz="6.503062e-05" izz="1.014963e-03"/>
     </inertial>
     <visual>
-      <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+      <origin xyz="0.000000 0.035000 0.014250" rpy="-1.570796 0.000000 -3.141593"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_FOOT.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+      <origin xyz="0.000000 0.035000 0.014250" rpy="-1.570796 0.000000 -3.141593"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/L_FOOT_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -256,20 +256,20 @@
 
   <link name="R_FOOT">
     <inertial>
-      <origin xyz="0.000000 -0.035001 0.123531" rpy="0 0 0"/>
+      <origin xyz="0.000000 0.035001 -0.123531" rpy="0 0 0"/>
       <mass value="0.467502"/>
       <inertia ixx="3.681167e-03" ixy="0.000000e+00" ixz="0.000000e+00"
                iyy="4.664771e-03" iyz="6.503062e-05" izz="1.014963e-03"/>
     </inertial>
     <visual>
-      <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+      <origin xyz="0.000000 0.035000 0.014250" rpy="-1.570796 0.000000 -3.141593"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_FOOT.dae" scale="1 1 1"/>
       </geometry>
       <material name="material"/>
     </visual>
     <collision>
-      <origin xyz="0.000000 -0.035000 -0.014250" rpy="1.570796 0.000000 3.141593"/>
+      <origin xyz="0.000000 0.035000 0.014250" rpy="-1.570796 0.000000 -3.141593"/>
       <geometry>
         <mesh filename="package://BipedAssembly_description/meshes/LegAssembly/R_FOOT_collision.stl" scale="0.01 0.01 0.01"/>
       </geometry>
@@ -285,7 +285,7 @@
   <joint name="left_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="L_HIP"/>
-    <origin xyz="0.035000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
+    <origin xyz="0.035000 0.059300 -0.062500" rpy="-1.570796 0.000000 -3.141593"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -293,7 +293,7 @@
   <joint name="right_hip_roll" type="revolute">
     <parent link="PELVIS"/>
     <child link="R_HIP"/>
-    <origin xyz="0.245000 0.059300 -0.062500" rpy="1.570796 0.000000 3.141593"/>
+    <origin xyz="0.245000 0.059300 -0.062500" rpy="-1.570796 0.000000 -3.141593"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -301,7 +301,7 @@
   <joint name="left_hip_pitch" type="revolute">
     <parent link="L_HIP"/>
     <child link="L_THIGH"/>
-    <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.030750 0.070000 -0.030750" rpy="-3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -309,51 +309,47 @@
   <joint name="right_hip_pitch" type="revolute">
     <parent link="R_HIP"/>
     <child link="R_THIGH"/>
-    <origin xyz="-0.030750 -0.070000 0.030750" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.030750 0.070000 -0.030750" rpy="-3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は -30〜150°。 -->
   <joint name="left_knee_pitch" type="revolute">
     <parent link="L_THIGH"/>
     <child link="L_SHIN"/>
-    <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.317250 -0.005600" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-0.523599" upper="2.617994" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は -30〜150°。 -->
   <joint name="right_knee_pitch" type="revolute">
     <parent link="R_THIGH"/>
     <child link="R_SHIN"/>
-    <origin xyz="0.005600 -0.317250 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.317250 -0.005600" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-0.523599" upper="2.617994" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は ±60°。 -->
   <joint name="left_ankle_pitch" type="revolute">
     <parent link="L_SHIN"/>
     <child link="L_ANKLE"/>
-    <origin xyz="-0.000100 -0.289750 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.289750 0.000100" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-1.047198" upper="1.047198" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
-  <!-- SM105BL。真下 0 rad が直立。画面の窓は ±60°。 -->
   <joint name="right_ankle_pitch" type="revolute">
     <parent link="R_SHIN"/>
     <child link="R_ANKLE"/>
-    <origin xyz="-0.000100 -0.289750 0.000000" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="0.000000 -0.289750 0.000100" rpy="0.000000 0.000000 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
-    <limit lower="-1.047198" upper="1.047198" effort="100.0" velocity="1.00"/>
+    <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
 
   <joint name="left_ankle_roll" type="revolute">
     <parent link="L_ANKLE"/>
     <child link="L_FOOT"/>
-    <origin xyz="0.025500 -0.091500 -0.032200" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.032200 -0.091500 -0.025500" rpy="3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>
@@ -361,7 +357,7 @@
   <joint name="right_ankle_roll" type="revolute">
     <parent link="R_ANKLE"/>
     <child link="R_FOOT"/>
-    <origin xyz="0.025500 -0.091500 -0.032200" rpy="0.000000 0.000000 0.000000"/>
+    <origin xyz="-0.032200 -0.091500 -0.025500" rpy="3.141593 1.570796 0.000000"/>
     <axis xyz="0.000000 0.000000 1.000000"/>
     <limit lower="-0.698132" upper="0.698132" effort="100.0" velocity="1.00"/>
   </joint>

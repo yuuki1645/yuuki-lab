@@ -33,6 +33,7 @@
 | 画面でドラッグできる人間の可動範囲 | `robotics-hub/src/features/m5-telemetry/rightLeg.ts` の `jointAngleWindow` |
 | 左かかとピッチだけ、サーボのカウントが増える向きが逆 | `core-rt/src/sms_link.cpp` の `smsDirection`。画面に届く前に、プラスをつま先上げへ揃える |
 | 左股ロール、両ひざ、左かかとロールの URDF 軸を反転 | `fusion2URDF/core/yuuki_joint_names.py` の `_SERVO_NEGATIVE_Z`。左右で上の表と同じプラスになる |
+| 書き出し URDF の `lower` / `upper` | 同じファイルの `apply_yuuki_servo_limits`。画面でドラッグできる範囲を、直立 0 rad で書く。Fusion の ±40° はここで捨てる |
 
 Fusion から書き出した URDF では、股ピッチの軸は反転しません。書き出し後の +Z が、すでに「脚を前へ出す」向きです。
 
@@ -44,7 +45,7 @@ Robot モードの保持は、RDS が 135°、SM105BL が 0° です。`main.cpp
 
 | 場所 | 中身 |
 |---|---|
-| `fusion-urdf-export/BipedAssembly_description/urdf/BipedAssembly.urdf` の `<limit>` | 書き出しの初期値。いまは全関節 ±0.698 rad（±40°） |
+| いまディスク上の `fusion-urdf-export/BipedAssembly_description/urdf/BipedAssembly.urdf` の `<limit>` | 前回の書き出しのまま全関節 ±0.698 rad（±40°）。次のエクスポートで、画面でドラッグできる範囲に置き換わる |
 | `robot_description/yuuki_biped.yaml` の `joints_deg` | 箱モデルの仮の学習範囲。股ロール ±45°、股ピッチ −45〜90°、ひざ 0〜120°、かかとピッチ ±45°、かかとロール ±30° |
 | 箱モデルのピッチ軸 +Y | 右手系なので、この URDF の正のピッチは脚を後ろへ曲げる。実機の股ピッチ（プラスで前）とは逆 |
 

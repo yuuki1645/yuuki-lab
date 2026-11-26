@@ -382,7 +382,7 @@ joints:
     child: L_FOOT
     origin_xyz_m: [-0.032200, -0.091500, -0.025500]
     origin_rpy_rad: [3.141593, 1.570796, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
+    axis: [0.0000, 0.0000, -1.0000]
     is_mount: true
     passive: false
     limits:
@@ -410,7 +410,7 @@ joints:
     child: L_HIP
     origin_xyz_m: [0.035000, 0.059300, -0.062500]
     origin_rpy_rad: [-1.570796, 0.000000, -3.141593]
-    axis: [0.0000, 0.0000, 1.0000]
+    axis: [0.0000, 0.0000, -1.0000]
     is_mount: true
     passive: false
     limits:
@@ -424,7 +424,7 @@ joints:
     child: L_SHIN
     origin_xyz_m: [0.000000, -0.317250, -0.005600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
+    axis: [0.0000, 0.0000, -1.0000]
     is_mount: false
     passive: false
     limits:
@@ -494,7 +494,7 @@ joints:
     child: R_SHIN
     origin_xyz_m: [0.000000, -0.317250, -0.005600]
     origin_rpy_rad: [0.000000, 0.000000, 0.000000]
-    axis: [0.0000, 0.0000, 1.0000]
+    axis: [0.0000, 0.0000, -1.0000]
     is_mount: false
     passive: false
     limits:

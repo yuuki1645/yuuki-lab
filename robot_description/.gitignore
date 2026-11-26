@@ -1,4 +1,7 @@
 # Isaac が URDF から書き出す USD。手で編集しない。
-# .usd_cache はカゴを地面に固定した Hub 再生用。.usd_float はカゴが自由な直立確認用。
+# .usd_cache は箱モデルを地面に固定した Hub 再生用。
+# .usd_fusion_hub は Fusion 版 URDF の Hub 再生用。
+# .usd_float はカゴが自由な直立確認用。
 .usd_cache/
+.usd_fusion_hub/
 .usd_float/

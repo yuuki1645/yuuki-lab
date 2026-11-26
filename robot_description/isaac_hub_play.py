@@ -6,10 +6,14 @@ Isaac 同梱の Python で起動する。
 
     C:\\isaacsim\\python.bat Z:\\Projects\\yuuki-lab\\robot_description\\isaac_hub_play.py
 
-先に isaac_hub_bridge.py を起動しておく。橋が無いあいだは再接続しながら、
-ロボットは直立のまま物理を進める。
+既定は Fusion から書き出した BipedAssembly.urdf である。箱モデルで
+今までどおり見るときは --box を付ける。学習タスクの URDF は変えない。
 
-カゴは地面に固定する（fix_base）。バーで関節を動かすための再生であり、
+先に isaac_hub_bridge.py を起動しておく。橋が無いあいだは再接続しながら、
+ロボットは直立のまま物理を進める。Hub のバー（135° が URDF の 0）が
+関節目標になり、今の関節角は橋を通して画面の「補正（シミュ）」へ戻る。
+
+根は地面に固定する（fix_base）。バーで関節を見るための再生であり、
 歩行学習の浮動ベースではない。
 """
 
@@ -20,6 +24,7 @@ import os
 import socket
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 # SimulationApp より前に読んでよいのは、標準ライブラリだけの hub_link。
@@ -32,29 +37,120 @@ from sole_pressure import PLATE_HALF_X_M, PLATE_HALF_Y_M, sample_from_points
 
 from model_size import SOLE_BELOW_ORIGIN_M
 
-# 直立時、原点から足裏まで。足裏下面を床（z=0）に合わせ、接触が出るようにする。
-# 高さは yaml から読む。URDF を作り直したあとは、この定数を手で合わせない。
-SPAWN_Z_M = SOLE_BELOW_ORIGIN_M
+# 箱モデルの直立。原点から足裏まで。高さは yaml から読む。
+# Fusion 版の根はカゴ底ではないので、この値は --box のときだけ使う。
+BOX_SPAWN_Z_M = SOLE_BELOW_ORIGIN_M
+# Fusion の書き出しで、base_link から足首関節までが約 0.83 m。
+# 足板と出力ホーンの厚みを足して、足裏が床の少し上に来る高さ。
+# 正確な足裏距離はまだ測っていない。根は固定なので、少しくらい浮いても関節は見える。
+FUSION_SPAWN_Z_M = 0.90
 # 位置制御。実機の PD そのものではなく、バー操作が追従するための仮のゲイン。
 JOINT_STIFFNESS = 80.0
 JOINT_DAMPING = 2.0
 
-URDF_PATH = _HERE / "yuuki_biped.urdf"
-USD_CACHE = _HERE / ".usd_cache"
+_REPO = _HERE.parent
+_FUSION_DESCRIPTION = _REPO / "fusion-urdf-export" / "BipedAssembly_description"
+# 箱モデルの .usd_cache とは分ける。同じフォルダだと yuuki_biped.usd を
+# 掴んだまま、Fusion のメッシュを読まない。
+_FUSION_USD_CACHE = _HERE / ".usd_fusion_hub"
+_BOX_USD_CACHE = _HERE / ".usd_cache"
+
+
+@dataclass(frozen=True)
+class _PlayModel:
+    """この窓が動かす URDF と、変換時に変える当たり判定。"""
+
+    label: str
+    urdf: Path
+    usd_cache: Path
+    # 変換結果のファイル名。ロボット名 + 拡張子。箱は .usd、Fusion は .usda。
+    usd_names: tuple[str, ...]
+    spawn_z_m: float
+    collision_from_visuals: bool
+    allow_self_collision: bool
+    # (画面の左右, センサを付けるリンク, 足裏平面に使うリンク)
+    feet: tuple[tuple[str, str, str], ...]
+    # package:// を解決する ROS パッケージ。箱モデルはメッシュを持たない。
+    package_name: str
+    package_path: Path | None
+
+
+def _fusion_model() -> _PlayModel:
+    """CAD の URDF。自己衝突は切る。股のホーンと骨盤が重なって跳ねるため。"""
+    return _PlayModel(
+        label="Fusion BipedAssembly",
+        urdf=_FUSION_DESCRIPTION / "urdf" / "BipedAssembly.urdf",
+        usd_cache=_FUSION_USD_CACHE,
+        usd_names=("BipedAssembly.usda", "BipedAssembly.usd"),
+        spawn_z_m=FUSION_SPAWN_Z_M,
+        collision_from_visuals=False,
+        allow_self_collision=False,
+        # 足裏の参照リンクは無い。足リンク自身を平面の原点にする。
+        feet=(("right", "R_FOOT", "R_FOOT"), ("left", "L_FOOT", "L_FOOT")),
+        package_name="BipedAssembly_description",
+        package_path=_FUSION_DESCRIPTION,
+    )
+
+
+def _box_model() -> _PlayModel:
+    """yaml から作った箱。当たり箱は離してあるので、見た目からの衝突と自己衝突を残す。"""
+    return _PlayModel(
+        label="yuuki_biped box",
+        urdf=_HERE / "yuuki_biped.urdf",
+        usd_cache=_BOX_USD_CACHE,
+        usd_names=("yuuki_biped.usd", "yuuki_biped.usda"),
+        spawn_z_m=BOX_SPAWN_Z_M,
+        collision_from_visuals=True,
+        allow_self_collision=True,
+        feet=(("right", "right_foot", "right_sole"), ("left", "left_foot", "left_sole")),
+        package_name="",
+        package_path=None,
+    )
+
+
+def _configure(argv: list[str]) -> _PlayModel:
+    """--box なら箱モデル。それ以外は Fusion 版。"""
+    if "--box" in argv:
+        return _box_model()
+    return _fusion_model()
+
+
+def _self_check() -> None:
+    """Isaac を開かずに、既定の読み込み先と当たり判定だけ確かめる。"""
+    fusion = _configure(["isaac_hub_play.py"])
+    box = _configure(["isaac_hub_play.py", "--box"])
+    if fusion.urdf.name != "BipedAssembly.urdf":
+        raise SystemExit(f"既定の URDF が Fusion 版ではありません: {fusion.urdf}")
+    if not fusion.urdf.is_file():
+        raise SystemExit(f"Fusion の URDF がありません: {fusion.urdf}")
+    if fusion.collision_from_visuals or fusion.allow_self_collision:
+        raise SystemExit("Fusion 版は自己衝突と、見た目からの衝突を切ります")
+    if fusion.usd_cache == box.usd_cache:
+        raise SystemExit("Fusion の USD キャッシュが箱モデルと同じです")
+    if box.urdf.name != "yuuki_biped.urdf" or not box.collision_from_visuals:
+        raise SystemExit("--box が箱モデルの設定になっていません")
+    if fusion.feet[0][1] != "R_FOOT" or box.feet[0][1] != "right_foot":
+        raise SystemExit("足リンク名がモデルと合っていません")
+    print("isaac_hub_play self-check: OK")
+    print(f"  fusion {fusion.urdf}")
+    print(f"  box    {box.urdf}")
 
 
 def main() -> None:
+    model = _configure(sys.argv)
+    # Kit は知らない引数で起動に失敗する。こちらのフラグは渡す前に外す。
+    sys.argv = [arg for arg in sys.argv if arg not in ("--box", "--self-check")]
     from isaacsim import SimulationApp
 
     # 先に isaac-sim.bat で GUI を開いたままにしない。このプロセスが窓を持つ。
     simulation_app = SimulationApp({"headless": False, "renderer": "RaytracedLighting"})
     try:
-        _run(simulation_app)
+        _run(simulation_app, model)
     finally:
         simulation_app.close()
 
 
-def _run(simulation_app) -> None:
+def _run(simulation_app, model: _PlayModel) -> None:
     import omni.kit.app
     import omni.timeline
     import omni.usd
@@ -69,13 +165,15 @@ def _run(simulation_app) -> None:
     from isaacsim.asset.importer.urdf.impl import URDFImporter, URDFImporterConfig
     from isaacsim.core.experimental.prims import Articulation
 
-    usd_path = _import_urdf(URDFImporter, URDFImporterConfig)
-    _build_stage(usd_path, UsdGeom, UsdLux, UsdPhysics, Gf)
+    print(f"[isaac_hub_play] モデル {model.label}")
+    usd_path = _import_urdf(URDFImporter, URDFImporterConfig, model)
+    _build_stage(usd_path, UsdGeom, UsdLux, UsdPhysics, Gf, model)
     for _ in range(10):
         simulation_app.update()
-    # 再生前に切る。目印の球と、板より下にはみ出す足首サーボが床に当たると、
-    # アルミ板の接触にならない。圧力は足板の接触だけを四隅へ分配する。
-    _disable_non_plate_collisions(UsdPhysics)
+    # 箱モデルは見た目から衝突を作るので、足裏の目印球が床に当たる。
+    # Fusion 版はその球が無く、衝突は URDF のメッシュのまま使う。
+    if model.collision_from_visuals:
+        _disable_non_plate_collisions(UsdPhysics)
 
     timeline = omni.timeline.get_timeline_interface()
     timeline.play()
@@ -100,7 +198,7 @@ def _run(simulation_app) -> None:
         raise SystemExit("関節 DOF が初期化されませんでした")
     dof_index = _dof_index(names)
 
-    soles = _create_sole_sensors()
+    soles = _create_sole_sensors(model)
 
     link = _TcpClient()
     # PWM OFF のあいだは、その関節の現在角を目標にしてその場に留める。
@@ -142,32 +240,49 @@ def _run(simulation_app) -> None:
             )
 
 
-def _import_urdf(importer_cls, config_cls) -> str:
-    """URDF が USD キャッシュより新しければ変換し、USD のパスを返す。"""
-    if not URDF_PATH.is_file():
-        raise SystemExit(f"URDF がありません: {URDF_PATH}")
-    USD_CACHE.mkdir(parents=True, exist_ok=True)
-    # 変換結果はキャッシュ直下とは限らない（yuuki_biped/yuuki_biped.usd など）。
-    cached = sorted(USD_CACHE.rglob("yuuki_biped.usd"))
-    urdf_mtime = URDF_PATH.stat().st_mtime
-    if cached and cached[0].stat().st_mtime >= urdf_mtime:
-        print(f"[isaac_hub_play] USD キャッシュを使います: {cached[0]}")
-        return str(cached[0])
+def _import_urdf(importer_cls, config_cls, model: _PlayModel) -> str:
+    """URDF が USD キャッシュより新しければ変換し、USD のパスを返す。
+
+    キャッシュはモデルごとのファイル名だけを見る。箱の yuuki_biped.usd が
+    残っていても、Fusion の変換結果にはしない。
+    """
+    if not model.urdf.is_file():
+        raise SystemExit(f"URDF がありません: {model.urdf}")
+    model.usd_cache.mkdir(parents=True, exist_ok=True)
+    # 変換結果はキャッシュ直下とは限らない（BipedAssembly/BipedAssembly.usda など）。
+    cached = [
+        path
+        for name in model.usd_names
+        for path in model.usd_cache.rglob(name)
+    ]
+    urdf_mtime = model.urdf.stat().st_mtime
+    fresh = [path for path in cached if path.stat().st_mtime >= urdf_mtime]
+    if fresh:
+        chosen = max(fresh, key=lambda path: path.stat().st_mtime)
+        print(f"[isaac_hub_play] USD キャッシュを使います: {chosen}")
+        return str(chosen)
 
     config = config_cls()
-    config.urdf_path = str(URDF_PATH)
-    config.usd_path = str(USD_CACHE)
-    # バーで関節を見るあいだ、カゴを世界に固定して転倒させない。
+    config.urdf_path = str(model.urdf)
+    config.usd_path = str(model.usd_cache)
+    # バーで関節を見るあいだ、根を世界に固定して転倒させない。
     config.fix_base = True
     config.merge_fixed_joints = False
     config.joint_target_type = "position"
     config.joint_drive_type = "force"
     config.override_joint_stiffness = JOINT_STIFFNESS
     config.override_joint_damping = JOINT_DAMPING
-    config.collision_from_visuals = True
-    # 関節の隣以外は当たる。箱の食い込みは URDF 側で空けてある。
-    config.allow_self_collision = True
-    print(f"[isaac_hub_play] URDF を変換します: {URDF_PATH}")
+    # Fusion は URDF の衝突メッシュを使う。見た目の DAE から作ると、
+    # 重なった股のホーンまで床や隣のリンクに当たる。
+    config.collision_from_visuals = model.collision_from_visuals
+    config.allow_self_collision = model.allow_self_collision
+    if model.package_path is not None:
+        # package://BipedAssembly_description/meshes/... を、
+        # package.xml があるディレクトリへ解決する。
+        config.ros_package_paths = [
+            {"name": model.package_name, "path": str(model.package_path)}
+        ]
+    print(f"[isaac_hub_play] URDF を変換します: {model.urdf}")
     output = importer_cls(config).import_urdf()
     if not output:
         raise SystemExit("URDF の変換に失敗しました")
@@ -175,7 +290,7 @@ def _import_urdf(importer_cls, config_cls) -> str:
     return str(output)
 
 
-def _build_stage(usd_path: str, UsdGeom, UsdLux, UsdPhysics, Gf) -> None:
+def _build_stage(usd_path: str, UsdGeom, UsdLux, UsdPhysics, Gf, model: _PlayModel) -> None:
     """床とライトを置き、ロボットを足が床の近くに来る高さで参照する。"""
     import omni.usd
 
@@ -199,9 +314,9 @@ def _build_stage(usd_path: str, UsdGeom, UsdLux, UsdPhysics, Gf) -> None:
     sun.CreateIntensityAttr(4000.0)
     sun.CreateAngleAttr(1.0)
 
-    robot = stage.DefinePrim("/World/yuuki_biped", "Xform")
+    robot = stage.DefinePrim("/World/robot", "Xform")
     robot.GetReferences().AddReference(usd_path)
-    UsdGeom.Xformable(robot).AddTranslateOp().Set(Gf.Vec3d(0.0, 0.0, SPAWN_Z_M))
+    UsdGeom.Xformable(robot).AddTranslateOp().Set(Gf.Vec3d(0.0, 0.0, model.spawn_z_m))
 
 
 def _find_articulation_root() -> str:
@@ -284,16 +399,18 @@ def _disable_non_plate_collisions(UsdPhysics) -> None:
         print(f"[isaac_hub_play] 足板以外の衝突を切りました: {path}")
 
 
-def _create_sole_sensors() -> dict[str, dict | None]:
-    """左右の足リンクに Contact Sensor を付ける。失敗した足は None。"""
+def _create_sole_sensors(model: _PlayModel) -> dict[str, dict | None]:
+    """左右の足リンクに Contact Sensor を付ける。失敗した足は None。
+
+    箱モデルは right_sole / left_sole を足裏平面にする。Fusion 版には
+    そのリンクが無いので、R_FOOT / L_FOOT 自身を平面にする。関節角の
+    返信はこのセンサが無くても続く。
+    """
     from isaacsim.sensors.experimental.physics import Contact, ContactSensor
 
     by_name = _prims_by_name()
     sensors: dict[str, dict | None] = {}
-    for side, foot_name, sole_name in (
-        ("right", "right_foot", "right_sole"),
-        ("left", "left_foot", "left_sole"),
-    ):
+    for side, foot_name, sole_name in model.feet:
         foot_path = by_name.get(foot_name)
         sole_path = by_name.get(sole_name)
         if foot_path is None or sole_path is None:
@@ -478,6 +595,9 @@ class _TcpClient:
 
 
 if __name__ == "__main__":
+    if "--self-check" in sys.argv:
+        _self_check()
+        raise SystemExit(0)
     # ISAAC_PATH は isaac-lab と同じ環境変数。未設定でも python.bat 経由なら不要。
     if not os.environ.get("ISAAC_PATH"):
         os.environ["ISAAC_PATH"] = r"C:\isaacsim"

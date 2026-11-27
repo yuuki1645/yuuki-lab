@@ -1,0 +1,18 @@
+---
+description: 等身大二足の現行方針。詳細は docs/now.md
+alwaysApply: true
+---
+
+# 現行の二足
+
+作業の前に `docs/now.md` を読む。数値の表はルールへ写さず、そのページが指す文書とコードを正本にする。
+
+- 学習は `YuukiLab-BipedWalk-v0`、再生は `YuukiLab-BipedWalk-Play-v0`。機体は `FUSION_LEGS_CFG` の `BipedAssembly.urdf`。
+- 関節の意味を変えるときは、`docs/joint_angles.md` と、その表が指すコードを同じ変更で直す。
+- `fusion-urdf-export/` の URDF とメッシュは手で直さない。直す場所は `fusion2URDF/core/yuuki_joint_names.py`。
+- `yuuki_biped.urdf` は踵の手動操作だけ。MuJoCo の exp は以前の実験で、歩行学習の仕様にしない。
+
+```text
+手で BipedAssembly.urdf の limit を書き換える
+→ やめる。yuuki_joint_names.py を直し、Fusion から書き出す。
+```

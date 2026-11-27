@@ -22,13 +22,15 @@ https://github.com/yuuki1645/robotics-notes-public/issues/1
 | シミュレータ | Isaac Sim / [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) |
 | タスク | `YuukiLab-BipedWalk-v0`（再生: `YuukiLab-BipedWalk-Play-v0`） |
 | アルゴリズム | PPO（RSL-RL） |
-| ロボット | `yuuki_legs`（形状は `robot_description/yuuki_biped.urdf`） |
-| チェックポイント | `isaac-lab/logs/rsl_rl/yuuki_biped_walk/` |
+| ロボット | `FUSION_LEGS_CFG`（形状は `fusion-urdf-export/BipedAssembly_description/urdf/BipedAssembly.urdf`） |
+| チェックポイント | 起動したディレクトリの `logs/rsl_rl/yuuki_biped_walk/`（これまでの Fusion 学習はリポジトリ直下） |
+| いまの方針 | [docs/now.md](docs/now.md) |
 
 ### 導線（読む順・実行の入口）
 
 | 目的 | リンク |
 |------|--------|
+| **いまの方針** | [docs/now.md](docs/now.md) |
 | **いま触るパッケージ** | [isaac-lab/](isaac-lab/) |
 | **最短手順（README 入口）** | [isaac-lab/README.md](isaac-lab/README.md) |
 | **タスク仕様** | [biped_walk_env_cfg.py](isaac-lab/source/yuuki_isaac_lab/yuuki_isaac_lab/tasks/manager_based/biped_walk/biped_walk_env_cfg.py) |

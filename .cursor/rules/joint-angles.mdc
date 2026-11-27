@@ -1,0 +1,27 @@
+---
+description: 関節の中立とプラスの向き。正本は docs/joint_angles.md
+globs:
+  - docs/joint_angles.md
+  - robot_description/hub_link.py
+  - robotics-hub/**/rightLeg.ts
+  - core-rt/src/main.cpp
+  - core-rt/src/sms_link.cpp
+  - "**/BipedAssembly.urdf"
+  - "**/yuuki_joint_names.py"
+alwaysApply: false
+---
+
+# 関節角
+
+正本は `docs/joint_angles.md`。画面のプラスは URDF のプラス。左右でプラスの意味は同じ。
+
+直立の 0 rad を画面の度にするとき、RDS51150 は 135° を足し、SM105BL（ひざ、かかとピッチ）は度にするだけ。表示側で軸をひっくり返さない。左股ロール、両ひざ、左かかとロールの軸反転は、書き出し側の `_SERVO_NEGATIVE_Z` で済んでいる。
+
+プラスは、股ロールが外側、股ピッチが前、ひざが後ろ、かかとピッチがつま先を上げる、かかとロールが内側が下がる。
+
+```text
+右股ロールが 0 rad
+→ 画面は 135°。0° や -135° にはしない。
+右ひざが 0 rad
+→ 画面は 0°。135° は足さない。
+```

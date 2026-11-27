@@ -1,12 +1,14 @@
 # ドキュメント一覧
 
 実機の制御、強化学習、シミュレーション設計の参照資料です。  
+**いまの方針は [now.md](now.md)** です。  
 **RL 本線は [Isaac Lab](../isaac-lab/README.md)** の `YuukiLab-BipedWalk-v0` です。  
 **機体の制御の基本は [robot_control.md](robot_control.md)** です。  
 **関節角の正本は [joint_angles.md](joint_angles.md)** です。
 
 | ファイル | 内容 |
 |---------|------|
+| [now.md](now.md) | **いまの方針**（Fusion の歩行学習、箱モデルと MuJoCo の位置づけ、Hub のポート） |
 | [joint_angles.md](joint_angles.md) | **関節角の正本**（中立、プラスの向き、実機の窓と仮の範囲） |
 | [robot_control.md](robot_control.md) | **実機の制御**（CoreS3、両脚の ATOM S3R、CAN、サブ PC、タブレット） |
 | [heel_teleop.md](heel_teleop.md) | **ゲームパッドで踵を動かす**（Isaac の起動、Hub への出し方、実機の起動と操作） |

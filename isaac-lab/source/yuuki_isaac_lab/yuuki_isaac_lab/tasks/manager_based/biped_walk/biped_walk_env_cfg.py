@@ -67,9 +67,11 @@ class BipedWalkSceneCfg(InteractiveSceneCfg):
 
 @configclass
 class CommandsCfg:
-    """前後は 0〜0.2 m/s。約2割はちょうど 0。ヨーと横移動は 0。
+    """前後は 0〜0.2 m/s。半分はちょうど 0。ヨーと横移動は 0。
 
     4〜6 秒ごとに引き直す。10 秒のエピソードの途中で、歩く指令と止まる指令が入れ替わる。
+    スティック中央の直立を、歩く指令と同じくらい練習する。0.2 のときは、指令 0 でも
+    約 2 秒で後ろへ倒れて初期姿勢に戻っていた。
     スティックの -1〜1 は学習には入れない。実機では 0.2 m/s × スティックを、この速度として渡す。
     距離の記録だけ SlowWalkVelocityCommand に替える。
     """
@@ -77,7 +79,7 @@ class CommandsCfg:
     base_velocity = isaac_mdp.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(4.0, 6.0),
-        rel_standing_envs=0.2,
+        rel_standing_envs=0.5,
         heading_command=False,
         debug_vis=False,
         class_type="yuuki_isaac_lab.tasks.manager_based.biped_walk.mdp.forward_command:SlowWalkVelocityCommand",

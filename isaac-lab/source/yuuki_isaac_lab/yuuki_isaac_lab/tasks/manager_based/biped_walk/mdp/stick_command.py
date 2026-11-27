@@ -52,7 +52,7 @@ class StickWalkCommand(SlowWalkVelocityCommand):
         self._apply_stick()
 
     def _update_command(self):
-        # 親は約2割を 0 にする。再生では毎ステップ、スティックを優先する。
+        # 親は止まれに抽選された環境の速度を 0 にする。再生では毎ステップ、スティックを優先する。
         super()._update_command()
         self._apply_stick()
 

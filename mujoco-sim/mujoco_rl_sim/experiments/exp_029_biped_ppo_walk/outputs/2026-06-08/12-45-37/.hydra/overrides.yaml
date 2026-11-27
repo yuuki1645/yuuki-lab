@@ -1,4 +1,0 @@
-- training.num_updates=1
-- wandb=disabled
-- training.post_train_eval=false
-- training.seed=0

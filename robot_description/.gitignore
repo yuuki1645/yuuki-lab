@@ -5,3 +5,8 @@
 .usd_cache/
 .usd_fusion_hub/
 .usd_float/
+
+# URDF USD Converter の書き出し。doc にローカルの絶対パスが入る。
+# 正本は yuuki_biped.yaml と yuuki_biped.urdf。
+yuuki_biped/
+yuuki_biped_*/

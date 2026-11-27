@@ -53,19 +53,27 @@ MJMODEL.TXT
 *.npy
 
 # Isaac Lab 学習ログ（TensorBoard / WandB 併用時のローカルログ）
+# 学習スクリプトはリポジトリ直下の logs/ と wandb/ にも書く。
+# isaac-lab/ 配下だけの除外では、そちらが追跡されてしまう。
+/logs/
+/wandb/
 isaac-lab/logs/
 isaac-lab/wandb/
 isaac-lab/outputs/
 isaac-lab/**/*.pt
 isaac-lab/**/*.pth
+# 書き出した方策と TensorBoard のイベント。logs/ の外に出ても追わない。
+*.onnx
+events.out.tfevents*
 
 # robotics-hub: ローカルログルート上書き（必要時のみ各環境で作成）
 robotics-hub/server/log_root.default.txt
 
 # 学習チェックポイント（torch.save）
+# archive/ へ移してもチェックポイントは追わない。
 mujoco-sim/checkpoints/
 mujoco-sim/mujoco_rl_sim/runs/
-mujoco-sim/mujoco_rl_sim/experiments/exp_002_2joint_a2c/checkpoints/
+mujoco-sim/mujoco_rl_sim/experiments/**/checkpoints/
 
 # Hydra 実行ログ（再現に必要な設定は runs/.../.hydra/ に保存）
 **/outputs/

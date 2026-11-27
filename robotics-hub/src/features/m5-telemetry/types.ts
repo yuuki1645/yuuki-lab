@@ -136,10 +136,40 @@ export type M5Frame = {
    */
   stick?: M5Stick | null;
   /**
+   * 歩行再生で、方策が見ている関節以外の観測。
+   * 関節の度は cmd と corr。ここには重力、角速度、位相、生の出力だけが入る。
+   */
+  policy?: M5PolicyObs | null;
+  /**
    * Isaac の出し元。heel は手動の踵操作、walk は歩行再生。
    * 実機と、バーで関節を動かす再生には無い。
    */
   drive?: "heel" | "walk" | null;
+};
+
+/**
+ * 歩行再生の policy 観測。体座標は前が +x、左が +y、上が +z。
+ * 関節角はこの中に無い。画面の度はフレームの cmd（目標）と corr（今の角）。
+ */
+export type M5PolicyObs = {
+  /** 体から見た重力。直立は z が約 −1。 */
+  gravity: number[];
+  /** 体座標の角速度 [rad/s]。軸は重力と同じ。 */
+  ang_vel: number[];
+  phase_sin: number;
+  phase_cos: number;
+  /** 1 ストライドの秒。左右 1 歩ずつ。 */
+  period_s: number;
+  /** 方策が見ている前進 [m/s] とヨー [rad/s]。 */
+  vx: number;
+  yaw: number;
+  /**
+   * 生の出力 1 が、直立からこのラジアンだけ目標を動かす。
+   * 画面の度は、この値ではなく cmd を見る。
+   */
+  action_scale: number;
+  /** 画面の関節順（右 5、左 5）。ネットワークの生出力。 */
+  last_action: Array<number | null>;
 };
 
 /** 歩行再生で、指の位置と方策への速度を分ける */

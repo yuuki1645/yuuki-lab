@@ -10,6 +10,9 @@ Isaac とは 127.0.0.1:8796 の TCP で JSON を 1 行ずつやり取りする�
 歩行再生（YuukiLab-BipedWalk-Play）は、関節の実測に加えて方策の目標角
 （cmd_rad）と左スティック（stick）を送る。このとき画面の「指令」は
 方策の目標角になる。橋が返す目標は歩行側では関節に書かない。
+歩行再生はさらに policy（重力、角速度、位相、直前の生出力）を付ける。
+関節のラジアンは、ここだけで画面の度にする。RDS の 0 rad は 135°、
+SM105BL の 0 rad は 0°。プラスの向きは変えない。
 手動の踵操作は cmd_rad と ``drive: "heel"`` を送る。スティックは付けない。
 画面の「補正」はどちらも今の関節角で、Isaac 接続中は「補正（シミュ）」と出る。
 バーで関節を動かす isaac_hub_play は、今までどおり cmd_rad も stick も付けない。
@@ -102,6 +105,51 @@ def _hello(drive: str | None, has_stick: bool) -> str:
     )
 
 
+def _as_vec(value: Any, n: int, allow_none: bool = False) -> list[float | None] | None:
+    """長さが決まった数値の列。壊れた要素が1つでもあれば、列ごと捨てる。"""
+    if not isinstance(value, list) or len(value) != n:
+        return None
+    parsed: list[float | None] = []
+    for item in value:
+        if item is None and allow_none:
+            parsed.append(None)
+            continue
+        try:
+            parsed.append(float(item))
+        except (TypeError, ValueError):
+            return None
+    return parsed
+
+
+def _as_policy(value: Any) -> dict | None:
+    """方策が見ている量。関節の度にはしない。度は cmd と corr が持つ。
+
+    last_action は生の出力で、画面の関節順。目標角そのものではない。
+    """
+    if not isinstance(value, dict):
+        return None
+    gravity = _as_vec(value.get("gravity"), 3)
+    ang_vel = _as_vec(value.get("ang_vel"), 3)
+    last_action = _as_vec(value.get("last_action"), JOINT_COUNT, allow_none=True)
+    if gravity is None or ang_vel is None or last_action is None:
+        return None
+    try:
+        policy = {
+            "gravity": gravity,
+            "ang_vel": ang_vel,
+            "phase_sin": float(value["phase_sin"]),
+            "phase_cos": float(value["phase_cos"]),
+            "period_s": float(value.get("period_s") or 2.0),
+            "vx": float(value["vx"]),
+            "yaw": float(value["yaw"]),
+            "action_scale": float(value.get("action_scale") or 0.25),
+            "last_action": last_action,
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
+    return policy
+
+
 def _as_stick(value: Any) -> dict | None:
     """左スティック。x は右が正、y は奥が正。vx は方策へ渡した前進 [m/s]。"""
     if not isinstance(value, dict):
@@ -144,6 +192,8 @@ class Bridge:
         # policy_cmd_rad があると、画面の「指令」はスライダーではなく方策の目標角になる。
         self.policy_cmd_rad: list[float | None] | None = None
         self.stick: dict | None = None
+        # 歩行再生だけ。重力・角速度・位相・直前の生出力。バー操作では None。
+        self.policy: dict | None = None
         # "heel" は手動の踵操作、"walk" は歩行再生。バー操作の再生は None。
         self.drive: str | None = None
         self.sim_time = 0.0
@@ -178,6 +228,8 @@ class Bridge:
             # 手動の踵操作は drive=heel。スティックは歩行用なので付けない。
             self.policy_cmd_rad = _as_cmd_rad(msg.get("cmd_rad"))
             self.stick = _as_stick(msg.get("stick"))
+            # キーが無い行（バー操作、手動の踵）では、前の歩行の観測を残さない。
+            self.policy = _as_policy(msg.get("policy")) if "policy" in msg else None
             self.drive = _as_drive(msg.get("drive"), self.stick)
             self.isaac_connected = True
             self.seq += 1
@@ -231,6 +283,7 @@ class Bridge:
                 self.foot_left = None
                 self.policy_cmd_rad = None
                 self.stick = None
+                self.policy = None
                 self.drive = None
             status = self._status_locked()
         self._emit(EVT_STATUS, status)
@@ -332,6 +385,9 @@ class Bridge:
         # 歩行再生だけ。実機とバー操作の再生ではキー自体を出さない。
         if self.stick is not None:
             frame["stick"] = self.stick
+        # 重力などはラジアン変換しない。関節の度は cmd と corr に既に入っている。
+        if self.policy is not None:
+            frame["policy"] = self.policy
         # 手動操作と歩行再生を、画面が取り違えないための印。
         if self.drive is not None:
             frame["drive"] = self.drive

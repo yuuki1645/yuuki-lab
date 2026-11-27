@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { CopAnklePanel } from "./CopAnklePanel";
 import { JointTripleBar } from "./JointTripleBar";
 import { RightFootSole } from "./RightFootSole";
+import { PolicyObservePanel } from "./PolicyObservePanel";
 import { StickCommandPad } from "./StickCommandPad";
 import {
   LEG_BAR_DEFAULT,
@@ -415,6 +416,8 @@ export function RightLegTab({
       {sweepOpen ? (
         <CycleSweep history={history} clockSec={sweepClockSec} live={sweepLive} corrLabel={corrLabel} />
       ) : null}
+
+      {frame?.policy ? <PolicyObservePanel frame={frame} /> : null}
 
       <div className="m5-leg__layout">
         {/* 左: 映像の下に足圧。中央バー／右グラフは従来幅をほぼ維持 */}

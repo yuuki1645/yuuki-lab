@@ -1769,3 +1769,231 @@
   height: 100%;
   background: #7ec8ff;
 }
+
+/* 歩行再生だけ。方策の観測。関節の度はバーと同じ変換済みの値を出す。 */
+.m5-pol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  border: 1px solid rgba(213, 222, 234, 0.16);
+  border-radius: 14px;
+  background: #121920;
+}
+
+.m5-pol__head h2,
+.m5-pol__card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.m5-pol__head p,
+.m5-pol__note {
+  margin: 0.2rem 0 0;
+  color: #9aabbb;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.m5-pol__grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 0.9fr) minmax(220px, 0.9fr) minmax(280px, 1.4fr);
+  gap: 0.55rem;
+}
+
+.m5-pol__card {
+  min-width: 0;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-radius: 12px;
+  background: #0e141b;
+  border: 1px solid rgba(213, 222, 234, 0.1);
+}
+
+.m5-pol__sub {
+  margin-top: 0.65rem !important;
+}
+
+.m5-pol__split {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.m5-pol__dial {
+  width: 132px;
+  height: 132px;
+  flex: 0 0 auto;
+}
+
+.m5-pol__well {
+  fill: #0c1218;
+  stroke: rgba(213, 222, 234, 0.35);
+  stroke-width: 2;
+}
+
+.m5-pol__axis {
+  stroke: rgba(213, 222, 234, 0.18);
+  stroke-width: 1;
+}
+
+.m5-pol__cap {
+  fill: #9aabbb;
+  font-size: 11px;
+}
+
+.m5-pol__dot {
+  fill: #7ec8ff;
+  stroke: #061018;
+  stroke-width: 1.5;
+}
+
+.m5-pol__dot--phase {
+  fill: #c9a6ff;
+}
+
+.m5-pol__nums {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.m5-pol__nums--row {
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0.35rem;
+}
+
+.m5-pol__nums dt {
+  color: #9aabbb;
+  font-size: 0.72rem;
+}
+
+.m5-pol__nums dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  color: #e8eef4;
+}
+
+.m5-pol__nums dd span {
+  font-size: 0.75rem;
+  color: #9aabbb;
+}
+
+.m5-pol__rates {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.m5-pol__rates li {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr 3.2rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.m5-pol__rate-name,
+.m5-pol__rate-value {
+  font-size: 0.75rem;
+  color: #d6deea;
+  font-variant-numeric: tabular-nums;
+}
+
+.m5-pol__rate-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #0c1218;
+  border: 1px solid rgba(213, 222, 234, 0.2);
+  overflow: hidden;
+}
+
+.m5-pol__rate-zero {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(213, 222, 234, 0.45);
+}
+
+.m5-pol__rate-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #7ec8ff;
+}
+
+.m5-pol__table {
+  width: 100%;
+  margin-top: 0.4rem;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.m5-pol__table th,
+.m5-pol__table td {
+  padding: 0.28rem 0.3rem;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid rgba(213, 222, 234, 0.1);
+}
+
+.m5-pol__table thead th {
+  color: #9aabbb;
+  font-weight: 500;
+  border-top: 0;
+}
+
+.m5-pol__table tbody th {
+  color: #d6deea;
+  font-weight: 600;
+}
+
+.m5-pol__table tbody th span {
+  display: block;
+  margin-top: 0.1rem;
+  color: #9aabbb;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.m5-pol__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.m5-pol__cell strong {
+  color: #f7c948;
+  font-size: 0.95rem;
+}
+
+.m5-pol__cell--upright strong {
+  color: #3ee07f;
+}
+
+.m5-pol__cell-sub {
+  color: #9aabbb;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1180px) {
+  .m5-pol__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .m5-pol__card--targets {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .m5-pol__grid {
+    grid-template-columns: 1fr;
+  }
+}

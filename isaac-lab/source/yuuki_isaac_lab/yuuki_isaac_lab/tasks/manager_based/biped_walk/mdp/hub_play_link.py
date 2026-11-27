@@ -7,8 +7,14 @@
 画面の関節順は右脚5、左脚5（``hub_link.JOINTS`` と同じ）。
 方策の関節順（左右交互）のまま送ると、欄がずれる。
 
+角度はラジアンのまま送る。直立は 0 rad。画面の 135° と 0° への変換は橋が行う。
+プラスの向きは URDF のプラスのまま（docs/joint_angles.md）。ここでは軸を反転しない。
+
 送る「指令」は方策が出した目標角。画面のバーが返してくる目標は読まない。
 歩行中にバーで関節を上書きしないため。
+
+``policy`` は、方策が見ている残りの量。重力、角速度、位相、速度指令、直前の生出力。
+関節角と足裏は、今までどおり rad と foot で送る。
 """
 
 from __future__ import annotations
@@ -18,9 +24,12 @@ import socket
 import time
 from typing import TYPE_CHECKING
 
+import isaaclab.envs.mdp as isaac_mdp
 from isaaclab.managers import SceneEntityCfg
 
 from .feet import DF9_MAX_KG, foot_corner_kg
+from .observations import command_forward_and_yaw
+from .phase import PERIOD_S, phase_sincos
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -65,7 +74,7 @@ class HubPlayLink:
         self._sole_cfg: SceneEntityCfg | None = None
 
     def publish(self, env: ManagerBasedRLEnv, stick: dict) -> None:
-        """今の関節・足裏・スティックを1行送る。失敗しても再生は続ける。"""
+        """今の関節・足裏・スティックと、方策の観測を1行送る。失敗しても再生は続ける。"""
         try:
             if env.num_envs != 1:
                 return
@@ -142,14 +151,14 @@ class HubPlayLink:
                 pass
 
     def _payload(self, env: ManagerBasedRLEnv, stick: dict) -> dict:
-        """橋が待つ joints 行。rad と cmd_rad は画面の関節順。"""
+        """橋が待つ joints 行。rad と cmd_rad は画面の関節順で、単位はラジアン。"""
         self._seq += 1
         measured, commanded = _joint_radians(env)
         elapsed = 0.0
         length = getattr(env, "episode_length_buf", None)
         if length is not None:
             elapsed = float(length[0]) * float(env.step_dt)
-        return {
+        payload = {
             "op": "joints",
             "rad": measured,
             "cmd_rad": commanded,
@@ -158,6 +167,11 @@ class HubPlayLink:
             "foot_left": _foot_sample(self._corners(env, side="left"), self._seq),
             "stick": stick,
         }
+        # 観測が読めないステップではキー自体を付けない。画面は前回の値を残さない。
+        policy = _policy_obs(env)
+        if policy is not None:
+            payload["policy"] = policy
+        return payload
 
     def _corners(self, env: ManagerBasedRLEnv, side: str) -> list[float] | None:
         """方策と同じ四隅 kg。センサがまだ無いステップは None。"""
@@ -207,6 +221,56 @@ def _joint_radians(env: ManagerBasedRLEnv) -> tuple[list[float], list[float | No
         # 行動がまだ無い最初のステップでは、指令欄だけ空にする。
         pass
     return measured, commanded
+
+
+def _policy_obs(env: ManagerBasedRLEnv) -> dict | None:
+    """方策の policy 観測のうち、関節角と足裏以外。
+
+    重力・角速度・位相・指令は、学習と同じ関数の戻り値をそのまま載せる。
+    last_action はネットワークの生出力で、目標角ではない。画面の関節順に並べ替える。
+    読めない最初のステップは None。その行には policy を付けない。
+    """
+    try:
+        gravity = _row3(isaac_mdp.projected_gravity(env))
+        ang_vel = _row3(isaac_mdp.base_ang_vel(env))
+        phase = phase_sincos(env)[0].detach().cpu().tolist()
+        command = command_forward_and_yaw(env, "base_velocity")[0].detach().cpu().tolist()
+        term = env.action_manager.get_term("joint_pos")
+        raw_row = term.raw_actions[0].detach().cpu().tolist()
+        raw_by_name = {name: float(raw_row[i]) for i, name in enumerate(term._joint_names)}
+        last_action = [raw_by_name.get(name) for name in _HUB_JOINTS]
+    except Exception:
+        return None
+    return {
+        # 体座標。前が +x、左が +y、上が +z。直立の z は約 -1。
+        "gravity": gravity,
+        "ang_vel": ang_vel,
+        "phase_sin": float(phase[0]),
+        "phase_cos": float(phase[1]),
+        "period_s": float(PERIOD_S),
+        "vx": float(command[0]),
+        "yaw": float(command[1]),
+        # 出力 1 が、直立からこのラジアンだけ目標を動かす。画面の度には橋が直す。
+        "action_scale": _action_scale(term),
+        "last_action": last_action,
+    }
+
+
+def _row3(tensor) -> list[float]:
+    """先頭の環境の 3 成分。方策が見ている並びのまま。"""
+    row = tensor[0].detach().cpu().tolist()
+    return [float(row[0]), float(row[1]), float(row[2])]
+
+
+def _action_scale(term) -> float:
+    """関節目標の倍率。学習の JointPositionActionCfg.scale と同じ 0.25。"""
+    scale = getattr(term, "_scale", 0.25)
+    if hasattr(scale, "detach"):
+        flat = scale.detach().flatten()
+        if int(flat.numel()) == 0:
+            return 0.25
+        return float(flat[0].cpu())
+    return float(scale)
 
 
 def _foot_sample(kg4: list[float] | None, seq: int) -> dict:

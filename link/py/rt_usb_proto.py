@@ -309,6 +309,50 @@ def cmd_policy(enable: bool, vx_mps: float = 0.0) -> bytes:
     return encode_frame(CMD_POLICY, _CMD_POLICY.pack(1 if enable else 0, 0, vx))
 
 
+# 腰が返す reason。ファームの PolicyReason と同じ番号。
+POLICY_REASON = {
+    0: "切",
+    1: "実行",
+    2: "関節欠測",
+    3: "IMU欠測",
+    4: "足裏欠測",
+    5: "直立ではない",
+    6: "故障",
+}
+
+
+def empty_policy_status() -> dict[str, object]:
+    """まだ通知が無いときの方策状態。起動直後は切。"""
+    return {
+        "enable": False,
+        "ran": False,
+        "reason": 0,
+        "reason_text": "切",
+        "gravity": [0.0, 0.0, 0.0],
+        "gyro": [0.0, 0.0, 0.0],
+        "vx": 0.0,
+    }
+
+
+def decode_policy_status(payload: bytes) -> dict[str, object] | None:
+    """腰 → PC の方策状態。重力は体座標で、直立なら z が約 -1。"""
+    if len(payload) < _POLICY_STATUS.size:
+        return None
+    enable, ran, reason, _reserved, gx, gy, gz, wx, wy, wz, vx = _POLICY_STATUS.unpack(
+        payload[: _POLICY_STATUS.size]
+    )
+    reason_i = int(reason)
+    return {
+        "enable": bool(enable),
+        "ran": bool(ran),
+        "reason": reason_i,
+        "reason_text": POLICY_REASON.get(reason_i, str(reason_i)),
+        "gravity": [float(gx), float(gy), float(gz)],
+        "gyro": [float(wx), float(wy), float(wz)],
+        "vx": float(vx),
+    }
+
+
 def cmd_probe_root(addr: int) -> bytes:
     return encode_frame(CMD_PROBE, _CMD_PROBE.pack(0, addr & 0xFF, 0))
 

@@ -36,6 +36,8 @@ type Props = {
   frame: M5Frame | null;
   history: M5HistoryPoint[];
   send: (cmd: M5Cmd) => void;
+  /** 実機の方策が入っている。このあいだ関節バーは動かさない。 */
+  policyOn?: boolean;
   /** 再生中は記録の時刻。ライブは null で、タイムラインが壁時計で進む。 */
   sweepClockSec?: number | null;
   /** ライブなら true。再生は記録時刻に合わせ、壁時計では動かさない。 */
@@ -77,6 +79,7 @@ export function RightLegTab({
   frame,
   history,
   send,
+  policyOn = false,
   cameraPane,
   sweepClockSec = null,
   sweepLive = true,
@@ -147,6 +150,8 @@ export function RightLegTab({
   };
 
   const setCmd = (ch: number, deg: number) => {
+    // 方策が入っているあいだは、ファームが関節指令を捨てる。
+    if (policyOn) return;
     // シミュは操作ロックも PWM ゲートも掛けない。
     if (!canCmd || (source !== "isaac" && cmdLocked)) return;
     if (isSm105Channel(ch)) {
@@ -197,7 +202,7 @@ export function RightLegTab({
   };
 
   const pwmSide = (side: LegSide, on: boolean) => {
-    if (!canCmd) return;
+    if (!canCmd || policyOn) return;
     LEG_ROWS.forEach((_, row) => {
       const ch = legJoint(side, row).ch;
       // ひざ・かかとピッチは SM105BL。PWM ボタンでは動かさない。
@@ -223,7 +228,7 @@ export function RightLegTab({
   };
 
   const homeAllCmd = () => {
-    if (!canCmd) return;
+    if (!canCmd || policyOn) return;
     (["left", "right"] as const).forEach((side) => {
       LEG_ROWS.forEach((_, row) => {
         const ch = legJoint(side, row).ch;
@@ -245,7 +250,8 @@ export function RightLegTab({
   // 歩行再生は方策が、手動操作は逆運動学が関節を持つ。バーは表示だけで、ドラッグでは動かない。
   const policyOwned = frame?.stick != null;
   const heelOwned = frame?.drive === "heel";
-  const remoteOwned = policyOwned || heelOwned;
+  // 実機の方策も、再生のスティックと同じくバーを持たせる。
+  const remoteOwned = policyOwned || heelOwned || policyOn;
   // 実機の補正はエンコーダ処理後。Isaac の同じ欄は、シミュレータの関節角。
   const corrLabel = source === "isaac" ? "補正（シミュ）" : "補正";
 
@@ -256,7 +262,9 @@ export function RightLegTab({
     >
       <div className="m5-leg__toolbar">
         <p className="m5__meta">
-          {heelOwned
+          {policyOn
+            ? "方策が関節を持っています。バーは動きません。切るときは上の方策ボタンです。トルクまで切るときは全停止です。"
+            : heelOwned
             ? "手動の踵操作です。指令は逆運動学の目標角、補正（シミュ）はシミュレータの関節角です。バーはドラッグできません。電圧・電流は未計測です。"
             : policyOwned
             ? "歩行再生です。指令は方策の目標角、補正（シミュ）は今の関節角です。バーはドラッグできません。左の円が左スティック、横のバーが方策へ渡している前進です。"
@@ -271,7 +279,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn"
-          disabled={!canCmd || !anyLive}
+          disabled={!canCmd || policyOn || !anyLive}
           title="RDS51150 は 135°、SM105BL は真下 0° へ戻します。シミュの出力は切らずに追従します。"
           onClick={homeAllCmd}
         >
@@ -306,7 +314,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn m5__btn--on"
-          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("left", row))}
+          disabled={!canCmd || policyOn || !LEG_ROWS.some((_, row) => jointLive("left", row))}
           onClick={() => pwmSide("left", true)}
         >
           左脚 PWM ON
@@ -314,7 +322,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn"
-          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("left", row))}
+          disabled={!canCmd || policyOn || !LEG_ROWS.some((_, row) => jointLive("left", row))}
           onClick={() => pwmSide("left", false)}
         >
           左脚 PWM OFF
@@ -322,7 +330,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn m5__btn--on"
-          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("right", row))}
+          disabled={!canCmd || policyOn || !LEG_ROWS.some((_, row) => jointLive("right", row))}
           onClick={() => pwmSide("right", true)}
         >
           右脚 PWM ON
@@ -330,7 +338,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn"
-          disabled={!canCmd || !LEG_ROWS.some((_, row) => jointLive("right", row))}
+          disabled={!canCmd || policyOn || !LEG_ROWS.some((_, row) => jointLive("right", row))}
           onClick={() => pwmSide("right", false)}
         >
           右脚 PWM OFF
@@ -338,7 +346,7 @@ export function RightLegTab({
         <button
           type="button"
           className="m5__btn"
-          disabled={!canCmd || !anyLive}
+          disabled={!canCmd || policyOn || !anyLive}
           title="RDS51150 は 135°、受信中の SM105BL は真下 0° へ動かします。SM105BL はここでトルクが入ります。"
           onClick={homeAllCmd}
         >
@@ -515,7 +523,7 @@ export function RightLegTab({
         </div>
       </div>
 
-      <CopAnklePanel canCmd={canCmd} cop={control?.cop} send={send} />
+      <CopAnklePanel canCmd={canCmd && !policyOn} cop={control?.cop} send={send} />
     </section>
   );
 }

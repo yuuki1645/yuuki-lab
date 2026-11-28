@@ -32,6 +32,19 @@ export type M5Status = {
   fw_ver?: number;
   mode: string;
   bridge_port: number;
+  /** 実機の方策。シミュの橋には無い。 */
+  policy?: M5Policy;
+};
+
+/** 腰の USB 0x19。重力は体座標。直立なら z が約 -1。 */
+export type M5Policy = {
+  enable: boolean;
+  ran: boolean;
+  reason: number;
+  reason_text: string;
+  gravity: number[];
+  gyro: number[];
+  vx: number;
 };
 
 export type M5Control = {

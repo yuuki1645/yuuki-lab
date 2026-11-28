@@ -274,6 +274,8 @@ void policyRequest(bool enable, float vx_mps) {
         gView.ran = 0;
         gView.reason = kPolicyReasonOff;
         gView.vx_mps = 0.0f;
+        // 切ったことを画面へ 1 回出す。入っているあいだの定期送信とは別に出す。
+        gStatusReady = 1;
     }
     portEXIT_CRITICAL(&gPolicyLock);
 }

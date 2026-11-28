@@ -44,7 +44,9 @@ CoreS3 はリセット長押しでダウンロードモードに入ります。`
 python tools/export_policy_weights.py
 ```
 
-サブ PC から入れるとき。`lab_debug.py` が COM を開いているあいだは使えません。最初の前進は 0 のままにします。
+サブ PC から入れるとき。画面の実機テレメトリに「方策」ボタンがある。COM は `lab_debug.py` が握ったまま送れる。押すと前進 0 で入り、もう一度でトルクを残して直立へ戻る。全停止はトルクを切る。
+
+スクリプトで送るときだけ、`lab_debug.py` が COM を開いているあいだは使えない。
 
 ```text
 python tools/send_policy.py --port COMx --enable 1 --vx 0

@@ -448,6 +448,12 @@ class AtomWorker:
         if msg_type == proto.MSG_EVT_BTN:
             self._put("btn", None)
             return
+        if msg_type == proto.MSG_POLICY:
+            # 入っているあいだ約 5 Hz。イベント欄へは落とさず、状態だけ渡す。
+            status = proto.decode_policy_status(payload)
+            if status is not None:
+                self._put("policy", status)
+            return
         self._put("log", proto.format_rx(msg_type, payload))
 
 
@@ -467,6 +473,9 @@ class AtomSession:
         self._pending_fen: int | None = None
         self.mode = "lab"
         self.out_mask = 0
+        # 方策は USB 0x92。未通知のあいだは切。画面のボタンはこの辞書を見る。
+        self.policy: dict[str, object] = proto.empty_policy_status()
+        self._policy_note_sig: tuple[object, ...] = (False, 0)
         self.nodes: list[ScanNode] = []
         self._scan_acc: list[ScanNode] = []
         self._scan_expect = 0
@@ -606,6 +615,9 @@ class AtomSession:
                     self.send(proto.cmd_scan())
                 self.send(proto.cmd_prof_get())
             else:
+                # 切れたあとのボタンは、次の通知まで方策オフにしておく。
+                self.policy = proto.empty_policy_status()
+                self._policy_note_sig = (False, 0)
                 # ワーカー終了時の「切断」。HELLO からここまでが 1 take。
                 experiment_log.end_if_started(self.port, "USB 切断")
         elif kind == "error":
@@ -761,6 +773,13 @@ class AtomSession:
                 self.mode = str(payload[0])
                 self.out_mask = int(payload[1])
                 self.note(f"モード  {self.mode}  out={self.out_mask}")
+        elif kind == "policy":
+            if isinstance(payload, dict):
+                self.policy = payload
+                sig = (bool(payload.get("enable")), int(payload.get("reason") or 0))
+                if sig != self._policy_note_sig:
+                    self._policy_note_sig = sig
+                    self.note(f"方策  {payload.get('reason_text')}  enable={int(sig[0])}")
         elif kind == "probe":
             self.note(str(payload))
         elif kind == "log":

@@ -594,6 +594,8 @@ class LabApp(tk.Tk):
             "fw_ver": int(getattr(s, "fw_ver", 0) or 0) if s else 0,
             "mode": s.mode if s else self.mode_var.get(),
             "bridge_port": 8794,
+            # 実機の方策。未接続や未通知は切。前進指令は画面からは 0 のまま。
+            "policy": s.policy if s else proto.empty_policy_status(),
         }
 
     def _m5_control_dict(self) -> dict:
@@ -867,6 +869,9 @@ class LabApp(tk.Tk):
             s.mode if s else "",
             s.hello if s else "",
             self._ipad_clients,
+            bool(s and s.policy.get("enable")),
+            int(s.policy.get("reason") or 0) if s else -1,
+            tuple(round(float(v), 2) for v in (s.policy.get("gravity") or [])) if s else (),
         )
         if st_sig != self._m5_st_sig:
             self._m5_st_sig = st_sig
@@ -927,6 +932,7 @@ class LabApp(tk.Tk):
         if op == "hold":
             self._hold_all()
             self._m5_publish_control()
+            self._m5_publish_status()
             return
         if op == "record_start":
             self._record_start(str(msg.get("name") or ""), str(msg.get("notes") or ""))
@@ -935,6 +941,11 @@ class LabApp(tk.Tk):
             self._record_stop()
             return
         if s is None:
+            return
+        # 方策が入っているあいだ、関節の手動指令はファームが捨てる。画面からも出さない。
+        if s.policy.get("enable") and (
+            op in ("out", "joint", "joints", "random") or op.startswith("cop_")
+        ):
             return
         if self._pc_cal is not None and (
             op in ("out", "joint", "joints", "random", "mode") or str(op).startswith("cop_")
@@ -946,7 +957,28 @@ class LabApp(tk.Tk):
             if robot:
                 self._cop_stop("Robot モードへ切替")
             self.mode_var.set("robot" if robot else "lab")
+            # モード変更はファーム側で方策を切る。ボタンもすぐ手動へ戻す。
+            s.policy = proto.empty_policy_status()
+            s._policy_note_sig = (False, 0)
             s.send(proto.cmd_mode(robot))
+            self._m5_publish_status()
+        elif op == "policy":
+            enable = bool(msg.get("enable"))
+            if enable:
+                self._cop_stop("方策へ切替")
+            # 前進は 0。速度を足すのは sim_to_real の確認のあと。
+            s.send(proto.cmd_policy(enable, 0.0))
+            s.policy = {
+                **s.policy,
+                "enable": enable,
+                "ran": False if not enable else s.policy.get("ran"),
+                "vx": 0.0,
+                "reason": 0 if not enable else s.policy.get("reason"),
+                "reason_text": "切" if not enable else s.policy.get("reason_text"),
+            }
+            s._policy_note_sig = (enable, int(s.policy.get("reason") or 0))
+            s.note("方策  入  vx=0" if enable else "方策  切")
+            self._m5_publish_status()
         elif op == "scan":
             s.send(proto.cmd_scan())
         elif op == "identify":
@@ -2507,6 +2539,8 @@ class LabApp(tk.Tk):
         s = self._sess()
         if not s or not s.connected:
             return
+        if s.policy.get("enable"):
+            return
         now = time.time()
         _lo, _hi, hold_min, hold_max, _jump = self._rand_settings()
         for i in range(JOINTS):
@@ -2550,6 +2584,8 @@ class LabApp(tk.Tk):
         self._pc_cal_stop("全停止", restore=False)
         self._cop_stop("全停止", clear_hold=True)
         for s in self.sessions.values():
+            s.policy = proto.empty_policy_status()
+            s._policy_note_sig = (False, 0)
             s.send(proto.cmd_hold())
         for v in self.out_vars:
             v.set(False)

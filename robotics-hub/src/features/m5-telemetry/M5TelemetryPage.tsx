@@ -84,6 +84,8 @@ export default function M5TelemetryPage() {
   const atomOk = Boolean(status?.connected);
   // 再生中は実機へ指令を出さない。全停止だけツールバーに残す。
   const canCmd = stream.wsStatus === "connected" && atomOk && !replaying;
+  const policyOn = stream.source === "atom" && Boolean(status?.policy?.enable);
+  const manualCmd = canCmd && !policyOn;
   const calMaps = useJointCalMaps(cal, send, canCmd);
   const askMapRef = useRef(calMaps.ask);
   askMapRef.current = calMaps.ask;
@@ -207,6 +209,13 @@ export default function M5TelemetryPage() {
         </span>
         {status?.hello ? <span className="m5__meta">{status.hello}</span> : null}
         <span className="m5__meta">モード {replaying ? (frame?.mode || rec.meta?.mode || "—") : status?.mode || "—"}</span>
+        {policyOn && status?.policy ? (
+          <span className="m5__meta">
+            方策 {status.policy.reason_text} 重力 (
+            {(status.policy.gravity ?? []).map((v) => (Number.isFinite(v) ? v.toFixed(2) : "—")).join(", ")}
+            )
+          </span>
+        ) : null}
         {replaying ? <span className="m5__badge m5__badge--replay">再生表示</span> : null}
         {stream.recordStatus?.recording ? <span className="m5__badge m5__badge--rec">記録中</span> : null}
       </div>
@@ -225,6 +234,17 @@ export default function M5TelemetryPage() {
         >
           {status?.mode === "robot" ? "Robot" : "Lab"}
         </button>
+        {stream.source === "isaac" ? null : (
+          <button
+            type="button"
+            className={"m5__btn " + (policyOn ? "m5__btn--on" : "")}
+            disabled={!canCmd}
+            title="方策を入れます。前進は 0 のままです。もう一度押すと、トルクを残して直立へ戻します。"
+            onClick={() => send({ op: "policy", enable: !policyOn })}
+          >
+            方策
+          </button>
+        )}
         <button type="button" className="m5__btn" disabled={!canCmd} onClick={() => send({ op: "scan" })}>
           スキャン
         </button>
@@ -283,6 +303,7 @@ export default function M5TelemetryPage() {
           frame={frame}
           history={history}
           send={send}
+          policyOn={policyOn}
           sweepClockSec={replaying ? (frame?.t ?? null) : null}
           sweepLive={!replaying}
           cameraPane={
@@ -375,7 +396,7 @@ export default function M5TelemetryPage() {
                     <input
                       type="checkbox"
                       checked={isSm105Channel(j) ? false : Boolean(at(control?.out, j))}
-                      disabled={!canCmd || isSm105Channel(j)}
+                      disabled={!manualCmd || isSm105Channel(j)}
                       onChange={(e) => send({ op: "out", ch: j, on: e.target.checked })}
                     />
                     PWM 出力する
@@ -386,7 +407,7 @@ export default function M5TelemetryPage() {
                     min={100}
                     max={170}
                     step={0.5}
-                    disabled={!canCmd || isSm105Channel(j)}
+                    disabled={!manualCmd || isSm105Channel(j)}
                     value={at(control?.cmd, j) ?? 135}
                     onChange={(e) => {
                       if (isSm105Channel(j)) return;
@@ -397,7 +418,7 @@ export default function M5TelemetryPage() {
                     <input
                       type="checkbox"
                       checked={isSm105Channel(j) ? false : Boolean(at(control?.rand, j))}
-                      disabled={!canCmd || isSm105Channel(j)}
+                      disabled={!manualCmd || isSm105Channel(j)}
                       onChange={(e) => send({ op: "random", ch: j, on: e.target.checked })}
                     />
                     ランダム動作
@@ -591,7 +612,7 @@ export default function M5TelemetryPage() {
                 ))}
               </select>
             </label>
-            <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd} onClick={startCal}>
+            <button type="button" className="m5__btn m5__btn--warn" disabled={!canCmd || policyOn} onClick={startCal}>
               校正開始
             </button>
             <button type="button" className="m5__btn m5__btn--danger" onClick={() => send({ op: "cal_abort" })}>

@@ -36,7 +36,7 @@
 
 ## 記録は二つある
 
-HELLO（USB ver 15）から USB を抜くまで、`lab_debug.py` がセンサ・指令・イベントを自動で残す。保存先はユーザーの `storage.yaml`。形式は `core_take_v1`。実験名は無い。机上の ver 14 では始まらない。この自動記録には、方策の 38 個はまだ入っていない。
+HELLO（USB ver 15）から USB を抜くまで、`lab_debug.py` がセンサ・指令・イベントと、方策の 1 周期を自動で残す。保存先はユーザーの `storage.yaml`。形式は `core_take_v2`。実験名は無い。机上の ver 14 では始まらない。方策が見た 38 個と、頭打ち前のネットの出力は `policy/` にある。関節の並びは同じフォルダの `context.json`。
 
 画面の「記録開始」から「記録停止」までが本記録で、`atom-rt/data/recordings/<id>/` に残る。
 

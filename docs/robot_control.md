@@ -103,7 +103,7 @@ Hub      :5173
 
 ゲームパッドで左右の踵を動かす手順（シミュの Isaac 起動、画面への出し方、実機で PWM を入れる前の注意）は [heel_teleop.md](heel_teleop.md) です。実機側のスクリプトは `link/host/heel_gamepad.py` で、COM は `lab_debug.py` が握ったままです。
 
-CoreS3 の HELLO から USB を抜くまで、センサと指令とイベントを自動で残します。保存先はユーザーの `storage.yaml` です。手順は [link/README.md](../link/README.md) です。画面から明示して残す本記録は `atom-rt/data/recordings` です。
+CoreS3 の HELLO から USB を抜くまで、センサと指令とイベントと、方策の 1 周期を自動で残します。保存先はユーザーの `storage.yaml` です。take の `context.json` が、別のシステムが読む関節の並びと単位です。手順は [link/README.md](../link/README.md) です。画面から明示して残す本記録は `atom-rt/data/recordings` です。
 
 ## コードの場所
 

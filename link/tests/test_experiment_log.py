@@ -89,7 +89,16 @@ class TakeTest(unittest.TestCase):
             self.assertEqual(meta["notes"], "")
             self.assertEqual(meta["schema"], "schema.md")
             schema = (takes[0] / "schema.md").read_text(encoding="utf-8")
-            self.assertIn("core_take_v1", schema)
+            self.assertIn("core_take_v2", schema)
+            context = json.loads((takes[0] / "context.json").read_text(encoding="utf-8"))
+            self.assertEqual(context["format_id"], "core_take_v2")
+            self.assertEqual(len(context["firmware_joints"]), 10)
+            self.assertEqual(len(context["policy_joints"]), 10)
+            self.assertEqual(context["policy_joints"][0]["firmware_index"], 5)
+            self.assertEqual(context["policy"]["action_scale"], 0.25)
+            self.assertEqual(meta["context"], "context.json")
+            self.assertEqual(meta["policy_count"], 0)
+            self.assertFalse((takes[0] / "policy" / "part-000.jsonl").is_file())
             self.assertIn("股ロール", schema)
             self.assertIn("day_index", schema)
             self.assertTrue((archive / takes[0].relative_to(root) / "schema.md").is_file())
@@ -106,6 +115,33 @@ class TakeTest(unittest.TestCase):
             archived = archive / takes[0].relative_to(root) / "meta.json"
             self.assertTrue(archived.is_file())
             self.assertEqual(list(root.rglob("*.pending")), [])
+
+    def test_policy_row_keeps_raw_action_and_scaled_radians(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ssd"
+            log = logmod.ExperimentLog(self._paths(root, None), copy_async=False)
+            self.assertTrue(log.begin("COM4", "rt-usb ver=15 lab", 15).ok)
+            log.append_policy(
+                "COM4",
+                {
+                    "seq": 3,
+                    "reason": 1,
+                    "action": [1.0, None],
+                    "cmd_rad": [0.2, None],
+                    "obs": [0.0],
+                },
+            )
+            log.append_policy("COM4", {"seq": 3, "action": [9.0]})
+            log.end("COM4", "USB 切断")
+            takes = [p for p in root.glob("*/*/*/*") if p.is_dir()]
+            rows = (takes[0] / "policy" / "part-000.jsonl").read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(rows), 1)
+            row = json.loads(rows[0])
+            self.assertEqual(row["seq"], 3)
+            self.assertEqual(row["action_rad"], [0.25, None])
+            self.assertIn("t", row)
+            meta = json.loads((takes[0] / "meta.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["policy_count"], 1)
 
     def test_gamepad_row_is_not_a_joint_command(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

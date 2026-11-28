@@ -31,7 +31,7 @@ link\host\install_usb_watch.cmd
 
 ## 実験記録
 
-CoreS3 の USB ver 15 HELLO から切断まで、`lab_debug.py` がセンサー・指令・イベントを自動で残します。実験名の入力はありません。ver 14 の片脚接続では記録しません。
+CoreS3 の USB ver 15 HELLO から切断まで、`lab_debug.py` がセンサー・指令・イベントと、方策の 1 周期を自動で残します。実験名の入力はありません。ver 14 の片脚接続では記録しません。
 
 保存先はリポジトリの外です。`storage.example.yaml` を次のファイルへコピーし、パスだけ書き換えます。
 
@@ -39,4 +39,4 @@ CoreS3 の USB ver 15 HELLO から切断まで、`lab_debug.py` がセンサー�
 C:\Users\<ユーザー名>\.yuuki-lab\storage.yaml
 ```
 
-`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/連番_時分秒/` です。連番はその日の何本目かで、消しても詰めません。各 take には欄の説明 `schema.md` が入ります。正本は [schema/core_take_v1.md](schema/core_take_v1.md) です。
+`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/連番_時分秒/` です。連番はその日の何本目かで、消しても詰めません。各 take には欄の説明 `schema.md` と、別システムが読む契約 `context.json` が入ります。方策の観測とネットの出力は `policy/` です。正本は [schema/core_take_v2.md](schema/core_take_v2.md) です。それより前の take は [schema/core_take_v1.md](schema/core_take_v1.md) で、`policy/` はありません。

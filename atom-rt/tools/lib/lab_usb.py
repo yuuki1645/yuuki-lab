@@ -797,6 +797,8 @@ class AtomSession:
             if isinstance(payload, dict):
                 self.policy_trace = payload
                 self.policy_traces.append(payload)
+                # 画面の本記録とは別に、HELLO から切断までの自動記録へも残す。
+                experiment_log.append_policy(self.port, payload)
         elif kind == "probe":
             self.note(str(payload))
         elif kind == "log":

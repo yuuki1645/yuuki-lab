@@ -28,7 +28,7 @@ MuJoCo の exp_030 以前は、以前の実験である。新しい学習の仕�
 
 実機に載せる方策は、学習 `2026-11-27_14-01-29_stand_half` の `model_2200`。重みは `core-rt/src/policy_weights.hpp`。推論は腰の CoreS3 で、周期は約 33 ms。スイッチは実機テレメトリの「方策」ボタン（USB `0x92`）。起動時は切、最初の前進指令は 0。書き込みはサブ PC。
 
-方策の 1 周期は USB `0x1A`。実機とシミュの分布は Hub の「分布の比較」。手順は [sim_to_real.md](sim_to_real.md)。危険な目標は腰の周期の中で速度を抑え、範囲の外が続くと直立へ戻す。サブ PC で続けるときの判断は [sub_pc.md](sub_pc.md)。作業が終わったら消す。
+方策の 1 周期は USB `0x1A`。自動記録の take にも `policy/` として残り、関節の並びと単位は同じフォルダの `context.json` に入る。正本は [link/schema/core_take_v2.md](../link/schema/core_take_v2.md)。画面の分布比較は、記録開始の `policy_trace.jsonl`。手順は [sim_to_real.md](sim_to_real.md)。危険な目標は腰の周期の中で速度を抑え、範囲の外が続くと直立へ戻す。サブ PC で続けるときの判断は [sub_pc.md](sub_pc.md)。作業が終わったら消す。
 
 ## Hub
 

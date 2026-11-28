@@ -1,8 +1,8 @@
 """
 CoreS3（USB ver 15）の実験記録。
 
-サブ PC の lab_debug が HELLO を受けたあと、切断までセンサー・指令・イベントを
-ローカル SSD（data_root）へ書く。開いているファイルは NAS へ送らない。
+サブ PC の lab_debug が HELLO を受けたあと、切断までセンサー・指令・イベントと、
+方策の 1 周期をローカル SSD（data_root）へ書く。開いているファイルは NAS へ送らない。
 閉じた断片だけを archive_root へコピーし、失敗した分は印を残して次の起動で再送する。
 
 設定の実体はリポジトリの外:
@@ -13,6 +13,7 @@ CoreS3（USB ver 15）の実験記録。
 from __future__ import annotations
 
 import atexit
+import importlib.util
 import json
 import os
 import queue
@@ -30,8 +31,10 @@ from typing import Any, Callable
 FLUSH_SEC = 1.5
 # 閉じた断片を NAS へ出せる間隔。開いたままのファイルは対象にしない。
 ROTATE_SEC = 60.0
-FORMAT_ID = "core_take_v1"
+FORMAT_ID = "core_take_v2"
 SCHEMA_FILE = "schema.md"
+# 別システムが take フォルダだけ読んで解釈する契約。schema.md の機械向けの対。
+CONTEXT_FILE = "context.json"
 # 日付フォルダに残す、その日に発行した最後の連番。take を消しても詰めない。
 _LAST_INDEX_NAME = ".last_index"
 # 003_090312。3 桁を超えても桁は伸びる。
@@ -67,6 +70,22 @@ def default_storage_path() -> Path:
 def schema_source() -> Path:
     """欄の説明の正本。take へは schema.md としてコピーする。"""
     return Path(__file__).resolve().parent.parent / "schema" / f"{FORMAT_ID}.md"
+
+
+def _take_context():
+    """兄弟の take_context.py。このモジュールは importlib で直接読まれる。"""
+    name = "link_take_context"
+    loaded = sys.modules.get(name)
+    if loaded is not None:
+        return loaded
+    path = Path(__file__).resolve().parent / "take_context.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"記録の契約が見つかりません: {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _day_dir(root: Path, now: datetime) -> Path:
@@ -173,10 +192,15 @@ class _Take:
     events: Any
     # ゲームパッドの倒し量。関節の USB 指令とは別ファイル。パッドを使わない take では空のまま閉じる。
     gamepad: Any
+    # 方策の 1 周期。sensors の seq とは別カウンタ。USB が来なければ空のまま閉じる。
+    policy: Any
+    last_policy_seq: int | None
+    policy_samples: int
     sensor_path: Path
     command_path: Path
     event_path: Path
     gamepad_path: Path
+    policy_path: Path
 
 
 class ExperimentLog:
@@ -241,8 +265,10 @@ class ExperimentLog:
                 "port": port,
                 "fw_ver": int(fw_ver),
                 "sample_count": 0,
+                "policy_count": 0,
                 "stop_reason": "",
                 "schema": "",
+                "context": "",
                 "open_parts": [],
             }
             take = _Take(
@@ -260,18 +286,26 @@ class ExperimentLog:
                 commands=None,
                 events=None,
                 gamepad=None,
+                policy=None,
+                last_policy_seq=None,
+                policy_samples=0,
                 sensor_path=directory / "sensors" / "part-000.jsonl",
                 command_path=directory / "commands" / "part-000.jsonl",
                 event_path=directory / "events" / "part-000.log",
                 gamepad_path=directory / "gamepad" / "part-000.jsonl",
+                policy_path=directory / "policy" / "part-000.jsonl",
             )
             self._take = take
             self._open_parts_locked(take)
-            # 説明は追記しない。開いた瞬間に閉じたファイルとして置く。
+            # 説明と契約は追記しない。開いた瞬間に閉じたファイルとして置く。
             if self._install_schema(take):
                 self._enqueue(take.directory / SCHEMA_FILE, touch=True)
             else:
                 self._write_event_locked(take, "説明ファイルなし")
+            if self._install_context(take):
+                self._enqueue(take.directory / CONTEXT_FILE, touch=True)
+            else:
+                self._write_event_locked(take, "契約ファイルなし")
             self._write_event_locked(take, f"記録開始  {relative.as_posix()}")
             self._write_meta_locked(take)
             print(f"実験記録開始  {relative.as_posix()}")
@@ -291,6 +325,29 @@ class ExperimentLog:
             self._write_line(take.sensors, frame)
             take.samples += 1
             take.meta["sample_count"] = take.samples
+            self._after_write_locked(take)
+
+    def append_policy(self, port: str, row: dict[str, Any]) -> None:
+        """方策 1 周期。同じ seq は捨てる。sensors の seq とは揃えない。
+
+        action_rad は生出力に 0.25 を掛けた、頭打ち前の直立からの目標。
+        受信時刻 t は sensors と同じ PC の時計で、ここで足す。
+        """
+        with self._lock:
+            take = self._accept(port)
+            if take is None or take.policy is None:
+                return
+            seq = row.get("seq")
+            if isinstance(seq, int) and seq == take.last_policy_seq:
+                return
+            if isinstance(seq, int):
+                take.last_policy_seq = seq
+            body = dict(row)
+            body.setdefault("t", time.time())
+            body["action_rad"] = _take_context().action_rad(body.get("action"))
+            self._write_line(take.policy, body)
+            take.policy_samples += 1
+            take.meta["policy_count"] = take.policy_samples
             self._after_write_locked(take)
 
     def append_command(self, port: str, command: dict[str, Any]) -> None:
@@ -373,6 +430,17 @@ class ExperimentLog:
         take.meta["schema"] = SCHEMA_FILE
         return True
 
+    def _install_context(self, take: _Take) -> bool:
+        """別システム向けの契約を context.json へ書く。失敗してもセンサー記録は続ける。"""
+        dest = take.directory / CONTEXT_FILE
+        try:
+            text = json.dumps(_take_context().build_context(), ensure_ascii=False, indent=2) + "\n"
+            dest.write_text(text, encoding="utf-8")
+        except (OSError, TypeError, ValueError):
+            return False
+        take.meta["context"] = CONTEXT_FILE
+        return True
+
     def _accept(self, port: str) -> _Take | None:
         take = self._take
         if take is None or take.port != port:
@@ -426,13 +494,21 @@ class ExperimentLog:
         take.command_path = take.directory / "commands" / f"part-{idx}.jsonl"
         take.event_path = take.directory / "events" / f"part-{idx}.log"
         take.gamepad_path = take.directory / "gamepad" / f"part-{idx}.jsonl"
-        for path in (take.sensor_path, take.command_path, take.event_path, take.gamepad_path):
+        take.policy_path = take.directory / "policy" / f"part-{idx}.jsonl"
+        for path in (
+            take.sensor_path,
+            take.command_path,
+            take.event_path,
+            take.gamepad_path,
+            take.policy_path,
+        ):
             path.parent.mkdir(parents=True, exist_ok=True)
         # 行バッファにしない。FLUSH_SEC までメモリに溜める。
         take.sensors = take.sensor_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.commands = take.command_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.events = take.event_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.gamepad = take.gamepad_path.open("a", encoding="utf-8", buffering=64 * 1024)
+        take.policy = take.policy_path.open("a", encoding="utf-8", buffering=64 * 1024)
         take.part_opened = self._clock()
         take.part_bytes = 0
         take.meta["open_parts"] = [
@@ -440,6 +516,7 @@ class ExperimentLog:
             take.command_path.relative_to(take.directory).as_posix(),
             take.event_path.relative_to(take.directory).as_posix(),
             take.gamepad_path.relative_to(take.directory).as_posix(),
+            take.policy_path.relative_to(take.directory).as_posix(),
         ]
 
     def _write_line(self, fp: Any, obj: dict[str, Any]) -> None:
@@ -465,7 +542,7 @@ class ExperimentLog:
             self._rotate_locked(take)
 
     def _flush_locked(self, take: _Take) -> None:
-        for fp in (take.sensors, take.commands, take.events, take.gamepad):
+        for fp in (take.sensors, take.commands, take.events, take.gamepad, take.policy):
             if fp is None:
                 continue
             fp.flush()
@@ -491,11 +568,13 @@ class ExperimentLog:
             (take.commands, take.command_path),
             (take.events, take.event_path),
             (take.gamepad, take.gamepad_path),
+            (take.policy, take.policy_path),
         )
         take.sensors = None
         take.commands = None
         take.events = None
         take.gamepad = None
+        take.policy = None
         for fp, path in pairs:
             if fp is None:
                 continue
@@ -529,6 +608,7 @@ class ExperimentLog:
         take.meta["duration_sec"] = max(0.0, ended - float(take.meta.get("started_unix") or ended))
         take.meta["stop_reason"] = reason
         take.meta["sample_count"] = take.samples
+        take.meta["policy_count"] = take.policy_samples
         take.meta["open_parts"] = []
         self._write_meta_locked(take)
         meta_path = take.directory / "meta.json"
@@ -689,6 +769,13 @@ def append_frame(port: str, frame: dict[str, Any]) -> None:
     log = _SHARED
     if log is not None:
         log.append_frame(port, frame)
+
+
+def append_policy(port: str, row: dict[str, Any]) -> None:
+    """開いている take が無ければ何もしない。方策の USB は記録の有無で止まらない。"""
+    log = _SHARED
+    if log is not None:
+        log.append_policy(port, row)
 
 
 def append_command(port: str, command: dict[str, Any]) -> None:

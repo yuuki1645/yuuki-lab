@@ -23,8 +23,14 @@ from rt_usb_proto import JOINT_FLAG_JUMP, JOINT_FLAG_MISSING, JOINT_FLAG_SHAKE, 
 from rt_usb_proto import POLICY_REASON, POLICY_SAFETY
 
 # ネットの生出力に掛ける係数。直立からの目標 [rad] = action * ACTION_SCALE。
-# 頭打ち（約 20°）と速度制限の前の値。walk_policy.cpp の kActionScale。
+# 包絡と速度制限の前の値。walk_policy.cpp の kActionScale。
 ACTION_SCALE = 0.25
+
+# 前進 0 の包絡。直立からの度。方策の関節順。
+# walk_policy.cpp の kEnvelope* と同じ。画面の 135° は、ここでは 0。
+# 股とかかとロールは ±20°。ひざは 0°〜+40°。かかとピッチは −20°〜+30°。
+_ENVELOPE_MIN_DEG = (-20.0, -20.0, -20.0, -20.0, 0.0, 0.0, -20.0, -20.0, -20.0, -20.0)
+_ENVELOPE_MAX_DEG = (20.0, 20.0, 20.0, 20.0, 40.0, 40.0, 30.0, 30.0, 20.0, 20.0)
 
 # 画面の論理軸。sensors の配列はこの順。右が 0〜4、左が 5〜9。
 # upright_deg は方策の 0 rad。RDS51150 は 135、SM105BL（ひざ、かかとピッチ）は 0。
@@ -112,8 +118,12 @@ def build_context() -> dict[str, Any]:
             "action_scale": ACTION_SCALE,
             "action": "ネットの生出力。直立からの目標 [rad] は action_rad = action * action_scale。頭打ちと速度制限の前。ネットを回していない周期は null。",
             "action_rad": "action に action_scale を掛けた値。方策の関節順。直立が 0 rad。",
-            "cmd_rad": "サーボへ実際に出した目標。直立が 0 rad。方策の関節順。前進 0 のときは約 0.35 rad（約 20°）で頭打ちし、サーボの最高速度以内に抑えたあと。",
-            "envelope_rad": 0.35,
+            "cmd_rad": "サーボへ実際に出した目標。直立が 0 rad。方策の関節順。前進 0 のときは policy.envelope の中に収め、サーボの最高速度以内に抑えたあと。",
+            "envelope": {
+                "unit": "直立からの度。cmd_rad と同じ関節順。前進 0 の頭打ち。",
+                "min_deg": list(_ENVELOPE_MIN_DEG),
+                "max_deg": list(_ENVELOPE_MAX_DEG),
+            },
             "obs": [
                 {
                     "index": index,

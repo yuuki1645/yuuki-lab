@@ -96,6 +96,11 @@ class TakeTest(unittest.TestCase):
             self.assertEqual(len(context["policy_joints"]), 10)
             self.assertEqual(context["policy_joints"][0]["firmware_index"], 5)
             self.assertEqual(context["policy"]["action_scale"], 0.25)
+            # 包絡は関節ごと。ひざのプラスだけ 40°、かかとピッチのつま先上げは 30°。
+            self.assertEqual(context["policy"]["envelope"]["min_deg"][4], 0.0)
+            self.assertEqual(context["policy"]["envelope"]["max_deg"][4], 40.0)
+            self.assertEqual(context["policy"]["envelope"]["max_deg"][6], 30.0)
+            self.assertEqual(context["policy"]["envelope"]["min_deg"][0], -20.0)
             self.assertEqual(meta["context"], "context.json")
             self.assertEqual(meta["policy_count"], 0)
             self.assertFalse((takes[0] / "policy" / "part-000.jsonl").is_file())

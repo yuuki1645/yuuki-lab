@@ -123,7 +123,7 @@ CoreS3（USB ver 15）の実験記録です。腰の CoreS3 が左右の ATOM S3
 | `action_rad` | `action` に 0.25 を掛けた、直立からの目標（ラジアン）。頭打ちと速度制限の前。方策の関節順 |
 | `cmd_rad` | サーボへ実際に出した目標。直立が 0 rad。方策の関節順。頭打ちと速度制限のあと |
 
-`action_rad` が約 0.35 rad を超えていても、`cmd_rad` は前進 0 のあいだ約 ±0.35 rad で止まります。ネットが欲しかった角度は `action_rad`、脚へ出た角度は `cmd_rad` です。
+`action_rad` は頭打ちの前です。`cmd_rad` は、前進 0 のあいだ `context.json` の `policy.envelope`（直立からの度、関節ごと）の中に収めたあとです。股とかかとロールは ±20°、ひざは 0°〜+40°、かかとピッチは −20°〜+30° です。ネットが欲しかった角度は `action_rad`、脚へ出た角度は `cmd_rad` です。`envelope_rad` が 0.35 の古い take は、全関節が約 ±20° だったときの記録です。
 
 ## commands/part-NNN.jsonl
 

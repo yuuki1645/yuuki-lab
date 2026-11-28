@@ -48,7 +48,7 @@ static constexpr float kAnkleMaxDeg = 60.0f;
 
 // 方策の初期だけ。画面の度。左右同じ。直立は RDS 135°、SM105 0°。
 // 股ロールは内側 5°・外側 40°。股ピッチは後ろ 10°・前 40°。
-// このあと前進 0 の約 ±20° の確認は残す。手動の指令はこの範囲を使わない。
+// 前進 0 の包絡は、この可動のあとで別に見る。手動の指令はこの範囲を使わない。
 static constexpr float kPolicyHipRollMinDeg = 130.0f;
 static constexpr float kPolicyHipRollMaxDeg = 175.0f;
 static constexpr float kPolicyHipPitchMinDeg = 125.0f;
@@ -63,8 +63,19 @@ static constexpr float kPolicyAnkleRollMaxDeg = 155.0f;
 // サーボの最高速度。これを超える角の変化は、センサの飛びとみなす。
 static constexpr float kRdsSpeedRad = 5.0f;
 static constexpr float kSmsSpeedRad = 6.3f;
-// 前進 0 のとき、直立からこの角を超えた状態が続くとネットを止める。約 20°。
-static constexpr float kEnvelopeRad = 0.35f;
+// 前進 0 の包絡。画面の度。左右同じ。目標か計測がこの外に居続けるとネットを止める。
+// 待ちのあいだ、サーボへ出す目標もこの中に収める。
+// 股とかかとロールは直立から ±20°。初期可動がこれより広くても、ここでは広げない。
+// ひざは後ろへ曲げる側だけ 40°。逆へ伸ばす側は 0° で止める。
+// かかとピッチはつま先上げ 30°、つま先下げ 20°。初期可動の −50° までは開かない。
+static constexpr float kEnvelopeHipMinDeg = 115.0f;
+static constexpr float kEnvelopeHipMaxDeg = 155.0f;
+static constexpr float kEnvelopeKneeMinDeg = 0.0f;
+static constexpr float kEnvelopeKneeMaxDeg = 40.0f;
+static constexpr float kEnvelopeAnklePitchMinDeg = -20.0f;
+static constexpr float kEnvelopeAnklePitchMaxDeg = 30.0f;
+static constexpr float kEnvelopeAnkleRollMinDeg = 115.0f;
+static constexpr float kEnvelopeAnkleRollMaxDeg = 155.0f;
 static constexpr int kEnvelopeCycles = 15;
 // 直立へ戻しているあいだ、計測がこの角だけさらに外へ行く周期が続くと目標を固定する。
 static constexpr int kDivergeCycles = 8;
@@ -154,7 +165,7 @@ static float clampJointDeg(int fw, float deg) {
 
 /**
  * 方策の目標を、初期の可動へ止めてからサーボの窓へ入れる。
- * 前進 0 の約 ±20° の確認は、このあとの desired を見る。
+ * 前進 0 の包絡は、このあとの desired を関節ごとの範囲で見る。
  */
 static float clampPolicyDeg(int fw, float deg) {
     const int axis = fw % 5;
@@ -170,6 +181,40 @@ static float clampPolicyDeg(int fw, float deg) {
         deg = clampRange(deg, kPolicyAnkleRollMinDeg, kPolicyAnkleRollMaxDeg);
     }
     return clampJointDeg(fw, deg);
+}
+
+/** 前進 0 の包絡。股はロールもピッチも同じ ±20°。 */
+static void envelopeLimits(int fw, float& lo, float& hi) {
+    const int axis = fw % 5;
+    if (axis == kAxisHipRoll || axis == kAxisHipPitch) {
+        lo = kEnvelopeHipMinDeg;
+        hi = kEnvelopeHipMaxDeg;
+    } else if (axis == kAxisKnee) {
+        lo = kEnvelopeKneeMinDeg;
+        hi = kEnvelopeKneeMaxDeg;
+    } else if (axis == kAxisAnklePitch) {
+        lo = kEnvelopeAnklePitchMinDeg;
+        hi = kEnvelopeAnklePitchMaxDeg;
+    } else {
+        lo = kEnvelopeAnkleRollMinDeg;
+        hi = kEnvelopeAnkleRollMaxDeg;
+    }
+}
+
+/** 画面の度が、その関節の包絡の外なら true。境界は中に入れる。 */
+static bool outsideEnvelope(int fw, float deg) {
+    float lo = 0.0f;
+    float hi = 0.0f;
+    envelopeLimits(fw, lo, hi);
+    return deg < lo || deg > hi;
+}
+
+/** サーボへ出す前に、包絡の中へ戻す。初期の可動で一度止めた値に掛ける。 */
+static float clampEnvelopeDeg(int fw, float deg) {
+    float lo = 0.0f;
+    float hi = 0.0f;
+    envelopeLimits(fw, lo, hi);
+    return clampRange(deg, lo, hi);
 }
 
 static float degToPolicyRad(int fw, float deg) {
@@ -566,7 +611,7 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
             // ここまで来る軸は有効か揺れだけ。欠測と飛びの周期は、ネットを呼ばない。
             gLastAction[p] = action[p];
             const int fw = kFwForPolicy[p];
-            // 可動で止めた値を、このあとの約 ±20° の確認が見る。
+            // 可動で止めた値を、このあとの包絡が見る。包絡は関節ごとに違う。
             desired[fw] = clampPolicyDeg(fw, policyRadToDeg(fw, action[p] * kActionScale));
         }
         out.ran = true;
@@ -596,10 +641,12 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
         bool outside = false;
         for (int p = 0; p < kCoreJoints; ++p) {
             const int fw = kFwForPolicy[p];
-            if (fabsf(degToPolicyRad(fw, desired[fw])) > kEnvelopeRad) {
+            if (outsideEnvelope(fw, desired[fw])) {
                 outside = true;
             }
-            if (joint_flag[p] != kJointFlagMissing && joint_flag[p] != kJointFlagJump && fabsf(meas_rad[p]) > kEnvelopeRad) {
+            // 計測は直立からのラジアン。画面の度へ戻してから、目標と同じ範囲で見る。
+            if (joint_flag[p] != kJointFlagMissing && joint_flag[p] != kJointFlagJump &&
+                outsideEnvelope(fw, policyRadToDeg(fw, meas_rad[p]))) {
                 outside = true;
             }
         }
@@ -622,15 +669,11 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
     bool capped = false;
     if (enable && !sense.fault && vx <= kVxStand && gFollowNet && !gFrozen) {
         for (int fw = 0; fw < kCoreJoints; ++fw) {
-            float rad = degToPolicyRad(fw, desired[fw]);
-            if (rad > kEnvelopeRad) {
-                rad = kEnvelopeRad;
-                capped = true;
-            } else if (rad < -kEnvelopeRad) {
-                rad = -kEnvelopeRad;
+            const float limited = clampEnvelopeDeg(fw, desired[fw]);
+            if (limited != desired[fw]) {
                 capped = true;
             }
-            desired[fw] = clampPolicyDeg(fw, policyRadToDeg(fw, rad));
+            desired[fw] = clampPolicyDeg(fw, limited);
         }
     }
 

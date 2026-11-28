@@ -60,6 +60,8 @@ MSG_NVS_ENTRY = 0x16
 MSG_NVS_END = 0x17
 MSG_NVS_DATA = 0x18
 MSG_POLICY = 0x19
+# 方策の 1 周期。観測 38 個と旗。比較の記録はこちら。
+MSG_POLICY_TRACE = 0x1A
 
 # PC → ボード
 CMD_PING = 0x80
@@ -169,8 +171,10 @@ _CMD_OUT = struct.Struct("<BB")
 _CMD_JOINT = struct.Struct("<Bf")
 # enable, reserved, vx_mps。ヨーはファーム側で 0。
 _CMD_POLICY = struct.Struct("<BBf")
-# enable, ran, reason, reserved, gravity xyz, gyro xyz, vx
+# enable, ran, reason, safety, gravity xyz, gyro xyz, vx
 _POLICY_STATUS = struct.Struct("<BBBBfffffff")
+# seq, period, sense, policy, 5 bytes, 10 flags, 12 ages, obs, action, cmd
+_POLICY_TRACE = struct.Struct("<IIIIBBBBB10B12H38f10f10f")
 _CMD_PROBE = struct.Struct("<BBb")
 _CMD_MAPGET = struct.Struct("<B")
 _NVS_ENTRY = struct.Struct("<16s16sBH")
@@ -318,7 +322,22 @@ POLICY_REASON = {
     4: "足裏欠測",
     5: "直立ではない",
     6: "故障",
+    7: "直立範囲",
+    8: "目標固定",
 }
+
+POLICY_SAFETY = {
+    0: "",
+    1: "速度制限",
+    2: "直立へ戻している",
+    3: "目標を固定",
+}
+
+# ファームの joint_flag。平均に入れるのは 0 だけ。
+JOINT_FLAG_VALID = 0
+JOINT_FLAG_MISSING = 1
+JOINT_FLAG_JUMP = 2
+JOINT_FLAG_SHAKE = 3
 
 
 def empty_policy_status() -> dict[str, object]:
@@ -328,6 +347,8 @@ def empty_policy_status() -> dict[str, object]:
         "ran": False,
         "reason": 0,
         "reason_text": "切",
+        "safety": 0,
+        "safety_text": "",
         "gravity": [0.0, 0.0, 0.0],
         "gyro": [0.0, 0.0, 0.0],
         "vx": 0.0,
@@ -338,18 +359,63 @@ def decode_policy_status(payload: bytes) -> dict[str, object] | None:
     """腰 → PC の方策状態。重力は体座標で、直立なら z が約 -1。"""
     if len(payload) < _POLICY_STATUS.size:
         return None
-    enable, ran, reason, _reserved, gx, gy, gz, wx, wy, wz, vx = _POLICY_STATUS.unpack(
+    enable, ran, reason, safety, gx, gy, gz, wx, wy, wz, vx = _POLICY_STATUS.unpack(
         payload[: _POLICY_STATUS.size]
     )
     reason_i = int(reason)
+    safety_i = int(safety)
     return {
         "enable": bool(enable),
         "ran": bool(ran),
         "reason": reason_i,
         "reason_text": POLICY_REASON.get(reason_i, str(reason_i)),
+        "safety": safety_i,
+        "safety_text": POLICY_SAFETY.get(safety_i, str(safety_i)),
         "gravity": [float(gx), float(gy), float(gz)],
         "gyro": [float(wx), float(wy), float(wz)],
         "vx": float(vx),
+    }
+
+
+def _finite(value: float) -> float | None:
+    """NaN は JSON にしない。欠測の関節は null。"""
+    number = float(value)
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    return number
+
+
+def decode_policy_trace(payload: bytes) -> dict[str, object] | None:
+    """腰 → PC の方策 1 周期。観測は学習と同じ 38 個。"""
+    if len(payload) < _POLICY_TRACE.size:
+        return None
+    raw = _POLICY_TRACE.unpack(payload[: _POLICY_TRACE.size])
+    seq, period_us, sense_us, policy_us = raw[0:4]
+    overrun, reason, safety, foot_bearing, dist_ok = raw[4:9]
+    flags = [int(v) for v in raw[9:19]]
+    ages = [int(v) for v in raw[19:31]]
+    obs = [_finite(v) for v in raw[31:69]]
+    action = [_finite(v) for v in raw[69:79]]
+    cmd_rad = [_finite(v) for v in raw[79:89]]
+    reason_i = int(reason)
+    safety_i = int(safety)
+    return {
+        "seq": int(seq),
+        "t_period_us": int(period_us),
+        "t_sense_us": int(sense_us),
+        "t_policy_us": int(policy_us),
+        "overrun": int(overrun),
+        "reason": reason_i,
+        "reason_text": POLICY_REASON.get(reason_i, str(reason_i)),
+        "safety": safety_i,
+        "safety_text": POLICY_SAFETY.get(safety_i, ""),
+        "foot_bearing": bool(foot_bearing),
+        "dist_ok": bool(dist_ok),
+        "joint_flag": flags,
+        "age_ms": ages,
+        "obs": obs,
+        "action": action,
+        "cmd_rad": cmd_rad,
     }
 
 

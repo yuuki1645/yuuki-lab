@@ -792,6 +792,16 @@ class LabApp(tk.Tk):
             err = {"ok": False, "error": "ATOM が未接続です", "recording": False, "id": None, "name": "", "sample_count": 0, "elapsed_sec": 0.0}
             self._m5_bridge.publish(EVT_RECORD, err)
             return err
+        # 同じ名前を、次のシミュ再生の記録にも使う。
+        try:
+            from policy_trace import write_next_name
+        except ImportError:
+            import sys
+            from pathlib import Path
+
+            sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "link" / "py"))
+            from policy_trace import write_next_name
+        write_next_name(name)
         meta = self._record_store.start(
             name=name,
             notes=notes,
@@ -847,6 +857,9 @@ class LabApp(tk.Tk):
                 frame = self._m5_frame_dict()
                 if frame:
                     self._record_store.append(frame)
+                if s is not None:
+                    while s.policy_traces:
+                        self._record_store.append_trace(s.policy_traces.popleft())
             return
         f = s.last_frame if s else None
         seq = (s.port, f.seq) if s and f else None
@@ -857,6 +870,9 @@ class LabApp(tk.Tk):
             self._m5_bridge.publish(EVT_CONTROL, self._m5_control_dict())
             if frame and self._record_store.is_recording():
                 self._record_store.append(frame)
+        if self._record_store.is_recording() and s is not None:
+            while s.policy_traces:
+                self._record_store.append_trace(s.policy_traces.popleft())
         if self._record_store.is_recording():
             now = time.time()
             if now - self._record_pub_t >= 0.5:

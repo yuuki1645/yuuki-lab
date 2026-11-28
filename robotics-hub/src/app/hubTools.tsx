@@ -42,6 +42,7 @@ const LabDataViewerPage = lazy(() => import("@/features/lab-data-viewer/LabDataV
 const MujocoViewerAuxPage = lazy(() => import("@/features/mujoco-viewer-aux/MujocoViewerAuxPage"));
 const IsaacRlLogPage = lazy(() => import("@/features/isaac-rl-log/IsaacRlLogPage"));
 const LiveCapturePage = lazy(() => import("@/features/live-capture/LiveCapturePage"));
+const PolicyComparePage = lazy(() => import("@/features/policy-compare/PolicyComparePage"));
 
 export const hubTools: HubTool[] = [
   {
@@ -77,6 +78,15 @@ export const hubTools: HubTool[] = [
     description:
       "Windows PC の link/host/lab_debug.py 経由で、機体は CoreS3（USB ver 15）、机上は ATOM の rt-usb（ver 14）を iPad から見ます（Socket.IO :8794）。ATOM 手帳は机上の rt-usb 用です。",
     LazyPage: M5TelemetryPage,
+  },
+  {
+    id: "policy-compare",
+    path: "/policy-compare",
+    label: "分布の比較",
+    group: "data",
+    description:
+      "実機の本記録と Isaac 再生を、方策が見た 38 個の平均・ばらつき・欠測率で比べます。時刻は揃えません。",
+    LazyPage: PolicyComparePage,
   },
   {
     id: "atom-bench",

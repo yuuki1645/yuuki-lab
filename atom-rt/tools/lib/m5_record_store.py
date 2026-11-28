@@ -96,7 +96,9 @@ class M5RecordStore:
         self._id: str | None = None
         self._meta: dict[str, Any] | None = None
         self._fp: Any = None
+        self._trace_fp: Any = None
         self._last_seq: int | None = None
+        self._last_trace_seq: int | None = None
         self._last_pub = 0.0
 
     def is_recording(self) -> bool:
@@ -184,9 +186,12 @@ class M5RecordStore:
             )
             self._write_meta_unlocked(folder, meta)
             self._fp = (folder / "frames.jsonl").open("a", encoding="utf-8")
+            # 方策が見た 38 個。テレメトリの度とは別ファイル。比較画面はこちらを読む。
+            self._trace_fp = (folder / "policy_trace.jsonl").open("a", encoding="utf-8")
             self._id = rec_id
             self._meta = meta
             self._last_seq = None
+            self._last_trace_seq = None
             out = dict(meta)
             out["ok"] = True
             return out
@@ -208,6 +213,31 @@ class M5RecordStore:
                 self._fp.flush()
             return True
 
+    def append_trace(self, row: dict[str, Any]) -> bool:
+        """方策 1 周期。同じ seq は捨てる。本記録のあいだだけ書く。"""
+        with self._lock:
+            if self._trace_fp is None or self._meta is None:
+                return False
+            seq = row.get("seq")
+            if isinstance(seq, int) and seq == self._last_trace_seq:
+                return False
+            if isinstance(seq, int):
+                self._last_trace_seq = seq
+            self._trace_fp.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+            count = int(self._meta.get("policy_trace_count") or 0) + 1
+            self._meta["policy_trace_count"] = count
+            if count % 30 == 0:
+                self._trace_fp.flush()
+                folder = self.root / str(self._meta["id"])
+                self._write_trace_meta(folder)
+            return True
+
+    def _write_trace_meta(self, folder: Path) -> None:
+        """本記録の meta.json に、方策の行数だけを足す。ファイルは置き換えない。"""
+        if self._meta is None:
+            return
+        self._write_meta_unlocked(folder, self._meta)
+
     def stop(self, reason: str = "") -> dict[str, Any]:
         """記録を閉じ、終了時刻と点数を確定する。"""
         with self._lock:
@@ -218,6 +248,14 @@ class M5RecordStore:
             finally:
                 self._fp.close()
                 self._fp = None
+            if self._trace_fp is not None:
+                try:
+                    self._trace_fp.flush()
+                finally:
+                    self._trace_fp.close()
+                    self._trace_fp = None
+                folder = self.root / str(self._meta["id"])
+                self._write_trace_meta(folder)
             ended_unix = time.time()
             self._meta["recording"] = False
             self._meta["ended_at"] = iso_now()
@@ -237,6 +275,7 @@ class M5RecordStore:
             self._id = None
             self._meta = None
             self._last_seq = None
+            self._last_trace_seq = None
             return out
 
     def list_recordings(self) -> list[dict[str, Any]]:

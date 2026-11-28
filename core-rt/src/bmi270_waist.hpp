@@ -19,3 +19,6 @@ bool bmi270Begin();
  * 読めないときは false。100 ms 以内の直前値があればそれを返す。
  */
 bool bmi270Read(float specific_force_g[3], float gyro_rad_s[3]);
+
+/** 最後に読めたサンプルからのミリ秒。未取得は 65535。 */
+uint16_t bmi270AgeMs();

@@ -1421,6 +1421,13 @@
   margin-top: 0.7rem;
 }
 
+.m5-rec__experiments {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .m5-rec__draft label,
 .m5-rec__rate {
   display: flex;

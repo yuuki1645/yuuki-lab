@@ -211,7 +211,8 @@ export default function M5TelemetryPage() {
         <span className="m5__meta">モード {replaying ? (frame?.mode || rec.meta?.mode || "—") : status?.mode || "—"}</span>
         {policyOn && status?.policy ? (
           <span className="m5__meta">
-            方策 {status.policy.reason_text} 重力 (
+            方策 {status.policy.reason_text}
+            {status.policy.safety_text ? `（${status.policy.safety_text}）` : ""} 重力 (
             {(status.policy.gravity ?? []).map((v) => (Number.isFinite(v) ? v.toFixed(2) : "—")).join(", ")}
             )
           </span>

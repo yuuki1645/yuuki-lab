@@ -1,0 +1,91 @@
+.pcmp {
+  padding: 1.25rem 1.5rem 2.5rem;
+  color: #d7dee8;
+  max-width: 1100px;
+}
+
+.pcmp h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+}
+
+.pcmp p {
+  margin: 0.35rem 0;
+  color: #8b9bb0;
+  line-height: 1.5;
+}
+
+.pcmp__pick,
+.pcmp__name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: end;
+  margin: 0.8rem 0;
+}
+
+.pcmp label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #8b9bb0;
+}
+
+.pcmp select,
+.pcmp button {
+  background: #1b2430;
+  color: #d7dee8;
+  border: 1px solid #314056;
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+}
+
+.pcmp__go,
+.pcmp__on {
+  background: #1f6f54;
+  border-color: #1f6f54;
+}
+
+.pcmp__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.86rem;
+}
+
+.pcmp__table th,
+.pcmp__table td {
+  text-align: right;
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid #243140;
+}
+
+.pcmp__table th:first-child,
+.pcmp__table td:first-child {
+  text-align: left;
+}
+
+.pcmp__table tr {
+  cursor: pointer;
+}
+
+.pcmp__selected {
+  background: #1b3148;
+}
+
+.pcmp__chart {
+  width: 100%;
+  height: 180px;
+  color: #7eb6ff;
+  background: #121820;
+  border-radius: 8px;
+}
+
+.pcmp__error {
+  color: #ee5253;
+}
+
+.pcmp__timing {
+  color: #c5d0dc;
+}

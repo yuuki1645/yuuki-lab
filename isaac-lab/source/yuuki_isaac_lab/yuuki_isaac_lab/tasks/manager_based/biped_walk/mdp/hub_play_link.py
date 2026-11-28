@@ -21,7 +21,9 @@ from __future__ import annotations
 
 import json
 import socket
+import sys
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import isaaclab.envs.mdp as isaac_mdp
@@ -72,12 +74,16 @@ class HubPlayLink:
         self._said_up = False
         self._sensor_cfg: SceneEntityCfg | None = None
         self._sole_cfg: SceneEntityCfg | None = None
+        self._trace_log = None
+        self._trace_seq = 0
 
     def publish(self, env: ManagerBasedRLEnv, stick: dict) -> None:
         """今の関節・足裏・スティックと、方策の観測を1行送る。失敗しても再生は続ける。"""
         try:
             if env.num_envs != 1:
                 return
+            # 画面は 20 Hz。記録は方策のステップごとに残す。時刻合わせには使わない。
+            self._log_policy_trace(env)
             now = time.time()
             self._ensure(now)
             if self._sock is None:
@@ -150,6 +156,71 @@ class HubPlayLink:
             except OSError:
                 pass
 
+    def _log_policy_trace(self, env: ManagerBasedRLEnv) -> None:
+        """方策が見た 38 個を、実験名のファイルへ書く。画面の度からは作らない。"""
+        try:
+            length = getattr(env, "episode_length_buf", None)
+            if length is not None and int(length[0]) == 0:
+                return
+            obs_buf = getattr(env, "obs_buf", None)
+            if not isinstance(obs_buf, dict) or "policy" not in obs_buf:
+                return
+            flat = obs_buf["policy"][0].detach().cpu().tolist()
+            if len(flat) != 38:
+                return
+            obs = [float(v) for v in flat]
+            logger = self._policy_logger()
+            if logger is None:
+                return
+            action, cmd_rad = _policy_action(env)
+            foot = obs[16:24]
+            bearing = all(v == v for v in foot) and sum(foot) >= 1.0
+            joints_ok = all(v == v for v in obs[0:10])
+            self._trace_seq += 1
+            period_us = int(round(float(env.step_dt) * 1.0e6))
+            logger.write(
+                {
+                    "seq": self._trace_seq,
+                    "t_period_us": period_us,
+                    "t_sense_us": 0,
+                    "t_policy_us": 0,
+                    "overrun": 0,
+                    "reason": 1,
+                    "reason_text": "実行",
+                    "safety": 0,
+                    "safety_text": "",
+                    "foot_bearing": bearing,
+                    "dist_ok": joints_ok,
+                    "joint_flag": [0 if v == v else 1 for v in obs[0:10]],
+                    "age_ms": [0] * 12,
+                    "obs": obs,
+                    "action": action,
+                    "cmd_rad": cmd_rad,
+                }
+            )
+        except Exception:
+            # 記録が失敗しても、歩行の再生は続ける。
+            return
+
+    def _policy_logger(self):
+        """link/py の記録。学習用の Python からも、パスを足して読む。"""
+        if self._trace_log is not None:
+            return self._trace_log
+        root = None
+        for parent in Path(__file__).resolve().parents:
+            if (parent / "link" / "py" / "policy_trace.py").is_file():
+                root = parent
+                break
+        if root is None:
+            return None
+        py = str(root / "link" / "py")
+        if py not in sys.path:
+            sys.path.insert(0, py)
+        from policy_trace import sim_log
+
+        self._trace_log = sim_log()
+        return self._trace_log
+
     def _payload(self, env: ManagerBasedRLEnv, stick: dict) -> dict:
         """橋が待つ joints 行。rad と cmd_rad は画面の関節順で、単位はラジアン。"""
         self._seq += 1
@@ -221,6 +292,20 @@ def _joint_radians(env: ManagerBasedRLEnv) -> tuple[list[float], list[float | No
         # 行動がまだ無い最初のステップでは、指令欄だけ空にする。
         pass
     return measured, commanded
+
+
+def _policy_action(env: ManagerBasedRLEnv) -> tuple[list[float | None], list[float | None]]:
+    """今の生出力と目標角。方策の関節順。画面の右足先ではない。"""
+    empty: list[float | None] = [None] * 10
+    try:
+        term = env.action_manager.get_term("joint_pos")
+        raw = [float(v) for v in term.raw_actions[0].detach().cpu().tolist()]
+        cmd = [float(v) for v in term.processed_actions[0].detach().cpu().tolist()]
+    except Exception:
+        return empty, empty
+    if len(raw) != 10 or len(cmd) != 10:
+        return empty, empty
+    return raw, cmd
 
 
 def _policy_obs(env: ManagerBasedRLEnv) -> dict | None:

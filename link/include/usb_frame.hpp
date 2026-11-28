@@ -60,6 +60,11 @@ enum UsbMsg : uint8_t {
     kUsbNvsData = 0x18,
     /** 方策の状態。テレメトリの並びは変えない。入っているあいだだけ、たまに出す。 */
     kUsbPolicyStatus = 0x19,
+    /**
+     * 方策の 1 周期。観測 38 個、旗、安全の理由。
+     * テレメトリとは別。比較の記録はこちらを正にする。
+     */
+    kUsbPolicyTrace = 0x1A,
 
     kUsbCmdPing = 0x80,
     kUsbCmdScan = 0x81,
@@ -220,17 +225,52 @@ struct UsbCmdPolicy {
 
 /**
  * 腰 → PC。方策が入っているあいだの重力と角速度。
- * reason は 0 切、1 実行、2 関節欠測、3 IMU 欠測、4 足裏欠測、5 直立ではない、6 故障。
+ * reason は 0 切、1 実行、2 関節欠測、3 IMU 欠測、4 足裏欠測、
+ * 5 直立ではない、6 故障、7 直立範囲の外、8 目標を固定。
+ * safety は 0 なし、1 速度制限、2 直立へ戻している、3 目標を固定。
  * gravity は体座標。直立なら z が約 -1。
  */
 struct UsbPolicyStatus {
     uint8_t enable;
     uint8_t ran;
     uint8_t reason;
-    uint8_t reserved;
+    uint8_t safety;
     float gravity[3];
     float gyro_rad[3];
     float vx_mps;
+};
+
+/** 方策が見る関節数と、観測の長さ。並びは学習の PolicyCfg。 */
+static constexpr int kPolicyJoints = 10;
+static constexpr int kPolicyObs = 38;
+/** 関節 10、IMU、足裏。単位はミリ秒。未知は 65535。 */
+static constexpr int kPolicyAgeSlots = 12;
+
+/**
+ * 腰 → PC。制御周期ごとに 1 通。比較はこの中身で行う。
+ *
+ * joint_flag は 0 有効、1 欠測、2 飛び、3 揺れ。方策の関節順。
+ * obs はネットへ入れた 38 個。欠測の関節は NaN。単位は学習と同じ。
+ * action は生の出力。ネットを回していない周期は NaN。
+ * cmd_rad は実際に出した目標。直立が 0 rad。方策の関節順。
+ * dist_ok が 0 の周期は、分布の平均に入れない。
+ * age_ms は方策の関節順の 10 個のあと、IMU、足裏。
+ */
+struct UsbPolicyTrace {
+    uint32_t seq;
+    uint32_t t_period_us;
+    uint32_t t_sense_us;
+    uint32_t t_policy_us;
+    uint8_t overrun;
+    uint8_t reason;
+    uint8_t safety;
+    uint8_t foot_bearing;
+    uint8_t dist_ok;
+    uint8_t joint_flag[kPolicyJoints];
+    uint16_t age_ms[kPolicyAgeSlots];
+    float obs[kPolicyObs];
+    float action[kPolicyJoints];
+    float cmd_rad[kPolicyJoints];
 };
 
 struct UsbCmdProbe {
@@ -273,6 +313,9 @@ struct UsbCmdNvsErase {
 };
 
 #pragma pack(pop)
+
+static_assert(sizeof(UsbPolicyStatus) == 32, "policy status layout");
+static_assert(sizeof(UsbPolicyTrace) == 287, "policy trace layout");
 
 static_assert(sizeof(UsbScanNode) == 6, "UsbScanNode layout");
 static_assert(sizeof(UsbMapChunkHdr) == 6, "UsbMapChunkHdr layout");

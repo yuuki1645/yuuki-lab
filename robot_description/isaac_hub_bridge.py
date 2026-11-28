@@ -504,6 +504,16 @@ def main() -> None:
     app = Flask("isaac_hub_bridge")
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
     bridge.set_emitters(socketio, tcp.send)
+    # 比較は実機の橋と同じ API。再生中はこちらが起きている。
+    import sys
+    from pathlib import Path
+
+    _trace_py = Path(__file__).resolve().parents[1] / "link" / "py"
+    if str(_trace_py) not in sys.path:
+        sys.path.insert(0, str(_trace_py))
+    from policy_trace import register_routes
+
+    register_routes(app)
 
     @socketio.on("connect")
     def _on_connect():

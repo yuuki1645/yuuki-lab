@@ -46,6 +46,24 @@ static constexpr float kKneeMaxDeg = 150.0f;
 static constexpr float kAnkleMinDeg = -60.0f;
 static constexpr float kAnkleMaxDeg = 60.0f;
 
+// サーボの最高速度。これを超える角の変化は、センサの飛びとみなす。
+static constexpr float kRdsSpeedRad = 5.0f;
+static constexpr float kSmsSpeedRad = 6.3f;
+// 前進 0 のとき、直立からこの角を超えた状態が続くとネットを止める。約 20°。
+static constexpr float kEnvelopeRad = 0.35f;
+static constexpr int kEnvelopeCycles = 15;
+// 直立へ戻しているあいだ、計測がこの角だけさらに外へ行く周期が続くと目標を固定する。
+static constexpr int kDivergeCycles = 8;
+static constexpr float kDivergeRad = 0.02f;
+// 直近 8 周期の標準偏差がこれ以上なら、揺れ。ネットは回し、分布の平均からは外す。
+static constexpr float kShakeStdRad = 0.08f;
+static constexpr int kHistLen = 8;
+static constexpr float kVxStand = 0.02f;
+static constexpr float kFootBearingKg = 1.0f;
+static constexpr uint16_t kAgeUnknown = 65535;
+static constexpr float kDtDefault = 1.0f / 30.0f;
+static constexpr float kDtMax = 0.1f;
+
 /**
  * 方策の関節 0..9 が指すファームの論理軸。
  * 方策は左股ロール、右股ロール、左股ピッチ、右股ピッチ、左ひざ、右ひざ、
@@ -75,6 +93,24 @@ static float gLastAction[kCoreJoints] = {};
 static PolicyView gView{};
 static uint8_t gStatusDiv = 0;
 static volatile uint8_t gStatusReady = 0;
+
+// 飛び判定の直前値と、揺れ判定の窓。有効な角が入った軸だけ true。
+static float gLastMeasRad[kCoreJoints];
+static uint8_t gHaveMeas[kCoreJoints];
+static float gHist[kCoreJoints][kHistLen];
+static uint8_t gHistN[kCoreJoints];
+static uint8_t gHistI[kCoreJoints];
+// 直前に出した目標。最初の 1 回は計測角から速度制限を始める。
+static float gLastCmdDeg[kCoreJoints];
+static uint8_t gHaveCmd = 0;
+static int gOutsideCycles = 0;
+static int gDivergeCycles = 0;
+static float gPrevSpanRad = 0.0f;
+static uint8_t gFollowNet = 1;
+static uint8_t gFrozen = 0;
+static UsbPolicyTrace gTrace{};
+static volatile uint8_t gTraceReady = 0;
+static uint32_t gTraceSeq = 0;
 
 static bool isSms(int fw) {
     const int axis = fw % 5;
@@ -205,6 +241,7 @@ static void publish(const PolicyStep& step, bool enable) {
     gView.enable = enable ? 1 : 0;
     gView.ran = step.ran ? 1 : 0;
     gView.reason = step.reason;
+    gView.safety = step.safety;
     for (int i = 0; i < 3; ++i) {
         gView.gravity[i] = step.gravity[i];
         gView.gyro_rad[i] = step.gyro_rad[i];
@@ -221,11 +258,56 @@ static void publish(const PolicyStep& step, bool enable) {
     }
 }
 
-static void hold(PolicyStep& out, uint8_t reason) {
-    out.write_cmd = true;
-    out.ran = false;
-    out.reason = reason;
-    fillNeutral(out.cmd_deg);
+static float maxSpeedRad(int fw) {
+    return isSms(fw) ? kSmsSpeedRad : kRdsSpeedRad;
+}
+
+/** 直前の目標から、この周期で出せる角まで近づける。制限したら true。 */
+static bool slewDeg(int fw, float from_deg, float to_deg, float dt, float* out_deg) {
+    const float cap = maxSpeedRad(fw) * dt * kRadToDeg;
+    const float delta = to_deg - from_deg;
+    if (delta > cap) {
+        *out_deg = from_deg + cap;
+        return true;
+    }
+    if (delta < -cap) {
+        *out_deg = from_deg - cap;
+        return true;
+    }
+    *out_deg = to_deg;
+    return false;
+}
+
+static void pushHist(int policy_index, float rad) {
+    gHist[policy_index][gHistI[policy_index]] = rad;
+    gHistI[policy_index] = static_cast<uint8_t>((gHistI[policy_index] + 1) % kHistLen);
+    if (gHistN[policy_index] < kHistLen) {
+        gHistN[policy_index] = static_cast<uint8_t>(gHistN[policy_index] + 1);
+    }
+}
+
+static bool histShaking(int policy_index) {
+    if (gHistN[policy_index] < kHistLen) {
+        return false;
+    }
+    float sum = 0.0f;
+    for (int i = 0; i < kHistLen; ++i) {
+        sum += gHist[policy_index][i];
+    }
+    const float mean = sum / static_cast<float>(kHistLen);
+    float acc = 0.0f;
+    for (int i = 0; i < kHistLen; ++i) {
+        const float d = gHist[policy_index][i] - mean;
+        acc += d * d;
+    }
+    return sqrtf(acc / static_cast<float>(kHistLen)) > kShakeStdRad;
+}
+
+static void commitTrace(const UsbPolicyTrace& trace) {
+    portENTER_CRITICAL(&gPolicyLock);
+    gTrace = trace;
+    gTraceReady = 1;
+    portEXIT_CRITICAL(&gPolicyLock);
 }
 
 static bool looksUpright(const float gravity[3]) {
@@ -262,8 +344,17 @@ void policyRequest(bool enable, float vx_mps) {
         gPhase = 0.0f;
         gPhaseUs = 0;
         gStatusDiv = 0;
+        gFollowNet = 1;
+        gFrozen = 0;
+        gOutsideCycles = 0;
+        gDivergeCycles = 0;
+        gPrevSpanRad = 0.0f;
+        gHaveCmd = 0;
         for (int i = 0; i < kCoreJoints; ++i) {
             gLastAction[i] = 0.0f;
+            gHaveMeas[i] = 0;
+            gHistN[i] = 0;
+            gHistI[i] = 0;
         }
     }
     portENTER_CRITICAL(&gPolicyLock);
@@ -273,6 +364,7 @@ void policyRequest(bool enable, float vx_mps) {
         gView.enable = 0;
         gView.ran = 0;
         gView.reason = kPolicyReasonOff;
+        gView.safety = kPolicySafetyNone;
         gView.vx_mps = 0.0f;
         // 切ったことを画面へ 1 回出す。入っているあいだの定期送信とは別に出す。
         gStatusReady = 1;
@@ -298,6 +390,18 @@ bool policyTakeStatus(PolicyView& out) {
     return true;
 }
 
+bool policyTakeTrace(UsbPolicyTrace& out) {
+    portENTER_CRITICAL(&gPolicyLock);
+    if (!gTraceReady) {
+        portEXIT_CRITICAL(&gPolicyLock);
+        return false;
+    }
+    gTraceReady = 0;
+    out = gTrace;
+    portEXIT_CRITICAL(&gPolicyLock);
+    return true;
+}
+
 void policyStep(const PolicySense& sense, PolicyStep& out) {
     const uint32_t t0 = micros();
     out = {};
@@ -311,17 +415,40 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
     portEXIT_CRITICAL(&gPolicyLock);
     out.vx_mps = vx;
 
-    if (!enable) {
-        out.reason = kPolicyReasonOff;
-        out.elapsed_us = micros() - t0;
-        publish(out, false);
-        return;
+    // 周期の長さ。センサの飛びと、目標の速度制限が同じ dt を使う。
+    float dt = kDtDefault;
+    if (sense.period_us >= 1000 && sense.period_us <= static_cast<uint32_t>(kDtMax * 1.0e6f)) {
+        dt = static_cast<float>(sense.period_us) * 1.0e-6f;
     }
-    if (sense.fault) {
-        out.reason = kPolicyReasonFault;
-        out.elapsed_us = micros() - t0;
-        publish(out, true);
-        return;
+
+    float meas_rad[kCoreJoints];
+    uint8_t joint_flag[kCoreJoints];
+    bool any_bad = false;
+    for (int p = 0; p < kCoreJoints; ++p) {
+        const int fw = kFwForPolicy[p];
+        meas_rad[p] = NAN;
+        joint_flag[p] = kJointFlagMissing;
+        const bool present = sense.corr_deg != nullptr && sense.as_ok != nullptr && sense.as_ok[fw] &&
+                             sense.corr_deg[fw] == sense.corr_deg[fw] && (isSms(fw) || (sense.map_ok != nullptr && sense.map_ok[fw]));
+        if (!present) {
+            any_bad = true;
+            continue;
+        }
+        const float rad = degToPolicyRad(fw, sense.corr_deg[fw]);
+        meas_rad[p] = rad;
+        if (gHaveMeas[p]) {
+            const float step = fabsf(rad - gLastMeasRad[p]);
+            if (step > maxSpeedRad(fw) * dt) {
+                joint_flag[p] = kJointFlagJump;
+                any_bad = true;
+                gLastMeasRad[p] = rad;
+                continue;
+            }
+        }
+        gLastMeasRad[p] = rad;
+        gHaveMeas[p] = 1;
+        pushHist(p, rad);
+        joint_flag[p] = histShaking(p) ? kJointFlagShake : kJointFlagValid;
     }
 
     float specific[3] = {};
@@ -333,70 +460,250 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
             out.gyro_rad[i] = gyro[i];
         }
     }
+    const bool gravity_ok = imu_ok && !(out.gravity[0] == 0.0f && out.gravity[1] == 0.0f && out.gravity[2] == 0.0f);
 
     float left_kg[4] = {};
     float right_kg[4] = {};
     const bool feet_ok = sense.foot != nullptr && footKg(sense.foot[1], left_kg) && footKg(sense.foot[0], right_kg);
-    const bool gravity_ok = imu_ok && !(out.gravity[0] == 0.0f && out.gravity[1] == 0.0f && out.gravity[2] == 0.0f);
-    if (!jointsOk(sense)) {
-        hold(out, kPolicyReasonJoint);
-    } else if (!feet_ok) {
-        hold(out, kPolicyReasonFoot);
-    } else if (!gravity_ok) {
-        hold(out, kPolicyReasonImu);
-    } else if (!gArmed && !looksUpright(out.gravity)) {
-        hold(out, kPolicyReasonNotUpright);
-    } else {
-        if (!gArmed) {
-            gArmed = true;
-            gPhase = 0.0f;
-            gPhaseUs = micros();
-            for (int i = 0; i < kCoreJoints; ++i) {
-                gLastAction[i] = 0.0f;
-            }
+    float foot_sum = 0.0f;
+    if (feet_ok) {
+        for (int i = 0; i < 4; ++i) {
+            foot_sum += left_kg[i] + right_kg[i];
         }
-        const uint32_t now = micros();
-        const float dt = static_cast<float>(now - gPhaseUs) * 1.0e-6f;
-        gPhaseUs = now;
-        gPhase = fmodf(gPhase + (2.0f * kPi * dt / kPeriodS), 2.0f * kPi);
-        if (gPhase < 0.0f) {
-            gPhase += 2.0f * kPi;
-        }
+    }
 
-        float obs[38];
-        for (int p = 0; p < kCoreJoints; ++p) {
-            obs[p] = degToPolicyRad(kFwForPolicy[p], sense.corr_deg[kFwForPolicy[p]]);
-        }
+    float obs[kPolicyObs];
+    for (int i = 0; i < kPolicyObs; ++i) {
+        obs[i] = NAN;
+    }
+    for (int p = 0; p < kCoreJoints; ++p) {
+        obs[p] = meas_rad[p];
+    }
+    if (gravity_ok) {
         obs[10] = out.gravity[0];
         obs[11] = out.gravity[1];
         obs[12] = out.gravity[2];
         obs[13] = out.gyro_rad[0];
         obs[14] = out.gyro_rad[1];
         obs[15] = out.gyro_rad[2];
+    }
+    if (feet_ok) {
         for (int i = 0; i < 4; ++i) {
             obs[16 + i] = left_kg[i];
             obs[20 + i] = right_kg[i];
         }
-        obs[24] = sinf(gPhase);
-        obs[25] = cosf(gPhase);
-        obs[26] = vx;
-        obs[27] = 0.0f;
-        for (int i = 0; i < kCoreJoints; ++i) {
-            obs[28 + i] = gLastAction[i];
-        }
-
-        float action[kCoreJoints];
-        policyForward(obs, action);
-        for (int p = 0; p < kCoreJoints; ++p) {
-            gLastAction[p] = action[p];
-            const int fw = kFwForPolicy[p];
-            out.cmd_deg[fw] = clampJointDeg(fw, policyRadToDeg(fw, action[p] * kActionScale));
-        }
-        out.write_cmd = true;
-        out.ran = true;
-        out.reason = kPolicyReasonRan;
+    }
+    obs[26] = enable ? vx : 0.0f;
+    obs[27] = 0.0f;
+    for (int i = 0; i < kCoreJoints; ++i) {
+        obs[28 + i] = enable ? gLastAction[i] : 0.0f;
     }
 
+    float action[kCoreJoints];
+    for (int i = 0; i < kCoreJoints; ++i) {
+        action[i] = NAN;
+    }
+    float desired[kCoreJoints];
+    fillNeutral(desired);
+
+    const bool can_run = enable && !sense.fault && !any_bad && feet_ok && gravity_ok && gFollowNet && !gFrozen &&
+                         (gArmed || looksUpright(out.gravity));
+    if (can_run) {
+        if (!gArmed) {
+            gArmed = true;
+            gPhase = 0.0f;
+            gPhaseUs = micros();
+            for (int i = 0; i < kCoreJoints; ++i) {
+                gLastAction[i] = 0.0f;
+                obs[28 + i] = 0.0f;
+            }
+        }
+        const uint32_t now = micros();
+        const float phase_dt = static_cast<float>(now - gPhaseUs) * 1.0e-6f;
+        gPhaseUs = now;
+        gPhase = fmodf(gPhase + (2.0f * kPi * phase_dt / kPeriodS), 2.0f * kPi);
+        if (gPhase < 0.0f) {
+            gPhase += 2.0f * kPi;
+        }
+        obs[24] = sinf(gPhase);
+        obs[25] = cosf(gPhase);
+        policyForward(obs, action);
+        for (int p = 0; p < kCoreJoints; ++p) {
+            // ここまで来る軸は有効か揺れだけ。欠測と飛びの周期は、ネットを呼ばない。
+            gLastAction[p] = action[p];
+            const int fw = kFwForPolicy[p];
+            desired[fw] = clampJointDeg(fw, policyRadToDeg(fw, action[p] * kActionScale));
+        }
+        out.ran = true;
+        out.reason = kPolicyReasonRan;
+    } else if (!enable) {
+        out.reason = kPolicyReasonOff;
+        obs[24] = 0.0f;
+        obs[25] = 1.0f;
+    } else if (sense.fault) {
+        out.reason = kPolicyReasonFault;
+    } else if (any_bad) {
+        out.reason = kPolicyReasonJoint;
+    } else if (!feet_ok) {
+        out.reason = kPolicyReasonFoot;
+    } else if (!gravity_ok) {
+        out.reason = kPolicyReasonImu;
+    } else if (gFrozen) {
+        out.reason = kPolicyReasonFrozen;
+    } else if (!gFollowNet) {
+        out.reason = kPolicyReasonEnvelope;
+    } else {
+        out.reason = kPolicyReasonNotUpright;
+    }
+
+    // 前進 0 で、目標か計測が包絡の外に居続ける。ネットは止め、直立へ戻す。
+    if (enable && !sense.fault && out.ran && vx <= kVxStand) {
+        bool outside = false;
+        for (int p = 0; p < kCoreJoints; ++p) {
+            const int fw = kFwForPolicy[p];
+            if (fabsf(degToPolicyRad(fw, desired[fw])) > kEnvelopeRad) {
+                outside = true;
+            }
+            if (joint_flag[p] != kJointFlagMissing && joint_flag[p] != kJointFlagJump && fabsf(meas_rad[p]) > kEnvelopeRad) {
+                outside = true;
+            }
+        }
+        if (outside) {
+            gOutsideCycles += 1;
+        } else {
+            gOutsideCycles = 0;
+        }
+        if (gOutsideCycles >= kEnvelopeCycles) {
+            gFollowNet = 0;
+            out.ran = false;
+            out.reason = kPolicyReasonEnvelope;
+            fillNeutral(desired);
+        }
+    } else if (!enable) {
+        gOutsideCycles = 0;
+    }
+
+    // 戻すまでのあいだも、直立指令では包絡の外へ目標を出さない。
+    bool capped = false;
+    if (enable && !sense.fault && vx <= kVxStand && gFollowNet && !gFrozen) {
+        for (int fw = 0; fw < kCoreJoints; ++fw) {
+            float rad = degToPolicyRad(fw, desired[fw]);
+            if (rad > kEnvelopeRad) {
+                rad = kEnvelopeRad;
+                capped = true;
+            } else if (rad < -kEnvelopeRad) {
+                rad = -kEnvelopeRad;
+                capped = true;
+            }
+            desired[fw] = clampJointDeg(fw, policyRadToDeg(fw, rad));
+        }
+    }
+
+    uint8_t safety = kPolicySafetyNone;
+    if (enable && !sense.fault) {
+        if (gFrozen) {
+            for (int fw = 0; fw < kCoreJoints; ++fw) {
+                out.cmd_deg[fw] = gHaveCmd ? gLastCmdDeg[fw] : desired[fw];
+            }
+            safety = kPolicySafetyFreeze;
+            out.reason = kPolicyReasonFrozen;
+            out.ran = false;
+            out.write_cmd = true;
+        } else {
+            bool limited = false;
+            for (int fw = 0; fw < kCoreJoints; ++fw) {
+                float from = desired[fw];
+                if (gHaveCmd) {
+                    from = gLastCmdDeg[fw];
+                } else if (sense.corr_deg != nullptr && sense.corr_deg[fw] == sense.corr_deg[fw]) {
+                    from = sense.corr_deg[fw];
+                }
+                float next = desired[fw];
+                if (slewDeg(fw, from, desired[fw], dt, &next)) {
+                    limited = true;
+                }
+                out.cmd_deg[fw] = next;
+            }
+            // 戻しているあいだ、計測の最大偏差が増え続けるなら、その場で目標を止める。
+            if (!gFollowNet) {
+                float span = 0.0f;
+                for (int p = 0; p < kCoreJoints; ++p) {
+                    if (joint_flag[p] == kJointFlagMissing || joint_flag[p] == kJointFlagJump) {
+                        continue;
+                    }
+                    const float mag = fabsf(meas_rad[p]);
+                    if (mag > span) {
+                        span = mag;
+                    }
+                }
+                if (span > gPrevSpanRad + kDivergeRad) {
+                    gDivergeCycles += 1;
+                } else {
+                    gDivergeCycles = 0;
+                }
+                gPrevSpanRad = span;
+                if (gDivergeCycles >= kDivergeCycles && gHaveCmd) {
+                    gFrozen = 1;
+                    for (int fw = 0; fw < kCoreJoints; ++fw) {
+                        out.cmd_deg[fw] = gLastCmdDeg[fw];
+                    }
+                    safety = kPolicySafetyFreeze;
+                    out.reason = kPolicyReasonFrozen;
+                    out.ran = false;
+                }
+            }
+            if (safety != kPolicySafetyFreeze) {
+                if (!gFollowNet) {
+                    safety = kPolicySafetyEnvelope;
+                } else if (limited || capped) {
+                    safety = kPolicySafetyRate;
+                }
+            }
+            for (int fw = 0; fw < kCoreJoints; ++fw) {
+                gLastCmdDeg[fw] = out.cmd_deg[fw];
+            }
+            gHaveCmd = 1;
+            out.write_cmd = true;
+        }
+    }
+
+    bool sensor_ok = gravity_ok;
+    for (int p = 0; p < kCoreJoints; ++p) {
+        if (joint_flag[p] == kJointFlagMissing || joint_flag[p] == kJointFlagJump) {
+            sensor_ok = false;
+        }
+    }
+    const uint8_t dist_ok = (safety == kPolicySafetyNone && sensor_ok) ? 1 : 0;
+    out.safety = safety;
     out.elapsed_us = micros() - t0;
-    publish(out, true);
+
+    UsbPolicyTrace trace{};
+    trace.seq = gTraceSeq++;
+    trace.t_period_us = sense.period_us;
+    trace.t_sense_us = sense.sense_us;
+    trace.t_policy_us = out.elapsed_us;
+    trace.overrun = sense.overrun;
+    trace.reason = out.reason;
+    trace.safety = safety;
+    trace.foot_bearing = (feet_ok && foot_sum >= kFootBearingKg) ? 1 : 0;
+    trace.dist_ok = dist_ok;
+    for (int p = 0; p < kCoreJoints; ++p) {
+        trace.joint_flag[p] = joint_flag[p];
+        const int fw = kFwForPolicy[p];
+        trace.age_ms[p] = (sense.age_joint_ms != nullptr) ? sense.age_joint_ms[fw] : kAgeUnknown;
+        trace.obs[p] = obs[p];
+        trace.action[p] = action[p];
+        const float cmd_deg = out.write_cmd ? out.cmd_deg[fw] : (sense.cmd_deg != nullptr ? sense.cmd_deg[fw] : NAN);
+        trace.cmd_rad[p] = cmd_deg == cmd_deg ? degToPolicyRad(fw, cmd_deg) : NAN;
+    }
+    for (int i = 10; i < kPolicyObs; ++i) {
+        trace.obs[i] = obs[i];
+    }
+    trace.age_ms[kCoreJoints] = sense.age_imu_ms == 0 && !gravity_ok ? kAgeUnknown : sense.age_imu_ms;
+    if (!gravity_ok) {
+        trace.age_ms[kCoreJoints] = kAgeUnknown;
+    }
+    trace.age_ms[kCoreJoints + 1] = feet_ok ? sense.age_foot_ms : kAgeUnknown;
+    commitTrace(trace);
+    publish(out, enable);
 }

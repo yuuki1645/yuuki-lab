@@ -454,6 +454,12 @@ class AtomWorker:
             if status is not None:
                 self._put("policy", status)
             return
+        if msg_type == proto.MSG_POLICY_TRACE:
+            # 毎周期。イベント欄へは落とさず、記録側だけが seq で間引く。
+            row = proto.decode_policy_trace(payload)
+            if row is not None:
+                self._put("policy_trace", row)
+            return
         self._put("log", proto.format_rx(msg_type, payload))
 
 
@@ -475,6 +481,9 @@ class AtomSession:
         self.out_mask = 0
         # 方策は USB 0x92。未通知のあいだは切。画面のボタンはこの辞書を見る。
         self.policy: dict[str, object] = proto.empty_policy_status()
+        self.policy_trace: dict[str, object] | None = None
+        # 画面の周期より速く届く。記録はここから全部取り出す。
+        self.policy_traces: deque[dict[str, object]] = deque(maxlen=120)
         self._policy_note_sig: tuple[object, ...] = (False, 0)
         self.nodes: list[ScanNode] = []
         self._scan_acc: list[ScanNode] = []
@@ -617,6 +626,8 @@ class AtomSession:
             else:
                 # 切れたあとのボタンは、次の通知まで方策オフにしておく。
                 self.policy = proto.empty_policy_status()
+                self.policy_trace = None
+                self.policy_traces.clear()
                 self._policy_note_sig = (False, 0)
                 # ワーカー終了時の「切断」。HELLO からここまでが 1 take。
                 experiment_log.end_if_started(self.port, "USB 切断")
@@ -779,7 +790,13 @@ class AtomSession:
                 sig = (bool(payload.get("enable")), int(payload.get("reason") or 0))
                 if sig != self._policy_note_sig:
                     self._policy_note_sig = sig
-                    self.note(f"方策  {payload.get('reason_text')}  enable={int(sig[0])}")
+                    extra = str(payload.get("safety_text") or "")
+                    suffix = f"  {extra}" if extra else ""
+                    self.note(f"方策  {payload.get('reason_text')}{suffix}  enable={int(sig[0])}")
+        elif kind == "policy_trace":
+            if isinstance(payload, dict):
+                self.policy_trace = payload
+                self.policy_traces.append(payload)
         elif kind == "probe":
             self.note(str(payload))
         elif kind == "log":

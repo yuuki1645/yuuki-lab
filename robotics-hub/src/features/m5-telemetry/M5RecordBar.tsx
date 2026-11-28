@@ -124,12 +124,24 @@ export function M5RecordBar({ rec, atomOk, camera }: Props) {
 
       {!liveRec && !replaying ? (
         <div className="m5-rec__draft">
+          <div className="m5-rec__experiments" role="group" aria-label="実験名">
+            {["直立", "1関節", "体重移動", "浅いしゃがみ"].map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={"m5__btn" + (rec.draftName === name ? " m5__btn--on" : "")}
+                onClick={() => rec.setDraftName(name)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
           <label>
             データ名
             <input
               value={rec.draftName}
               onChange={(e) => rec.setDraftName(e.target.value)}
-              placeholder="例: 右脚 磁石確認"
+              placeholder="直立、1関節、体重移動、浅いしゃがみ"
             />
           </label>
           <label className="m5-rec__draft-notes">

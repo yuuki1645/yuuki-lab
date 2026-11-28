@@ -273,5 +273,11 @@ bool smsLinkRead(uint8_t id, SmsSample* out) {
     out->pos_deg = slot.pos_deg;
     out->volt_v = slot.volt_v;
     out->amp_a = slot.amp_a;
+    if (slot.ms == 0) {
+        out->age_ms = 65535;
+    } else {
+        const uint32_t age = now - slot.ms;
+        out->age_ms = age > 65535u ? 65535 : static_cast<uint16_t>(age);
+    }
     return true;
 }

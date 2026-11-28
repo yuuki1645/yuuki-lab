@@ -204,6 +204,17 @@ class M5HubBridge:
                 return jsonify({"ok": False, "error": err}), 400
             return jsonify({"ok": True, "id": rec_id})
 
+        # 実機の記録とシミュの記録を、実験単位で比べる。橋が片方だけでも読める。
+        import sys
+        from pathlib import Path
+
+        _trace_py = Path(__file__).resolve().parents[3] / "link" / "py"
+        if str(_trace_py) not in sys.path:
+            sys.path.insert(0, str(_trace_py))
+        from policy_trace import register_routes
+
+        register_routes(app)
+
         @socketio.on("connect")
         def _on_connect():
             with self._lock:

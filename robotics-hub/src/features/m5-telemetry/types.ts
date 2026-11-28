@@ -42,6 +42,9 @@ export type M5Policy = {
   ran: boolean;
   reason: number;
   reason_text: string;
+  /** 0 なし、1 速度制限、2 直立へ戻している、3 目標を固定。 */
+  safety?: number;
+  safety_text?: string;
   gravity: number[];
   gyro: number[];
   vx: number;

@@ -212,3 +212,12 @@ bool bmi270Read(float specific_force_g[3], float gyro_rad_s[3]) {
     memcpy(gyro_rad_s, gLastGyro, sizeof(gLastGyro));
     return true;
 }
+
+uint16_t bmi270AgeMs() {
+    if (!gReady || gLastUs == 0) {
+        return 65535;
+    }
+    const uint32_t age_us = micros() - gLastUs;
+    const uint32_t age_ms = age_us / 1000u;
+    return age_ms > 65535u ? 65535 : static_cast<uint16_t>(age_ms);
+}

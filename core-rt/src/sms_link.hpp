@@ -26,6 +26,8 @@ struct SmsSample {
     float pos_deg;
     float volt_v;
     float amp_a;
+    /** その行が来てから何ミリ秒か。一度も来ていなければ 65535。 */
+    uint16_t age_ms;
 };
 
 /** UART1 を PORT.B（送信 GPIO9、受信 GPIO8）で開く。5V は呼び出し側が先に出す。 */

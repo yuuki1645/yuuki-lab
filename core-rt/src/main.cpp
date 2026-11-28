@@ -816,12 +816,19 @@ static void usbTask(void*) {
             msg.enable = policyView.enable;
             msg.ran = policyView.ran;
             msg.reason = policyView.reason;
+            msg.safety = policyView.safety;
             for (int i = 0; i < 3; ++i) {
                 msg.gravity[i] = policyView.gravity[i];
                 msg.gyro_rad[i] = policyView.gyro_rad[i];
             }
             msg.vx_mps = policyView.vx_mps;
             usbSend(kUsbPolicyStatus, &msg, sizeof(msg));
+        }
+        // 287 バイト。USB タスクのスタックに毎ループ積まない。
+        static UsbPolicyTrace trace{};
+        if (policyTakeTrace(trace)) {
+            // 送れない周期は捨てる。制御タスクは次の行で上書きする。
+            usbSend(kUsbPolicyTrace, &trace, sizeof(trace));
         }
         const uint32_t now = micros();
         if (static_cast<int32_t>(now - next) >= 0) {
@@ -835,6 +842,7 @@ static void usbTask(void*) {
 static void controlTask(void*) {
     uint32_t prev = micros();
     uint32_t seq = 0;
+    uint8_t prevOverrun = 0;
     for (;;) {
         const uint32_t t0 = micros();
         // CAN の前に行を空ける。RS485 の待ちは ATOM 側なので、ここは読んだ分だけ。
@@ -909,6 +917,47 @@ static void controlTask(void*) {
         const bool policyOn = policyRequested();
         const bool faulted = view.fault || view.overcurrent;
         const bool policyBusy = policyOn || gPolicyWasOn != 0;
+        // 方策が切れていても、比較用の観測は毎周期残す。目標を書くのは入っているときだけ。
+        uint16_t ageFw[kCoreJoints];
+        for (int i = 0; i < kCoreJoints; ++i) {
+            ageFw[i] = 65535;
+            if (isSmsJoint(i)) {
+                SmsSample sample{};
+                const uint8_t id = smsIdForJoint(i);
+                if (id != 0 && smsLinkRead(id, &sample)) {
+                    ageFw[i] = sample.age_ms;
+                }
+            } else if (snap.as_ok[i]) {
+                ageFw[i] = 0;
+            }
+        }
+        bool feetFresh = true;
+        for (int f = 0; f < kCoreFeet; ++f) {
+            if (!snap.foot[f].ok || (snap.foot[f].mask & 0x0F) != 0x0F) {
+                feetFresh = false;
+            }
+        }
+        PolicyFoot feet[kCoreFeet];
+        for (int f = 0; f < kCoreFeet; ++f) {
+            feet[f].ok = snap.foot[f].ok;
+            feet[f].mask = snap.foot[f].mask;
+            memcpy(feet[f].mv, snap.foot[f].mv, sizeof(feet[f].mv));
+        }
+        PolicySense sense{};
+        sense.corr_deg = snap.corr_deg;
+        sense.as_ok = snap.as_ok;
+        sense.map_ok = snap.map_ok;
+        sense.foot = feet;
+        sense.cmd_deg = gCmd;
+        sense.age_joint_ms = ageFw;
+        sense.age_imu_ms = bmi270AgeMs();
+        sense.age_foot_ms = feetFresh ? 0 : 65535;
+        sense.period_us = (t0 > prev && (t0 - prev) <= 500000u) ? (t0 - prev) : kPeriodUs;
+        sense.sense_us = view.sense_us != 0 ? view.sense_us : (tSense1 - tSense0);
+        sense.overrun = prevOverrun;
+        sense.fault = faulted || gOutMask == 0;
+        PolicyStep step{};
+        policyStep(sense, step);
         if (gPolicyHandsOff) {
             // Hold かモード変更が姿勢を決めた。ここでは関節を触らない。
             gPolicyWasOn = 0;
@@ -922,20 +971,6 @@ static void controlTask(void*) {
                 gElectricalMask = 0;
             }
             gPolicyWasOn = 1;
-            PolicyFoot feet[kCoreFeet];
-            for (int f = 0; f < kCoreFeet; ++f) {
-                feet[f].ok = snap.foot[f].ok;
-                feet[f].mask = snap.foot[f].mask;
-                memcpy(feet[f].mv, snap.foot[f].mv, sizeof(feet[f].mv));
-            }
-            PolicySense sense{};
-            sense.corr_deg = snap.corr_deg;
-            sense.as_ok = snap.as_ok;
-            sense.map_ok = snap.map_ok;
-            sense.foot = feet;
-            sense.fault = faulted || gOutMask == 0;
-            PolicyStep step{};
-            policyStep(sense, step);
             // 故障で出力を落としたあとは、目標を書き戻して SM105 のトルクを復活させない。
             if (step.write_cmd && !faulted && gOutMask != 0) {
                 writeJointGoals(step.cmd_deg);
@@ -966,6 +1001,7 @@ static void controlTask(void*) {
         snap.t_act_us = tAct1 - tAct0;
         snap.jitter_us = static_cast<int32_t>(snap.t_period_us) - static_cast<int32_t>(kPeriodUs);
         snap.overrun = snap.t_loop_us > kPeriodUs ? 1 : 0;
+        prevOverrun = snap.overrun;
         snap.i2c_err = view.i2c_err;
         snap.servo_ok = view.servo_ok;
         snap.mode = static_cast<uint8_t>(gMode);

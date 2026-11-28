@@ -39,6 +39,8 @@ CoreS3 の USB ver 15 HELLO から切断まで、`lab_debug.py` がセンサー�
 C:\Users\<ユーザー名>\.yuuki-lab\storage.yaml
 ```
 
-`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/連番_時分秒/` です。連番はその日の何本目かで、消しても詰めません。各 take には欄の説明 `schema.md` と、別システムが読む契約 `context.json` が入ります。方策の観測とネットの出力は `policy/` です。正本は [schema/core_take_v2.md](schema/core_take_v2.md) です。それより前の take は [schema/core_take_v1.md](schema/core_take_v1.md) で、`policy/` はありません。
+`data_root` は実験中に書くローカル SSD、`archive_root` は閉じたファイルを置く NAS 上の親フォルダです。NAS のホスト名やパスワードは書きません。フォルダは `年/月/日/連番_時分秒/` です。連番はその日の何本目かで、消しても詰めません。各 take には欄の説明 `schema.md` と、読む側の契約 `context.json` が入ります。方策の観測とネットの出力は `policy/` です。正本は [schema/core_take_v2.md](schema/core_take_v2.md) です。それより前の take は [schema/core_take_v1.md](schema/core_take_v1.md) で、`policy/` はありません。
+
+閉じた take の診断と異常マップは [take-view](../take-view/README.md) です。`archive_root` だけを読み、自宅PCで常時起動します。
 
 再生 `YuukiLab-BipedWalk-Play-v0` の方策ステップは、同じ二つの根の `sim/年/月/日/連番_時分秒/` です。形式は `sim_play_v1` で、実機の take とは混ぜません。開いている断片は NAS へ送りません。正本は [schema/sim_play_v1.md](schema/sim_play_v1.md) です。`storage.yaml` が無いときは、リポジトリの `atom-rt/data/policy_traces/sim/` にだけ残します。

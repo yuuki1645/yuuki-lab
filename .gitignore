@@ -93,3 +93,7 @@ aws/aws_launch.config.toml
 cad/out/
 
 .DS_Store
+
+# Closed-take viewer. The screen is built on the machine that serves it.
+take-view/web/node_modules/
+take-view/web/dist/

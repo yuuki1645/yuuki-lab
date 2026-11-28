@@ -63,8 +63,9 @@ static constexpr float kPolicyAnkleRollMaxDeg = 155.0f;
 // サーボの最高速度。これを超える角の変化は、センサの飛びとみなす。
 static constexpr float kRdsSpeedRad = 5.0f;
 static constexpr float kSmsSpeedRad = 6.3f;
-// 前進 0 の包絡。画面の度。左右同じ。目標か計測がこの外に居続けるとネットを止める。
+// 前進 0 の包絡。画面の度。左右同じ。目標がこの外に居続けるとネットを止める。
 // 待ちのあいだ、サーボへ出す目標もこの中に収める。
+// 計測は各側へ kEnvelopeMeasureSlackDeg だけ広い。上限へ張り付いた行き過ぎでは止めない。
 // 股とかかとロールは直立から ±20°。初期可動がこれより広くても、ここでは広げない。
 // ひざは後ろへ曲げる側だけ 40°。逆へ伸ばす側は 0° で止める。
 // かかとピッチはつま先上げ 30°、つま先下げ 20°。初期可動の −50° までは開かない。
@@ -76,6 +77,8 @@ static constexpr float kEnvelopeAnklePitchMinDeg = -20.0f;
 static constexpr float kEnvelopeAnklePitchMaxDeg = 30.0f;
 static constexpr float kEnvelopeAnkleRollMinDeg = 115.0f;
 static constexpr float kEnvelopeAnkleRollMaxDeg = 155.0f;
+// 計測だけ、包絡の外側へこの角度まで許す。目標の頭打ちには足さない。
+static constexpr float kEnvelopeMeasureSlackDeg = 5.0f;
 static constexpr int kEnvelopeCycles = 15;
 // 直立へ戻しているあいだ、計測がこの角だけさらに外へ行く周期が続くと目標を固定する。
 static constexpr int kDivergeCycles = 8;
@@ -201,11 +204,21 @@ static void envelopeLimits(int fw, float& lo, float& hi) {
     }
 }
 
-/** 画面の度が、その関節の包絡の外なら true。境界は中に入れる。 */
+/** 画面の度が、その関節の包絡の外なら true。境界は中に入れる。目標に使う。 */
 static bool outsideEnvelope(int fw, float deg) {
     float lo = 0.0f;
     float hi = 0.0f;
     envelopeLimits(fw, lo, hi);
+    return deg < lo || deg > hi;
+}
+
+/** 計測用。包絡の両側へ 5° 広げ、その外なら true。境界は中に入れる。 */
+static bool outsideMeasuredEnvelope(int fw, float deg) {
+    float lo = 0.0f;
+    float hi = 0.0f;
+    envelopeLimits(fw, lo, hi);
+    lo -= kEnvelopeMeasureSlackDeg;
+    hi += kEnvelopeMeasureSlackDeg;
     return deg < lo || deg > hi;
 }
 
@@ -644,9 +657,9 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
             if (outsideEnvelope(fw, desired[fw])) {
                 outside = true;
             }
-            // 計測は直立からのラジアン。画面の度へ戻してから、目標と同じ範囲で見る。
+            // 計測は直立からのラジアン。画面の度へ戻し、目標より各側 5° 広い範囲で見る。
             if (joint_flag[p] != kJointFlagMissing && joint_flag[p] != kJointFlagJump &&
-                outsideEnvelope(fw, policyRadToDeg(fw, meas_rad[p]))) {
+                outsideMeasuredEnvelope(fw, policyRadToDeg(fw, meas_rad[p]))) {
                 outside = true;
             }
         }

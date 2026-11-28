@@ -101,6 +101,7 @@ class TakeTest(unittest.TestCase):
             self.assertEqual(context["policy"]["envelope"]["max_deg"][4], 40.0)
             self.assertEqual(context["policy"]["envelope"]["max_deg"][6], 30.0)
             self.assertEqual(context["policy"]["envelope"]["min_deg"][0], -20.0)
+            self.assertEqual(context["policy"]["envelope"]["measure_slack_deg"], 5.0)
             self.assertEqual(meta["context"], "context.json")
             self.assertEqual(meta["policy_count"], 0)
             self.assertFalse((takes[0] / "policy" / "part-000.jsonl").is_file())

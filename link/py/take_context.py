@@ -120,9 +120,11 @@ def build_context() -> dict[str, Any]:
             "action_rad": "action に action_scale を掛けた値。方策の関節順。直立が 0 rad。",
             "cmd_rad": "サーボへ実際に出した目標。直立が 0 rad。方策の関節順。前進 0 のときは policy.envelope の中に収め、サーボの最高速度以内に抑えたあと。",
             "envelope": {
-                "unit": "直立からの度。cmd_rad と同じ関節順。前進 0 の頭打ち。",
+                "unit": "直立からの度。cmd_rad と同じ関節順。前進 0 にサーボへ出す目標の頭打ち。",
                 "min_deg": list(_ENVELOPE_MIN_DEG),
                 "max_deg": list(_ENVELOPE_MAX_DEG),
+                # 計測がこの角度だけ外側へはみ出しても、すぐには止めない。目標の頭打ちには足さない。
+                "measure_slack_deg": 5.0,
             },
             "obs": [
                 {

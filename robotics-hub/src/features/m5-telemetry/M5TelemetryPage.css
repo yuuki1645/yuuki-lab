@@ -1772,6 +1772,83 @@
   overflow: hidden;
 }
 
+/* 実機の右下スティック。右手で触る。再生の左スティック図とは別 */
+.m5-policy-stick {
+  position: fixed;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 168px;
+  padding: 0.45rem 0.55rem 0.55rem;
+  border: 1px solid rgba(213, 222, 234, 0.2);
+  border-radius: 18px;
+  background: rgba(14, 20, 28, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.m5-policy-stick--open {
+  border-color: rgba(255, 159, 67, 0.85);
+}
+
+.m5-policy-stick__pad {
+  touch-action: none;
+  cursor: pointer;
+}
+
+.m5-policy-stick__pad--off {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.m5-policy-stick__pad svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.m5-policy-stick__well {
+  fill: #1b2633;
+  stroke: rgba(213, 222, 234, 0.35);
+  stroke-width: 2;
+}
+
+.m5-policy-stick__dead {
+  fill: none;
+  stroke: rgba(154, 171, 187, 0.45);
+  stroke-dasharray: 3 3;
+}
+
+.m5-policy-stick__cap {
+  fill: #9aabbb;
+  font-size: 11px;
+}
+
+.m5-policy-stick__dot {
+  fill: #7dcea0;
+}
+
+.m5-policy-stick--open .m5-policy-stick__dot {
+  fill: #ff9f43;
+}
+
+.m5-policy-stick__vx,
+.m5-policy-stick__note,
+.m5-policy-stick__limit {
+  margin: 0.2rem 0 0;
+}
+
+.m5-policy-stick__vx {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.m5-policy-stick__vx span,
+.m5-policy-stick__note,
+.m5-policy-stick__limit {
+  color: #9aabbb;
+  font-size: 0.75rem;
+}
+
 .m5-stick__fill {
   height: 100%;
   background: #7ec8ff;

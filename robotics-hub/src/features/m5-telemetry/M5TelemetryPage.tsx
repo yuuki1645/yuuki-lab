@@ -13,6 +13,7 @@ import { at, fmt, fmtMs, Metric, NumField } from "./m5Widgets";
 import { inaSelectValue, parseInaOption } from "./m5Route";
 import { ProfilePanel } from "./ProfilePanel";
 import { TopologyPanel } from "./TopologyPanel";
+import { PolicyStickPad } from "./PolicyStickPad";
 import { RightLegTab } from "./RightLegTab";
 import { isSm105Channel } from "./rightLeg";
 import { M5CameraPane } from "./M5CameraPane";
@@ -240,7 +241,7 @@ export default function M5TelemetryPage() {
             type="button"
             className={"m5__btn " + (policyOn ? "m5__btn--on" : "")}
             disabled={!canCmd}
-            title="方策を入れます。前進は 0 のままです。もう一度押すと、トルクを残して直立へ戻します。"
+            title="方策を前進 0 で入れます。入ったあとの前進は右下のスティックです。もう一度押すと、トルクを残して直立へ戻します。"
             onClick={() => send({ op: "policy", enable: !policyOn })}
           >
             方策
@@ -652,6 +653,10 @@ export default function M5TelemetryPage() {
             pinBottom={pinEvents}
           />
         </section>
+      ) : null}
+
+      {stream.source !== "isaac" && !replaying ? (
+        <PolicyStickPad armed={policyOn && canCmd} onVx={(vx) => send({ op: "policy_vx", vx })} />
       ) : null}
 
       <FieldManual

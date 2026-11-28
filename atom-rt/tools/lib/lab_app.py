@@ -114,6 +114,7 @@ from .m5_hub_bridge import (
     lan_ipv4,
 )
 from . import experiment_log
+from . import policy_stick
 from .m5_record_store import M5RecordStore
 
 # ひざ・かかとピッチ。真下 0°。RDS の 100〜170° と PWM ON は使わない。
@@ -216,6 +217,11 @@ class LabApp(tk.Tk):
         self._live_lock = threading.Lock()
         self._live_joints: dict[int, tuple[float, bool]] = {}
         self._live_posted = False
+        # 前進スティックも同じ。指の移動を 1 件ずつ積むと、離したあとに古い速度が届く。
+        self._live_vx: float | None = None
+        self._live_vx_posted = False
+        # 腰へ最後に送った前進。状態通知で上書きされても、同じ速度は送り直さない。
+        self._stick_vx_sent = 0.0
         # 本記録は ATOM 接続 PC のディスク。明示開始まで書かない。
         self._record_store = M5RecordStore()
         self._record_pub_t = 0.0
@@ -484,6 +490,12 @@ class LabApp(tk.Tk):
             if self._m5_note_live_joints(_live_joint_updates(msg)):
                 self.after(0, self._m5_apply_live_joints)
             return
+        if op == "policy_vx":
+            # 倒しているあいだの速度は最新だけ。離した 0 より古い前進を、あとに送らない。
+            vx = policy_stick.clamp_policy_vx(msg.get("vx"))
+            if vx is not None and self._m5_note_live_vx(vx):
+                self.after(0, self._m5_apply_live_vx)
+            return
         self.after(0, lambda m=dict(msg): self._m5_handle_cmd(m))
 
     def _m5_log_port(self) -> str:
@@ -544,6 +556,63 @@ class LabApp(tk.Tk):
             if again:
                 self.after(0, self._m5_apply_live_joints)
 
+    def _m5_note_live_vx(self, vx: float) -> bool:
+        """最新の前進だけ残す。Tk を起こす必要があるときだけ True。"""
+        with self._live_lock:
+            self._live_vx = vx
+            if self._live_vx_posted:
+                return False
+            self._live_vx_posted = True
+            return True
+
+    def _m5_apply_live_vx(self) -> None:
+        """Tk スレッドで、溜まっている最新の前進を 1 回出す。"""
+        with self._live_lock:
+            vx = self._live_vx
+            self._live_vx = None
+        try:
+            if vx is not None:
+                self._from_ipad = True
+                try:
+                    self._apply_policy_vx(vx)
+                finally:
+                    self._from_ipad = False
+        finally:
+            again = False
+            with self._live_lock:
+                if self._live_vx is not None:
+                    again = True
+                else:
+                    self._live_vx_posted = False
+            if again:
+                self.after(0, self._m5_apply_live_vx)
+
+    def _apply_policy_vx(self, raw: object) -> None:
+        """方策が入っているあいだだけ、スティックの前進を腰へ渡す。
+
+        スティックでは方策を入れない。切るのは方策ボタンと全停止。
+        ブラウザが全員切れたあとは、残っていた倒しを 0 にする。
+        """
+        s = self._m5_sess()
+        if s is None or not s.policy.get("enable"):
+            return
+        vx = policy_stick.clamp_policy_vx(raw)
+        if vx is None:
+            return
+        if self._ipad_clients <= 0:
+            vx = 0.0
+        prev = self._stick_vx_sent
+        if abs(vx - prev) < 5.0e-4:
+            return
+        self._stick_vx_sent = vx
+        s.send(proto.cmd_policy(True, vx))
+        # 腰の状態通知が来るまでの表示。通知が来たら、その値で置き換わる。
+        s.policy = {**s.policy, "vx": vx}
+        note = policy_stick.policy_stick_note(prev, vx)
+        if note:
+            s.note(note)
+        self._m5_publish_status()
+
     def _on_ipad_clients(self, n: int) -> None:
         prev = self._ipad_clients
         self._ipad_clients = n
@@ -556,6 +625,10 @@ class LabApp(tk.Tk):
             s = self._m5_sess()
             if s:
                 s.note("iPad 切断。PC 操作を再開")
+            # 指が乗ったまま切れても、前進を残さない。未送信の倒しも捨てる。
+            with self._live_lock:
+                self._live_vx = None
+            self._apply_policy_vx(0.0)
         self._m5_publish_status()
         self._m5_publish_control()
 
@@ -594,7 +667,7 @@ class LabApp(tk.Tk):
             "fw_ver": int(getattr(s, "fw_ver", 0) or 0) if s else 0,
             "mode": s.mode if s else self.mode_var.get(),
             "bridge_port": 8794,
-            # 実機の方策。未接続や未通知は切。前進指令は画面からは 0 のまま。
+            # 実機の方策。未接続や未通知は切。ボタンは 0 で入れ、その後は右下スティック。
             "policy": s.policy if s else proto.empty_policy_status(),
         }
 
@@ -976,13 +1049,15 @@ class LabApp(tk.Tk):
             # モード変更はファーム側で方策を切る。ボタンもすぐ手動へ戻す。
             s.policy = proto.empty_policy_status()
             s._policy_note_sig = (False, 0)
+            self._stick_vx_sent = 0.0
             s.send(proto.cmd_mode(robot))
             self._m5_publish_status()
         elif op == "policy":
             enable = bool(msg.get("enable"))
             if enable:
                 self._cop_stop("方策へ切替")
-            # 前進は 0。速度を足すのは sim_to_real の確認のあと。
+            # ボタンは前進 0 で入れる。入ったあとの速度は、右下スティックの policy_vx。
+            self._stick_vx_sent = 0.0
             s.send(proto.cmd_policy(enable, 0.0))
             s.policy = {
                 **s.policy,
@@ -2603,6 +2678,7 @@ class LabApp(tk.Tk):
             s.policy = proto.empty_policy_status()
             s._policy_note_sig = (False, 0)
             s.send(proto.cmd_hold())
+        self._stick_vx_sent = 0.0
         for v in self.out_vars:
             v.set(False)
         for v in self.rand_vars:

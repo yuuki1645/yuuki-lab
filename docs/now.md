@@ -26,7 +26,7 @@ MuJoCo の exp_030 以前は、以前の実験である。新しい学習の仕�
 
 最終目標は、この学習で現実の等身大の脚を動かすこと。学習と実機のデータ取りは交互に行い、分布の違いとバグを早く見つける。最初の実機データは直立で、自由な歩行はその前の確認が合うまで行わない。手順は [sim_to_real.md](sim_to_real.md)。
 
-実機に載せる方策は、学習 `2026-11-27_14-01-29_stand_half` の `model_2200`。重みは `core-rt/src/policy_weights.hpp`。推論は腰の CoreS3 で、周期は約 33 ms。スイッチは実機テレメトリの「方策」ボタン（USB `0x92`）。起動時は切、最初の前進指令は 0。書き込みはサブ PC。
+実機に載せる方策は、学習 `2026-11-27_14-01-29_stand_half` の `model_2200`。重みは `core-rt/src/policy_weights.hpp`。推論は腰の CoreS3 で、周期は約 33 ms。スイッチは実機テレメトリの「方策」ボタン（USB `0x92`）。起動時は切、ボタンの前進は 0。入ったあとの前進は、同じ画面の右下スティックが 0〜0.2 m/s で足す。その速度が直立の包絡を外す境界は、`core-rt/src/walk_policy.cpp` の `kVxStand`。書き込みはサブ PC。
 
 方策の 1 周期は USB `0x1A`。自動記録の take にも `policy/` として残り、関節の並びと単位は同じフォルダの `context.json` に入る。正本は [link/schema/core_take_v2.md](../link/schema/core_take_v2.md)。再生の方策ステップは、同じ `storage.yaml` の `sim/` 以下へ自動で残す。形式は `sim_play_v1`。正本は [link/schema/sim_play_v1.md](../link/schema/sim_play_v1.md)。開いている断片は NAS へ送らない。画面の分布比較は、記録開始の `policy_trace.jsonl` と、再生のローカル側を読む。手順は [sim_to_real.md](sim_to_real.md)。方策の目標は、初期の可動で先に止める。数値は `core-rt/src/walk_policy.cpp` の `clampPolicyDeg`。そのあと、前進 0 で直立から外れた状態が続くとネットを止める。危険な目標は腰の周期の中で速度を抑え、範囲の外が続くと直立へ戻す。サブ PC で続けるときの判断は [sub_pc.md](sub_pc.md)、メイン PC でシミュの観測と出力を見るときの判断は [main_pc.md](main_pc.md)。どちらも作業が終わったら消す。
 

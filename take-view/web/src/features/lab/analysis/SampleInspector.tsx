@@ -12,6 +12,7 @@ import { KIND_LABEL, L, LANE_LABEL, MAG_LABEL, SEVERITY_LABEL } from "../labels"
 import type { LabAnalysis, LabGamepadSample, LabPolicySample, LabSample } from "../types";
 import { SEV_COLOR } from "./canvas";
 import { formatClock, formatNumber, formatOffset } from "./plotMath";
+import { formatAnglePair, radiansToDisplayDeg, uprightDegOf } from "./screenAngle";
 
 type Props = {
   sample: LabSample | null;
@@ -345,6 +346,7 @@ export const SampleInspector = memo(function SampleInspector({
               focusJoint={focusJoint}
               policyIndex={analysis.context?.policy_of_fw?.[focusJoint] ?? -1}
               jointName={analysis.joint_names[focusJoint] ?? ""}
+              uprightDeg={uprightDegOf(focusJoint, analysis.context)}
             />
           ) : (
             <p className="lab-muted lab-small">{L.policyBefore}</p>
@@ -385,17 +387,25 @@ function PolicyReadout({
   focusJoint,
   policyIndex,
   jointName,
+  uprightDeg,
 }: {
   policy: LabPolicySample;
   focusJoint: number;
   policyIndex: number;
   jointName: string;
+  uprightDeg: number;
 }) {
   const row = policy.row ?? {};
   const atIndex = (key: string): unknown => {
     if (policyIndex < 0) return undefined;
     const value = row[key];
     return Array.isArray(value) ? value[policyIndex] : undefined;
+  };
+  // obs / action_rad / cmd_rad are radians from upright. The screen shows the servo's degrees.
+  const angleText = (key: string): string => {
+    const value = atIndex(key);
+    if (typeof value !== "number" || !Number.isFinite(value)) return cellText(value, 4);
+    return formatAnglePair(radiansToDisplayDeg(value, "screen", uprightDeg), value);
   };
   return (
     <>
@@ -428,11 +438,11 @@ function PolicyReadout({
             {focusJoint} {jointName}
           </dt>
           <dd>
-            {L.sObs} {cellText(atIndex("obs"), 4)}
+            {L.sObs} {angleText("obs")}
             {" \u00b7 "}
-            {L.sActionRad} {cellText(atIndex("action_rad"), 4)}
+            {L.sActionRad} {angleText("action_rad")}
             {" \u00b7 "}
-            {L.sPolCmd} {cellText(atIndex("cmd_rad"), 4)}
+            {L.sPolCmd} {angleText("cmd_rad")}
           </dd>
         </div>
       </dl>

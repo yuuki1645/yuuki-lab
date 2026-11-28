@@ -277,6 +277,8 @@ export type LabTakeContext = {
   side: string | null;
   action_scale: number;
   envelope_rad: number;
+  /** Screen degrees of straight down, per logical axis. RDS 135, SM105 0. */
+  upright_deg?: number[];
   /** Logical axis -> index in the policy arrays. -1 when that axis is absent. */
   policy_of_fw: number[];
   /** Servo model per logical axis. SM105BL has no AS5600 and no INA226. */

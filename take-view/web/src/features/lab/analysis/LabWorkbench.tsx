@@ -51,6 +51,7 @@ import {
   type View,
 } from "./plotMath";
 import { SampleInspector } from "./SampleInspector";
+import { uprightDegOf } from "./screenAngle";
 import { EventLog, JointTable, SystemCard } from "./Summaries";
 import { TimePlot, type PlotBand, type PlotMarker } from "./TimePlot";
 import { useRangeStats, useRows, useSample, useWindowData, type SampleRequest } from "./useLabData";
@@ -355,6 +356,7 @@ function Workbench({ day, takeId, analysis }: { day: string; takeId: string; ana
     return out;
   }, [analysis.events, analysis.commands, joint, panels]);
 
+  const uprightDeg = uprightDegOf(joint, analysis.context);
   const statsChannels = useMemo(
     () =>
       panels.flatMap((panel) =>
@@ -362,9 +364,11 @@ function Workbench({ day, takeId, analysis }: { day: string; takeId: string; ana
           key: line.key,
           label: `${line.label}${panel.unit ? ` (${panel.unit})` : ""}`,
           digits: panel.digits,
+          angle: panel.angle,
+          uprightDeg: panel.angle === "screen" ? uprightDeg : 0,
         }))
       ),
-    [panels]
+    [panels, uprightDeg]
   );
   const statsKeys = useMemo(() => statsChannels.map((item) => item.key), [statsChannels]);
   const { stats, loading: statsLoading } = useRangeStats(day, takeId, statsKeys, view, side);
@@ -967,6 +971,8 @@ function Workbench({ day, takeId, analysis }: { day: string; takeId: string; ana
                 refs={panel.refs}
                 yFixed={panel.yFixed}
                 digits={panel.digits}
+                angle={panel.angle}
+                uprightDeg={uprightDeg}
                 height={panel.height}
                 data={data}
                 view={view}
@@ -1010,6 +1016,7 @@ function Workbench({ day, takeId, analysis }: { day: string; takeId: string; ana
             loading={rowsLoading}
             cursorIndex={sample?.index ?? null}
             thresholds={th}
+            uprightDeg={uprightDeg}
             onPickIndex={pickIndex}
             onPage={(delta) => setTableStart((current) => Math.max(0, (current ?? rows?.start ?? 0) + delta * (TABLE_ROWS - 1)))}
           />

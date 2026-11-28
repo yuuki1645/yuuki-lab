@@ -31,6 +31,14 @@ import {
   zoomView,
   type View,
 } from "./plotMath";
+import {
+  displayDegToRadians,
+  formatAnglePair,
+  formatAngleSpan,
+  presentWindow,
+  radiansToDisplayDeg,
+  type AngleDisplay,
+} from "./screenAngle";
 
 export type PlotBand = { from: number; to: number; severity: number };
 export type PlotMarker = { t: number; kind: "error" | "warn" | "cmd" };
@@ -43,6 +51,10 @@ type Props = {
   refs?: PlotRef[];
   yFixed?: [number, number];
   digits: number;
+  /** When set, series and reference lines are radians and are drawn in degrees. */
+  angle?: AngleDisplay;
+  /** Straight-down degrees for "screen". Ignored for a difference. */
+  uprightDeg?: number;
   height: number;
   data: LabWindow | null;
   view: View;
@@ -100,11 +112,13 @@ export const TimePlot = memo(function TimePlot(props: Props) {
     unit,
     lines,
     states,
-    refs,
+    refs: sourceRefs,
     yFixed,
     digits,
     height,
-    data,
+    data: source,
+    angle,
+    uprightDeg = 0,
     view,
     duration,
     hoverT,
@@ -121,6 +135,19 @@ export const TimePlot = memo(function TimePlot(props: Props) {
     onReset,
     onToggleLine,
   } = props;
+
+  // The window stays in radians. These two panels draw degrees, and only their own lines.
+  const data = useMemo(() => {
+    if (!angle || !source) return source;
+    return presentWindow(source, angle, uprightDeg, lines.map((line) => line.key));
+  }, [angle, source, uprightDeg, lines]);
+  const refs = useMemo(() => {
+    if (!angle || !sourceRefs) return sourceRefs;
+    return sourceRefs.map((ref) => ({
+      ...ref,
+      y: radiansToDisplayDeg(ref.y, angle, uprightDeg),
+    }));
+  }, [angle, sourceRefs, uprightDeg]);
 
   const frameRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
@@ -474,7 +501,19 @@ export const TimePlot = memo(function TimePlot(props: Props) {
     let text = "";
     if (point) {
       if (point.min != null && point.max != null && data?.mode === "envelope" && point.min !== point.max) {
-        text = `${formatNumber(point.min, digits)}\u2013${formatNumber(point.max, digits)}`;
+        text = angle
+          ? formatAngleSpan(
+              point.min,
+              point.max,
+              displayDegToRadians(point.min, angle, uprightDeg),
+              displayDegToRadians(point.max, angle, uprightDeg)
+            )
+          : `${formatNumber(point.min, digits)}\u2013${formatNumber(point.max, digits)}`;
+      } else if (angle) {
+        text =
+          point.value == null
+            ? L.missing
+            : formatAnglePair(point.value, displayDegToRadians(point.value, angle, uprightDeg));
       } else {
         text = point.value == null ? L.missing : formatNumber(point.value, digits);
       }

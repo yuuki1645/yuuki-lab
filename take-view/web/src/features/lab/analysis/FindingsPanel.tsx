@@ -10,6 +10,7 @@ import { KIND_HINT, KIND_LABEL, L, LANE_LABEL, MAG_LABEL, SEVERITY_LABEL, THRESH
 import type { LabFinding, LabInterval } from "../types";
 import { SEV_COLOR } from "./canvas";
 import { formatNumber, formatOffset, formatPct } from "./plotMath";
+import { formatAnglePair, radiansToDisplayDeg } from "./screenAngle";
 
 type Scope = "all" | "joints" | "system";
 type Sort = "severity" | "time";
@@ -39,6 +40,16 @@ const PEAK_UNIT: Record<string, string> = {
   foot_saturated: L.kg,
 };
 
+/** Peak of a clip or a sensor/policy gap is a radian difference, shown in degrees. */
+function peakText(kind: string, value: number): string {
+  if (kind === "policy_clip" || kind === "policy_diverge") {
+    return formatAnglePair(radiansToDisplayDeg(value, "delta", 0), value);
+  }
+  const unit = PEAK_UNIT[kind];
+  if (unit) return `${formatNumber(value, 3)} ${unit}`;
+  return formatNumber(value, 3);
+}
+
 export function laneName(lane: string, joint: number | null, jointNames: string[]): string {
   if (joint != null) return `${joint} ${jointNames[joint] ?? ""}`;
   return LANE_LABEL[lane] ?? lane;
@@ -51,8 +62,8 @@ function detailLines(finding: LabFinding, jointNames: string[]): string[] {
   const unit = PEAK_UNIT[finding.kind];
   if (finding.kind === "track_offset" && detail.median_deg != null) {
     out.push(`${L.median} ${detail.median_deg > 0 ? "+" : ""}${formatNumber(detail.median_deg, 2)}${L.deg}`);
-  } else if (unit && finding.peak_value != null) {
-    out.push(`${L.peak} ${formatNumber(finding.peak_value, 3)} ${unit}`);
+  } else if (finding.peak_value != null && (unit || finding.kind === "policy_clip" || finding.kind === "policy_diverge")) {
+    out.push(`${L.peak} ${peakText(finding.kind, finding.peak_value)}`);
   }
   if (detail.mag) {
     const parts = Object.entries(detail.mag)
@@ -217,7 +228,7 @@ export const FindingsPanel = memo(function FindingsPanel({
                           </span>
                           {interval.peak_value != null ? (
                             <span className="lab-muted">
-                              {L.peak} {formatNumber(interval.peak_value, 3)}
+                              {L.peak} {peakText(finding.kind, interval.peak_value)}
                             </span>
                           ) : null}
                         </button>

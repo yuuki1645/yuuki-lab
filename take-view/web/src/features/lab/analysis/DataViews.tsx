@@ -10,6 +10,7 @@ import { L, MAG_LABEL, SEVERITY_LABEL, fmt } from "../labels";
 import type { LabRangeStats, LabRows } from "../types";
 import { channelLabel } from "./panels";
 import { formatNumber, formatOffset } from "./plotMath";
+import { angleDisplayOf, formatAnglePair, radiansToDisplayDeg, type AngleDisplay } from "./screenAngle";
 
 type Tone = "bad" | "warn" | undefined;
 
@@ -39,8 +40,10 @@ function cellTone(channel: string, value: number | null, th: Record<string, numb
   }
 }
 
-function cellValue(channel: string, value: number | null): string {
+function cellValue(channel: string, value: number | null, uprightDeg: number): string {
   if (value == null) return L.missing;
+  const angle = angleDisplayOf(channel);
+  if (angle) return formatAnglePair(radiansToDisplayDeg(value, angle, angle === "screen" ? uprightDeg : 0), value);
   const field = channel.split(".")[1];
   if (field === "sev") return SEVERITY_LABEL[value] ?? String(value);
   if (field === "mag") return MAG_LABEL[value] ?? String(value);
@@ -55,11 +58,13 @@ type TableProps = {
   loading: boolean;
   cursorIndex: number | null;
   thresholds: Record<string, number>;
+  /** Straight-down degrees of the focused joint. Radian joint channels use it. */
+  uprightDeg: number;
   onPickIndex: (index: number) => void;
   onPage: (delta: number) => void;
 };
 
-export const DataTable = memo(function DataTable({ rows, loading, cursorIndex, thresholds, onPickIndex, onPage }: TableProps) {
+export const DataTable = memo(function DataTable({ rows, loading, cursorIndex, thresholds, uprightDeg, onPickIndex, onPage }: TableProps) {
   const cursorRef = useRef<HTMLTableRowElement>(null);
 
   // Keep the cursor row in sight without yanking the whole page.
@@ -124,7 +129,7 @@ export const DataTable = memo(function DataTable({ rows, loading, cursorIndex, t
                         .join(" ");
                       return (
                         <td key={channel} className={className || undefined}>
-                          {cellValue(channel, value)}
+                          {cellValue(channel, value, uprightDeg)}
                         </td>
                       );
                     })}
@@ -141,10 +146,31 @@ export const DataTable = memo(function DataTable({ rows, loading, cursorIndex, t
   );
 });
 
+type StatChannel = {
+  key: string;
+  label: string;
+  digits: number;
+  /** Set when the API number is still radians from upright. */
+  angle?: AngleDisplay;
+  uprightDeg?: number;
+};
+
+/**
+ * One statistic. Radian joint channels become degrees, with the radian in parentheses.
+ * A spread (std, max−min) stays a difference, so a hip does not gain 135°.
+ */
+function showStat(channel: StatChannel, value: number | null | undefined, spread = false): string {
+  if (value == null || !Number.isFinite(value)) return formatNumber(value, channel.digits);
+  if (!channel.angle) return formatNumber(value, channel.digits);
+  const display: AngleDisplay = spread ? "delta" : channel.angle;
+  const upright = display === "screen" ? (channel.uprightDeg ?? 0) : 0;
+  return formatAnglePair(radiansToDisplayDeg(value, display, upright), value);
+}
+
 type StatsProps = {
   stats: LabRangeStats | null;
   loading: boolean;
-  channels: Array<{ key: string; label: string; digits: number }>;
+  channels: StatChannel[];
   onPickIndex: (index: number) => void;
 };
 
@@ -187,32 +213,32 @@ export const RangeStats = memo(function RangeStats({ stats, loading, channels, o
               </tr>
             </thead>
             <tbody>
-              {channels.map(({ key, label, digits }) => {
-                const item = stats.stats[key];
+              {channels.map((channel) => {
+                const item = stats.stats[channel.key];
                 if (!item) return null;
                 const jump = (index: number | undefined, value: number | null | undefined) =>
                   index == null ? (
-                    formatNumber(value, digits)
+                    showStat(channel, value)
                   ) : (
                     <button type="button" className="lab-take-link" onClick={() => onPickIndex(index)}>
-                      {formatNumber(value, digits)}
+                      {showStat(channel, value)}
                     </button>
                   );
                 return (
-                  <tr key={key}>
-                    <th scope="row" title={key}>
-                      {label}
+                  <tr key={channel.key}>
+                    <th scope="row" title={channel.key}>
+                      {channel.label}
                     </th>
                     <td>{item.n.toLocaleString()}</td>
                     <td className={item.missing > 0 ? "lab-cell-warn" : undefined}>{item.missing.toLocaleString()}</td>
                     <td>{jump(item.min_index, item.min)}</td>
                     <td>{jump(item.max_index, item.max)}</td>
-                    <td>{formatNumber(item.mean, digits)}</td>
-                    <td>{formatNumber(item.std, digits)}</td>
-                    <td>{formatNumber(item.p05, digits)}</td>
-                    <td>{formatNumber(item.p50, digits)}</td>
-                    <td>{formatNumber(item.p95, digits)}</td>
-                    <td>{formatNumber(item.delta, digits)}</td>
+                    <td>{showStat(channel, item.mean)}</td>
+                    <td>{showStat(channel, item.std, true)}</td>
+                    <td>{showStat(channel, item.p05)}</td>
+                    <td>{showStat(channel, item.p50)}</td>
+                    <td>{showStat(channel, item.p95)}</td>
+                    <td>{showStat(channel, item.delta, true)}</td>
                   </tr>
                 );
               })}

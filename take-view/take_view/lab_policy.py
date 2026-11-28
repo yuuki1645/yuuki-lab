@@ -144,6 +144,9 @@ class TakeContext:
             "side": self.side,
             "action_scale": self.action_scale,
             "envelope_rad": self.envelope_rad,
+            # Straight-down on the screen, per logical axis. The page adds
+            # this when it draws; the series themselves stay radians.
+            "upright_deg": list(self.upright),
             # Logical axis -> policy array index. The inspector uses this to
             # pick the matching slot out of obs / action / joint_flag.
             "policy_of_fw": list(self.policy_of_fw),

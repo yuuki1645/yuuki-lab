@@ -10,6 +10,7 @@
 
 import { L } from "../labels";
 import { JOINT_COLORS, SEV_COLOR } from "./canvas";
+import type { AngleDisplay } from "./screenAngle";
 
 export type LineStyle = "line" | "step" | "bar";
 
@@ -78,6 +79,13 @@ export type PanelSpec = {
   refs?: PlotRef[];
   yFixed?: [number, number];
   digits: number;
+  /**
+   * Joint angles in this panel's series are still radians from upright.
+   * "screen" draws the servo's own degrees (RDS 135 at straight down, SM105 0).
+   * "delta" draws a difference in degrees and does not add that offset.
+   * Reference lines are in the same radians and are converted with the series.
+   */
+  angle?: AngleDisplay;
   /** Findings painted as background bands: their lanes and kinds. */
   bandLanes: string[];
   bandKinds: string[] | "all";
@@ -512,8 +520,8 @@ function badOnColor(value: number): string | null {
  * Policy mode. Every series is already on the sensor clock, and ``p<N>``
  * is the logical axis (not the policy file's left/right order).
  *
- * Joint angles are radians from upright, so the sensor's corr/cmd can sit
- * on the same plot as obs / action_rad / cmd_rad.
+ * Joint series are still radians from upright in the window data.
+ * polJoint and polClip set `angle` so the plot draws screen degrees.
  */
 export function policyPanels(joint: number, envelope: number, sensorOverlay = true): PanelSpec[] {
   const p = `p${joint}`;
@@ -552,7 +560,8 @@ export function policyPanels(joint: number, envelope: number, sensorOverlay = tr
     {
       id: "polJoint",
       title: L.pPolJoint,
-      unit: L.rad,
+      unit: L.deg,
+      angle: "screen",
       height: 220,
       lines: [
         { key: `${p}.obs`, label: L.sObs, color: "#ffb454" },
@@ -570,18 +579,19 @@ export function policyPanels(joint: number, envelope: number, sensorOverlay = tr
         { y: envelope, color: WARN_REF, label: L.refWarn },
         { y: -envelope, color: WARN_REF, label: L.refWarn },
       ],
-      digits: 3,
+      digits: 1,
       bandLanes: [`j${joint}`],
       bandKinds: ["policy_diverge", "policy_clip", "policy_flag", "sim_envelope"],
     },
     {
       id: "polClip",
       title: L.pPolClip,
-      unit: L.rad,
+      unit: L.deg,
+      angle: "delta",
       height: 120,
       lines: [{ key: `${p}.clip`, label: L.sClip, color: "#ff8a65" }],
       refs: [{ y: 0, color: "#9aadc4", label: L.refMedian }],
-      digits: 3,
+      digits: 1,
       bandLanes: [`j${joint}`],
       bandKinds: ["policy_clip"],
     },

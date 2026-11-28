@@ -10,6 +10,9 @@
  * 返す軸はチップの軸。体の前・左・上への入れ替えは bmi270_waist.cpp の表だけ。
  */
 
+// bmi270AgeMs の uint16_t。このヘッダは .cpp 側の Arduino.h より先に読まれる。
+#include <stdint.h>
+
 /** 設定ファイルを書き、加速度 ±4 g・角速度 ±2000 deg/s にする。失敗時は false。 */
 bool bmi270Begin();
 

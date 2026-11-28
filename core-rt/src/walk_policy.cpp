@@ -46,6 +46,20 @@ static constexpr float kKneeMaxDeg = 150.0f;
 static constexpr float kAnkleMinDeg = -60.0f;
 static constexpr float kAnkleMaxDeg = 60.0f;
 
+// 方策の初期だけ。画面の度。左右同じ。直立は RDS 135°、SM105 0°。
+// 股ロールは内側 5°・外側 40°。股ピッチは後ろ 10°・前 40°。
+// このあと前進 0 の約 ±20° の確認は残す。手動の指令はこの範囲を使わない。
+static constexpr float kPolicyHipRollMinDeg = 130.0f;
+static constexpr float kPolicyHipRollMaxDeg = 175.0f;
+static constexpr float kPolicyHipPitchMinDeg = 125.0f;
+static constexpr float kPolicyHipPitchMaxDeg = 175.0f;
+static constexpr float kPolicyKneeMinDeg = 0.0f;
+static constexpr float kPolicyKneeMaxDeg = 40.0f;
+static constexpr float kPolicyAnklePitchMinDeg = -50.0f;
+static constexpr float kPolicyAnklePitchMaxDeg = 30.0f;
+static constexpr float kPolicyAnkleRollMinDeg = 115.0f;
+static constexpr float kPolicyAnkleRollMaxDeg = 155.0f;
+
 // サーボの最高速度。これを超える角の変化は、センサの飛びとみなす。
 static constexpr float kRdsSpeedRad = 5.0f;
 static constexpr float kSmsSpeedRad = 6.3f;
@@ -136,6 +150,26 @@ static float clampJointDeg(int fw, float deg) {
         return clampRange(deg, kKneeMinDeg, kKneeMaxDeg);
     }
     return clampRange(deg, kAnkleMinDeg, kAnkleMaxDeg);
+}
+
+/**
+ * 方策の目標を、初期の可動へ止めてからサーボの窓へ入れる。
+ * 前進 0 の約 ±20° の確認は、このあとの desired を見る。
+ */
+static float clampPolicyDeg(int fw, float deg) {
+    const int axis = fw % 5;
+    if (axis == kAxisHipRoll) {
+        deg = clampRange(deg, kPolicyHipRollMinDeg, kPolicyHipRollMaxDeg);
+    } else if (axis == kAxisHipPitch) {
+        deg = clampRange(deg, kPolicyHipPitchMinDeg, kPolicyHipPitchMaxDeg);
+    } else if (axis == kAxisKnee) {
+        deg = clampRange(deg, kPolicyKneeMinDeg, kPolicyKneeMaxDeg);
+    } else if (axis == kAxisAnklePitch) {
+        deg = clampRange(deg, kPolicyAnklePitchMinDeg, kPolicyAnklePitchMaxDeg);
+    } else {
+        deg = clampRange(deg, kPolicyAnkleRollMinDeg, kPolicyAnkleRollMaxDeg);
+    }
+    return clampJointDeg(fw, deg);
 }
 
 static float degToPolicyRad(int fw, float deg) {
@@ -532,7 +566,8 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
             // ここまで来る軸は有効か揺れだけ。欠測と飛びの周期は、ネットを呼ばない。
             gLastAction[p] = action[p];
             const int fw = kFwForPolicy[p];
-            desired[fw] = clampJointDeg(fw, policyRadToDeg(fw, action[p] * kActionScale));
+            // 可動で止めた値を、このあとの約 ±20° の確認が見る。
+            desired[fw] = clampPolicyDeg(fw, policyRadToDeg(fw, action[p] * kActionScale));
         }
         out.ran = true;
         out.reason = kPolicyReasonRan;
@@ -595,7 +630,7 @@ void policyStep(const PolicySense& sense, PolicyStep& out) {
                 rad = -kEnvelopeRad;
                 capped = true;
             }
-            desired[fw] = clampJointDeg(fw, policyRadToDeg(fw, rad));
+            desired[fw] = clampPolicyDeg(fw, policyRadToDeg(fw, rad));
         }
     }
 

@@ -30,6 +30,7 @@
 |---|---|
 | 135° と 0°、チャンネル順、度とラジアン | `robot_description/hub_link.py` |
 | RDS の 40〜230°、SM105 の −30〜150° と ±60° | `core-rt/src/main.cpp` の `clampMove` と `clampSms` |
+| 方策の初期の可動。手動のバーはこの範囲を使わない | `core-rt/src/walk_policy.cpp` の `clampPolicyDeg`。前進 0 の約 ±20° の確認は、この可動のあと |
 | 画面でドラッグできる人間の可動範囲 | `robotics-hub/src/features/m5-telemetry/rightLeg.ts` の `jointAngleWindow` |
 | 左かかとピッチだけ、サーボのカウントが増える向きが逆 | `core-rt/src/sms_link.cpp` の `smsDirection`。画面に届く前に、プラスをつま先上げへ揃える |
 | 左股ロール、両ひざ、左かかとロールの URDF 軸を反転 | `fusion2URDF/core/yuuki_joint_names.py` の `_SERVO_NEGATIVE_Z`。左右で上の表と同じプラスになる |
@@ -38,6 +39,8 @@
 Fusion から書き出した URDF では、股ピッチの軸は反転しません。書き出し後の +Z が、すでに「脚を前へ出す」向きです。
 
 Robot モードの保持は、RDS が 135°、SM105BL が 0° です。`main.cpp` の起動時に `gCmd` へその値を入れます。
+
+方策が出す目標は、サーボの窓より先に、初期の可動で止めます。左右は同じです。画面の度で、股ロールは 130°〜175°（内側 5°、外側 40°）、股ピッチは 125°〜175°（後ろ 10°、前 40°）、ひざは 0°〜40°、かかとピッチは −50°〜+30°、かかとロールは 115°〜155° です。前進 0 の約 ±20° の確認は、このあとも残します。
 
 ## この表の範囲ではないもの
 

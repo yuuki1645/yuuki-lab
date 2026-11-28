@@ -58,6 +58,8 @@ enum UsbMsg : uint8_t {
     kUsbNvsEntry = 0x16,
     kUsbNvsEnd = 0x17,
     kUsbNvsData = 0x18,
+    /** 方策の状態。テレメトリの並びは変えない。入っているあいだだけ、たまに出す。 */
+    kUsbPolicyStatus = 0x19,
 
     kUsbCmdPing = 0x80,
     kUsbCmdScan = 0x81,
@@ -78,6 +80,11 @@ enum UsbMsg : uint8_t {
     kUsbCmdNvsErase = 0x90,
     /** 関節指令と同じ並び。度は電気角で、取り付けの折り返しとズレを通さない。校正掃引用。 */
     kUsbCmdJointElec = 0x91,
+    /**
+     * 腰の方策。enable が 1 のとき CoreS3 がネットを回す。
+     * vx_mps は前進で 0〜0.2。ヨーは 0 のまま。推論はサブ PC ではしない。
+     */
+    kUsbCmdPolicy = 0x92,
 };
 
 /** 失敗理由。GUI の REASON と番号を揃える。 */
@@ -202,6 +209,28 @@ struct UsbCmdOut {
 struct UsbCmdJoint {
     uint8_t ch;
     float deg;
+};
+
+/** PC → 腰。方策のスイッチと前進指令。切るときは enable を 0 にする。 */
+struct UsbCmdPolicy {
+    uint8_t enable;
+    uint8_t reserved;
+    float vx_mps;
+};
+
+/**
+ * 腰 → PC。方策が入っているあいだの重力と角速度。
+ * reason は 0 切、1 実行、2 関節欠測、3 IMU 欠測、4 足裏欠測、5 直立ではない、6 故障。
+ * gravity は体座標。直立なら z が約 -1。
+ */
+struct UsbPolicyStatus {
+    uint8_t enable;
+    uint8_t ran;
+    uint8_t reason;
+    uint8_t reserved;
+    float gravity[3];
+    float gyro_rad[3];
+    float vx_mps;
 };
 
 struct UsbCmdProbe {

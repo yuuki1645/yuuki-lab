@@ -1,6 +1,8 @@
 # core-rt
 
-腰の CoreS3 用 20 Hz ファームです。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出します。機体の全体は [docs/robot_control.md](../docs/robot_control.md)、関節角の正本は [docs/joint_angles.md](../docs/joint_angles.md) です。
+腰の CoreS3 用ファームです。制御周期は 33333 µs（約 30 Hz）で、シミュの方策と同じ間隔です。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出します。機体の全体は [docs/robot_control.md](../docs/robot_control.md)、関節角の正本は [docs/joint_angles.md](../docs/joint_angles.md) です。
+
+方策 `model_2200` の重みは `src/policy_weights.hpp` に入っています。ネットは CoreS3 が回します。起動時は切れています。サブ PC は書き込みと、USB のスイッチだけを担当します。
 
 脚の I2C はここでは開きません。下の PaHub は各脚の ATOM S3R 上にあります。配線の正本は `src/topology.hpp` で、脚のファームに焼き込みます。腰は配線表を CAN で送りません。
 
@@ -32,7 +34,24 @@ CoreS3 はリセット長押しでダウンロードモードに入ります。`
 
 ビルドログのボード名は DevKitC-1-N8 のままです。容量の行は 16 MB、アプリは `0x20000` から 3 MB、校正用 NVS は `0x10000` から 64 KB です。PSRAM は使いません。
 
-起動直後は Lab です。PWM は、出した軸だけ動きます。
+起動直後は Lab です。PWM は、出した軸だけ動きます。方策は切れたままです。
+
+## 方策
+
+重みを作り直すとき（メイン PC。Torch がある環境）:
+
+```text
+python tools/export_policy_weights.py
+```
+
+サブ PC から入れるとき。`lab_debug.py` が COM を開いているあいだは使えません。最初の前進は 0 のままにします。
+
+```text
+python tools/send_policy.py --port COMx --enable 1 --vx 0
+python tools/send_policy.py --port COMx --enable 0
+```
+
+直立で重力の z が約 −1 にならないときは、`src/bmi270_waist.cpp` の軸の表だけを直します。自由な歩行は、docs/sim_to_real.md の確認が合うまで出しません。脚の周期も 33 ms にしたので、腰と一緒に `atom-rt` の `can-leg` を書き込みます。机上の `rt-usb` は 50 ms のままです。
 
 ## I2C スキャン
 

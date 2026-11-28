@@ -42,7 +42,8 @@ static constexpr uint32_t kI2cHz = 100000;
 static constexpr uint32_t kI2cTimeoutMs = 20;
 static constexpr uint32_t kHubProbeTimeoutMs = 5;
 static constexpr uint32_t kMuxSettleUs = 2000;
-static constexpr uint32_t kPeriodMs = 50;
+// 腰の方策は 33333 µs。脚はミリ秒待ちなので 33 ms（約 30.3 Hz）。差は 1 ms 未満。
+static constexpr uint32_t kPeriodMs = 33;
 static constexpr float kOvercurrentAmp = 8.0f;
 
 static constexpr float kServoFullMinDeg = 0.0f;

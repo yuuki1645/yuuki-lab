@@ -59,6 +59,7 @@ MSG_NVS_BEGIN = 0x15
 MSG_NVS_ENTRY = 0x16
 MSG_NVS_END = 0x17
 MSG_NVS_DATA = 0x18
+MSG_POLICY = 0x19
 
 # PC → ボード
 CMD_PING = 0x80
@@ -80,6 +81,8 @@ CMD_NVSLIST = 0x8F
 CMD_NVSERASE = 0x90
 # 関節指令と同じ並び。度は電気角で、脚の取り付け変換を通さない。校正掃引用。
 CMD_JOINT_ELEC = 0x91
+# 腰の方策。enable と前進 m/s。ヨーは 0。推論は CoreS3 側。
+CMD_POLICY = 0x92
 
 REASON = {
     0: "ok",
@@ -164,6 +167,10 @@ _CMD_CAL = struct.Struct("<B")
 _CMD_MODE = struct.Struct("<B")
 _CMD_OUT = struct.Struct("<BB")
 _CMD_JOINT = struct.Struct("<Bf")
+# enable, reserved, vx_mps。ヨーはファーム側で 0。
+_CMD_POLICY = struct.Struct("<BBf")
+# enable, ran, reason, reserved, gravity xyz, gyro xyz, vx
+_POLICY_STATUS = struct.Struct("<BBBBfffffff")
 _CMD_PROBE = struct.Struct("<BBb")
 _CMD_MAPGET = struct.Struct("<B")
 _NVS_ENTRY = struct.Struct("<16s16sBH")
@@ -290,6 +297,16 @@ def cmd_joint(ch: int, deg: float) -> bytes:
 def cmd_joint_elec(ch: int, deg: float) -> bytes:
     """校正掃引用。度は電気角のままで、ホーンの向きとブラケットのズレを足さない。"""
     return encode_frame(CMD_JOINT_ELEC, _CMD_JOINT.pack(ch, float(deg)))
+
+
+def cmd_policy(enable: bool, vx_mps: float = 0.0) -> bytes:
+    """腰の方策。前進は 0〜0.2 m/s。切るときは enable を False にする。"""
+    vx = float(vx_mps)
+    if vx < 0.0:
+        vx = 0.0
+    if vx > 0.2:
+        vx = 0.2
+    return encode_frame(CMD_POLICY, _CMD_POLICY.pack(1 if enable else 0, 0, vx))
 
 
 def cmd_probe_root(addr: int) -> bytes:
@@ -975,6 +992,24 @@ def format_rx(msg_type: int, payload: bytes) -> str:
             n, nb = _NVS_END.unpack(payload[: _NVS_END.size])
             return f"NVS 一覧  {n} キー  {nb}B"
         return "NVS 一覧終了"
+    if msg_type == MSG_POLICY and len(payload) >= _POLICY_STATUS.size:
+        enable, ran, reason, _reserved, gx, gy, gz, wx, wy, wz, vx = _POLICY_STATUS.unpack(
+            payload[: _POLICY_STATUS.size]
+        )
+        why = {
+            0: "切",
+            1: "実行",
+            2: "関節欠測",
+            3: "IMU欠測",
+            4: "足裏欠測",
+            5: "直立ではない",
+            6: "故障",
+        }.get(reason, str(reason))
+        return (
+            f"方策 {'入' if enable else '切'} {why} ran={ran} "
+            f"重力=({gx:.2f},{gy:.2f},{gz:.2f}) "
+            f"角速度=({wx:.2f},{wy:.2f},{wz:.2f}) vx={vx:.3f}"
+        )
     return f"type=0x{msg_type:02X}  {len(payload)}B"
 
 
@@ -1002,6 +1037,7 @@ def format_tx(data: bytes) -> str:
         CMD_NVSLIST: "NVSLIST",
         CMD_NVSERASE: "NVSERASE",
         CMD_JOINT_ELEC: "JOINT_ELEC",
+        CMD_POLICY: "POLICY",
     }
     return names.get(t, f"cmd=0x{t:02X}")
 
@@ -1028,6 +1064,10 @@ def tx_record(data: bytes) -> dict[str, object]:
         ch, on = _CMD_OUT.unpack(payload[: _CMD_OUT.size])
         rec["ch"] = int(ch)
         rec["on"] = bool(on)
+    elif kind == CMD_POLICY and len(payload) >= _CMD_POLICY.size:
+        enable, _reserved, vx = _CMD_POLICY.unpack(payload[: _CMD_POLICY.size])
+        rec["enable"] = bool(enable)
+        rec["vx"] = float(vx)
     return rec
 
 
@@ -1060,6 +1100,9 @@ def parse_cli_line(text: str) -> list[bytes]:
         return [cmd_out(None, parts[1] != "0")]
     if k == "cmd" and len(parts) >= 3:
         return [cmd_joint(int(parts[1]), float(parts[2]))]
+    if k == "policy" and len(parts) >= 2:
+        vx = float(parts[2]) if len(parts) >= 3 else 0.0
+        return [cmd_policy(parts[1] != "0", vx)]
     if k == "profget":
         return [cmd_prof_get()]
     if k == "mapget":

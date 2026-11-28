@@ -2,14 +2,16 @@
  * 腰の CoreS3。左右の ATOM S3R から CAN で 10 軸と両足を受け、USB でサブ PC へ出す。
  *
  * Core 1 が CAN と指令。Core 0 が USB。校正の正本はここ。配線表は topology.hpp。
- * 内部 I2C（G12/G11）は AW9523 で Grove の 5V を出すときだけ使う。
+ * 内部 I2C（G12/G11）は AW9523 で Grove の 5V を出し、同じバスで BMI270 を読む。
  * Unit CAN は PORT.C。送信 GPIO17、受信 GPIO18。5V を出さないとトランシーバは黙る。
  * PORT.B は RS485 ベースの ATOM。ひざピッチとかかとピッチの SM105BL を読む。
- * IMU と RTC は読まない。脚の I2C はここでは開かない。
+ * RTC は読まない。脚の I2C はここでは開かない。
  *
  * 作業モード:
  *   Lab（起動時）  PWM は、出した軸だけ。
- *   Robot         RDS は 135°、SM105BL は 0° で保持。向きは docs/joint_angles.md。
+ *   Robot         RDS は 135°、SM105BL は今の角度のまま。向きは docs/joint_angles.md。
+ * 方策は USB 0x92 で入る。起動時は切。入っているあいだは関節の手動指令を無視する。
+ * 周期は 33333 µs（シミュの 30 Hz）。待ちは 1 ms 刻みなので、端数は切り捨てられる。
  *
  * 校正マップは論理軸 0〜9 に結び、64 KB の NVS に残す。
  * USB は ver 15。番号の正本は link/include/usb_frame.hpp。
@@ -27,12 +29,14 @@
 #include "sms_link.hpp"
 #include "topology.hpp"
 #include "usb_proto.hpp"
+#include "bmi270_waist.hpp"
+#include "walk_policy.hpp"
 
 static constexpr int kCanTxPin = 17;
 static constexpr int kCanRxPin = 18;
 static constexpr uint32_t kI2cHz = 100000;
 static constexpr uint32_t kI2cTimeoutMs = 20;
-static constexpr uint32_t kPeriodUs = 50000;
+static constexpr uint32_t kPeriodUs = 33333;
 
 static constexpr float kMoveMinDeg = 40.0f;
 static constexpr float kMoveMaxDeg = 230.0f;
@@ -40,7 +44,7 @@ static constexpr float kHoldDeg = 135.0f;
 
 static constexpr int kRtCore = 1;
 static constexpr int kUsbCore = 0;
-static constexpr uint32_t kRtStack = 12288;
+static constexpr uint32_t kRtStack = 16384;
 static constexpr uint32_t kUsbStack = 12288;
 
 enum class WorkMode : uint8_t { Lab = 0, Robot = 1 };
@@ -107,6 +111,9 @@ static WorkMode gMode = WorkMode::Lab;
 static uint16_t gOutMask = 0;
 static float gOverAmp = 0.0f;
 static volatile uint8_t gEvtOver = 0;
+/** 方策を止めた側が姿勢を決めた。制御タスクは直立へ書き戻さない。 */
+static volatile uint8_t gPolicyHandsOff = 0;
+static uint8_t gPolicyWasOn = 0;
 
 static Snapshot gSnap;
 static portMUX_TYPE gLock = portMUX_INITIALIZER_UNLOCKED;
@@ -599,6 +606,24 @@ static void setMode(WorkMode mode) {
     sendMode();
 }
 
+static void writeJointGoals(const float* deg) {
+    for (int i = 0; i < kCoreJoints; ++i) {
+        gCmd[i] = deg[i];
+        if (isSmsJoint(i)) {
+            smsLinkGoal(smsIdForJoint(i), gCmd[i]);
+        }
+    }
+}
+
+/** 方策が止まったときの直立。RDS は 135°、SM105BL は 0°。トルクは切らない。 */
+static void writeUprightGoals() {
+    float deg[kCoreJoints];
+    for (int i = 0; i < kCoreJoints; ++i) {
+        deg[i] = isSmsJoint(i) ? 0.0f : kHoldDeg;
+    }
+    writeJointGoals(deg);
+}
+
 static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
     switch (type) {
         case kUsbCmdPing:
@@ -612,6 +637,9 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             gIdentifyCan = 1;
             break;
         case kUsbCmdHold:
+            // 方策が入っていても、こちらが姿勢を決める。制御タスクは上書きしない。
+            gPolicyHandsOff = 1;
+            policyRequest(false, 0.0f);
             gElectricalMask = 0;
             for (int i = 0; i < kCoreJoints; ++i) {
                 // 表示の基準は 0°。ここから 0° へは動かさず、トルクだけ切る。
@@ -624,6 +652,8 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             if (len >= sizeof(UsbCmdMode)) {
                 UsbCmdMode c{};
                 memcpy(&c, payload, sizeof(c));
+                gPolicyHandsOff = 1;
+                policyRequest(false, 0.0f);
                 setMode(c.mode ? WorkMode::Robot : WorkMode::Lab);
             }
             break;
@@ -645,6 +675,10 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             break;
         case kUsbCmdJoint:
         case kUsbCmdJointElec:
+            // 方策が入っているあいだは、軸ごとの指令とネットが取り合わないようにする。
+            if (policyRequested()) {
+                break;
+            }
             if (len >= sizeof(UsbCmdJoint)) {
                 UsbCmdJoint c{};
                 memcpy(&c, payload, sizeof(c));
@@ -683,6 +717,25 @@ static void onCommand(uint8_t type, const uint8_t* payload, uint16_t len) {
             break;
         case kUsbCmdMapChunk:
             acceptMapChunk(payload, len);
+            break;
+        case kUsbCmdPolicy:
+            if (len >= sizeof(UsbCmdPolicy)) {
+                UsbCmdPolicy c{};
+                memcpy(&c, payload, sizeof(c));
+                if (c.enable) {
+                    gPolicyHandsOff = 0;
+                    // 出力を全軸へ。故障で落ちたマスクは、入れ直したときだけ戻す。
+                    if (gOutMask == 0) {
+                        gOutMask = static_cast<uint16_t>((1u << kCoreJoints) - 1u);
+                    }
+                    gElectricalMask = 0;
+                    policyRequest(true, c.vx_mps);
+                } else {
+                    // 切ったあとの 1 周期で、トルクを残したまま直立へ戻す。
+                    gPolicyHandsOff = 0;
+                    policyRequest(false, 0.0f);
+                }
+            }
             break;
         default:
             break;
@@ -756,6 +809,19 @@ static void usbTask(void*) {
             gEvtOver = 0;
             UsbEvtOc ev{gOverAmp};
             usbSend(kUsbEvtOc, &ev, sizeof(ev));
+        }
+        PolicyView policyView{};
+        if (policyTakeStatus(policyView)) {
+            UsbPolicyStatus msg{};
+            msg.enable = policyView.enable;
+            msg.ran = policyView.ran;
+            msg.reason = policyView.reason;
+            for (int i = 0; i < 3; ++i) {
+                msg.gravity[i] = policyView.gravity[i];
+                msg.gyro_rad[i] = policyView.gyro_rad[i];
+            }
+            msg.vx_mps = policyView.vx_mps;
+            usbSend(kUsbPolicyStatus, &msg, sizeof(msg));
         }
         const uint32_t now = micros();
         if (static_cast<int32_t>(now - next) >= 0) {
@@ -839,6 +905,48 @@ static void controlTask(void*) {
         }
         const uint32_t tState = micros();
         applySmsTelemetry(snap);
+        const uint32_t tPolicy0 = micros();
+        const bool policyOn = policyRequested();
+        const bool faulted = view.fault || view.overcurrent;
+        const bool policyBusy = policyOn || gPolicyWasOn != 0;
+        if (gPolicyHandsOff) {
+            // Hold かモード変更が姿勢を決めた。ここでは関節を触らない。
+            gPolicyWasOn = 0;
+            if (!policyOn) {
+                gPolicyHandsOff = 0;
+            }
+        } else if (policyOn) {
+            // Lab の出力オフから入れる。過電流のあとは、入れ直すまで戻さない。
+            if (!gPolicyWasOn && !faulted) {
+                gOutMask = static_cast<uint16_t>((1u << kCoreJoints) - 1u);
+                gElectricalMask = 0;
+            }
+            gPolicyWasOn = 1;
+            PolicyFoot feet[kCoreFeet];
+            for (int f = 0; f < kCoreFeet; ++f) {
+                feet[f].ok = snap.foot[f].ok;
+                feet[f].mask = snap.foot[f].mask;
+                memcpy(feet[f].mv, snap.foot[f].mv, sizeof(feet[f].mv));
+            }
+            PolicySense sense{};
+            sense.corr_deg = snap.corr_deg;
+            sense.as_ok = snap.as_ok;
+            sense.map_ok = snap.map_ok;
+            sense.foot = feet;
+            sense.fault = faulted || gOutMask == 0;
+            PolicyStep step{};
+            policyStep(sense, step);
+            // 故障で出力を落としたあとは、目標を書き戻して SM105 のトルクを復活させない。
+            if (step.write_cmd && !faulted && gOutMask != 0) {
+                writeJointGoals(step.cmd_deg);
+            }
+        } else if (gPolicyWasOn) {
+            writeUprightGoals();
+            gPolicyWasOn = 0;
+        }
+        for (int i = 0; i < kCoreJoints; ++i) {
+            snap.cmd_deg[i] = gCmd[i];
+        }
         const uint32_t tAct0 = micros();
         // 外した RDS51150 の端子へ、ひざ・かかとピッチの PWM を出さない。
         uint16_t pwmMask = gOutMask;
@@ -854,7 +962,7 @@ static void controlTask(void*) {
         snap.t_loop_us = tAct1 - t0;
         snap.t_sense_us = view.sense_us != 0 ? view.sense_us : (tSense1 - tSense0);
         snap.t_state_us = tState - tSense1;
-        snap.t_policy_us = 0;
+        snap.t_policy_us = policyBusy ? (tAct0 - tPolicy0) : 0;
         snap.t_act_us = tAct1 - tAct0;
         snap.jitter_us = static_cast<int32_t>(snap.t_period_us) - static_cast<int32_t>(kPeriodUs);
         snap.overrun = snap.t_loop_us > kPeriodUs ? 1 : 0;
@@ -972,6 +1080,8 @@ void setup() {
     // Unit CAN の 5V。出さないと PORT.C のトランシーバは動かない。
     // PORT.B の ATOM（RS485）も同じ 5V で起動する。
     (void)enableGrovePower();
+    // 方策の IMU。失敗しても起動は続ける。欠測のあいだはネットを回さない。
+    (void)bmi270Begin();
     smsLinkBegin();
     (void)canHostStart(kCanTxPin, kCanRxPin);
 

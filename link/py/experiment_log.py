@@ -414,6 +414,13 @@ class ExperimentLog:
             src = Path(str(marker)[: -len(".pending")])
             if src in seen or not src.is_file():
                 continue
+            try:
+                rel = src.relative_to(self.paths.data_root)
+            except ValueError:
+                continue
+            # 再生は data_root/sim/ 以下。実機の保管スレッドは閉じた再生ファイルを送らない。
+            if rel.parts and rel.parts[0] == "sim":
+                continue
             seen.add(src)
             self._enqueue(src, touch=False)
 

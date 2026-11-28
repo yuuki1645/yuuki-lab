@@ -7,7 +7,9 @@
 波形は選んだ側の 1 本だけで、もう片方の同じ秒数とは重ねない。
 
 実機のファイルは本記録フォルダの policy_trace.jsonl。
-シミュのファイルは atom-rt/data/policy_traces/sim/。
+シミュの再生は storage.yaml の sim/ 以下（形式 sim_play_v1）。
+storage.yaml が無いときと、以前の再生は atom-rt/data/policy_traces/sim/。
+画面はどちらもローカル側だけを読む。NAS の写しは見ない。
 """
 
 from __future__ import annotations
@@ -15,9 +17,7 @@ from __future__ import annotations
 import json
 import math
 import re
-import secrets
 import threading
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -109,11 +109,6 @@ def write_next_name(name: str) -> str:
     return label
 
 
-def _new_id() -> str:
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{stamp}_{secrets.token_hex(2)}"
-
-
 def _safe_id(value: str) -> str | None:
     if _ID_OK.match(value or ""):
         return value
@@ -137,67 +132,6 @@ def _mean_std(values: list[float]) -> tuple[float | None, float | None]:
     return mean, math.sqrt(var)
 
 
-class SimTraceLog:
-    """再生プロセスが、方策ステップごとに 1 行書く。実験名が変わるとファイルを分ける。"""
-
-    def __init__(self) -> None:
-        self._name = ""
-        self._fp: Any = None
-        self._folder: Path | None = None
-        self._count = 0
-
-    def write(self, row: dict[str, Any]) -> None:
-        name = read_next_name()
-        if self._fp is None or name != self._name:
-            self._open(name)
-        if self._fp is None:
-            return
-        self._fp.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
-        self._count += 1
-        if self._count % 30 == 0:
-            self._fp.flush()
-            self._touch_meta()
-
-    def close(self) -> None:
-        if self._fp is not None:
-            self._fp.flush()
-            self._fp.close()
-            self._fp = None
-            self._touch_meta(closed=True)
-
-    def _open(self, name: str) -> None:
-        self.close()
-        folder = sim_root() / _new_id()
-        folder.mkdir(parents=True, exist_ok=False)
-        meta = {
-            "format_id": FORMAT_ID,
-            "id": folder.name,
-            "name": name,
-            "side": "sim",
-            "sample_count": 0,
-            "started_at": datetime.now().astimezone().isoformat(timespec="milliseconds"),
-        }
-        (folder / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-        self._folder = folder
-        self._name = name
-        self._count = 0
-        self._fp = (folder / "policy_trace.jsonl").open("a", encoding="utf-8")
-
-    def _touch_meta(self, closed: bool = False) -> None:
-        if self._folder is None:
-            return
-        path = self._folder / "meta.json"
-        try:
-            meta = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            meta = {"id": self._folder.name, "name": self._name, "side": "sim"}
-        meta["sample_count"] = self._count
-        meta["format_id"] = FORMAT_ID
-        if closed:
-            meta["ended_at"] = datetime.now().astimezone().isoformat(timespec="milliseconds")
-        path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
 def iter_rows(path: Path) -> Iterator[dict[str, Any]]:
     """壊れた末尾の 1 行は読み飛ばす。記録中のファイルを見ても落ちない。"""
     if not path.is_file():
@@ -215,6 +149,18 @@ def iter_rows(path: Path) -> Iterator[dict[str, Any]]:
                 yield row
 
 
+def iter_source(path: Path) -> Iterator[dict[str, Any]]:
+    """1 本の jsonl か、再生 take の policy/part-*.jsonl を番号順に読む。"""
+    if path.is_dir():
+        policy = path / "policy"
+        if not policy.is_dir():
+            return
+        for part in sorted(policy.glob("part-*.jsonl")):
+            yield from iter_rows(part)
+        return
+    yield from iter_rows(path)
+
+
 def _trace_path_real(rec_id: str) -> Path | None:
     safe = _safe_id(rec_id)
     if safe is None:
@@ -224,11 +170,16 @@ def _trace_path_real(rec_id: str) -> Path | None:
 
 
 def _trace_path_sim(rec_id: str) -> Path | None:
+    """以前の 1 ファイルか、sim_play_v1 の take フォルダ。保管先の NAS は見ない。"""
     safe = _safe_id(rec_id)
     if safe is None:
         return None
-    path = sim_root() / safe / "policy_trace.jsonl"
-    return path if path.is_file() else None
+    legacy = sim_root() / safe / "policy_trace.jsonl"
+    if legacy.is_file():
+        return legacy
+    from sim_play_log import find_play_take
+
+    return find_play_take(safe)
 
 
 def _meta_of(folder: Path, side: str) -> dict[str, Any] | None:
@@ -263,7 +214,7 @@ def _meta_of(folder: Path, side: str) -> dict[str, Any] | None:
 
 
 def list_traces() -> dict[str, Any]:
-    """実機は本記録、シミュは policy_traces/sim。新しい順。"""
+    """実機は本記録。シミュはローカルの sim_play_v1 と、以前の 1 ファイル。新しい順。"""
     real: list[dict[str, Any]] = []
     root = recordings_root()
     if root.is_dir():
@@ -274,12 +225,24 @@ def list_traces() -> dict[str, Any]:
             if row is not None:
                 real.append(row)
     sim: list[dict[str, Any]] = []
-    for folder in sim_root().iterdir():
-        if not folder.is_dir():
-            continue
-        row = _meta_of(folder, "sim")
-        if row is not None:
+    seen: set[str] = set()
+    legacy_root = sim_root()
+    if legacy_root.is_dir():
+        for folder in legacy_root.iterdir():
+            if not folder.is_dir() or not (folder / "policy_trace.jsonl").is_file():
+                continue
+            row = _meta_of(folder, "sim")
+            if row is None or row["id"] in seen:
+                continue
+            seen.add(row["id"])
             sim.append(row)
+    from sim_play_log import list_play_takes
+
+    for row in list_play_takes():
+        if row["id"] in seen:
+            continue
+        seen.add(row["id"])
+        sim.append(row)
     real.sort(key=lambda item: str(item.get("started_at") or item["id"]), reverse=True)
     sim.sort(key=lambda item: str(item.get("started_at") or item["id"]), reverse=True)
     return {"real": real, "sim": sim, "next_name": read_next_name(), "experiments": list(EXPERIMENTS)}
@@ -340,7 +303,7 @@ def _dim_flag(row: dict[str, Any], index: int) -> int:
 
 def summarize_file(path: Path) -> dict[str, Any]:
     """1 本の記録。平均は有効な値だけ。欠測率は全周期に対する割合。"""
-    rows = list(iter_rows(path))
+    rows = list(iter_source(path))
     dims: list[dict[str, Any]] = []
     for index, spec in enumerate(DIMS):
         values: list[float] = []
@@ -401,7 +364,7 @@ def series_file(path: Path, index: int, limit: int = 900) -> dict[str, Any]:
     """1 本の時間順。横軸はその記録の中の経過秒。欠測と飛びは値を出さない。"""
     if index < 0 or index >= len(DIMS):
         return {"ok": False, "error": "dim"}
-    rows = list(iter_rows(path))
+    rows = list(iter_source(path))
     stride = max(1, math.ceil(len(rows) / limit)) if rows else 1
     points: list[dict[str, Any]] = []
     elapsed_us = 0
@@ -484,14 +447,16 @@ def register_routes(app: Any) -> None:
         return jsonify(body)
 
 
-_sim_log: SimTraceLog | None = None
+_sim_log: Any = None
 _sim_lock = threading.Lock()
 
 
-def sim_log() -> SimTraceLog:
-    """再生プロセスの中で 1 つ。"""
+def sim_log() -> Any:
+    """再生プロセスの中で 1 つ。ローカルへ書き、閉じた断片を NAS へ送る。"""
     global _sim_log
     with _sim_lock:
         if _sim_log is None:
-            _sim_log = SimTraceLog()
+            from sim_play_log import shared_sim_log
+
+            _sim_log = shared_sim_log()
         return _sim_log

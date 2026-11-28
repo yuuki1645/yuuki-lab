@@ -306,6 +306,20 @@ class TakeTest(unittest.TestCase):
             self.assertTrue((archive / "2026" / "10" / "26" / "090312" / "sensors" / "part-000.jsonl").is_file())
             self.assertEqual(list(root.rglob("*.pending")), [])
 
+    def test_catch_up_leaves_sim_pending(self) -> None:
+        """再生の sim/ は、実機の保管スレッドが送らない。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ssd"
+            archive = Path(tmp) / "nas"
+            src = root / "sim" / "2026" / "11" / "28" / "001_130000" / "policy" / "part-000.jsonl"
+            src.parent.mkdir(parents=True)
+            src.write_text('{"seq":1}\n', encoding="utf-8")
+            marker = Path(str(src) + ".pending")
+            marker.write_text("", encoding="utf-8")
+            logmod.ExperimentLog(logmod.StoragePaths(root, archive), copy_async=False)
+            self.assertTrue(marker.is_file())
+            self.assertFalse((archive / "sim" / "2026" / "11" / "28" / "001_130000" / "policy" / "part-000.jsonl").is_file())
+
     def test_without_config_does_not_start(self) -> None:
         log = logmod.ExperimentLog(None, copy_async=False)
         got = log.begin("COM4", "hello", 15)

@@ -12,3 +12,4 @@ __pycache__/
 .venv/
 tools/lab_nodes.json
 data/recordings/
+data/policy_traces/

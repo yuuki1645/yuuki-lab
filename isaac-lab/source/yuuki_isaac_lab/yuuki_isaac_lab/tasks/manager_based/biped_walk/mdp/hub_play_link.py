@@ -172,6 +172,7 @@ class HubPlayLink:
             logger = self._policy_logger()
             if logger is None:
                 return
+            # action_rad（頭打ち前の直立からの目標）は、記録側が action から足す。
             action, cmd_rad = _policy_action(env)
             foot = obs[16:24]
             bearing = all(v == v for v in foot) and sum(foot) >= 1.0

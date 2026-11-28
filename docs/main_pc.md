@@ -25,7 +25,7 @@
 
 ## 再生の残し方
 
-方策ステップごとに、`atom-rt/data/policy_traces/sim/` へ書く。画面へ出す 20 Hz ではなく、方策のステップである。実験名は、Hub「分布の比較」のボタンが書く `policy_traces/next_name.txt`。
+方策ステップごとに、ユーザーの `storage.yaml` が指すローカルの `sim/` へ書く。画面へ出す 20 Hz ではなく、方策のステップである。閉じた断片だけを NAS へ送る。形式は `sim_play_v1`。目標角は頭打ちの前で、`action_rad` を見る。実験名は、Hub「分布の比較」のボタンが書く `policy_traces/next_name.txt`。画面の分布比較はローカル側を読む。`storage.yaml` が無いときだけ、リポジトリの `atom-rt/data/policy_traces/sim/` へ書く。
 
 `isaac_hub_bridge.py`（`:8795`、Isaac とは `:8796`）と、実機の `lab_debug.py`（`:8794`）は同時に動かさない。
 

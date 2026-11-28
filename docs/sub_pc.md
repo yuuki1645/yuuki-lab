@@ -43,7 +43,7 @@ HELLO（USB ver 15）から USB を抜くまで、`lab_debug.py` がセンサ・
 - `frames.jsonl` は、画面に出しているテレメトリ。度、電流、足裏、周期。
 - `policy_trace.jsonl` は、方策の 1 周期。分布の比較が読むのはこちら。USB `0x1A`。
 
-シミュの再生は、方策ステップごとに同じ形を `atom-rt/data/policy_traces/sim/` へ書く。画面へ出す 20 Hz ではなく、方策のステップである。観測は `obs_buf` の policy そのもので、画面の度からは作らない。実験名は、本記録を始めた名前か、Hub「分布の比較」のボタンが書く `policy_traces/next_name.txt`。
+シミュの再生は、方策ステップごとに `storage.yaml` の `sim/` へ書く。形式は `sim_play_v1`。画面へ出す 20 Hz ではなく、方策のステップである。観測は `obs_buf` の policy そのもので、画面の度からは作らない。目標角は頭打ちの前で、同じフォルダの `context.json` に意味がある。閉じた断片だけを NAS へ送る。実験名は、本記録を始めた名前か、Hub「分布の比較」のボタンが書く `policy_traces/next_name.txt`。画面はローカル側を読む。
 
 `lab_debug.py`（`:8794`）と `isaac_hub_bridge.py`（`:8795`、Isaac とは `:8796`）は同時に動かさない。
 

@@ -55,7 +55,7 @@ static constexpr float kPolicyHipPitchMinDeg = 125.0f;
 static constexpr float kPolicyHipPitchMaxDeg = 175.0f;
 static constexpr float kPolicyKneeMinDeg = 0.0f;
 static constexpr float kPolicyKneeMaxDeg = 40.0f;
-static constexpr float kPolicyAnklePitchMinDeg = -50.0f;
+static constexpr float kPolicyAnklePitchMinDeg = -20.0f;
 static constexpr float kPolicyAnklePitchMaxDeg = 30.0f;
 static constexpr float kPolicyAnkleRollMinDeg = 115.0f;
 static constexpr float kPolicyAnkleRollMaxDeg = 155.0f;
@@ -68,12 +68,13 @@ static constexpr float kSmsSpeedRad = 6.3f;
 // 計測は各側へ kEnvelopeMeasureSlackDeg だけ広い。上限へ張り付いた行き過ぎでは止めない。
 // 股とかかとロールは直立から ±20°。初期可動がこれより広くても、ここでは広げない。
 // ひざは後ろへ曲げる側だけ 40°。逆へ伸ばす側は 0° で止める。
-// かかとピッチはつま先上げ 30°、つま先下げ 20°。初期可動の −50° までは開かない。
+// かかとピッチはつま先上げ 30°、つま先下げ 25°。
+// 初期の可動が先につま先下げ 20° で止めるので、−26° の目標は包絡の判定に届かない。
 static constexpr float kEnvelopeHipMinDeg = 115.0f;
 static constexpr float kEnvelopeHipMaxDeg = 155.0f;
 static constexpr float kEnvelopeKneeMinDeg = 0.0f;
 static constexpr float kEnvelopeKneeMaxDeg = 40.0f;
-static constexpr float kEnvelopeAnklePitchMinDeg = -20.0f;
+static constexpr float kEnvelopeAnklePitchMinDeg = -25.0f;
 static constexpr float kEnvelopeAnklePitchMaxDeg = 30.0f;
 static constexpr float kEnvelopeAnkleRollMinDeg = 115.0f;
 static constexpr float kEnvelopeAnkleRollMaxDeg = 155.0f;
